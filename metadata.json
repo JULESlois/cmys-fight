@@ -1,0 +1,6 @@
+{
+  "name": "Retro Canvas RPG",
+  "description": "A retro pixel-art JRPG built entirely on HTML5 Canvas with event-driven combat and AI-generated dialogs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
