@@ -1,20 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Top-Down Roguelite Shooter Prototype
 
-# Run and deploy your AI Studio app
+A minimalist, Web Canvas-based action roguelite engine written in TypeScript.
 
-This contains everything you need to run your app locally.
+## Core Features
+- **Real-Time Combat**: Free-movement with WASD/Arrows, fast-paced shooting.
+- **Procedural Dungeon**: Room generation with branching paths, varied themes (Forest, Dungeon, Snow, Lava).
+- **Enemies & Bosses**: Melee chasers, ranged shooters, and bullet-hell boss encounters.
+- **Weapon System**: Interchangeable weapons (Pistol, Shotgun, Laser) with different behaviors and mana costs.
+- **Audio System**: Synthesized WebAudio sound effects for an authentic retro feel.
 
-View your app in AI Studio: https://ai.studio/apps/ced7f951-fb74-41e0-8596-c72d77ccf37e
+## Controls
+- **WASD / Arrows**: Move
+- **Space**: Shoot / Interact / Enter Next Floor
+- **Enter**: Menu / Restart game
 
-## Run Locally
+## Development
 
-**Prerequisites:**  Node.js
+Run development server:
+```bash
+npm run dev
+```
 
+Build for production:
+```bash
+npm run build
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Structure
+- `src/game/states/DungeonState.ts`: The main gameplay loop and room management.
+- `src/game/FloorGenerator.ts`: Procedural generation logic for rooms and layouts.
+- `src/game/entities/`: Definitions for Player, Enemies, Projectiles, and Pickups.
+- `src/game/Engine.ts`: The game loop, state management, and canvas scaling.

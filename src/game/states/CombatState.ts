@@ -237,7 +237,7 @@ export class CombatState extends GameState {
     } else {
       // Next Turn preparation
       this.updateThreats();
-      this.phase = "select_action";
+      this.phase = "player_turn";
     }
   }
 

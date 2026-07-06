@@ -27,14 +27,14 @@ export class MenuState extends GameState {
     }
     
     if (this.engine.input.justPressed["Escape"]) {
-      events.emit("state:change", "map");
+      events.emit("state:change", "dungeon");
     }
   }
   
   private handleSelect() {
     switch (this.selection) {
       case 0:
-        events.emit("state:change", "map");
+        events.emit("state:change", "dungeon");
         break;
       case 1:
         this.engine.data.save();
@@ -47,7 +47,7 @@ export class MenuState extends GameState {
       case 3:
         localStorage.removeItem("retro_rpg_save");
         this.engine.data.data = {
-          player: { x: 2, y: 2, level: 1, hp: 20, maxHp: 20, exp: 0 },
+          player: { x: 160, y: 120, hp: 6, maxHp: 6, armor: 5, maxArmor: 5, mana: 100, maxMana: 100, currentWeaponId: "pistol", level: 1, exp: 0 },
           recentEvents: ["Restarted the universe"],
           floor: generateFloor(1),
         };

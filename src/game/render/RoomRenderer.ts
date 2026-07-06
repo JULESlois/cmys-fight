@@ -1,0 +1,387 @@
+import { Room } from "../FloorGenerator";
+import { Player } from "../entities/Player";
+
+const TILE_SIZE = 16;
+const MAP_WIDTH = 20;
+const MAP_HEIGHT = 15;
+
+const forestMapData = [
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,4,0,0,4,1,1,1,1,1,1,1,1,
+  1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,
+  1,0,2,2,2,0,0,0,2,2,2,2,0,0,0,2,2,2,0,1,
+  1,0,2,0,2,0,0,0,2,0,0,2,0,0,0,2,0,2,0,1,
+  1,0,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,0,1,
+  1,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,1,
+  1,1,4,0,0,4,1,0,2,0,0,2,0,1,4,0,0,4,1,1,
+  1,0,0,0,0,0,1,0,2,2,2,2,0,1,0,0,0,0,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,3,3,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3,3,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+];
+
+const dungeonMapData = [
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,1,1,4,0,0,0,0,1,1,1,1,0,0,0,0,4,1,1,1,
+  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+  1,4,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,4,1,
+  1,0,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,1,
+  1,0,0,2,2,2,2,0,0,1,1,0,0,2,2,2,2,0,0,1,
+  1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,
+  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+  1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,
+  1,0,0,2,2,2,2,0,0,1,1,0,0,2,2,2,2,0,0,1,
+  1,4,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,4,1,
+  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+  1,1,1,4,0,0,0,0,1,1,1,1,0,0,0,0,4,1,1,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+];
+
+const snowMapData = [
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,
+  1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1,
+  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
+  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
+  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
+  1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1,
+  1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,
+  1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,
+  1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1,
+  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
+  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
+  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
+  1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+];
+
+const lavaMapData = [
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,4,1,1,4,1,1,1,1,1,1,1,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
+  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
+  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
+  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
+  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
+  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,1,1,1,1,1,1,1,4,1,1,4,1,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+];
+
+function getMapData(currentRoom: Room | undefined, theme: string): number[] {
+  let baseMap = forestMapData;
+  if (theme === "dungeon") baseMap = dungeonMapData;
+  else if (theme === "snow") baseMap = snowMapData;
+  else if (theme === "lava") baseMap = lavaMapData;
+
+  const data = [...baseMap];
+  if (currentRoom) {
+    if (currentRoom.doors.up) {
+      data[0 * MAP_WIDTH + 9] = 2;
+      data[0 * MAP_WIDTH + 10] = 2;
+      data[1 * MAP_WIDTH + 9] = 2;
+      data[1 * MAP_WIDTH + 10] = 2;
+    }
+    if (currentRoom.doors.down) {
+      data[13 * MAP_WIDTH + 9] = 2;
+      data[13 * MAP_WIDTH + 10] = 2;
+      data[14 * MAP_WIDTH + 9] = 2;
+      data[14 * MAP_WIDTH + 10] = 2;
+    }
+    if (currentRoom.doors.left) {
+      data[7 * MAP_WIDTH + 0] = 2;
+      data[7 * MAP_WIDTH + 1] = 2;
+      data[8 * MAP_WIDTH + 0] = 2;
+      data[8 * MAP_WIDTH + 1] = 2;
+    }
+    if (currentRoom.doors.right) {
+      data[7 * MAP_WIDTH + 18] = 2;
+      data[7 * MAP_WIDTH + 19] = 2;
+      data[8 * MAP_WIDTH + 18] = 2;
+      data[8 * MAP_WIDTH + 19] = 2;
+    }
+  }
+  return data;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  angle: number;
+  spin: number;
+}
+
+export class RoomRenderer {
+  private particles: Particle[] = [];
+  private windTime: number = 0;
+
+  constructor() {
+    this.spawnParticles(15);
+  }
+
+  private spawnParticles(count: number) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        x: Math.random() * 320,
+        y: Math.random() * 240,
+        vx: -0.2 - Math.random() * 0.4,
+        vy: 0.3 + Math.random() * 0.5,
+        size: 2 + Math.random() * 3,
+        angle: Math.random() * Math.PI * 2,
+        spin: 0.02 + Math.random() * 0.05,
+      });
+    }
+  }
+
+  public update(dt: number) {
+    this.windTime += dt;
+    for (const p of this.particles) {
+      p.x += p.vx * dt * 60;
+      p.y += p.vy * dt * 60;
+      p.angle += p.spin * dt * 60;
+      if (p.x < -10 || p.y > 250) {
+        p.x = 330;
+        p.y = -10;
+      }
+    }
+  }
+
+  public drawBackground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string) {
+    const mapData = getMapData(currentRoom, theme);
+
+    // 1. DRAW BASE FLOOR
+    ctx.fillStyle = theme === "forest" ? "#5C8B4D" : (theme === "dungeon" ? "#2C3E50" : (theme === "snow" ? "#EBF5FB" : "#2E1114"));
+    ctx.fillRect(0, 0, 320, 240);
+
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+      for (let x = 0; x < MAP_WIDTH; x++) {
+        const tileId = mapData[y * MAP_WIDTH + x];
+        const tx = x * TILE_SIZE;
+        const ty = y * TILE_SIZE;
+
+        if (tileId === 2) {
+          ctx.fillStyle = theme === "forest" ? "#909E86" : (theme === "dungeon" ? "#5D6D7E" : (theme === "snow" ? "#D4E6F1" : "#512E5F"));
+          ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+        } else if (tileId === 3) {
+          if (theme === "forest" || theme === "snow") {
+            ctx.fillStyle = theme === "forest" ? "#336699" : "#D4E6F1";
+            const sparkOffset = Math.floor(this.windTime * 4) % 8;
+            ctx.fillRect(tx + sparkOffset, ty + 4, 3, 1);
+            ctx.fillRect(tx + ((sparkOffset + 4) % 8), ty + 10, 4, 1);
+          } else if (theme === "dungeon") {
+            ctx.fillStyle = "#5B2C6F";
+            ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = "#8E44AD";
+            const sparkOffset = Math.floor(this.windTime * 3) % 8;
+            ctx.fillRect(tx + sparkOffset, ty + 6, 2, 2);
+          } else if (theme === "lava") {
+            ctx.fillStyle = "#BA4A00";
+            ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = "#F39C12";
+            const sparkOffset = Math.floor(this.windTime * 2) % 8;
+            ctx.fillRect(tx + sparkOffset, ty + 4, 4, 2);
+            ctx.fillRect(tx + ((sparkOffset + 4) % 8), ty + 10, 3, 2);
+          }
+        }
+      }
+    }
+
+    // Draw the wooden bridge crossing the stream
+    for (let x = 0; x < MAP_WIDTH; x++) {
+      const tileIdY10 = mapData[10 * MAP_WIDTH + x];
+      if (tileIdY10 === 3 && (x === 9 || x === 10)) {
+        const tx = x * TILE_SIZE;
+        const ty = 10 * TILE_SIZE;
+        ctx.fillStyle = "#8B5A2B";
+        ctx.fillRect(tx, ty - 1, TILE_SIZE, TILE_SIZE + 2);
+        ctx.fillStyle = "#CD853F";
+        ctx.fillRect(tx + 1, ty, TILE_SIZE - 2, TILE_SIZE);
+        ctx.fillStyle = "#5C3815";
+        ctx.fillRect(tx + 3, ty, 1, TILE_SIZE);
+        ctx.fillRect(tx + 11, ty, 1, TILE_SIZE);
+      }
+    }
+  }
+
+  public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, player: Player) {
+    const mapData = getMapData(currentRoom, theme);
+
+    // 2. DRAW SHADOWS
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+      for (let x = 0; x < MAP_WIDTH; x++) {
+        const tileId = mapData[y * MAP_WIDTH + x];
+        const tx = x * TILE_SIZE + 8;
+        const ty = y * TILE_SIZE + 14;
+        if (tileId === 1) {
+          ctx.beginPath();
+          ctx.ellipse(tx, ty + 2, 9, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (tileId === 4) {
+          ctx.beginPath();
+          ctx.ellipse(tx, ty, 6, 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Player Shadow
+    ctx.beginPath();
+    ctx.ellipse(player.x, player.y + 6, 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. DRAW ENVIRONMENT & OBJECTS
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+      for (let x = 0; x < MAP_WIDTH; x++) {
+        const tileId = mapData[y * MAP_WIDTH + x];
+        const tx = x * TILE_SIZE;
+        const ty = y * TILE_SIZE;
+
+        if (tileId === 1) {
+          if (theme === "forest") {
+            ctx.fillStyle = "#4E3629";
+            ctx.fillRect(tx + 6, ty + 8, 4, 8);
+            ctx.fillStyle = "#E882A4";
+            ctx.beginPath();
+            ctx.arc(tx + 8, ty + 4, 8, 0, Math.PI * 2);
+            ctx.arc(tx + 4, ty + 1, 6, 0, Math.PI * 2);
+            ctx.arc(tx + 12, ty + 2, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#F3A9C3";
+            ctx.beginPath();
+            ctx.arc(tx + 7, ty + 2, 4, 0, Math.PI * 2);
+            ctx.arc(tx + 11, ty, 3, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (theme === "dungeon") {
+            ctx.fillStyle = "#2C3E50";
+            ctx.fillRect(tx + 2, ty, 12, 16);
+            ctx.fillStyle = "#34495E";
+            ctx.fillRect(tx + 4, ty, 8, 16);
+            ctx.fillStyle = "#7F8C8D";
+            ctx.fillRect(tx + 2, ty + 14, 12, 2);
+          } else if (theme === "snow") {
+            ctx.fillStyle = "#AED6F1";
+            ctx.beginPath();
+            ctx.moveTo(tx + 8, ty);
+            ctx.lineTo(tx + 14, ty + 16);
+            ctx.lineTo(tx + 2, ty + 16);
+            ctx.fill();
+            ctx.fillStyle = "#D6EAF8";
+            ctx.beginPath();
+            ctx.moveTo(tx + 8, ty + 2);
+            ctx.lineTo(tx + 12, ty + 16);
+            ctx.lineTo(tx + 4, ty + 16);
+            ctx.fill();
+          } else if (theme === "lava") {
+            ctx.fillStyle = "#17202A";
+            ctx.beginPath();
+            ctx.moveTo(tx + 8, ty + 2);
+            ctx.lineTo(tx + 14, ty + 16);
+            ctx.lineTo(tx + 2, ty + 16);
+            ctx.fill();
+            ctx.fillStyle = "#CB4335";
+            ctx.fillRect(tx + 7, ty + 8, 2, 4);
+          }
+        } else if (tileId === 4) {
+          ctx.fillStyle = "#7F8C8D";
+          ctx.fillRect(tx + 5, ty + 6, 6, 10); 
+          ctx.fillStyle = "#95A5A6";
+          ctx.fillRect(tx + 3, ty + 3, 10, 3); 
+          ctx.fillStyle = "#34495E";
+          ctx.fillRect(tx + 2, ty + 1, 12, 2); 
+          
+          ctx.fillStyle = "#F1C40F";
+          ctx.fillRect(tx + 7, ty + 4, 2, 2);
+        }
+      }
+    }
+
+    if (theme === "forest") {
+      ctx.fillStyle = "#C0392B"; 
+      ctx.fillRect(9 * TILE_SIZE + 2, 1 * TILE_SIZE, 3, 32);
+      ctx.fillRect(11 * TILE_SIZE - 5, 1 * TILE_SIZE, 3, 32);
+      ctx.fillRect(8 * TILE_SIZE + 4, 1 * TILE_SIZE, 56, 4);
+      ctx.fillStyle = "#2C3E50"; 
+      ctx.fillRect(8 * TILE_SIZE + 2, 1 * TILE_SIZE - 2, 60, 2);
+      ctx.fillStyle = "#C0392B";
+      ctx.fillRect(9 * TILE_SIZE + 2, 1 * TILE_SIZE + 6, 28, 3);
+    }
+
+    if (currentRoom) {
+      const isLocked = !currentRoom.cleared;
+      const doorColor = isLocked ? "rgba(231, 76, 60, 0.6)" : "rgba(46, 204, 113, 0.4)";
+      ctx.fillStyle = doorColor;
+      
+      if (currentRoom.doors.left) ctx.fillRect(0, 7 * TILE_SIZE, 16, TILE_SIZE * 2);
+      if (currentRoom.doors.right) ctx.fillRect((MAP_WIDTH - 1) * TILE_SIZE, 7 * TILE_SIZE, 16, TILE_SIZE * 2);
+      if (currentRoom.doors.up) ctx.fillRect(9 * TILE_SIZE, 0, TILE_SIZE * 2, 16);
+      if (currentRoom.doors.down) ctx.fillRect(9 * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE, TILE_SIZE * 2, 16);
+      
+      if (currentRoom.type === "boss" && currentRoom.cleared) {
+        ctx.fillStyle = "#2ECC71";
+        ctx.fillRect(160 - 20, 16, 40, 16);
+        ctx.fillStyle = "#FFF";
+        ctx.font = "8px monospace";
+        ctx.fillText("SPACE: NEXT", 160-25, 30);
+      }
+    }
+
+    // Weather Effects
+    const lanternPulse = 20 + Math.sin(this.windTime * 4) * 4;
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+      for (let x = 0; x < MAP_WIDTH; x++) {
+        const tileId = mapData[y * MAP_WIDTH + x];
+        if (tileId === 4) {
+          const lX = x * TILE_SIZE + 8;
+          const lY = y * TILE_SIZE + 5;
+
+          const lightGlow = ctx.createRadialGradient(lX, lY, 2, lX, lY, lanternPulse);
+          lightGlow.addColorStop(0, "rgba(254, 211, 48, 0.4)");
+          lightGlow.addColorStop(0.3, "rgba(254, 211, 48, 0.15)");
+          lightGlow.addColorStop(1, "rgba(254, 211, 48, 0)");
+
+          ctx.fillStyle = lightGlow;
+          ctx.beginPath();
+          ctx.arc(lX, lY, lanternPulse, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    if (theme === "forest" || theme === "snow" || theme === "lava") {
+      for (const p of this.particles) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        
+        if (theme === "forest") {
+          ctx.fillStyle = "rgba(232, 130, 164, 0.8)";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (theme === "snow") {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (theme === "lava") {
+          ctx.fillStyle = "rgba(243, 156, 18, 0.8)";
+          ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+        }
+        ctx.restore();
+      }
+    }
+  }
+}

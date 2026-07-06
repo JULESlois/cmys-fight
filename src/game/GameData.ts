@@ -4,9 +4,14 @@ export interface GameSave {
   player: {
     x: number;
     y: number;
-    level: number;
     hp: number;
     maxHp: number;
+    armor: number;
+    maxArmor: number;
+    mana: number;
+    maxMana: number;
+    currentWeaponId: string;
+    level: number;
     exp: number;
   };
   recentEvents: string[];
@@ -15,11 +20,16 @@ export interface GameSave {
 
 export const defaultSave: GameSave = {
   player: {
-    x: 10,
-    y: 7,
+    x: 160,
+    y: 120,
+    hp: 6,
+    maxHp: 6,
+    armor: 5,
+    maxArmor: 5,
+    mana: 100,
+    maxMana: 100,
+    currentWeaponId: "pistol",
     level: 1,
-    hp: 20,
-    maxHp: 20,
     exp: 0,
   },
   recentEvents: ["Started the journey"],

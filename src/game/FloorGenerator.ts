@@ -2,7 +2,7 @@ export interface Room {
   id: string;
   x: number;
   y: number;
-  type: "start" | "combat" | "npc" | "boss";
+  type: "start" | "combat" | "treasure" | "boss" | "npc";
   cleared: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
   enemies?: { x: number; y: number }[];
@@ -54,7 +54,8 @@ export function generateFloor(depth: number): FloorData {
       
       // Assign type
       let type: Room["type"] = "combat";
-      if (Math.random() < 0.2) type = "npc";
+      if (Math.random() < 0.2) type = "treasure";
+      else if (Math.random() < 0.1) type = "npc";
       
       // If last room, make it boss
       if (placedRooms === maxRooms - 1) {
@@ -79,7 +80,7 @@ export function generateFloor(depth: number): FloorData {
         x: newX,
         y: newY,
         type,
-        cleared: type === "npc", // NPCs don't have combat, so technically cleared
+        cleared: type !== "combat" && type !== "boss", 
         doors: { up: false, down: false, left: false, right: false },
         enemies
       };

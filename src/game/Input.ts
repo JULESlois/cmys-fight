@@ -2,9 +2,14 @@ export class Input {
   public keys: { [key: string]: boolean } = {};
   public justPressed: { [key: string]: boolean } = {};
 
+  private handleKeyDown: (e: KeyboardEvent) => void;
+  private handleKeyUp: (e: KeyboardEvent) => void;
+
   constructor() {
-    window.addEventListener("keydown", this.onKeyDown.bind(this));
-    window.addEventListener("keyup", this.onKeyUp.bind(this));
+    this.handleKeyDown = this.onKeyDown.bind(this);
+    this.handleKeyUp = this.onKeyUp.bind(this);
+    window.addEventListener("keydown", this.handleKeyDown);
+    window.addEventListener("keyup", this.handleKeyUp);
   }
 
   private onKeyDown(e: KeyboardEvent) {
@@ -30,7 +35,34 @@ export class Input {
   }
 
   public cleanup() {
-    window.removeEventListener("keydown", this.onKeyDown.bind(this));
-    window.removeEventListener("keyup", this.onKeyUp.bind(this));
+    window.removeEventListener("keydown", this.handleKeyDown);
+    window.removeEventListener("keyup", this.handleKeyUp);
+  }
+
+  public isDown(key: string): boolean {
+    return !!this.keys[key];
+  }
+
+  public wasPressed(key: string): boolean {
+    return !!this.justPressed[key];
+  }
+
+  public getAxis(): { x: number; y: number } {
+    let x = 0;
+    let y = 0;
+    
+    if (this.isDown("ArrowLeft") || this.isDown("a") || this.isDown("A")) x -= 1;
+    if (this.isDown("ArrowRight") || this.isDown("d") || this.isDown("D")) x += 1;
+    if (this.isDown("ArrowUp") || this.isDown("w") || this.isDown("W")) y -= 1;
+    if (this.isDown("ArrowDown") || this.isDown("s") || this.isDown("S")) y += 1;
+    
+    // Normalize if moving diagonally
+    if (x !== 0 && y !== 0) {
+      const length = Math.sqrt(x * x + y * y);
+      x /= length;
+      y /= length;
+    }
+    
+    return { x, y };
   }
 }

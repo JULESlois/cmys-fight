@@ -5,13 +5,14 @@ import { MapState } from "./states/MapState";
 import { CombatState } from "./states/CombatState";
 import { DialogState } from "./states/DialogState";
 import { MenuState } from "./states/MenuState";
+import { DungeonState } from "./states/DungeonState";
 import { events } from "./EventBus";
 
 export class Engine {
   public input: Input;
   public data: GameData;
   public states: { [key: string]: GameState } = {};
-  public currentState: string = "map";
+  public currentState: string = "dungeon";
   public isPaused: boolean = false;
   
   private lastTime = 0;
@@ -29,6 +30,7 @@ export class Engine {
       "combat": new CombatState(this),
       "dialog": new DialogState(this),
       "menu": new MenuState(this),
+      "dungeon": new DungeonState(this),
     };
     
     // Event Driven System hookup
