@@ -13,7 +13,7 @@ interface EnemyUnit {
   actionDir: "up" | "down" | "left" | "right" | "all";
 }
 
-export class CombatState extends GameState {
+export class LegacyTacticsState extends GameState {
   // 5x5 Tactical Board Coordinates
   private boardX = 80;
   private boardY = 40;
@@ -103,7 +103,7 @@ export class CombatState extends GameState {
   update(dt: number) {
     if (this.phase === "end") {
       if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
-        events.emit("state:change", "map");
+        events.emit("state:change", "legacy_rpg");
       }
       return;
     }
@@ -141,7 +141,7 @@ export class CombatState extends GameState {
       return;
     }
 
-    const p = this.engine.data.data.player;
+    const p = this.engine.data.data.legacyData.player;
     const targetEnemy = this.enemies.find(e => e.hp > 0 && e.x === targetX && e.y === targetY);
 
     if (targetEnemy) {
@@ -167,7 +167,7 @@ export class CombatState extends GameState {
   }
 
   private executeEnemyTurn() {
-    const p = this.engine.data.data.player;
+    const p = this.engine.data.data.legacyData.player;
     let hitCount = 0;
     let damageTaken = 0;
 
@@ -242,7 +242,7 @@ export class CombatState extends GameState {
   }
 
   private winBattle() {
-    const p = this.engine.data.data.player;
+    const p = this.engine.data.data.legacyData.player;
     p.exp += 8;
     this.message = "VICTORY! Gained 8 EXP.";
     this.phase = "end";
@@ -326,7 +326,7 @@ export class CombatState extends GameState {
     else if (theme === "lava") title = "VOLCANIC TACTICAL ARENA";
     ctx.fillText(title, 15, 20);
 
-    const p = this.engine.data.data.player;
+    const p = this.engine.data.data.legacyData.player;
     ctx.font = "8px monospace";
     ctx.fillStyle = "#5DADE2";
     ctx.fillText(`PLAYER HP: ${p.hp}/${p.maxHp} (LVL ${p.level})`, 180, 20);

@@ -13,9 +13,21 @@ export interface GameSave {
     currentWeaponId: string;
     level: number;
     exp: number;
+    coins: number;
   };
   recentEvents: string[];
   floor: FloorData;
+  legacyData: {
+    player: {
+      x: number;
+      y: number;
+      hp: number;
+      maxHp: number;
+      level: number;
+      exp: number;
+    };
+    clearedRooms: string[];
+  };
 }
 
 export const defaultSave: GameSave = {
@@ -31,9 +43,21 @@ export const defaultSave: GameSave = {
     currentWeaponId: "pistol",
     level: 1,
     exp: 0,
+    coins: 0,
   },
   recentEvents: ["Started the journey"],
   floor: generateFloor(1),
+  legacyData: {
+    player: {
+      x: 2,
+      y: 2,
+      hp: 20,
+      maxHp: 20,
+      level: 1,
+      exp: 0,
+    },
+    clearedRooms: [],
+  }
 };
 
 export class GameData {
@@ -51,11 +75,25 @@ export class GameData {
     const saved = localStorage.getItem("retro_rpg_save");
     if (saved) {
       try {
-        this.data = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        this.data = { ...defaultSave, ...parsed };
+        this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
+        this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
+        this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
       } catch (e) {
         console.error("Failed to load save:", e);
       }
     }
+  }
+
+  resetRun() {
+    this.data.player.hp = this.data.player.maxHp;
+    this.data.player.armor = this.data.player.maxArmor;
+    this.data.player.mana = this.data.player.maxMana;
+    this.data.player.currentWeaponId = "pistol";
+    this.data.player.coins = 0;
+    this.data.floor = generateFloor(1);
+    this.save();
   }
 
   logEvent(event: string) {

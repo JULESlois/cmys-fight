@@ -87,7 +87,7 @@ interface Particle {
   spin: number;
 }
 
-export class MapState extends GameState {
+export class LegacyRpgState extends GameState {
   private moveTimer: number = 0;
   private particles: Particle[] = [];
   private pulseTimer: number = 0;
@@ -107,8 +107,8 @@ export class MapState extends GameState {
     this.spawnParticles(15);
     this.transitionState = "none";
     this.transitionAlpha = 0;
-    this.pVisX = this.engine.data.data.player.x;
-    this.pVisY = this.engine.data.data.player.y;
+    this.pVisX = this.engine.data.data.legacyData.player.x;
+    this.pVisY = this.engine.data.data.legacyData.player.y;
   }
 
   exit() {}
@@ -141,8 +141,8 @@ export class MapState extends GameState {
             const floor = this.engine.data.data.floor;
             floor.currentRoomX += pt.dx;
             floor.currentRoomY += pt.dy;
-            this.engine.data.data.player.x = pt.px;
-            this.engine.data.data.player.y = pt.py;
+            this.engine.data.data.legacyData.player.x = pt.px;
+            this.engine.data.data.legacyData.player.y = pt.py;
             this.pVisX = pt.px;
             this.pVisY = pt.py;
             
@@ -166,8 +166,8 @@ export class MapState extends GameState {
       return;
     }
 
-    const px = this.engine.data.data.player.x;
-    const py = this.engine.data.data.player.y;
+    const px = this.engine.data.data.legacyData.player.x;
+    const py = this.engine.data.data.legacyData.player.y;
     const speed = 10 * dt;
     
     let isMoving = false;
@@ -231,8 +231,8 @@ export class MapState extends GameState {
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     if (currentRoom?.type !== "npc" && currentRoom?.type !== "start") return;
 
-    const px = this.engine.data.data.player.x;
-    const py = this.engine.data.data.player.y;
+    const px = this.engine.data.data.legacyData.player.x;
+    const py = this.engine.data.data.legacyData.player.y;
 
     for (const npc of npcs) {
       if (Math.abs(npc.x - px) + Math.abs(npc.y - py) === 1) {
@@ -243,31 +243,18 @@ export class MapState extends GameState {
   }
 
   private movePlayer(dx: number, dy: number) {
-    const newX = this.engine.data.data.player.x + dx;
-    const newY = this.engine.data.data.player.y + dy;
+    const newX = this.engine.data.data.legacyData.player.x + dx;
+    const newY = this.engine.data.data.legacyData.player.y + dy;
 
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
 
-    if (newX < 0) {
-      if (currentRoom?.doors.left) {
-        this.transitionRoom(-1, 0, MAP_WIDTH - 1, newY);
+    if (newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) {
+      if (currentRoom) {
+         currentRoom.cleared = true;
+         this.engine.data.data.legacyData.clearedRooms.push(currentRoom.id);
       }
-      return;
-    } else if (newX >= MAP_WIDTH) {
-      if (currentRoom?.doors.right) {
-        this.transitionRoom(1, 0, 0, newY);
-      }
-      return;
-    } else if (newY < 0) {
-      if (currentRoom?.doors.up) {
-        this.transitionRoom(0, -1, newX, MAP_HEIGHT - 1);
-      }
-      return;
-    } else if (newY >= MAP_HEIGHT) {
-      if (currentRoom?.doors.down) {
-        this.transitionRoom(0, 1, newX, 0);
-      }
+      events.emit("state:change", "dungeon", { fromLegacy: true });
       return;
     }
 
@@ -298,8 +285,8 @@ export class MapState extends GameState {
         }
 
         if (!enemyHit) {
-          this.engine.data.data.player.x = newX;
-          this.engine.data.data.player.y = newY;
+          this.engine.data.data.legacyData.player.x = newX;
+          this.engine.data.data.legacyData.player.y = newY;
         }
       }
     }
@@ -448,8 +435,8 @@ export class MapState extends GameState {
     }
 
     // Player Shadow
-    const px = this.engine.data.data.player.x;
-    const py = this.engine.data.data.player.y;
+    const px = this.engine.data.data.legacyData.player.x;
+    const py = this.engine.data.data.legacyData.player.y;
     ctx.beginPath();
     ctx.ellipse(px * TILE_SIZE + 8, py * TILE_SIZE + 15, 6, 3, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -772,7 +759,7 @@ export class MapState extends GameState {
 
     ctx.fillStyle = "#FFF";
     ctx.font = "8px monospace";
-    ctx.fillText(`LVL ${this.engine.data.data.player.level} | EXP ${this.engine.data.data.player.exp}/20`, 8, 15);
+    ctx.fillText(`LVL ${this.engine.data.data.legacyData.player.level} | EXP ${this.engine.data.data.legacyData.player.exp}/20`, 8, 15);
 
     // Render Minimap
     ctx.fillStyle = "rgba(10, 15, 20, 0.8)";

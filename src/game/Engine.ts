@@ -1,9 +1,9 @@
 import { Input } from "./Input";
 import { GameData } from "./GameData";
 import { GameState } from "./states/GameState";
-import { MapState } from "./states/MapState";
-import { CombatState } from "./states/CombatState";
-import { DialogState } from "./states/DialogState";
+import { LegacyRpgState } from "./states/LegacyRpgState";
+import { LegacyTacticsState } from "./states/LegacyTacticsState";
+import { LegacyDialogState } from "./states/LegacyDialogState";
 import { MenuState } from "./states/MenuState";
 import { DungeonState } from "./states/DungeonState";
 import { events } from "./EventBus";
@@ -26,9 +26,9 @@ export class Engine {
     this.data.load();
 
     this.states = {
-      "map": new MapState(this),
-      "combat": new CombatState(this),
-      "dialog": new DialogState(this),
+      "legacy_rpg": new LegacyRpgState(this),
+      "legacy_tactics": new LegacyTacticsState(this),
+      "legacy_dialog": new LegacyDialogState(this),
       "menu": new MenuState(this),
       "dungeon": new DungeonState(this),
     };
@@ -39,11 +39,11 @@ export class Engine {
     });
     
     events.on("dialog:start", (npc: any) => {
-      this.switchState("dialog", npc);
+      this.switchState("legacy_dialog", npc);
     });
     
     events.on("combat:start", () => {
-      this.switchState("combat");
+      this.switchState("legacy_tactics");
     });
   }
 
@@ -116,8 +116,10 @@ export class Engine {
 
     // Some states like dialog might want the map to draw first, but for simplicity let's just let states draw their own bg.
     // Dialog uses transparent bg over whatever was there. To make that work, we'd need to draw Map then Dialog.
-    if (this.currentState === "dialog" || this.currentState === "menu") {
-      this.states["map"].draw(this.ctx);
+    if (this.currentState === "legacy_dialog") {
+      this.states["legacy_rpg"].draw(this.ctx);
+    } else if (this.currentState === "menu") {
+      this.states["dungeon"].draw(this.ctx);
     }
     
     this.states[this.currentState].draw(this.ctx);

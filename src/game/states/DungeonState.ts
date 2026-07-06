@@ -8,6 +8,7 @@ import { WEAPONS } from "../data/weapons";
 import { generateFloor, Room } from "../FloorGenerator";
 import { events } from "../EventBus";
 import { audio } from "../audio/AudioManager";
+import { getMapData, isSolid, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
 
 import { RoomRenderer } from "../render/RoomRenderer";
 
@@ -17,6 +18,7 @@ export class DungeonState extends GameState {
   public enemies: Enemy[] = [];
   public projectiles: Projectile[] = [];
   public pickups: Pickup[] = [];
+  public currentMapData: number[] = [];
   
   private tileSize = 16;
   private roomRenderer = new RoomRenderer();
@@ -41,6 +43,12 @@ export class DungeonState extends GameState {
     this.player.currentWeaponId = savedP.currentWeaponId;
 
     this.loadRoom();
+    
+    if (params && params.fromLegacy) {
+       this.pickups.push(new Pickup(160, 140, "weapon", 1, "shotgun"));
+       this.pickups.push(new Pickup(140, 120, "mana", 50));
+       this.pickups.push(new Pickup(180, 120, "hp", 2));
+    }
   }
   
   exit() {
@@ -63,12 +71,18 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     
-    if (currentRoom && !currentRoom.cleared && currentRoom.enemies) {
-      for (const eData of currentRoom.enemies) {
-        // eData coordinates are in map scale (0-20), convert to pixels roughly
-        const type = currentRoom.type === "boss" ? "boss" : (Math.random() > 0.5 ? "melee" : "ranged");
-        this.enemies.push(new Enemy(eData.x * 16, eData.y * 16, type));
-      }
+    this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
+
+    if (currentRoom && !currentRoom.cleared) {
+       if (currentRoom.type === "treasure") {
+          this.pickups.push(new Pickup(160, 120, "weapon", 1, "shotgun"));
+          currentRoom.cleared = true;
+       } else if (currentRoom.enemies) {
+         for (const eData of currentRoom.enemies) {
+           const type = currentRoom.type === "boss" ? "boss" : (Math.random() > 0.5 ? "melee" : "ranged");
+           this.enemies.push(new Enemy(eData.x * 16, eData.y * 16, type));
+         }
+       }
     }
   }
 
@@ -106,20 +120,29 @@ export class DungeonState extends GameState {
     if (currentRoom && !currentRoom.cleared && this.enemies.length === 0) {
       currentRoom.cleared = true;
       audio.playClearRoom();
-      if (currentRoom.type === "treasure") {
-         this.pickups.push(new Pickup(160, 120, "weapon", 1, "shotgun"));
-      } else if (currentRoom.type === "boss") {
+      if (currentRoom.type === "boss") {
          this.pickups.push(new Pickup(160, 120, "weapon", 1, "laser"));
+         this.pickups.push(new Pickup(140, 120, "coin", 50));
+      } else {
+         this.pickups.push(new Pickup(160, 120, "coin", 10));
       }
     }
 
-    // Handle Game Over
+    // Handle Game Over & Interactions
     if (this.player.hp <= 0) {
       if (this.engine.input.justPressed["Enter"]) {
         // reset game
-        this.engine.data.data.floor = generateFloor(1);
-        this.engine.data.data.player.hp = this.engine.data.data.player.maxHp;
-        this.enter(this.engine); 
+        this.engine.data.resetRun();
+        this.enter(); 
+      }
+    } else if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
+      if (this.player.x > 140 && this.player.x < 180 && this.player.y > 100 && this.player.y < 140) {
+         if (this.engine.input.justPressed[" "]) {
+            this.transitionState = "fade_out";
+            this.pendingTransition = () => {
+              events.emit("state:change", currentRoom.type);
+            };
+         }
       }
     } else if (currentRoom && currentRoom.type === "boss" && currentRoom.cleared) {
       // Check next floor
@@ -132,12 +155,35 @@ export class DungeonState extends GameState {
     }
   }
   
+  private isCollidingWithMap(x: number, y: number, radius: number): boolean {
+    const points = [
+      {x: x - radius + 2, y: y},
+      {x: x + radius - 2, y: y},
+      {x: x, y: y - radius + 2},
+      {x: x, y: y + radius - 2}
+    ];
+    for (const p of points) {
+      const tx = Math.floor(p.x / TILE_SIZE);
+      const ty = Math.floor(p.y / TILE_SIZE);
+      if (tx >= 0 && tx < MAP_WIDTH && ty >= 0 && ty < MAP_HEIGHT) {
+         if (isSolid(this.currentMapData[ty * MAP_WIDTH + tx])) return true;
+      }
+    }
+    return false;
+  }
+
   private updatePlayer(dt: number) {
     if (this.player.hp <= 0) return;
     
     const inputAxis = this.engine.input.getAxis();
-    this.player.x += inputAxis.x * this.player.speed * dt;
-    this.player.y += inputAxis.y * this.player.speed * dt;
+    const px = this.player.x + inputAxis.x * this.player.speed * dt;
+    if (!this.isCollidingWithMap(px, this.player.y, this.player.radius)) {
+       this.player.x = px;
+    }
+    const py = this.player.y + inputAxis.y * this.player.speed * dt;
+    if (!this.isCollidingWithMap(this.player.x, py, this.player.radius)) {
+       this.player.y = py;
+    }
     
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -223,8 +269,10 @@ export class DungeonState extends GameState {
     let dx = 1, dy = 0;
     if (target) {
       const dist = Math.hypot(target.x - this.player.x, target.y - this.player.y);
-      dx = (target.x - this.player.x) / dist;
-      dy = (target.y - this.player.y) / dist;
+      if (dist > 0.001) {
+         dx = (target.x - this.player.x) / dist;
+         dy = (target.y - this.player.y) / dist;
+      }
     } else {
       const axis = this.engine.input.getAxis();
       if (axis.x !== 0 || axis.y !== 0) {
@@ -267,24 +315,27 @@ export class DungeonState extends GameState {
     for (const e of this.enemies) {
       const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
       
+      let nextX = e.x;
+      let nextY = e.y;
+
       if (e.type === "melee" || e.type === "boss") {
         if (dist > 2) {
-          e.x += ((this.player.x - e.x) / dist) * e.speed * dt;
-          e.y += ((this.player.y - e.y) / dist) * e.speed * dt;
+          nextX += ((this.player.x - e.x) / dist) * e.speed * dt;
+          nextY += ((this.player.y - e.y) / dist) * e.speed * dt;
         }
       } else if (e.type === "ranged") {
         if (dist > 100) {
-          e.x += ((this.player.x - e.x) / dist) * e.speed * dt;
-          e.y += ((this.player.y - e.y) / dist) * e.speed * dt;
-        } else if (dist < 80) {
-           e.x -= ((this.player.x - e.x) / dist) * e.speed * dt;
-           e.y -= ((this.player.y - e.y) / dist) * e.speed * dt;
+          nextX += ((this.player.x - e.x) / dist) * e.speed * dt;
+          nextY += ((this.player.y - e.y) / dist) * e.speed * dt;
+        } else if (dist < 80 && dist > 0.001) {
+           nextX -= ((this.player.x - e.x) / dist) * e.speed * dt;
+           nextY -= ((this.player.y - e.y) / dist) * e.speed * dt;
         }
         
         if (e.shootCooldown > 0) e.shootCooldown -= dt;
         if (e.shootCooldown <= 0) {
-          const dx = (this.player.x - e.x) / dist;
-          const dy = (this.player.y - e.y) / dist;
+          const dx = dist > 0.001 ? (this.player.x - e.x) / dist : 1;
+          const dy = dist > 0.001 ? (this.player.y - e.y) / dist : 0;
           this.projectiles.push(new Projectile(
             e.x, e.y,
             dx * 100, dy * 100,
@@ -293,6 +344,9 @@ export class DungeonState extends GameState {
           e.shootCooldown = 2.0;
         }
       }
+      
+      if (!this.isCollidingWithMap(nextX, e.y, e.radius)) e.x = nextX;
+      if (!this.isCollidingWithMap(e.x, nextY, e.radius)) e.y = nextY;
       
       if (e.type === "boss") {
          if (e.shootCooldown > 0) e.shootCooldown -= dt;
@@ -319,7 +373,7 @@ export class DungeonState extends GameState {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.update(dt);
-      if (p.life <= 0 || p.x < 0 || p.x > 320 || p.y < 0 || p.y > 240) {
+      if (p.life <= 0 || p.x < 0 || p.x > 320 || p.y < 0 || p.y > 240 || this.isCollidingWithMap(p.x, p.y, p.radius)) {
         this.projectiles.splice(i, 1);
       }
     }
@@ -336,6 +390,8 @@ export class DungeonState extends GameState {
               this.player.hp = Math.min(this.player.maxHp, this.player.hp + p.value);
            } else if (p.type === "weapon" && p.weaponId) {
               this.player.currentWeaponId = p.weaponId;
+           } else if (p.type === "coin") {
+              this.engine.data.data.player.coins += p.value;
            }
            this.pickups.splice(i, 1);
         }
@@ -431,11 +487,12 @@ export class DungeonState extends GameState {
     
     // HUD
     ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(5, 5, 140, 35);
+    ctx.fillRect(5, 5, 140, 45);
     ctx.fillStyle = "#FFF";
     ctx.font = "10px monospace";
     ctx.fillText(`HP: ${Math.max(0, this.player.hp)}/${this.player.maxHp}  AR: ${this.player.armor}/${this.player.maxArmor}`, 10, 15);
     ctx.fillText(`MP: ${this.player.mana}/${this.player.maxMana}  WPN: ${WEAPONS[this.player.currentWeaponId].name}`, 10, 30);
+    ctx.fillText(`COINS: ${this.engine.data.data.player.coins}`, 10, 45);
     
     // Minimap
     const mmSize = 6;
@@ -457,6 +514,20 @@ export class DungeonState extends GameState {
       ctx.font = "10px monospace";
       ctx.fillText("Press ENTER to restart", 160, 150);
       ctx.textAlign = "left";
+    }
+
+    if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
+       ctx.fillStyle = "rgba(142, 68, 173, 0.4)";
+       ctx.fillRect(160 - 20, 120 - 20, 40, 40);
+       ctx.fillStyle = "#FFD700";
+       ctx.font = "8px monospace";
+       ctx.textAlign = "center";
+       ctx.fillText("Old Memory / Tactical Simulation", 160, 160);
+       
+       if (this.player.x > 140 && this.player.x < 180 && this.player.y > 100 && this.player.y < 140) {
+           ctx.fillText("Press SPACE to enter", 160, 175);
+       }
+       ctx.textAlign = "left";
     }
 
     if (this.transitionAlpha > 0) {

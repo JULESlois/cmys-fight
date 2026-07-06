@@ -19,9 +19,10 @@ async function startServer() {
       
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const prompt = `You are playing the role of "${npcName}", who is a ${npcRole} in a retro pixel-art JRPG. 
-The player is level ${playerLevel} with ${playerHealth} health.
+Crucially, this world is actually an "Old Memory" or "Tactical Simulation" – a remnant of a bygone era. You are a glitching or echoing voice from the past.
+The player is a modern explorer visiting this simulation. They are level ${playerLevel} with ${playerHealth} health.
 Recent events: ${recentEvents.join(", ") || "None"}.
-Respond with 1-3 short sentences as this character. Keep it brief, like an old-school RPG dialog.`;
+Respond with 1-3 short sentences as this character. Keep it brief, like an old-school RPG dialog, but subtly hint at the fact that this is an old simulation.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",

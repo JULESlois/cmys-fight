@@ -1,6 +1,6 @@
 import { GameState } from "./GameState";
 import { events } from "../EventBus";
-import { generateFloor } from "../FloorGenerator";
+import { defaultSave } from "../GameData";
 
 export class MenuState extends GameState {
   private selection = 0;
@@ -46,11 +46,7 @@ export class MenuState extends GameState {
         break;
       case 3:
         localStorage.removeItem("retro_rpg_save");
-        this.engine.data.data = {
-          player: { x: 160, y: 120, hp: 6, maxHp: 6, armor: 5, maxArmor: 5, mana: 100, maxMana: 100, currentWeaponId: "pistol", level: 1, exp: 0 },
-          recentEvents: ["Restarted the universe"],
-          floor: generateFloor(1),
-        };
+        this.engine.data.data = JSON.parse(JSON.stringify(defaultSave));
         this.message = "Journey reset successfully!";
         break;
     }

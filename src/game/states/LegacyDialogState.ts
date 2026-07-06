@@ -1,7 +1,7 @@
 import { GameState } from "./GameState";
 import { events } from "../EventBus";
 
-export class DialogState extends GameState {
+export class LegacyDialogState extends GameState {
   private npc: any;
   private dialogLines: string[] = [];
   private currentLine: number = 0;
@@ -22,7 +22,7 @@ export class DialogState extends GameState {
 
   async fetchDialog() {
     try {
-      const p = this.engine.data.data.player;
+      const p = this.engine.data.data.legacyData.player;
       const recent = this.engine.data.data.recentEvents;
       
       const response = await fetch("/api/generate-dialog", {
@@ -87,7 +87,7 @@ export class DialogState extends GameState {
       }
     } else {
       if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
-        events.emit("state:change", "map");
+        events.emit("state:change", "legacy_rpg");
       }
     }
   }
