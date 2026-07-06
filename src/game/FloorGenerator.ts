@@ -67,19 +67,6 @@ export function generateFloor(depth: number): FloorData {
         type = "boss";
       }
 
-      let enemies: {x: number; y: number}[] = [];
-      if (type === "combat") {
-        const numEnemies = 2 + Math.floor(Math.random() * 3); // 2 to 4 enemies
-        for (let i = 0; i < numEnemies; i++) {
-          enemies.push({
-            x: 4 + Math.floor(Math.random() * 12), // 4 to 15
-            y: 4 + Math.floor(Math.random() * 7)   // 4 to 10
-          });
-        }
-      } else if (type === "boss") {
-        enemies.push({ x: 10, y: 7 }); // Boss in the center
-      }
-
       const newRoom: Room = {
         id: `${newX},${newY}`,
         x: newX,
@@ -87,8 +74,7 @@ export function generateFloor(depth: number): FloorData {
         type,
         cleared: type !== "combat" && type !== "boss" && type !== "legacy_rpg" && type !== "legacy_tactics" && type !== "treasure", 
         doors: { up: false, down: false, left: false, right: false },
-        enemies
-      };
+        };
       
       rooms.push(newRoom);
       placedRooms++;

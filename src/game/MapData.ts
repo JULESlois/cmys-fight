@@ -1,88 +1,43 @@
 import { Room } from "./FloorGenerator";
+import { ROOM_TEMPLATES, RoomTemplate } from "./data/roomTemplates";
 
 export const TILE_SIZE = 16;
 export const MAP_WIDTH = 20;
 export const MAP_HEIGHT = 15;
 
-const forestMapData = [
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,1,1,1,1,1,1,1,4,0,0,4,1,1,1,1,1,1,1,1,
-  1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,
-  1,0,2,2,2,0,0,0,2,2,2,2,0,0,0,2,2,2,0,1,
-  1,0,2,0,2,0,0,0,2,0,0,2,0,0,0,2,0,2,0,1,
-  1,0,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,0,1,
-  1,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,1,
-  1,1,4,0,0,4,1,0,2,0,0,2,0,1,4,0,0,4,1,1,
-  1,0,0,0,0,0,1,0,2,2,2,2,0,1,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,3,3,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3,3,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-];
+export function getRoomTemplate(currentRoom: Room | undefined): RoomTemplate {
+  if (!currentRoom) return ROOM_TEMPLATES.find(t => t.id === "cross_room")!;
 
-const dungeonMapData = [
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,1,1,4,0,0,0,0,1,1,1,1,0,0,0,0,4,1,1,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-  1,4,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,4,1,
-  1,0,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,1,
-  1,0,0,2,2,2,2,0,0,1,1,0,0,2,2,2,2,0,0,1,
-  1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-  1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,
-  1,0,0,2,2,2,2,0,0,1,1,0,0,2,2,2,2,0,0,1,
-  1,4,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,4,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-  1,1,1,4,0,0,0,0,1,1,1,1,0,0,0,0,4,1,1,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-];
+  let validTemplates = ROOM_TEMPLATES.filter(t => t.allowedRoomTypes.includes(currentRoom.type));
 
-const snowMapData = [
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,
-  1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1,
-  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
-  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
-  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
-  1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1,
-  1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,
-  1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,
-  1,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1,
-  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
-  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
-  1,0,3,3,3,3,0,0,0,2,2,0,0,0,3,3,3,3,0,1,
-  1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-];
+  if (validTemplates.length === 0) {
+     validTemplates = ROOM_TEMPLATES;
+  }
 
-const lavaMapData = [
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,1,1,1,1,1,1,1,4,1,1,4,1,1,1,1,1,1,1,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
-  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
-  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
-  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
-  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
-  1,0,0,3,3,3,3,3,3,0,0,3,3,3,3,3,3,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,1,1,1,1,1,1,1,4,1,1,4,1,1,1,1,1,1,1,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-];
+  // Filter by doors if not 'any'
+  let matchedDoors = validTemplates.filter(t => {
+     if (t.doorMask === "any") return true;
+     return t.doorMask.left === currentRoom.doors.left &&
+            t.doorMask.right === currentRoom.doors.right &&
+            t.doorMask.up === currentRoom.doors.up &&
+            t.doorMask.down === currentRoom.doors.down;
+  });
+
+  if (matchedDoors.length === 0) {
+     matchedDoors = validTemplates.filter(t => t.doorMask === "any");
+  }
+  
+  if (matchedDoors.length === 0) {
+     matchedDoors = ROOM_TEMPLATES.filter(t => t.doorMask === "any");
+  }
+
+  return matchedDoors[0] || ROOM_TEMPLATES[0];
+}
 
 export function getMapData(currentRoom: Room | undefined, theme: string): number[] {
-  let baseMap = forestMapData;
-  if (theme === "dungeon") baseMap = dungeonMapData;
-  else if (theme === "snow") baseMap = snowMapData;
-  else if (theme === "lava") baseMap = lavaMapData;
-
-  const data = [...baseMap];
+  const template = getRoomTemplate(currentRoom);
+  const data = [...template.tiles];
+  
   if (currentRoom) {
     if (currentRoom.doors.up) {
       data[0 * MAP_WIDTH + 9] = 2;
@@ -112,8 +67,6 @@ export function getMapData(currentRoom: Room | undefined, theme: string): number
   return data;
 }
 
-// 1 = solid wall
-// 3 = water/lava hazard (slows down, doesn't block projectiles)
 export function isSolid(tileId: number): boolean {
   return tileId === 1;
 }

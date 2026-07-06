@@ -16,6 +16,10 @@ export class Player {
   public currentWeaponId: string = "pistol";
   public fireCooldown: number = 0;
   
+  public facingLeft: boolean = false;
+  public muzzleFlash: number = 0;
+  public hitFlash: number = 0;
+
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;

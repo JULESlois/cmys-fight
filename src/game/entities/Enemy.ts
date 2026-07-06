@@ -9,6 +9,7 @@ export class Enemy {
   public type: "melee" | "ranged" | "boss";
   public shootCooldown: number = 0;
   public state: "idle" | "chase" | "flee" = "chase";
+  public hitFlash: number = 0;
 
   private static nextId = 0;
 
