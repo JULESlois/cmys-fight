@@ -11,6 +11,7 @@ import { audio } from "../audio/AudioManager";
 import { getMapData, isSolid, isHazard, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, getRoomTemplate } from "../MapData";
 
 import { RoomRenderer } from "../render/RoomRenderer";
+import { PortalRenderer } from "../render/PortalRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
 import { HudRenderer } from "../render/HudRenderer";
 
@@ -62,12 +63,16 @@ export class DungeonState extends GameState {
           audio.playClearRoom();
           if (!this.engine.data.data.legacyData.legacyRewardsClaimed.includes(sourceRoom.id)) {
              this.engine.data.data.legacyData.legacyRewardsClaimed.push(sourceRoom.id);
+             const template = getRoomTemplate(sourceRoom);
+             const pts = template.pickupSpawnPoints;
+             const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 8.5 };
+             const p2 = pts.length > 1 ? pts[1] : { x: 8.5, y: 7.5 };
              if (params.legacyType === "legacy_rpg") {
-                this.pickups.push(new Pickup(160, 140, "mana", 50));
-                this.pickups.push(new Pickup(140, 120, "coin", 50));
+                this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "mana", 50));
+                this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
              } else if (params.legacyType === "legacy_tactics") {
-                this.pickups.push(new Pickup(160, 140, "weapon", 1, "laser"));
-                this.pickups.push(new Pickup(140, 120, "coin", 100));
+                this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
+                this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 100));
              }
           }
        }
@@ -76,6 +81,7 @@ export class DungeonState extends GameState {
   
   exit() {
     this.syncPlayerState();
+    this.syncRoomState();
   }
 
   private syncPlayerState() {
@@ -89,6 +95,8 @@ export class DungeonState extends GameState {
   }
   
   private loadRoom() {
+    this.syncRoomState(); // Sync previous room before switching
+    
     this.projectiles = [];
     this.pickups = [];
     this.enemies = [];
@@ -102,12 +110,17 @@ export class DungeonState extends GameState {
 
     if (currentRoom && !currentRoom.cleared) {
        if (currentRoom.type === "treasure") {
-          this.pickups.push(new Pickup(160, 120, "weapon", 1, "shotgun"));
+          const pts = template.pickupSpawnPoints;
+          const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
+          this.pickups.push(new Pickup(pt.x * 16 + 8, pt.y * 16 + 8, "weapon", 1, "shotgun"));
           currentRoom.cleared = true;
        } else {
-         for (const pt of template.enemySpawnPoints) {
-           const type = currentRoom.type === "boss" ? "boss" : (Math.random() > 0.5 ? "melee" : "ranged");
-           this.enemies.push(new Enemy(pt.x * 16 + 8, pt.y * 16 + 8, type));
+         if (currentRoom.enemies) {
+            for (const e of currentRoom.enemies) {
+               const enemy = new Enemy(e.x, e.y, e.type);
+               if (e.hp !== undefined) enemy.hp = e.hp;
+               this.enemies.push(enemy);
+            }
          }
        }
     }
@@ -119,6 +132,14 @@ export class DungeonState extends GameState {
        } else {
          this.portal = { x: 160, y: 120 };
        }
+    }
+  }
+
+  private syncRoomState() {
+    const floor = this.engine.data.data.floor;
+    const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    if (currentRoom && !currentRoom.cleared && currentRoom.type !== "treasure" && currentRoom.type !== "start") {
+       currentRoom.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
     }
   }
 
@@ -174,69 +195,77 @@ export class DungeonState extends GameState {
         currentRoom.cleared = true;
         this.roomClearTimer = 2.0;
         audio.playClearRoom();
+        const template = getRoomTemplate(currentRoom);
         if (currentRoom.type === "boss") {
-           this.pickups.push(new Pickup(160, 120, "weapon", 1, "laser"));
-           this.pickups.push(new Pickup(140, 120, "coin", 50));
-           const template = getRoomTemplate(currentRoom);
+           const pts = template.pickupSpawnPoints;
+           const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
+           const p2 = pts.length > 1 ? pts[1] : { x: 8, y: 7.5 };
+           this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
+           this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
            if (template.portalSpawnPoint) {
              this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8 };
            } else {
              this.portal = { x: 160, y: 120 };
            }
         } else {
-           this.pickups.push(new Pickup(160, 120, "coin", 10));
+           const pts = template.pickupSpawnPoints;
+           const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
+           this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "coin", 10));
         }
       }
     }
 
     // Handle Game Over & Interactions
-    let isInteracting = false;
     if (this.player.hp <= 0) {
       if (this.engine.input.justPressed["Enter"]) {
-        // reset game
         this.engine.data.resetRun();
         this.enter(); 
       }
-    } else if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
+    } else {
+      const target = this.getInteractTarget();
+      if (target && this.engine.input.justPressed[" "]) {
+         if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
+            this.transitionState = "fade_out";
+            this.pendingTransition = () => {
+              events.emit("state:change", target.type, {
+                returnState: "dungeon",
+                sourceRoomId: currentRoom.id,
+                legacyType: target.type
+              });
+            };
+         } else if (target.type === "portal") {
+            this.engine.data.data.floor = generateFloor(floor.depth + 1);
+            this.loadRoom();
+            return;
+         }
+      }
+    }
+  }
+  
+    private getInteractTarget(): { type: string, x: number, y: number } | null {
+    const floor = this.engine.data.data.floor;
+    const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+
+    if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
       const template = getRoomTemplate(currentRoom);
       const lx = template.legacySpawnPoint ? template.legacySpawnPoint.x * 16 + 8 : 160;
       const ly = template.legacySpawnPoint ? template.legacySpawnPoint.y * 16 + 8 : 120;
       if (Math.abs(this.player.x - lx) < 20 && Math.abs(this.player.y - ly) < 20) {
-         isInteracting = true;
-         if (this.engine.input.justPressed[" "]) {
-            this.transitionState = "fade_out";
-            this.pendingTransition = () => {
-              events.emit("state:change", currentRoom.type, {
-                returnState: "dungeon",
-                sourceRoomId: currentRoom.id,
-                legacyType: currentRoom.type
-              });
-            };
-         }
+         return { type: currentRoom.type, x: lx, y: ly };
       }
-    } else if (this.portal) {
+    }
+
+    if (this.portal) {
       const dx = this.player.x - this.portal.x;
       const dy = this.player.y - this.portal.y;
       if (Math.sqrt(dx*dx + dy*dy) < 30) {
-         isInteracting = true;
+         return { type: "portal", x: this.portal.x, y: this.portal.y };
       }
     }
-    
-// Check portal interaction
-    if (this.engine.input.justPressed[" "]) {
-       if (isInteracting && this.portal) {
-          const dx = this.player.x - this.portal.x;
-          const dy = this.player.y - this.portal.y;
-          if (Math.sqrt(dx*dx + dy*dy) < 30) {
-              const { generateFloor } = require("../FloorGenerator");
-              this.engine.data.data.floor = generateFloor(floor.depth + 1);
-              this.loadRoom();
-              return;
-          }
-       }
-    }
+
+    return null;
   }
-  
+
   private isCollidingWithMap(x: number, y: number, radius: number): boolean {
     const points = [
       {x: x - radius + 2, y: y},
@@ -340,20 +369,7 @@ export class DungeonState extends GameState {
       this.player.fireCooldown -= dt;
     }
     
-    let isInteracting = false;
-    if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
-      const template = getRoomTemplate(currentRoom);
-      const lx = template.legacySpawnPoint ? template.legacySpawnPoint.x * 16 + 8 : 160;
-      const ly = template.legacySpawnPoint ? template.legacySpawnPoint.y * 16 + 8 : 120;
-      if (Math.abs(this.player.x - lx) < 20 && Math.abs(this.player.y - ly) < 20) {
-         isInteracting = true;
-      }
-    } else if (currentRoom && currentRoom.type === "boss" && currentRoom.cleared) {
-      if (this.player.x > 140 && this.player.x < 180 && this.player.y < 30) {
-         isInteracting = true;
-      }
-    }
-
+    const isInteracting = this.getInteractTarget() !== null;
     if (this.engine.input.isDown(" ") && this.player.fireCooldown <= 0 && !isInteracting) {
       this.fireWeapon();
     }
@@ -577,6 +593,14 @@ export class DungeonState extends GameState {
 
     for (const e of this.enemies) {
        EntityRenderer.drawEnemy(ctx, e, time, floor.theme || 'forest');
+    }
+    
+    if (this.portal) {
+      PortalRenderer.drawPortal(ctx, this.portal, this.portalTime, floor.theme || 'forest');
+      const interact = this.getInteractTarget();
+      if (interact && interact.type === "portal") {
+         PortalRenderer.drawInteractText(ctx, this.portal, this.portalTime);
+      }
     }
     
     if (this.player.hp > 0) {

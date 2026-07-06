@@ -1,11 +1,14 @@
+import { ROOM_TEMPLATES } from "./data/roomTemplates";
 export interface Room {
   id: string;
   x: number;
   y: number;
   type: "start" | "combat" | "treasure" | "boss" | "npc" | "legacy_rpg" | "legacy_tactics";
   cleared: boolean;
+  templateId?: string;
+  visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
-  enemies?: { x: number; y: number }[];
+  enemies?: { x: number, y: number, type: "melee" | "ranged" | "boss", hp?: number }[];
 }
 
 export interface FloorData {
@@ -87,6 +90,54 @@ export function generateFloor(depth: number): FloorData {
     if (getRoom(r.x, r.y + 1)) r.doors.down = true;
     if (getRoom(r.x - 1, r.y)) r.doors.left = true;
     if (getRoom(r.x + 1, r.y)) r.doors.right = true;
+  }
+
+
+  // Assign templates and enemies
+  for (const r of rooms) {
+     let validTemplates = ROOM_TEMPLATES.filter(t => t.allowedRoomTypes.includes(r.type));
+     if (validTemplates.length === 0) validTemplates = ROOM_TEMPLATES;
+     
+     let matchedDoors = validTemplates.filter(t => {
+       if (t.doorMask === "any") return true;
+       return t.doorMask.left === r.doors.left &&
+              t.doorMask.right === r.doors.right &&
+              t.doorMask.up === r.doors.up &&
+              t.doorMask.down === r.doors.down;
+     });
+     
+     if (matchedDoors.length === 0) {
+       matchedDoors = validTemplates.filter(t => t.doorMask === "any");
+     }
+     if (matchedDoors.length === 0) {
+       matchedDoors = ROOM_TEMPLATES.filter(t => t.doorMask === "any");
+     }
+     if (matchedDoors.length === 0) {
+       matchedDoors = ROOM_TEMPLATES;
+     }
+
+     // Weighted random
+     let totalWeight = matchedDoors.reduce((sum, t) => sum + t.weight, 0);
+     let rand = Math.random() * totalWeight;
+     let selected = matchedDoors[0];
+     for (const t of matchedDoors) {
+        rand -= t.weight;
+        if (rand <= 0) {
+           selected = t;
+           break;
+        }
+     }
+     
+     r.templateId = selected.id;
+     
+     // Initialize enemies
+     r.enemies = [];
+     if (r.type !== "treasure" && r.type !== "start") {
+        for (const pt of selected.enemySpawnPoints) {
+           const eType = r.type === "boss" ? "boss" : (Math.random() > 0.5 ? "melee" : "ranged");
+           r.enemies.push({ x: pt.x * 16 + 8, y: pt.y * 16 + 8, type: eType });
+        }
+     }
   }
 
   return {
