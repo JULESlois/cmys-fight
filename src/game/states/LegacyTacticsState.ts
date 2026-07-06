@@ -32,9 +32,11 @@ export class LegacyTacticsState extends GameState {
   private message = "TACTICAL BATTLE START!";
   private timer = 0;
   private params: any;
+  private battleResult: "win" | "loss" | null = null;
 
   enter(params?: any) {
     this.params = params;
+    this.battleResult = null;
     this.px = 2;
     this.py = 4;
     this.phase = "player_turn";
@@ -105,10 +107,11 @@ export class LegacyTacticsState extends GameState {
   update(dt: number) {
     if (this.phase === "end") {
       if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
-        events.emit("state:change", "dungeon", {
+        events.emit("state:change", this.params?.returnState || "dungeon", {
           fromLegacy: true,
           legacyType: "legacy_tactics",
-          sourceRoomId: this.params?.sourceRoomId
+          sourceRoomId: this.params?.sourceRoomId,
+          result: this.battleResult
         });
       }
       return;
@@ -236,8 +239,9 @@ export class LegacyTacticsState extends GameState {
 
     // Check game over
     if (p.hp <= 0) {
+      this.battleResult = "loss";
       p.hp = p.maxHp; // Auto revive for good game-loop flow
-      this.message = "Shattered! Revived at the shrine.";
+      this.message = "Shattered! Revived at the shrine. Press SPACE to return.";
       this.phase = "end";
       this.engine.data.logEvent("Defeated in combat");
     } else {
@@ -248,6 +252,7 @@ export class LegacyTacticsState extends GameState {
   }
 
   private winBattle() {
+    this.battleResult = "win";
     const p = this.engine.data.data.legacyData.player;
     p.exp += 8;
     this.message = "VICTORY! Gained 8 EXP. Press SPACE to return.";

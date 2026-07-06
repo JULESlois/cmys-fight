@@ -38,8 +38,8 @@ export class Engine {
       this.switchState(newState, params);
     });
     
-    events.on("dialog:start", (npc: any) => {
-      this.switchState("legacy_dialog", npc);
+    events.on("dialog:start", (payload: any) => {
+      this.switchState("legacy_dialog", payload);
     });
     
   }

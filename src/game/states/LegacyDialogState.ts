@@ -9,9 +9,11 @@ export class LegacyDialogState extends GameState {
   private displayedText: string = "";
   private typeTimer: number = 0;
   private animTimer: number = 0;
+  private payload: any;
 
-  enter(npc: any) {
-    this.npc = npc;
+  enter(payload: any) {
+    this.payload = payload;
+    this.npc = payload.npc;
     this.dialogLines = [];
     this.currentLine = 0;
     this.displayedText = "";
@@ -87,7 +89,10 @@ export class LegacyDialogState extends GameState {
       }
     } else {
       if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
-        events.emit("state:change", "legacy_rpg");
+        events.emit("state:change", this.payload.returnState || "legacy_rpg", {
+           sourceRoomId: this.payload.sourceRoomId,
+           legacyType: this.payload.legacyType
+        });
       }
     }
   }

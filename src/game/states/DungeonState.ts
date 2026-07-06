@@ -8,7 +8,7 @@ import { WEAPONS } from "../data/weapons";
 import { generateFloor, Room } from "../FloorGenerator";
 import { events } from "../EventBus";
 import { audio } from "../audio/AudioManager";
-import { getMapData, isSolid, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
+import { getMapData, isSolid, isHazard, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
 
 import { RoomRenderer } from "../render/RoomRenderer";
 
@@ -33,31 +33,36 @@ export class DungeonState extends GameState {
   
   enter(params?: any) {
     const savedP = this.engine.data.data.player;
-    this.player = new Player(params && params.resume ? savedP.x : 160, params && params.resume ? savedP.y : 120);
-    this.player.hp = savedP.hp;
-    this.player.maxHp = savedP.maxHp;
-    this.player.armor = savedP.armor;
-    this.player.maxArmor = savedP.maxArmor;
-    this.player.mana = savedP.mana;
-    this.player.maxMana = savedP.maxMana;
-    this.player.currentWeaponId = savedP.currentWeaponId;
+    if (!(params && params.resume && this.player)) {
+      this.player = new Player(params && params.resume ? savedP.x : 160, params && params.resume ? savedP.y : 120);
+      this.player.hp = savedP.hp;
+      this.player.maxHp = savedP.maxHp;
+      this.player.armor = savedP.armor;
+      this.player.maxArmor = savedP.maxArmor;
+      this.player.mana = savedP.mana;
+      this.player.maxMana = savedP.maxMana;
+      this.player.currentWeaponId = savedP.currentWeaponId;
+    }
 
     if (!(params && params.resume)) {
        this.loadRoom();
     }
     
-    if (params && params.fromLegacy) {
+    if (params && params.fromLegacy && params.result !== "loss") {
        const floor = this.engine.data.data.floor;
        const sourceRoom = floor.rooms.find((r: Room) => r.id === params.sourceRoomId);
        if (sourceRoom && !sourceRoom.cleared) {
           sourceRoom.cleared = true;
           audio.playClearRoom();
-          if (params.legacyType === "legacy_rpg") {
-             this.pickups.push(new Pickup(160, 140, "mana", 50));
-             this.pickups.push(new Pickup(140, 120, "coin", 50));
-          } else if (params.legacyType === "legacy_tactics") {
-             this.pickups.push(new Pickup(160, 140, "weapon", 1, "laser"));
-             this.pickups.push(new Pickup(140, 120, "coin", 100));
+          if (!this.engine.data.data.legacyData.legacyRewardsClaimed.includes(sourceRoom.id)) {
+             this.engine.data.data.legacyData.legacyRewardsClaimed.push(sourceRoom.id);
+             if (params.legacyType === "legacy_rpg") {
+                this.pickups.push(new Pickup(160, 140, "mana", 50));
+                this.pickups.push(new Pickup(140, 120, "coin", 50));
+             } else if (params.legacyType === "legacy_tactics") {
+                this.pickups.push(new Pickup(160, 140, "weapon", 1, "laser"));
+                this.pickups.push(new Pickup(140, 120, "coin", 100));
+             }
           }
        }
     }
@@ -145,6 +150,7 @@ export class DungeonState extends GameState {
     }
 
     // Handle Game Over & Interactions
+    let isInteracting = false;
     if (this.player.hp <= 0) {
       if (this.engine.input.justPressed["Enter"]) {
         // reset game
@@ -153,6 +159,7 @@ export class DungeonState extends GameState {
       }
     } else if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
       if (this.player.x > 140 && this.player.x < 180 && this.player.y > 100 && this.player.y < 140) {
+         isInteracting = true;
          if (this.engine.input.justPressed[" "]) {
             this.transitionState = "fade_out";
             this.pendingTransition = () => {
@@ -167,6 +174,7 @@ export class DungeonState extends GameState {
     } else if (currentRoom && currentRoom.type === "boss" && currentRoom.cleared) {
       // Check next floor
       if (this.player.x > 140 && this.player.x < 180 && this.player.y < 30) {
+         isInteracting = true;
          if (this.engine.input.justPressed[" "]) {
             this.engine.data.data.floor = generateFloor(floor.depth + 1);
             this.enter(this.engine);
@@ -196,11 +204,22 @@ export class DungeonState extends GameState {
     if (this.player.hp <= 0) return;
     
     const inputAxis = this.engine.input.getAxis();
-    const px = this.player.x + inputAxis.x * this.player.speed * dt;
+    
+    // Check if player is on hazard
+    const cx = Math.floor(this.player.x / TILE_SIZE);
+    const cy = Math.floor(this.player.y / TILE_SIZE);
+    let currentSpeed = this.player.speed;
+    if (cx >= 0 && cx < MAP_WIDTH && cy >= 0 && cy < MAP_HEIGHT) {
+      if (isHazard(this.currentMapData[cy * MAP_WIDTH + cx])) {
+        currentSpeed *= 0.5;
+      }
+    }
+
+    const px = this.player.x + inputAxis.x * currentSpeed * dt;
     if (!this.isCollidingWithMap(px, this.player.y, this.player.radius)) {
        this.player.x = px;
     }
-    const py = this.player.y + inputAxis.y * this.player.speed * dt;
+    const py = this.player.y + inputAxis.y * currentSpeed * dt;
     if (!this.isCollidingWithMap(this.player.x, py, this.player.radius)) {
        this.player.y = py;
     }
@@ -267,7 +286,18 @@ export class DungeonState extends GameState {
       this.player.fireCooldown -= dt;
     }
     
-    if (this.engine.input.isDown(" ") && this.player.fireCooldown <= 0) {
+    let isInteracting = false;
+    if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
+      if (this.player.x > 140 && this.player.x < 180 && this.player.y > 100 && this.player.y < 140) {
+         isInteracting = true;
+      }
+    } else if (currentRoom && currentRoom.type === "boss" && currentRoom.cleared) {
+      if (this.player.x > 140 && this.player.x < 180 && this.player.y < 30) {
+         isInteracting = true;
+      }
+    }
+
+    if (this.engine.input.isDown(" ") && this.player.fireCooldown <= 0 && !isInteracting) {
       this.fireWeapon();
     }
 
@@ -337,19 +367,28 @@ export class DungeonState extends GameState {
       
       let nextX = e.x;
       let nextY = e.y;
+      
+      let currentSpeed = e.speed;
+      const cx = Math.floor(e.x / TILE_SIZE);
+      const cy = Math.floor(e.y / TILE_SIZE);
+      if (cx >= 0 && cx < MAP_WIDTH && cy >= 0 && cy < MAP_HEIGHT) {
+        if (isHazard(this.currentMapData[cy * MAP_WIDTH + cx])) {
+          currentSpeed *= 0.5;
+        }
+      }
 
       if (e.type === "melee" || e.type === "boss") {
         if (dist > 2) {
-          nextX += ((this.player.x - e.x) / dist) * e.speed * dt;
-          nextY += ((this.player.y - e.y) / dist) * e.speed * dt;
+          nextX += ((this.player.x - e.x) / dist) * currentSpeed * dt;
+          nextY += ((this.player.y - e.y) / dist) * currentSpeed * dt;
         }
       } else if (e.type === "ranged") {
         if (dist > 100) {
-          nextX += ((this.player.x - e.x) / dist) * e.speed * dt;
-          nextY += ((this.player.y - e.y) / dist) * e.speed * dt;
+          nextX += ((this.player.x - e.x) / dist) * currentSpeed * dt;
+          nextY += ((this.player.y - e.y) / dist) * currentSpeed * dt;
         } else if (dist < 80 && dist > 0.001) {
-           nextX -= ((this.player.x - e.x) / dist) * e.speed * dt;
-           nextY -= ((this.player.y - e.y) / dist) * e.speed * dt;
+           nextX -= ((this.player.x - e.x) / dist) * currentSpeed * dt;
+           nextY -= ((this.player.y - e.y) / dist) * currentSpeed * dt;
         }
         
         if (e.shootCooldown > 0) e.shootCooldown -= dt;

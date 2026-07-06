@@ -66,7 +66,7 @@ const TILE_OBSTACLE: { [key: number]: boolean } = {
   0: false,
   1: true,
   2: false,
-  3: true,
+  3: false, // water/lava is passable now
   4: true,
   5: false,
 };
@@ -238,7 +238,12 @@ export class LegacyRpgState extends GameState {
 
     for (const npc of npcs) {
       if (Math.abs(npc.x - px) + Math.abs(npc.y - py) === 1) {
-        events.emit("dialog:start", npc);
+        events.emit("dialog:start", {
+          npc,
+          returnState: "legacy_rpg",
+          sourceRoomId: this.params?.sourceRoomId,
+          legacyType: "legacy_rpg"
+        });
         return;
       }
     }
@@ -255,7 +260,8 @@ export class LegacyRpgState extends GameState {
       events.emit("state:change", "dungeon", {
         fromLegacy: true,
         legacyType: "legacy_rpg",
-        sourceRoomId: this.params?.sourceRoomId
+        sourceRoomId: this.params?.sourceRoomId,
+        result: "win"
       });
       return;
     }
@@ -282,7 +288,12 @@ export class LegacyRpgState extends GameState {
             // Remove the enemy
             currentRoom.enemies.splice(enemyIndex, 1);
             // Trigger combat
-            events.emit("state:change", "legacy_tactics", { sourceRoomId: this.params?.sourceRoomId });
+            events.emit("state:change", "legacy_tactics", { 
+              sourceRoomId: this.params?.sourceRoomId,
+              returnState: "legacy_rpg",
+              legacyType: "legacy_tactics",
+              fromLegacyRpg: true
+            });
           }
         }
 

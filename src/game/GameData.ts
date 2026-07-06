@@ -27,6 +27,7 @@ export interface GameSave {
       exp: number;
     };
     clearedRooms: string[];
+    legacyRewardsClaimed: string[];
   };
 }
 
@@ -57,6 +58,7 @@ export const defaultSave: GameSave = {
       exp: 0,
     },
     clearedRooms: [],
+    legacyRewardsClaimed: [],
   }
 };
 
