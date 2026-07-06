@@ -31,8 +31,10 @@ export class LegacyTacticsState extends GameState {
   
   private message = "TACTICAL BATTLE START!";
   private timer = 0;
+  private params: any;
 
-  enter() {
+  enter(params?: any) {
+    this.params = params;
     this.px = 2;
     this.py = 4;
     this.phase = "player_turn";
@@ -103,7 +105,11 @@ export class LegacyTacticsState extends GameState {
   update(dt: number) {
     if (this.phase === "end") {
       if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
-        events.emit("state:change", "legacy_rpg");
+        events.emit("state:change", "dungeon", {
+          fromLegacy: true,
+          legacyType: "legacy_tactics",
+          sourceRoomId: this.params?.sourceRoomId
+        });
       }
       return;
     }
@@ -244,32 +250,16 @@ export class LegacyTacticsState extends GameState {
   private winBattle() {
     const p = this.engine.data.data.legacyData.player;
     p.exp += 8;
-    this.message = "VICTORY! Gained 8 EXP.";
+    this.message = "VICTORY! Gained 8 EXP. Press SPACE to return.";
     this.phase = "end";
     this.engine.data.logEvent("Vanquished pixel ghosts");
-
-    // Check if room should be cleared
-    const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-    if (currentRoom) {
-      if (!currentRoom.enemies || currentRoom.enemies.length === 0) {
-        currentRoom.cleared = true;
-        if (currentRoom.type === "boss") {
-          this.message = "FLOOR CLEARED! Moving deeper...";
-          setTimeout(() => {
-            this.engine.data.data.floor = generateFloor(floor.depth + 1);
-            p.hp = p.maxHp; // Heal fully on floor clear
-          }, 2000);
-        }
-      }
-    }
 
     if (p.exp >= 20) {
       p.level++;
       p.maxHp += 5;
       p.hp = p.maxHp;
       p.exp = 0;
-      this.message = "LEVEL UP! Health fully restored!";
+      this.message = "LEVEL UP! Health fully restored! Press SPACE to return.";
     }
   }
 

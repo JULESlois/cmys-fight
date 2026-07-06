@@ -33,7 +33,7 @@ export class DungeonState extends GameState {
   
   enter(params?: any) {
     const savedP = this.engine.data.data.player;
-    this.player = new Player(160, 120);
+    this.player = new Player(params && params.resume ? savedP.x : 160, params && params.resume ? savedP.y : 120);
     this.player.hp = savedP.hp;
     this.player.maxHp = savedP.maxHp;
     this.player.armor = savedP.armor;
@@ -42,12 +42,24 @@ export class DungeonState extends GameState {
     this.player.maxMana = savedP.maxMana;
     this.player.currentWeaponId = savedP.currentWeaponId;
 
-    this.loadRoom();
+    if (!(params && params.resume)) {
+       this.loadRoom();
+    }
     
     if (params && params.fromLegacy) {
-       this.pickups.push(new Pickup(160, 140, "weapon", 1, "shotgun"));
-       this.pickups.push(new Pickup(140, 120, "mana", 50));
-       this.pickups.push(new Pickup(180, 120, "hp", 2));
+       const floor = this.engine.data.data.floor;
+       const sourceRoom = floor.rooms.find((r: Room) => r.id === params.sourceRoomId);
+       if (sourceRoom && !sourceRoom.cleared) {
+          sourceRoom.cleared = true;
+          audio.playClearRoom();
+          if (params.legacyType === "legacy_rpg") {
+             this.pickups.push(new Pickup(160, 140, "mana", 50));
+             this.pickups.push(new Pickup(140, 120, "coin", 50));
+          } else if (params.legacyType === "legacy_tactics") {
+             this.pickups.push(new Pickup(160, 140, "weapon", 1, "laser"));
+             this.pickups.push(new Pickup(140, 120, "coin", 100));
+          }
+       }
     }
   }
   
@@ -57,6 +69,8 @@ export class DungeonState extends GameState {
 
   private syncPlayerState() {
     const savedP = this.engine.data.data.player;
+    savedP.x = this.player.x;
+    savedP.y = this.player.y;
     savedP.hp = this.player.hp;
     savedP.armor = this.player.armor;
     savedP.mana = this.player.mana;
@@ -118,13 +132,15 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     if (currentRoom && !currentRoom.cleared && this.enemies.length === 0) {
-      currentRoom.cleared = true;
-      audio.playClearRoom();
-      if (currentRoom.type === "boss") {
-         this.pickups.push(new Pickup(160, 120, "weapon", 1, "laser"));
-         this.pickups.push(new Pickup(140, 120, "coin", 50));
-      } else {
-         this.pickups.push(new Pickup(160, 120, "coin", 10));
+      if (currentRoom.type !== "legacy_rpg" && currentRoom.type !== "legacy_tactics" && currentRoom.type !== "npc") {
+        currentRoom.cleared = true;
+        audio.playClearRoom();
+        if (currentRoom.type === "boss") {
+           this.pickups.push(new Pickup(160, 120, "weapon", 1, "laser"));
+           this.pickups.push(new Pickup(140, 120, "coin", 50));
+        } else {
+           this.pickups.push(new Pickup(160, 120, "coin", 10));
+        }
       }
     }
 
@@ -140,7 +156,11 @@ export class DungeonState extends GameState {
          if (this.engine.input.justPressed[" "]) {
             this.transitionState = "fade_out";
             this.pendingTransition = () => {
-              events.emit("state:change", currentRoom.type);
+              events.emit("state:change", currentRoom.type, {
+                returnState: "dungeon",
+                sourceRoomId: currentRoom.id,
+                legacyType: currentRoom.type
+              });
             };
          }
       }

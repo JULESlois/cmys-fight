@@ -102,8 +102,10 @@ export class LegacyRpgState extends GameState {
   private pVisY: number = -1;
   private pDir: "up" | "down" | "left" | "right" = "down";
   private pWalkAnim: number = 0;
+  private params: any;
 
-  enter() {
+  enter(params?: any) {
+    this.params = params;
     this.spawnParticles(15);
     this.transitionState = "none";
     this.transitionAlpha = 0;
@@ -250,11 +252,11 @@ export class LegacyRpgState extends GameState {
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
 
     if (newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) {
-      if (currentRoom) {
-         currentRoom.cleared = true;
-         this.engine.data.data.legacyData.clearedRooms.push(currentRoom.id);
-      }
-      events.emit("state:change", "dungeon", { fromLegacy: true });
+      events.emit("state:change", "dungeon", {
+        fromLegacy: true,
+        legacyType: "legacy_rpg",
+        sourceRoomId: this.params?.sourceRoomId
+      });
       return;
     }
 
@@ -280,7 +282,7 @@ export class LegacyRpgState extends GameState {
             // Remove the enemy
             currentRoom.enemies.splice(enemyIndex, 1);
             // Trigger combat
-            events.emit("combat:start");
+            events.emit("state:change", "legacy_tactics", { sourceRoomId: this.params?.sourceRoomId });
           }
         }
 

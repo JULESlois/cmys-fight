@@ -42,9 +42,6 @@ export class Engine {
       this.switchState("legacy_dialog", npc);
     });
     
-    events.on("combat:start", () => {
-      this.switchState("legacy_tactics");
-    });
   }
 
   public init(canvas: HTMLCanvasElement) {

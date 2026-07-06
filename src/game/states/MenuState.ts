@@ -27,14 +27,14 @@ export class MenuState extends GameState {
     }
     
     if (this.engine.input.justPressed["Escape"]) {
-      events.emit("state:change", "dungeon");
+      events.emit("state:change", "dungeon", { resume: true });
     }
   }
   
   private handleSelect() {
     switch (this.selection) {
       case 0:
-        events.emit("state:change", "dungeon");
+        events.emit("state:change", "dungeon", { resume: true });
         break;
       case 1:
         this.engine.data.save();

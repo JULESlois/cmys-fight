@@ -36,6 +36,8 @@ export function generateFloor(depth: number): FloorData {
   const getRoom = (x: number, y: number) => rooms.find(r => r.x === x && r.y === y);
 
   let placedRooms = 1;
+  let hasLegacyRpg = false;
+  let hasLegacyTactics = false;
   while (placedRooms < maxRooms) {
     const r = rooms[Math.floor(Math.random() * rooms.length)];
     const dirs = [
@@ -57,8 +59,8 @@ export function generateFloor(depth: number): FloorData {
       const rand = Math.random();
       if (rand < 0.1) type = "treasure";
       else if (rand < 0.15) type = "npc";
-      else if (rand < 0.20) type = "legacy_rpg";
-      else if (rand < 0.25) type = "legacy_tactics";
+      else if (rand < 0.20 && !hasLegacyRpg) { type = "legacy_rpg"; hasLegacyRpg = true; }
+      else if (rand < 0.25 && !hasLegacyTactics) { type = "legacy_tactics"; hasLegacyTactics = true; }
       
       // If last room, make it boss
       if (placedRooms === maxRooms - 1) {

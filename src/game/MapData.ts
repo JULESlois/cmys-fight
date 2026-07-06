@@ -113,7 +113,7 @@ export function getMapData(currentRoom: Room | undefined, theme: string): number
 }
 
 // 1 = solid wall
-// 3 = water/lava hazard
+// 3 = water/lava hazard (solid for now, TODO: make passable but add damage/slow)
 export function isSolid(tileId: number): boolean {
-  return tileId === 1;
+  return tileId === 1 || tileId === 3;
 }
