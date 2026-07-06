@@ -11,6 +11,8 @@ import { audio } from "../audio/AudioManager";
 import { getMapData, isSolid, isHazard, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
 
 import { RoomRenderer } from "../render/RoomRenderer";
+import { EntityRenderer } from "../render/EntityRenderer";
+import { HudRenderer } from "../render/HudRenderer";
 
 export class DungeonState extends GameState {
   
@@ -26,6 +28,7 @@ export class DungeonState extends GameState {
   private transitionState: "none" | "fade_out" | "fade_in" = "fade_in";
   private transitionAlpha: number = 1;
   private pendingTransition: (() => void) | null = null;
+  private roomClearTimer: number = 0;
   
   constructor(engine: Engine) {
     super(engine);
@@ -53,6 +56,7 @@ export class DungeonState extends GameState {
        const sourceRoom = floor.rooms.find((r: Room) => r.id === params.sourceRoomId);
        if (sourceRoom && !sourceRoom.cleared) {
           sourceRoom.cleared = true;
+          this.roomClearTimer = 2.0;
           audio.playClearRoom();
           if (!this.engine.data.data.legacyData.legacyRewardsClaimed.includes(sourceRoom.id)) {
              this.engine.data.data.legacyData.legacyRewardsClaimed.push(sourceRoom.id);
@@ -132,6 +136,9 @@ export class DungeonState extends GameState {
     this.checkCollisions();
     
     this.roomRenderer.update(dt);
+    if (this.roomClearTimer > 0) {
+      this.roomClearTimer -= dt;
+    }
     
     // Check Room clear
     const floor = this.engine.data.data.floor;
@@ -139,6 +146,7 @@ export class DungeonState extends GameState {
     if (currentRoom && !currentRoom.cleared && this.enemies.length === 0) {
       if (currentRoom.type !== "legacy_rpg" && currentRoom.type !== "legacy_tactics" && currentRoom.type !== "npc") {
         currentRoom.cleared = true;
+        this.roomClearTimer = 2.0;
         audio.playClearRoom();
         if (currentRoom.type === "boss") {
            this.pickups.push(new Pickup(160, 120, "weapon", 1, "laser"));
@@ -510,48 +518,37 @@ export class DungeonState extends GameState {
     this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", this.player);
 
     // Entities
+    const time = Date.now() / 1000;
     for (const p of this.pickups) {
-       ctx.fillStyle = p.type === "mana" ? "#3498DB" : (p.type === "hp" ? "#2ECC71" : "#F1C40F");
-       ctx.beginPath();
-       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-       ctx.fill();
+       EntityRenderer.drawPickup(ctx, p, time);
     }
 
     for (const e of this.enemies) {
-      ctx.fillStyle = e.type === "melee" ? "#E74C3C" : (e.type === "boss" ? "#F1C40F" : "#9B59B6");
-      ctx.beginPath();
-      ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // HP bar
-      ctx.fillStyle = "#E74C3C";
-      ctx.fillRect(e.x - 10, e.y - 12, 20, 2);
-      ctx.fillStyle = "#2ECC71";
-      ctx.fillRect(e.x - 10, e.y - 12, 20 * (e.hp / e.maxHp), 2);
+       EntityRenderer.drawEnemy(ctx, e, time);
     }
     
     if (this.player.hp > 0) {
-      ctx.fillStyle = "#3498DB";
-      ctx.beginPath();
-      ctx.arc(this.player.x, this.player.y, this.player.radius, 0, Math.PI * 2);
-      ctx.fill();
+       EntityRenderer.drawPlayer(ctx, this.player, this.engine);
     }
     
     for (const p of this.projectiles) {
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
+       EntityRenderer.drawProjectile(ctx, p);
     }
     
     // HUD
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(5, 5, 140, 45);
-    ctx.fillStyle = "#FFF";
-    ctx.font = "10px monospace";
-    ctx.fillText(`HP: ${Math.max(0, this.player.hp)}/${this.player.maxHp}  AR: ${this.player.armor}/${this.player.maxArmor}`, 10, 15);
-    ctx.fillText(`MP: ${this.player.mana}/${this.player.maxMana}  WPN: ${WEAPONS[this.player.currentWeaponId].name}`, 10, 30);
-    ctx.fillText(`COINS: ${this.engine.data.data.player.coins}`, 10, 45);
+    HudRenderer.draw(ctx, this.player, this.engine);
+    
+    if (this.roomClearTimer > 0) {
+      ctx.save();
+      const alpha = Math.min(1, this.roomClearTimer);
+      ctx.fillStyle = `rgba(241, 196, 15, ${alpha})`;
+      ctx.font = "bold 24px monospace";
+      ctx.textAlign = "center";
+      // Slightly float up
+      const yOffset = (2.0 - this.roomClearTimer) * 10;
+      ctx.fillText("ROOM CLEAR", 160, 100 - yOffset);
+      ctx.restore();
+    }
     
     // Minimap
     const mmSize = 6;
@@ -576,17 +573,67 @@ export class DungeonState extends GameState {
     }
 
     if (currentRoom && !currentRoom.cleared && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
-       ctx.fillStyle = "rgba(142, 68, 173, 0.4)";
-       ctx.fillRect(160 - 20, 120 - 20, 40, 40);
-       ctx.fillStyle = "#FFD700";
-       ctx.font = "8px monospace";
-       ctx.textAlign = "center";
-       ctx.fillText("Old Memory / Tactical Simulation", 160, 160);
+       const time = Date.now() / 1000;
+       ctx.save();
+       ctx.translate(160, 120);
+
+       if (currentRoom.type === "legacy_rpg") {
+         // CRT terminal / old memory device
+         const pulse = Math.abs(Math.sin(time * 2));
+         ctx.fillStyle = `rgba(39, 174, 96, ${0.3 + pulse * 0.2})`; // Greenish CRT glow
+         ctx.fillRect(-20, -20, 40, 40);
+         
+         ctx.fillStyle = "#2C3E50"; // Terminal body
+         ctx.fillRect(-15, -15, 30, 25);
+         ctx.fillStyle = "#27AE60"; // Screen
+         ctx.fillRect(-13, -13, 26, 18);
+         // Text lines on screen
+         ctx.fillStyle = `rgba(46, 204, 113, ${Math.random() > 0.1 ? 1 : 0.5})`;
+         ctx.fillRect(-10, -10, 15, 2);
+         ctx.fillRect(-10, -6, 20, 2);
+         ctx.fillRect(-10, -2, 10, 2);
+
+         ctx.fillStyle = "#2ECC71";
+         ctx.font = "8px monospace";
+         ctx.textAlign = "center";
+         ctx.fillText("Old Memory Terminal", 0, 30);
+
+       } else if (currentRoom.type === "legacy_tactics") {
+         // Tactics simulator array / 5x5 projection
+         ctx.fillStyle = `rgba(41, 128, 185, 0.4)`; // Blue projection
+         ctx.fillRect(-25, -25, 50, 50);
+
+         // Grid
+         ctx.strokeStyle = `rgba(52, 152, 219, ${0.5 + Math.sin(time * 3) * 0.5})`;
+         ctx.lineWidth = 1;
+         ctx.beginPath();
+         for(let i = 0; i <= 5; i++) {
+            ctx.moveTo(-20 + i * 8, -20);
+            ctx.lineTo(-20 + i * 8, 20);
+            ctx.moveTo(-20, -20 + i * 8);
+            ctx.lineTo(20, -20 + i * 8);
+         }
+         ctx.stroke();
+         
+         // Blinking units
+         if (Math.floor(time * 4) % 2 === 0) {
+            ctx.fillStyle = "#E74C3C";
+            ctx.fillRect(-12, -12, 8, 8);
+            ctx.fillStyle = "#F1C40F";
+            ctx.fillRect(4, 4, 8, 8);
+         }
+
+         ctx.fillStyle = "#3498DB";
+         ctx.font = "8px monospace";
+         ctx.textAlign = "center";
+         ctx.fillText("Tactical Simulation", 0, 35);
+       }
        
        if (this.player.x > 140 && this.player.x < 180 && this.player.y > 100 && this.player.y < 140) {
-           ctx.fillText("Press SPACE to enter", 160, 175);
+           ctx.fillStyle = "#FFF";
+           ctx.fillText("Press SPACE to enter", 0, 48);
        }
-       ctx.textAlign = "left";
+       ctx.restore();
     }
 
     if (this.transitionAlpha > 0) {
