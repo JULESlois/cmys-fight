@@ -8,7 +8,7 @@ import { WEAPONS } from "../data/weapons";
 import { generateFloor, Room } from "../FloorGenerator";
 import { events } from "../EventBus";
 import { audio } from "../audio/AudioManager";
-import { getMapData, isSolid, isHazard, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, getRoomTemplate } from "../MapData";
+import { getMapData, isSolid, isHazard, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, getRoomTemplate, DOOR_ZONES } from "../MapData";
 
 import { RoomRenderer } from "../render/RoomRenderer";
 import { PortalRenderer } from "../render/PortalRenderer";
@@ -318,10 +318,19 @@ export class DungeonState extends GameState {
     // Room boundaries & doors
     const minX = 16, maxX = 320 - 16;
     const minY = 16, maxY = 240 - 16;
-    const doorW = 32;
+    
+    // TILE_SIZE = 16
+    const leftDoorYMin = DOOR_ZONES.left.yMin * 16;
+    const leftDoorYMax = (DOOR_ZONES.left.yMax + 1) * 16;
+    const rightDoorYMin = DOOR_ZONES.right.yMin * 16;
+    const rightDoorYMax = (DOOR_ZONES.right.yMax + 1) * 16;
+    const upDoorXMin = DOOR_ZONES.up.xMin * 16;
+    const upDoorXMax = (DOOR_ZONES.up.xMax + 1) * 16;
+    const downDoorXMin = DOOR_ZONES.down.xMin * 16;
+    const downDoorXMax = (DOOR_ZONES.down.xMax + 1) * 16;
     
     if (this.player.x < minX) {
-      if (!isLocked && currentRoom?.doors.left && this.player.y > 120 - doorW && this.player.y < 120 + doorW) {
+      if (!isLocked && currentRoom?.doors.left && this.player.y > leftDoorYMin && this.player.y < leftDoorYMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
            floor.currentRoomX -= 1;
@@ -332,7 +341,7 @@ export class DungeonState extends GameState {
          this.player.x = minX;
       }
     } else if (this.player.x > maxX) {
-      if (!isLocked && currentRoom?.doors.right && this.player.y > 120 - doorW && this.player.y < 120 + doorW) {
+      if (!isLocked && currentRoom?.doors.right && this.player.y > rightDoorYMin && this.player.y < rightDoorYMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
            floor.currentRoomX += 1;
@@ -345,7 +354,7 @@ export class DungeonState extends GameState {
     }
 
     if (this.player.y < minY) {
-      if (!isLocked && currentRoom?.doors.up && this.player.x > 160 - doorW && this.player.x < 160 + doorW) {
+      if (!isLocked && currentRoom?.doors.up && this.player.x > upDoorXMin && this.player.x < upDoorXMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
            floor.currentRoomY -= 1;
@@ -356,7 +365,7 @@ export class DungeonState extends GameState {
          this.player.y = minY;
       }
     } else if (this.player.y > maxY) {
-      if (!isLocked && currentRoom?.doors.down && this.player.x > 160 - doorW && this.player.x < 160 + doorW) {
+      if (!isLocked && currentRoom?.doors.down && this.player.x > downDoorXMin && this.player.x < downDoorXMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
            floor.currentRoomY += 1;

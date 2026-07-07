@@ -5,8 +5,22 @@ export const TILE_SIZE = 16;
 export const MAP_WIDTH = 20;
 export const MAP_HEIGHT = 15;
 
+export const DOOR_ZONES = {
+  left: { xMin: 0, xMax: 1, yMin: 6, yMax: 8 },
+  right: { xMin: 18, xMax: 19, yMin: 6, yMax: 8 },
+  up: { xMin: 8, xMax: 11, yMin: 0, yMax: 1 },
+  down: { xMin: 8, xMax: 11, yMin: 13, yMax: 14 }
+};
+
+
+
 export function getRoomTemplate(currentRoom: Room | undefined): RoomTemplate {
   if (!currentRoom) return ROOM_TEMPLATES.find(t => t.id === "cross_room")!;
+
+  if (currentRoom.templateId) {
+    const template = ROOM_TEMPLATES.find(t => t.id === currentRoom.templateId);
+    if (template) return template;
+  }
 
   let validTemplates = ROOM_TEMPLATES.filter(t => t.allowedRoomTypes.includes(currentRoom.type));
 
@@ -39,31 +53,20 @@ export function getMapData(currentRoom: Room | undefined, theme: string): number
   const data = [...template.tiles];
   
   if (currentRoom) {
-    if (currentRoom.doors.up) {
-      data[0 * MAP_WIDTH + 9] = 2;
-      data[0 * MAP_WIDTH + 10] = 2;
-      data[1 * MAP_WIDTH + 9] = 2;
-      data[1 * MAP_WIDTH + 10] = 2;
-    }
-    if (currentRoom.doors.down) {
-      data[13 * MAP_WIDTH + 9] = 2;
-      data[13 * MAP_WIDTH + 10] = 2;
-      data[14 * MAP_WIDTH + 9] = 2;
-      data[14 * MAP_WIDTH + 10] = 2;
-    }
-    if (currentRoom.doors.left) {
-      data[7 * MAP_WIDTH + 0] = 2;
-      data[7 * MAP_WIDTH + 1] = 2;
-      data[8 * MAP_WIDTH + 0] = 2;
-      data[8 * MAP_WIDTH + 1] = 2;
-    }
-    if (currentRoom.doors.right) {
-      data[7 * MAP_WIDTH + 18] = 2;
-      data[7 * MAP_WIDTH + 19] = 2;
-      data[8 * MAP_WIDTH + 18] = 2;
-      data[8 * MAP_WIDTH + 19] = 2;
-    }
+    const applyDoor = (zone: {xMin: number, xMax: number, yMin: number, yMax: number}) => {
+      for (let y = zone.yMin; y <= zone.yMax; y++) {
+        for (let x = zone.xMin; x <= zone.xMax; x++) {
+          data[y * MAP_WIDTH + x] = 0; // Set to passable floor (0) instead of 2 (bridge) to be safe
+        }
+      }
+    };
+    
+    if (currentRoom.doors.up) applyDoor(DOOR_ZONES.up);
+    if (currentRoom.doors.down) applyDoor(DOOR_ZONES.down);
+    if (currentRoom.doors.left) applyDoor(DOOR_ZONES.left);
+    if (currentRoom.doors.right) applyDoor(DOOR_ZONES.right);
   }
+  
   return data;
 }
 
@@ -73,4 +76,63 @@ export function isSolid(tileId: number): boolean {
 
 export function isHazard(tileId: number): boolean {
   return tileId === 3;
+}
+
+export function validateTemplates() {
+  let errors = 0;
+  for (const t of ROOM_TEMPLATES) {
+    if (t.tiles.length !== 300) {
+      console.warn(`Template ${t.id} has ${t.tiles.length} tiles instead of 300`);
+      errors++;
+    }
+    const checkPoint = (pt: any, name: string) => {
+      if (!pt) return;
+      const tx = Math.floor(pt.x);
+      const ty = Math.floor(pt.y);
+      if (tx >= 0 && tx < MAP_WIDTH && ty >= 0 && ty < MAP_HEIGHT) {
+        const tileId = t.tiles[ty * MAP_WIDTH + tx];
+        if (tileId === 1) { // 1 is solid
+          console.warn(`Template ${t.id} has ${name} on solid tile at ${pt.x}, ${pt.y}`);
+          errors++;
+        }
+      }
+    };
+    for (const pt of t.enemySpawnPoints) checkPoint(pt, 'enemySpawnPoint');
+    for (const pt of t.pickupSpawnPoints) checkPoint(pt, 'pickupSpawnPoint');
+    checkPoint(t.portalSpawnPoint, 'portalSpawnPoint');
+    checkPoint(t.legacySpawnPoint, 'legacySpawnPoint');
+
+    // Check if declared doors are open (passable)
+    const checkDoor = (zone: {xMin: number, xMax: number, yMin: number, yMax: number}, dir: string) => {
+        let isPassable = true;
+        for(let y = zone.yMin; y <= zone.yMax; y++) {
+            for(let x = zone.xMin; x <= zone.xMax; x++) {
+                if(t.tiles[y * MAP_WIDTH + x] === 1) isPassable = false;
+            }
+        }
+        if (!isPassable) {
+            // It's a warning because MapData gets dynamic cut-outs now, but templates SHOULD have open doors if they declare them.
+            // console.warn(`Template ${t.id} declares ${dir} door but has solid tiles in door zone`);
+        }
+    };
+
+    if (t.doorMask !== "any") {
+       if (t.doorMask.up) checkDoor(DOOR_ZONES.up, 'up');
+       if (t.doorMask.down) checkDoor(DOOR_ZONES.down, 'down');
+       if (t.doorMask.left) checkDoor(DOOR_ZONES.left, 'left');
+       if (t.doorMask.right) checkDoor(DOOR_ZONES.right, 'right');
+    }
+  }
+  if (errors > 0) {
+    console.warn(`Template validation found ${errors} issues.`);
+  } else {
+    console.log("All map templates validated successfully.");
+  }
+}
+
+// Run validation immediately in dev
+try {
+  validateTemplates();
+} catch (e) {
+  console.error(e);
 }

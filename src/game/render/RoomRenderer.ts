@@ -1,6 +1,6 @@
 import { Room } from "../FloorGenerator";
 import { Player } from "../entities/Player";
-import { getMapData, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE } from "../MapData";
+import { getMapData, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, DOOR_ZONES } from "../MapData";
 import { PALETTES } from "../data/palettes";
 
 interface Particle {
@@ -216,10 +216,10 @@ export class RoomRenderer {
       const doorColor = isLocked ? "rgba(231, 76, 60, 0.6)" : "rgba(46, 204, 113, 0.4)";
       ctx.fillStyle = doorColor;
       
-      if (currentRoom.doors.left) ctx.fillRect(0, 7 * TILE_SIZE, 16, TILE_SIZE * 2);
-      if (currentRoom.doors.right) ctx.fillRect((MAP_WIDTH - 1) * TILE_SIZE, 7 * TILE_SIZE, 16, TILE_SIZE * 2);
-      if (currentRoom.doors.up) ctx.fillRect(9 * TILE_SIZE, 0, TILE_SIZE * 2, 16);
-      if (currentRoom.doors.down) ctx.fillRect(9 * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE, TILE_SIZE * 2, 16);
+      if (currentRoom.doors.left) ctx.fillRect(0, DOOR_ZONES.left.yMin * TILE_SIZE, 16, (DOOR_ZONES.left.yMax - DOOR_ZONES.left.yMin + 1) * TILE_SIZE);
+      if (currentRoom.doors.right) ctx.fillRect((MAP_WIDTH - 1) * TILE_SIZE, DOOR_ZONES.right.yMin * TILE_SIZE, 16, (DOOR_ZONES.right.yMax - DOOR_ZONES.right.yMin + 1) * TILE_SIZE);
+      if (currentRoom.doors.up) ctx.fillRect(DOOR_ZONES.up.xMin * TILE_SIZE, 0, (DOOR_ZONES.up.xMax - DOOR_ZONES.up.xMin + 1) * TILE_SIZE, 16);
+      if (currentRoom.doors.down) ctx.fillRect(DOOR_ZONES.down.xMin * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE, (DOOR_ZONES.down.xMax - DOOR_ZONES.down.xMin + 1) * TILE_SIZE, 16);
       
 
     }
