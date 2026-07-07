@@ -234,9 +234,13 @@ export class DungeonState extends GameState {
               });
             };
          } else if (target.type === "portal") {
-            this.engine.data.data.floor = generateFloor(floor.depth + 1);
-            this.loadRoom();
-            return;
+            this.transitionState = "fade_out";
+            this.pendingTransition = () => {
+              this.engine.data.data.floor = generateFloor(floor.depth + 1);
+              this.player.x = 160;
+              this.player.y = 120;
+              this.loadRoom();
+            };
          }
       }
     }

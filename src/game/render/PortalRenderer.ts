@@ -2,7 +2,7 @@ import { PALETTES } from "../data/palettes";
 
 export class PortalRenderer {
   static drawPortal(ctx: CanvasRenderingContext2D, portal: {x: number, y: number}, time: number, theme: string) {
-    const pColor = PALETTES[theme] ? PALETTES[theme].player : "#00FFFF";
+    const pColor = PALETTES[theme] ? PALETTES[theme].portal : "#00FFFF";
     
     ctx.save();
     ctx.translate(portal.x, portal.y);

@@ -1,6 +1,7 @@
 import { Room } from "../FloorGenerator";
 import { Player } from "../entities/Player";
 import { getMapData, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE } from "../MapData";
+import { PALETTES } from "../data/palettes";
 
 interface Particle {
   x: number;
@@ -51,7 +52,8 @@ export class RoomRenderer {
     const mapData = getMapData(currentRoom, theme);
 
     // 1. DRAW BASE FLOOR
-    ctx.fillStyle = theme === "forest" ? "#5C8B4D" : (theme === "dungeon" ? "#2C3E50" : (theme === "snow" ? "#EBF5FB" : "#2E1114"));
+    const p = PALETTES[theme] || PALETTES["forest"];
+    ctx.fillStyle = p.bg;
     ctx.fillRect(0, 0, 320, 240);
 
     for (let y = 0; y < MAP_HEIGHT; y++) {
@@ -61,24 +63,24 @@ export class RoomRenderer {
         const ty = y * TILE_SIZE;
 
         if (tileId === 2) {
-          ctx.fillStyle = theme === "forest" ? "#909E86" : (theme === "dungeon" ? "#5D6D7E" : (theme === "snow" ? "#D4E6F1" : "#512E5F"));
+          ctx.fillStyle = p.floor;
           ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
         } else if (tileId === 3) {
           if (theme === "forest" || theme === "snow") {
-            ctx.fillStyle = theme === "forest" ? "#336699" : "#D4E6F1";
+            ctx.fillStyle = p.hazard1;
             const sparkOffset = Math.floor(this.windTime * 4) % 8;
             ctx.fillRect(tx + sparkOffset, ty + 4, 3, 1);
             ctx.fillRect(tx + ((sparkOffset + 4) % 8), ty + 10, 4, 1);
           } else if (theme === "dungeon") {
-            ctx.fillStyle = "#5B2C6F";
+            ctx.fillStyle = p.hazard1;
             ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
-            ctx.fillStyle = "#8E44AD";
+            ctx.fillStyle = p.hazard2;
             const sparkOffset = Math.floor(this.windTime * 3) % 8;
             ctx.fillRect(tx + sparkOffset, ty + 6, 2, 2);
           } else if (theme === "lava") {
-            ctx.fillStyle = "#BA4A00";
+            ctx.fillStyle = p.hazard1;
             ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
-            ctx.fillStyle = "#F39C12";
+            ctx.fillStyle = p.hazard2;
             const sparkOffset = Math.floor(this.windTime * 2) % 8;
             ctx.fillRect(tx + sparkOffset, ty + 4, 4, 2);
             ctx.fillRect(tx + ((sparkOffset + 4) % 8), ty + 10, 3, 2);
@@ -106,6 +108,7 @@ export class RoomRenderer {
 
   public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, player: Player) {
     const mapData = getMapData(currentRoom, theme);
+    const p = PALETTES[theme] || PALETTES["forest"];
 
     // 2. DRAW SHADOWS
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
@@ -140,7 +143,7 @@ export class RoomRenderer {
 
         if (tileId === 1) {
           if (theme === "forest") {
-            ctx.fillStyle = "#4E3629";
+            ctx.fillStyle = p.wall;
             ctx.fillRect(tx + 6, ty + 8, 4, 8);
             ctx.fillStyle = "#E882A4";
             ctx.beginPath();
@@ -154,33 +157,33 @@ export class RoomRenderer {
             ctx.arc(tx + 11, ty, 3, 0, Math.PI * 2);
             ctx.fill();
           } else if (theme === "dungeon") {
-            ctx.fillStyle = "#2C3E50";
+            ctx.fillStyle = p.wall;
             ctx.fillRect(tx + 2, ty, 12, 16);
-            ctx.fillStyle = "#34495E";
+            ctx.fillStyle = p.floor;
             ctx.fillRect(tx + 4, ty, 8, 16);
             ctx.fillStyle = "#7F8C8D";
             ctx.fillRect(tx + 2, ty + 14, 12, 2);
           } else if (theme === "snow") {
-            ctx.fillStyle = "#AED6F1";
+            ctx.fillStyle = p.wall;
             ctx.beginPath();
             ctx.moveTo(tx + 8, ty);
             ctx.lineTo(tx + 14, ty + 16);
             ctx.lineTo(tx + 2, ty + 16);
             ctx.fill();
-            ctx.fillStyle = "#D6EAF8";
+            ctx.fillStyle = p.floor;
             ctx.beginPath();
             ctx.moveTo(tx + 8, ty + 2);
             ctx.lineTo(tx + 12, ty + 16);
             ctx.lineTo(tx + 4, ty + 16);
             ctx.fill();
           } else if (theme === "lava") {
-            ctx.fillStyle = "#17202A";
+            ctx.fillStyle = p.wall;
             ctx.beginPath();
             ctx.moveTo(tx + 8, ty + 2);
             ctx.lineTo(tx + 14, ty + 16);
             ctx.lineTo(tx + 2, ty + 16);
             ctx.fill();
-            ctx.fillStyle = "#CB4335";
+            ctx.fillStyle = p.hazard1;
             ctx.fillRect(tx + 7, ty + 8, 2, 4);
           }
         } else if (tileId === 4) {
@@ -218,13 +221,7 @@ export class RoomRenderer {
       if (currentRoom.doors.up) ctx.fillRect(9 * TILE_SIZE, 0, TILE_SIZE * 2, 16);
       if (currentRoom.doors.down) ctx.fillRect(9 * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE, TILE_SIZE * 2, 16);
       
-      if (currentRoom.type === "boss" && currentRoom.cleared) {
-        ctx.fillStyle = "#2ECC71";
-        ctx.fillRect(160 - 20, 16, 40, 16);
-        ctx.fillStyle = "#FFF";
-        ctx.font = "8px monospace";
-        ctx.fillText("SPACE: NEXT", 160-25, 30);
-      }
+
     }
 
     // Weather Effects
