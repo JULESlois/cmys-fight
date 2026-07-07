@@ -3,6 +3,7 @@ import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
 import { PALETTES } from "../data/palettes";
+import { CHARACTERS } from "../data/characters";
 
 export class EntityRenderer {
   public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
@@ -23,8 +24,9 @@ export class EntityRenderer {
 
     const isHit = player.hitFlash > 0;
 
+    const charConfig = CHARACTERS[player.characterId] || CHARACTERS["knight"];
     // Body (Cloak)
-    ctx.fillStyle = isHit ? "#FFF" : "#3498DB";
+    ctx.fillStyle = isHit ? "#FFF" : (charConfig ? charConfig.color : "#3498DB");
     ctx.beginPath();
     ctx.moveTo(-5, -2);
     ctx.lineTo(5, -2);

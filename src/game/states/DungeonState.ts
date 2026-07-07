@@ -50,6 +50,8 @@ export class DungeonState extends GameState {
       this.player.mana = savedP.mana;
       this.player.maxMana = savedP.maxMana;
       this.player.currentWeaponId = savedP.currentWeaponId;
+      if (savedP.speed) this.player.speed = savedP.speed;
+      if (savedP.characterId) this.player.characterId = savedP.characterId;
     }
 
     if (!(params && params.resume)) {
@@ -226,9 +228,8 @@ export class DungeonState extends GameState {
 
     // Handle Game Over & Interactions
     if (this.player.hp <= 0) {
-      if (this.engine.input.justPressed["Enter"]) {
-        this.engine.data.resetRun();
-        this.enter(); 
+      if (this.engine.input.justPressed["enter"] || this.engine.input.justPressed["Enter"] || this.engine.input.justPressed["escape"]) {
+        this.engine.switchState("title");
       }
     } else {
       const target = this.getInteractTarget();

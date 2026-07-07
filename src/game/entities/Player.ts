@@ -12,7 +12,8 @@ export class Player {
   public mana: number;
   public maxMana: number;
   
-  public speed: number = 100;
+  public speed: number = 80;
+  public characterId: string = "knight";
   public currentWeaponId: string = "pistol";
   public fireCooldown: number = 0;
   

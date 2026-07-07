@@ -1,0 +1,53 @@
+export class MenuRenderer {
+  static drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+    ctx.fillStyle = "rgba(10, 15, 25, 0.9)";
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+    
+    // Corners
+    ctx.fillStyle = "#00F2FE";
+    ctx.fillRect(x - 1, y - 1, 3, 3);
+    ctx.fillRect(x + w - 2, y - 1, 3, 3);
+    ctx.fillRect(x - 1, y + h - 2, 3, 3);
+    ctx.fillRect(x + w - 2, y + h - 2, 3, 3);
+  }
+
+  static drawTitle(ctx: CanvasRenderingContext2D, text: string, x: number, y: number) {
+    ctx.fillStyle = "#00F2FE";
+    ctx.font = "bold 24px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(text, x, y);
+    // Glitch shadow
+    ctx.fillStyle = "rgba(231, 76, 60, 0.5)";
+    ctx.fillText(text, x + 2, y);
+    ctx.textAlign = "left";
+  }
+
+  static drawButton(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, selected: boolean) {
+    ctx.font = "12px monospace";
+    if (selected) {
+      ctx.fillStyle = "rgba(0, 242, 254, 0.2)";
+      ctx.fillRect(x - 10, y - 10, 120, 18);
+      ctx.fillStyle = "#FFF";
+      ctx.fillText("> " + text, x, y);
+    } else {
+      ctx.fillStyle = "#BDC3C7";
+      ctx.fillText("  " + text, x, y);
+    }
+  }
+
+  static drawStatBar(ctx: CanvasRenderingContext2D, label: string, val: number, max: number, x: number, y: number, color: string) {
+    ctx.fillStyle = "#FFF";
+    ctx.font = "8px monospace";
+    ctx.fillText(label, x, y);
+    
+    const w = 50;
+    const h = 4;
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.fillRect(x + 30, y - 6, w, h);
+    ctx.fillStyle = color;
+    ctx.fillRect(x + 30, y - 6, w * (val / max), h);
+  }
+}

@@ -1,4 +1,5 @@
 import { FloorData, generateFloor } from "./FloorGenerator";
+import { CHARACTERS } from "./data/characters";
 
 export interface GameSave {
   player: {
@@ -14,6 +15,13 @@ export interface GameSave {
     level: number;
     exp: number;
     coins: number;
+    characterId: string;
+    speed: number;
+  };
+  settings: {
+    masterVolume: number;
+    screenShake: boolean;
+    crtFilter: boolean;
   };
   recentEvents: string[];
   floor: FloorData;
@@ -45,6 +53,13 @@ export const defaultSave: GameSave = {
     level: 1,
     exp: 0,
     coins: 0,
+    characterId: "knight",
+    speed: 80,
+  },
+  settings: {
+    masterVolume: 100,
+    screenShake: true,
+    crtFilter: true,
   },
   recentEvents: ["Started the journey"],
   floor: generateFloor(1),
@@ -80,6 +95,7 @@ export class GameData {
         const parsed = JSON.parse(saved);
         this.data = { ...defaultSave, ...parsed };
         this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
+        this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
         this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
         this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
         
@@ -101,6 +117,22 @@ export class GameData {
         console.error("Failed to load save:", e);
       }
     }
+  }
+
+  startNewRun(characterId: string) {
+    const char = CHARACTERS[characterId] || CHARACTERS["knight"];
+    this.data.player.characterId = characterId;
+    this.data.player.maxHp = char.maxHp;
+    this.data.player.hp = char.maxHp;
+    this.data.player.maxArmor = char.maxArmor;
+    this.data.player.armor = char.maxArmor;
+    this.data.player.maxMana = char.maxMana;
+    this.data.player.mana = char.maxMana;
+    this.data.player.speed = char.speed;
+    this.data.player.currentWeaponId = char.starterWeapon;
+    this.data.player.coins = 0;
+    this.data.floor = generateFloor(1);
+    this.save();
   }
 
   resetRun() {

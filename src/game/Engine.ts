@@ -7,13 +7,16 @@ import { LegacyTacticsState } from "./states/LegacyTacticsState";
 import { LegacyDialogState } from "./states/LegacyDialogState";
 import { MenuState } from "./states/MenuState";
 import { DungeonState } from "./states/DungeonState";
+import { TitleState } from "./states/TitleState";
+import { CharacterSelectState } from "./states/CharacterSelectState";
+import { SettingsState } from "./states/SettingsState";
 import { events } from "./EventBus";
 
 export class Engine {
   public input: Input;
   public data: GameData;
   public states: { [key: string]: GameState } = {};
-  public currentState: string = "dungeon";
+  public currentState: string = "title";
   public isPaused: boolean = false;
   
   private lastTime = 0;
@@ -27,11 +30,14 @@ export class Engine {
     this.data.load();
 
     this.states = {
-      "legacy_rpg": new LegacyRpgState(this),
-      "legacy_tactics": new LegacyTacticsState(this),
-      "legacy_dialog": new LegacyDialogState(this),
-      "menu": new MenuState(this),
-      "dungeon": new DungeonState(this),
+      title: new TitleState(this),
+      character_select: new CharacterSelectState(this),
+      settings: new SettingsState(this),
+      dungeon: new DungeonState(this),
+      menu: new MenuState(this),
+      legacy_rpg: new LegacyRpgState(this),
+      legacy_tactics: new LegacyTacticsState(this),
+      legacy_dialog: new LegacyDialogState(this)
     };
     
     // Event Driven System hookup
