@@ -8,12 +8,14 @@ import { WEAPONS } from "../data/weapons";
 import { generateFloor, Room } from "../FloorGenerator";
 import { events } from "../EventBus";
 import { audio } from "../audio/AudioManager";
+import { UIRenderer } from "../render/UIRenderer";
+import { MinimapRenderer } from "../render/MinimapRenderer";
+import { PromptRenderer } from "../render/PromptRenderer";
 import { getMapData, isSolid, isHazard, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, getRoomTemplate, DOOR_ZONES } from "../MapData";
 
 import { RoomRenderer } from "../render/RoomRenderer";
 import { PortalRenderer } from "../render/PortalRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
-import { HudRenderer } from "../render/HudRenderer";
 
 export class DungeonState extends GameState {
   
@@ -95,7 +97,6 @@ export class DungeonState extends GameState {
   }
   
   private loadRoom() {
-    this.syncRoomState(); // Sync previous room before switching
     
     this.projectiles = [];
     this.pickups = [];
@@ -115,11 +116,19 @@ export class DungeonState extends GameState {
           this.pickups.push(new Pickup(pt.x * 16 + 8, pt.y * 16 + 8, "weapon", 1, "shotgun"));
           currentRoom.cleared = true;
        } else {
-         if (currentRoom.enemies) {
+         if (currentRoom.enemies && currentRoom.enemies.length > 0) {
             for (const e of currentRoom.enemies) {
                const enemy = new Enemy(e.x, e.y, e.type);
                if (e.hp !== undefined) enemy.hp = e.hp;
                this.enemies.push(enemy);
+            }
+         } else if (currentRoom.type === "combat" || currentRoom.type === "boss") {
+            currentRoom.enemies = [];
+            for (const pt of template.enemySpawnPoints) {
+               const eType = currentRoom.type === "boss" ? "boss" : (Math.random() > 0.5 ? "melee" : "ranged");
+               const enemy = new Enemy(pt.x * 16 + 8, pt.y * 16 + 8, eType);
+               this.enemies.push(enemy);
+               currentRoom.enemies.push({ x: enemy.x, y: enemy.y, type: enemy.type, hp: enemy.hp });
             }
          }
        }
@@ -227,6 +236,7 @@ export class DungeonState extends GameState {
          if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
             this.transitionState = "fade_out";
             this.pendingTransition = () => {
+              this.syncRoomState();
               events.emit("state:change", target.type, {
                 returnState: "dungeon",
                 sourceRoomId: currentRoom.id,
@@ -236,6 +246,7 @@ export class DungeonState extends GameState {
          } else if (target.type === "portal") {
             this.transitionState = "fade_out";
             this.pendingTransition = () => {
+              this.syncRoomState();
               this.engine.data.data.floor = generateFloor(floor.depth + 1);
               this.player.x = 160;
               this.player.y = 120;
@@ -333,6 +344,7 @@ export class DungeonState extends GameState {
       if (!isLocked && currentRoom?.doors.left && this.player.y > leftDoorYMin && this.player.y < leftDoorYMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
+           this.syncRoomState();
            floor.currentRoomX -= 1;
            this.player.x = maxX - 1;
            this.loadRoom();
@@ -344,6 +356,7 @@ export class DungeonState extends GameState {
       if (!isLocked && currentRoom?.doors.right && this.player.y > rightDoorYMin && this.player.y < rightDoorYMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
+           this.syncRoomState();
            floor.currentRoomX += 1;
            this.player.x = minX + 1;
            this.loadRoom();
@@ -357,6 +370,7 @@ export class DungeonState extends GameState {
       if (!isLocked && currentRoom?.doors.up && this.player.x > upDoorXMin && this.player.x < upDoorXMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
+           this.syncRoomState();
            floor.currentRoomY -= 1;
            this.player.y = maxY - 1;
            this.loadRoom();
@@ -368,6 +382,7 @@ export class DungeonState extends GameState {
       if (!isLocked && currentRoom?.doors.down && this.player.x > downDoorXMin && this.player.x < downDoorXMax) {
          this.transitionState = "fade_out";
          this.pendingTransition = () => {
+           this.syncRoomState();
            floor.currentRoomY += 1;
            this.player.y = minY + 1;
            this.loadRoom();
@@ -611,9 +626,7 @@ export class DungeonState extends GameState {
     if (this.portal) {
       PortalRenderer.drawPortal(ctx, this.portal, this.portalTime, floor.theme || 'forest');
       const interact = this.getInteractTarget();
-      if (interact && interact.type === "portal") {
-         PortalRenderer.drawInteractText(ctx, this.portal, this.portalTime);
-      }
+
     }
     
     if (this.player.hp > 0) {
@@ -624,8 +637,8 @@ export class DungeonState extends GameState {
        EntityRenderer.drawProjectile(ctx, p);
     }
     
-    // HUD
-    HudRenderer.draw(ctx, this.player, this.engine);
+    // UI
+    UIRenderer.draw(ctx, this.player, this.engine, floor);
     
     if (this.roomClearTimer > 0) {
       ctx.save();
@@ -640,13 +653,10 @@ export class DungeonState extends GameState {
     }
     
     // Minimap
-    const mmSize = 6;
-    const mmX = 310 - mmSize * 15;
-    const mmY = 10;
-    for (const r of floor.rooms) {
-       ctx.fillStyle = (r.x === floor.currentRoomX && r.y === floor.currentRoomY) ? "#FFF" : (r.cleared ? "#95A5A6" : "#34495E");
-       ctx.fillRect(mmX + r.x * mmSize, mmY + r.y * mmSize, mmSize - 1, mmSize - 1);
-    }
+    MinimapRenderer.draw(ctx, floor);
+    
+    // Prompt
+    PromptRenderer.draw(ctx, this.getInteractTarget(), time);
 
     if (this.player.hp <= 0) {
       ctx.fillStyle = "rgba(0,0,0,0.7)";

@@ -1,3 +1,4 @@
+import { PauseOverlayRenderer } from "./render/PauseOverlayRenderer";
 import { Input } from "./Input";
 import { GameData } from "./GameData";
 import { GameState } from "./states/GameState";
@@ -122,22 +123,7 @@ export class Engine {
     this.states[this.currentState].draw(this.ctx);
 
     if (this.isPaused) {
-      this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-      this.ctx.fillRect(0, 0, 320, 240);
-      
-      this.ctx.fillStyle = "#FFF";
-      this.ctx.font = "20px monospace";
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("PAUSE", 160, 100);
-      
-      this.ctx.font = "10px monospace";
-      this.ctx.fillStyle = "#F1C40F";
-      this.ctx.fillText("WASD / Arrows: Move/Attack", 160, 140);
-      this.ctx.fillText("Space: Interact", 160, 160);
-      this.ctx.fillText("Enter: Menu", 160, 180);
-      this.ctx.fillText("P: Resume", 160, 200);
-      
-      this.ctx.textAlign = "left";
+      PauseOverlayRenderer.draw(this.ctx);
     }
 
     this.ctx.restore();

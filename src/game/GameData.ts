@@ -82,6 +82,21 @@ export class GameData {
         this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
         this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
         this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
+        
+        // Save migration
+        let needsMigration = false;
+        if (this.data.floor && this.data.floor.rooms) {
+           for (const r of this.data.floor.rooms) {
+              if (r.templateId === undefined || !r.enemies) {
+                 needsMigration = true;
+                 break;
+              }
+           }
+        }
+        if (needsMigration) {
+           console.warn("Old floor data migrated");
+           this.data.floor = generateFloor(this.data.floor.depth || 1);
+        }
       } catch (e) {
         console.error("Failed to load save:", e);
       }
