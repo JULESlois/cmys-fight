@@ -2,6 +2,8 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
+import { SpriteRenderer } from "../render/SpriteRenderer";
+import { CHARACTERS } from "../data/characters";
 
 export class TitleState extends GameState {
     protected options = ["NEW RUN", "CONTINUE", "CHARACTER", "SETTINGS"];
@@ -67,7 +69,44 @@ export class TitleState extends GameState {
       ctx.fillRect(0, i, 320, 1);
     }
 
-    MenuRenderer.drawTitle(ctx, "CMYS FIGHT", 160, 60);
+    // Pixel shadow/outline for Title
+    ctx.textAlign = "center";
+    ctx.font = "bold 24px monospace";
+    const titleY = 50;
+    
+    // Pixel outline
+    ctx.fillStyle = "#1a1c2c";
+    ctx.fillText("CMYS FIGHT", 160 - 2, titleY);
+    ctx.fillText("CMYS FIGHT", 160 + 2, titleY);
+    ctx.fillText("CMYS FIGHT", 160, titleY - 2);
+    ctx.fillText("CMYS FIGHT", 160, titleY + 2);
+    
+    // Inner text
+    ctx.fillStyle = "#00F2FE";
+    ctx.fillText("CMYS FIGHT", 160, titleY);
+    
+    // Subtitle
+    ctx.font = "bold 10px monospace";
+    ctx.fillStyle = "#1a1c2c";
+    ctx.fillText("DEEP DELVE", 160, titleY + 16 + 1);
+    ctx.fillStyle = "#BDC3C7";
+    ctx.fillText("DEEP DELVE", 160, titleY + 16);
+    
+    ctx.textAlign = "left";
+
+    // Draw random or selected character on the side
+    const charIds = Object.keys(CHARACTERS);
+    const displayChar = CHARACTERS[charIds[Math.floor(t) % charIds.length]];
+    
+    // shadow for sprite
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath();
+    ctx.ellipse(240, 160, 16, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    SpriteRenderer.drawPixelSprite(ctx, `player_${displayChar.id}_idle`, 240, 160 - 16, 4, {
+      paletteOverride: { "2": displayChar.color }
+    });
 
     const startY = 120;
     const hasSave = this.engine.data.hasValidSave();

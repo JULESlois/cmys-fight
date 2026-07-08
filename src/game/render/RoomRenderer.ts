@@ -66,11 +66,27 @@ export class RoomRenderer {
           ctx.fillStyle = p.floor;
           ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
           
-          // Pixel texture details
+          // Deterministic pseudo-random noise based on coordinates
+          const hash = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453);
+          
           ctx.fillStyle = "rgba(0,0,0,0.1)";
-          ctx.fillRect(tx + 2, ty + 2, 2, 2);
-          ctx.fillRect(tx + 10, ty + 8, 2, 2);
-          ctx.fillRect(tx + 4, ty + 12, 4, 2);
+          if (hash % 10 > 7) {
+             ctx.fillRect(tx + 2, ty + 2, 2, 2);
+             ctx.fillRect(tx + 10, ty + 8, 2, 2);
+          } else if (hash % 10 > 4) {
+             ctx.fillRect(tx + 4, ty + 12, 4, 2);
+             ctx.fillRect(tx + 8, ty + 2, 2, 2);
+          } else {
+             ctx.fillRect(tx + 12, ty + 4, 2, 2);
+             ctx.fillRect(tx + 2, ty + 10, 2, 4);
+          }
+          
+          // Theme specific floor details
+          if (theme === "dungeon" && hash % 10 > 8) {
+              ctx.fillStyle = "rgba(0,0,0,0.2)";
+              ctx.fillRect(tx + 4, ty + 4, 8, 1);
+              ctx.fillRect(tx + 4, ty + 12, 8, 1);
+          }
           
           // Edge line
           ctx.fillStyle = "rgba(0,0,0,0.05)";
@@ -153,55 +169,49 @@ export class RoomRenderer {
         const ty = y * TILE_SIZE;
 
         if (tileId === 1) {
+          ctx.fillStyle = p.wall;
+          ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+          
           // General wall highlight/shadow
-          ctx.fillStyle = "rgba(255,255,255,0.1)";
+          ctx.fillStyle = "rgba(255,255,255,0.15)";
           ctx.fillRect(tx, ty, TILE_SIZE, 2);
-          ctx.fillStyle = "rgba(0,0,0,0.2)";
+          ctx.fillStyle = "rgba(0,0,0,0.3)";
           ctx.fillRect(tx, ty + TILE_SIZE - 2, TILE_SIZE, 2);
+          ctx.fillRect(tx + TILE_SIZE - 2, ty, 2, TILE_SIZE);
+
+          const hash = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453);
 
           if (theme === "forest") {
-            ctx.fillStyle = p.wall;
-            ctx.fillRect(tx + 6, ty + 8, 4, 8);
-            ctx.fillStyle = "#E882A4";
-            ctx.beginPath();
-            ctx.arc(tx + 8, ty + 4, 8, 0, Math.PI * 2);
-            ctx.arc(tx + 4, ty + 1, 6, 0, Math.PI * 2);
-            ctx.arc(tx + 12, ty + 2, 7, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#F3A9C3";
-            ctx.beginPath();
-            ctx.arc(tx + 7, ty + 2, 4, 0, Math.PI * 2);
-            ctx.arc(tx + 11, ty, 3, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillStyle = "#E882A4"; // Leaves
+            if (hash % 10 > 5) {
+               ctx.fillRect(tx + 2, ty + 2, 6, 6);
+               ctx.fillRect(tx + 8, ty + 6, 6, 6);
+            } else {
+               ctx.fillRect(tx + 4, ty + 4, 8, 8);
+            }
           } else if (theme === "dungeon") {
-            ctx.fillStyle = p.wall;
-            ctx.fillRect(tx + 2, ty, 12, 16);
-            ctx.fillStyle = p.floor;
-            ctx.fillRect(tx + 4, ty, 8, 16);
-            ctx.fillStyle = "#7F8C8D";
-            ctx.fillRect(tx + 2, ty + 14, 12, 2);
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            // Brick lines
+            ctx.fillRect(tx, ty + 7, TILE_SIZE, 2);
+            ctx.fillRect(tx + 7, ty, 2, 7);
+            ctx.fillRect(tx + 3, ty + 9, 2, 7);
           } else if (theme === "snow") {
-            ctx.fillStyle = p.wall;
-            ctx.beginPath();
-            ctx.moveTo(tx + 8, ty);
-            ctx.lineTo(tx + 14, ty + 16);
-            ctx.lineTo(tx + 2, ty + 16);
-            ctx.fill();
-            ctx.fillStyle = p.floor;
-            ctx.beginPath();
-            ctx.moveTo(tx + 8, ty + 2);
-            ctx.lineTo(tx + 12, ty + 16);
-            ctx.lineTo(tx + 4, ty + 16);
-            ctx.fill();
+            ctx.fillStyle = "#FFF";
+            ctx.fillRect(tx, ty, TILE_SIZE, 4);
+            if (hash % 10 > 5) {
+               ctx.fillRect(tx + 4, ty + 4, 2, 4);
+               ctx.fillRect(tx + 10, ty + 4, 2, 2);
+            }
           } else if (theme === "lava") {
-            ctx.fillStyle = p.wall;
-            ctx.beginPath();
-            ctx.moveTo(tx + 8, ty + 2);
-            ctx.lineTo(tx + 14, ty + 16);
-            ctx.lineTo(tx + 2, ty + 16);
-            ctx.fill();
-            ctx.fillStyle = p.hazard1;
-            ctx.fillRect(tx + 7, ty + 8, 2, 4);
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            if (hash % 10 > 5) {
+               ctx.fillRect(tx + 4, ty, 2, 12);
+               ctx.fillRect(tx + 6, ty + 6, 4, 2);
+            } else {
+               ctx.fillRect(tx + 8, ty, 2, 8);
+               ctx.fillStyle = p.hazard1;
+               ctx.fillRect(tx + 8, ty + 8, 2, 4);
+            }
           }
         } else if (tileId === 4) {
           ctx.fillStyle = "#7F8C8D";

@@ -7,149 +7,95 @@ import { CHARACTERS } from "../data/characters";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 export class EntityRenderer {
-  public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
+    public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
     if (player.hp <= 0) return;
 
     ctx.save();
     ctx.translate(player.x, player.y);
 
+    // Shadow
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(0, 8, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.save();
     if (player.facingLeft) {
       ctx.scale(-1, 1);
     }
 
-    // Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
-    ctx.beginPath();
-    ctx.ellipse(0, 8, 8, 3, 0, 0, Math.PI * 2);
-    ctx.fill();
-
     const isHit = player.hitFlash > 0;
-
     const charConfig = CHARACTERS[player.characterId] || CHARACTERS["knight"];
-    // Body (Cloak)
-    ctx.fillStyle = isHit ? "#FFF" : (charConfig ? charConfig.color : "#3498DB");
-    ctx.beginPath();
-    ctx.moveTo(-5, -2);
-    ctx.lineTo(5, -2);
-    ctx.lineTo(7, 8);
-    ctx.lineTo(-7, 8);
-    ctx.fill();
+    
+    const spriteName = `player_${player.characterId}_idle`;
+    const paletteOverride = charConfig ? { "2": charConfig.color } : undefined;
+    
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 1.5, { 
+      hitFlash: isHit,
+      paletteOverride
+    });
+    ctx.restore();
 
-    // Head (Helmet)
-    ctx.fillStyle = isHit ? "#FFF" : "#BDC3C7";
-    ctx.beginPath();
-    ctx.arc(0, -6, 6, 0, Math.PI * 2);
-    ctx.fill();
+    // Weapon
+    ctx.save();
+    ctx.translate(0, -2); // Roughly hand level
+    ctx.rotate(player.aimAngle);
+    if (Math.abs(player.aimAngle) > Math.PI / 2) {
+      ctx.scale(1, -1);
+    }
     
-    // Visor
-    ctx.fillStyle = "#2C3E50";
-    ctx.fillRect(1, -8, 4, 3);
-    
-    // Weapon Hint
-    ctx.fillStyle = "#95A5A6";
-    ctx.fillRect(4, -1, 8, 2);
+    // Shift weapon forward
+    SpriteRenderer.drawPixelSprite(ctx, `pickup_${player.currentWeaponId}`, 10, -2, 1);
 
     if (player.muzzleFlash > 0) {
+      // Pixel muzzle flash at barrel end
       ctx.fillStyle = "rgba(241, 196, 15, " + player.muzzleFlash + ")";
-      ctx.beginPath();
-      ctx.arc(14, 0, 4 + player.muzzleFlash * 4, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(18, -6, 4, 4);
+      ctx.fillRect(22, -8, 2, 8);
+      ctx.fillRect(24, -4, 2, 4);
+      ctx.fillStyle = "rgba(255, 255, 255, " + player.muzzleFlash + ")";
+      ctx.fillRect(20, -4, 2, 2);
     }
+    ctx.restore();
 
     ctx.restore();
   }
-
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string) {
     ctx.save();
     ctx.translate(enemy.x, enemy.y);
 
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.3)";
+    let shadowRad = enemy.type === "boss" ? 16 : 8;
     ctx.beginPath();
-    ctx.ellipse(0, enemy.radius, enemy.radius, enemy.radius * 0.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, enemy.radius - 2, shadowRad, shadowRad * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
     const animOffset = Math.sin(time * 5 + enemy.x) * 2; // Simple bobbing
     const isHit = enemy.hitFlash > 0;
-
-    if (enemy.type === "melee") {
-      ctx.translate(0, animOffset);
-      ctx.fillStyle = isHit ? "#FFF" : "#E74C3C";
-      ctx.beginPath();
-      ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Horns
-      ctx.fillStyle = isHit ? "#FFF" : "#C0392B";
-      ctx.beginPath();
-      ctx.moveTo(-enemy.radius, 0);
-      ctx.lineTo(-enemy.radius - 4, -8);
-      ctx.lineTo(-enemy.radius / 2, -enemy.radius);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(enemy.radius, 0);
-      ctx.lineTo(enemy.radius + 4, -8);
-      ctx.lineTo(enemy.radius / 2, -enemy.radius);
-      ctx.fill();
-
-      // Eye
-      ctx.fillStyle = "#F1C40F";
-      ctx.fillRect(-2, -2, 4, 2);
-
-    } else if (enemy.type === "ranged") {
-      ctx.translate(0, animOffset);
-      ctx.fillStyle = isHit ? "#FFF" : "#9B59B6";
-      ctx.fillRect(-enemy.radius, -enemy.radius, enemy.radius * 2, enemy.radius * 2);
-      
-      // Cannon eye
-      ctx.fillStyle = "#8E44AD";
-      ctx.fillRect(2, -2, 8, 4);
-      ctx.fillStyle = "#E74C3C";
-      ctx.fillRect(8, -1, 2, 2);
-
-    } else if (enemy.type === "boss") {
-      const auraScale = 1 + Math.sin(time * 3) * 0.1;
-      ctx.fillStyle = "rgba(241, 196, 15, 0.3)";
-      ctx.beginPath();
-      ctx.arc(0, 0, enemy.radius * 1.5 * auraScale, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.translate(0, animOffset * 0.5);
-      
-      ctx.fillStyle = isHit ? "#FFF" : "#D35400";
-      ctx.beginPath();
-      ctx.moveTo(0, -enemy.radius);
-      ctx.lineTo(enemy.radius, 0);
-      ctx.lineTo(0, enemy.radius);
-      ctx.lineTo(-enemy.radius, 0);
-      ctx.fill();
-
-      ctx.fillStyle = isHit ? "#FFF" : "#F1C40F";
-      ctx.beginPath();
-      ctx.arc(0, 0, enemy.radius * 0.6, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#FFF";
-      ctx.beginPath();
-      ctx.arc(0, 0, enemy.radius * 0.2, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.fillStyle = isHit ? "#FFF" : "#E74C3C";
-      ctx.beginPath();
-      ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
+    
+    ctx.translate(0, animOffset);
+    let scale = 1.5;
+    if (enemy.type === "boss") scale = 2.5;
+    
+    SpriteRenderer.drawPixelSprite(ctx, `enemy_${enemy.type}_idle`, 0, -8, scale, { hitFlash: isHit });
     ctx.restore();
 
-    // HP bar
-    ctx.fillStyle = "#E74C3C";
-    ctx.fillRect(enemy.x - 10, enemy.y - enemy.radius - 8, 20, 3);
+    // Pixel HP bar
+    const barW = enemy.type === "boss" ? 40 : 16;
+    const barH = 2;
+    const barX = enemy.x - barW / 2;
+    const barY = enemy.y - enemy.radius - (enemy.type === "boss" ? 16 : 10);
+    
+    ctx.fillStyle = "#1a1c2c";
+    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+    ctx.fillStyle = "#e43b44";
+    ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = "#2ECC71";
-    ctx.fillRect(enemy.x - 10, enemy.y - enemy.radius - 8, 20 * (enemy.hp / enemy.maxHp), 3);
+    ctx.fillRect(barX, barY, barW * (enemy.hp / enemy.maxHp), barH);
   }
-
-  public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
+public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
     ctx.save();
     ctx.translate(p.x, p.y);
     
@@ -180,18 +126,22 @@ export class EntityRenderer {
   public static drawPickup(ctx: CanvasRenderingContext2D, p: Pickup, time: number) {
     ctx.save();
     ctx.translate(p.x, p.y);
+    
+    // Shadow
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(0, 6, 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
     const floatOffset = Math.sin(time * 4) * 2;
     ctx.translate(0, floatOffset);
 
-    ctx.fillStyle = p.type === "mana" ? "rgba(52, 152, 219, 0.3)" : 
-                    (p.type === "hp" ? "rgba(46, 204, 113, 0.3)" : 
-                    (p.type === "weapon" ? "rgba(231, 76, 60, 0.3)" : "rgba(241, 196, 15, 0.3)"));
-    ctx.beginPath();
-    ctx.arc(0, 0, p.radius * 1.5, 0, Math.PI * 2);
-    ctx.fill();
+    let spriteName = `pickup_${p.type}`;
+    if (p.type === "weapon" && p.weaponId) {
+        spriteName = `pickup_${p.weaponId}`;
+    }
 
-    SpriteRenderer.drawPixelSprite(ctx, `pickup_${p.type}`, 0, 0, 2);
-
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -4, 1);
     ctx.restore();
   }
 }

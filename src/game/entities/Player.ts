@@ -16,6 +16,7 @@ export class Player {
   public characterId: string = "knight";
   public currentWeaponId: string = "pistol";
   public fireCooldown: number = 0;
+  public aimAngle: number = 0;
   
   public facingLeft: boolean = false;
   public muzzleFlash: number = 0;

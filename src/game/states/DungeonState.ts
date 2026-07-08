@@ -206,6 +206,23 @@ export class DungeonState extends GameState {
     if (this.engine.input.getAxis().x < 0) this.player.facingLeft = true;
     else if (this.engine.input.getAxis().x > 0) this.player.facingLeft = false;
 
+    // Update aim angle
+    const aimTarget = this.getClosestEnemy();
+    if (aimTarget) {
+      this.player.aimAngle = Math.atan2(aimTarget.y - this.player.y, aimTarget.x - this.player.x);
+      // Auto face target if not moving horizontally
+      if (this.engine.input.getAxis().x === 0) {
+         this.player.facingLeft = aimTarget.x < this.player.x;
+      }
+    } else {
+      const axis = this.engine.input.getAxis();
+      if (axis.x !== 0 || axis.y !== 0) {
+        this.player.aimAngle = Math.atan2(axis.y, axis.x);
+      } else {
+        this.player.aimAngle = this.player.facingLeft ? Math.PI : 0;
+      }
+    }
+
     if (this.player.muzzleFlash > 0) this.player.muzzleFlash = Math.max(0, this.player.muzzleFlash - dt * 5);
     if (this.player.hitFlash > 0) this.player.hitFlash -= dt;
     for (const e of this.enemies) {

@@ -3,6 +3,7 @@ import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
 import { CHARACTERS } from "../data/characters";
+import { SpriteRenderer } from "../render/SpriteRenderer";
 
 export class CharacterSelectState extends GameState {
     protected characters = Object.values(CHARACTERS);
@@ -68,9 +69,10 @@ export class CharacterSelectState extends GameState {
       ctx.lineWidth = 1;
       ctx.strokeRect(x, startY, cardW, cardH);
       
-      // Character color block
-      ctx.fillStyle = char.color;
-      ctx.fillRect(x + 5, startY + 5, cardW - 10, 20);
+      // Character sprite
+      SpriteRenderer.drawPixelSprite(ctx, `player_${char.id}_idle`, x + cardW / 2, startY + 15, 2, {
+        paletteOverride: { "2": char.color }
+      });
       
       // Name & Title
       ctx.fillStyle = "#FFF";
