@@ -30,8 +30,15 @@ export class MenuRenderer {
     if (selected) {
       ctx.fillStyle = "rgba(0, 242, 254, 0.2)";
       ctx.fillRect(x - 10, y - 10, 120, 18);
+      
+      // Cursor animation
+      const t = Date.now() / 200;
+      const cursorX = x - 5 + Math.sin(t) * 2;
+      ctx.fillStyle = "#00F2FE";
+      ctx.fillRect(cursorX, y - 8, 4, 14);
+      
       ctx.fillStyle = "#FFF";
-      ctx.fillText("> " + text, x, y);
+      ctx.fillText("  " + text, x, y);
     } else {
       ctx.fillStyle = "#BDC3C7";
       ctx.fillText("  " + text, x, y);

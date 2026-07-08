@@ -1,70 +1,85 @@
 import { Player } from "../entities/Player";
 import { WEAPONS } from "../data/weapons";
 import { FloorData, Room } from "../FloorGenerator";
+import { SpriteRenderer } from "./SpriteRenderer";
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData) {
+
+    
     // Top Left: HUD (HP, Armor, Mana)
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
     ctx.lineWidth = 1;
-    ctx.fillRect(5, 5, 120, 40);
-    ctx.strokeRect(5, 5, 120, 40);
+    ctx.fillRect(5, 5, 120, 45);
+    ctx.strokeRect(5, 5, 120, 45);
     
-    // HP
+    // Pixel corners
+    ctx.fillStyle = "#00F2FE";
+    ctx.fillRect(4, 4, 3, 3);
+    ctx.fillRect(123, 4, 3, 3);
+    ctx.fillRect(4, 48, 3, 3);
+    ctx.fillRect(123, 48, 3, 3);
+    
+    // HP (Segmented)
     const hpRatio = Math.max(0, player.hp) / player.maxHp;
-    ctx.fillStyle = "#641E16"; // Dark red bg
-    ctx.fillRect(10, 10, 80, 5);
-    ctx.fillStyle = "#E74C3C"; // Bright red fg
-    ctx.fillRect(10, 10, 80 * hpRatio, 5);
+    ctx.fillStyle = "#641E16";
+    ctx.fillRect(10, 10, 80, 6);
+    ctx.fillStyle = "#E74C3C";
+    ctx.fillRect(10, 10, 80 * hpRatio, 6);
+    for(let i=1; i<10; i++) {
+       ctx.fillStyle = "rgba(0,0,0,0.5)";
+       ctx.fillRect(10 + i * 8 - 1, 10, 1, 6);
+    }
     
-    // Armor
+    // Armor (Segmented)
     if (player.maxArmor > 0) {
       const arRatio = Math.max(0, player.armor) / player.maxArmor;
       ctx.fillStyle = "#4D5656";
-      ctx.fillRect(10, 17, 80, 3);
+      ctx.fillRect(10, 19, 80, 4);
       ctx.fillStyle = "#BDC3C7";
-      ctx.fillRect(10, 17, 80 * arRatio, 3);
+      ctx.fillRect(10, 19, 80 * arRatio, 4);
     }
     
     // Mana
     const mpRatio = Math.max(0, player.mana) / player.maxMana;
     ctx.fillStyle = "#154360";
-    ctx.fillRect(10, 22, 80, 3);
+    ctx.fillRect(10, 26, 80, 4);
     ctx.fillStyle = "#3498DB";
-    ctx.fillRect(10, 22, 80 * mpRatio, 3);
+    ctx.fillRect(10, 26, 80 * mpRatio, 4);
     
     // Labels
     ctx.fillStyle = "#FFF";
-    ctx.font = "7px monospace";
-    ctx.fillText(`HP`, 95, 15);
-    ctx.fillText(`MP`, 95, 25);
+    ctx.font = "8px monospace";
+    ctx.fillText(`HP`, 95, 16);
+    ctx.fillText(`MP`, 95, 30);
     
     // Coins
-    ctx.fillStyle = "#F1C40F";
-    ctx.beginPath();
-    ctx.arc(14, 34, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#F39C12";
-    ctx.beginPath();
-    ctx.arc(14, 34, 2, 0, Math.PI * 2);
-    ctx.fill();
+    SpriteRenderer.drawPixelSprite(ctx, "pickup_coin", 14, 38, 1);
     ctx.fillStyle = "#FFF";
     ctx.font = "9px monospace";
-    ctx.fillText(`x ${engine.data.data.player.coins}`, 22, 37);
+    ctx.fillText(`x ${engine.data.data.player.coins}`, 22, 42);
     
     // Bottom Left: Weapon Card
     const weapon = WEAPONS[player.currentWeaponId];
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
+    ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
     ctx.fillRect(5, 210, 100, 25);
     ctx.strokeRect(5, 210, 100, 25);
     
     ctx.fillStyle = "#00F2FE";
+    ctx.fillRect(4, 209, 3, 3);
+    ctx.fillRect(103, 209, 3, 3);
+    ctx.fillRect(4, 233, 3, 3);
+    ctx.fillRect(103, 233, 3, 3);
+    
+    ctx.fillStyle = "#00F2FE";
     ctx.font = "bold 9px monospace";
-    ctx.fillText(weapon.name.toUpperCase(), 10, 222);
+    ctx.fillText(weapon.name.toUpperCase(), 24, 222);
+    SpriteRenderer.drawPixelSprite(ctx, "pickup_weapon", 14, 222, 1.5);
     ctx.fillStyle = "#8E9EAB";
     ctx.font = "7px monospace";
-    ctx.fillText(`MP:-${weapon.manaCost} SPD:${weapon.fireRate}`, 10, 231);
+    ctx.fillText(`MP:-${weapon.manaCost} SPD:${weapon.fireRate}`, 24, 231);
 
     // Bottom Right: Room State
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);

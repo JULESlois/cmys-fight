@@ -4,6 +4,7 @@ import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
 import { PALETTES } from "../data/palettes";
 import { CHARACTERS } from "../data/characters";
+import { SpriteRenderer } from "./SpriteRenderer";
 
 export class EntityRenderer {
   public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
@@ -158,36 +159,18 @@ export class EntityRenderer {
 
     if (p.faction === "player") {
       ctx.fillStyle = "rgba(52, 152, 219, 0.4)";
-      ctx.beginPath();
-      ctx.ellipse(-4, 0, 8, p.radius, 0, 0, Math.PI * 2);
-      ctx.fill();
-
+      ctx.fillRect(-6, -p.radius, 12, p.radius*2);
       ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(-2, -p.radius/2, 4, p.radius);
     } else {
       if (p.damage >= 3) {
          ctx.fillStyle = "rgba(241, 196, 15, 0.6)";
-         ctx.beginPath();
-         ctx.arc(0, 0, p.radius * 1.5, 0, Math.PI * 2);
-         ctx.fill();
-
+         ctx.fillRect(-p.radius*1.5, -p.radius*1.5, p.radius*3, p.radius*3);
          ctx.fillStyle = "#E74C3C";
-         ctx.beginPath();
-         ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-         ctx.fill();
-         ctx.strokeStyle = "#F1C40F";
-         ctx.lineWidth = 1;
-         ctx.stroke();
+         ctx.fillRect(-p.radius, -p.radius, p.radius*2, p.radius*2);
       } else {
          ctx.fillStyle = p.color;
-         ctx.beginPath();
-         ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-         ctx.fill();
-         ctx.strokeStyle = "#C0392B";
-         ctx.lineWidth = 1;
-         ctx.stroke();
+         ctx.fillRect(-p.radius, -p.radius, p.radius*2, p.radius*2);
       }
     }
 
@@ -207,37 +190,7 @@ export class EntityRenderer {
     ctx.arc(0, 0, p.radius * 1.5, 0, Math.PI * 2);
     ctx.fill();
 
-    if (p.type === "hp") {
-      ctx.fillStyle = "#2ECC71";
-      ctx.fillRect(-2, -6, 4, 12);
-      ctx.fillRect(-6, -2, 12, 4);
-    } else if (p.type === "mana") {
-      ctx.fillStyle = "#3498DB";
-      ctx.beginPath();
-      ctx.moveTo(0, -6);
-      ctx.lineTo(5, 0);
-      ctx.lineTo(0, 6);
-      ctx.lineTo(-5, 0);
-      ctx.fill();
-    } else if (p.type === "coin") {
-      ctx.fillStyle = "#F1C40F";
-      ctx.beginPath();
-      ctx.arc(0, 0, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#F39C12";
-      ctx.beginPath();
-      ctx.arc(0, 0, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#FFF";
-      ctx.fillRect(-2, -3, 2, 2);
-    } else if (p.type === "weapon") {
-      ctx.fillStyle = "#E74C3C";
-      ctx.fillRect(-5, -1, 10, 3);
-      ctx.fillStyle = "#C0392B";
-      ctx.fillRect(-3, -3, 3, 5);
-      ctx.fillStyle = "#F1C40F";
-      ctx.fillRect(4, -2, 2, 5);
-    }
+    SpriteRenderer.drawPixelSprite(ctx, `pickup_${p.type}`, 0, 0, 2);
 
     ctx.restore();
   }

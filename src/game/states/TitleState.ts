@@ -47,14 +47,24 @@ export class TitleState extends GameState {
     ctx.fillStyle = "#0A0F19";
     ctx.fillRect(0, 0, 320, 240);
 
-    // Particles or grid (simple grid)
+    // Grid drifting
+    const t = Date.now() / 1000;
+    const driftX = (t * 10) % 20;
+    const driftY = (t * 10) % 20;
+
     ctx.strokeStyle = "rgba(0, 242, 254, 0.05)";
     ctx.lineWidth = 1;
-    for (let i = 0; i < 320; i += 20) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 240); ctx.stroke();
+    for (let i = -20; i < 340; i += 20) {
+      ctx.beginPath(); ctx.moveTo(i + driftX, 0); ctx.lineTo(i + driftX, 240); ctx.stroke();
     }
-    for (let i = 0; i < 240; i += 20) {
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(320, i); ctx.stroke();
+    for (let i = -20; i < 260; i += 20) {
+      ctx.beginPath(); ctx.moveTo(0, i + driftY); ctx.lineTo(320, i + driftY); ctx.stroke();
+    }
+
+    // Scanlines
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    for(let i=0; i<240; i+=4) {
+      ctx.fillRect(0, i, 320, 1);
     }
 
     MenuRenderer.drawTitle(ctx, "CMYS FIGHT", 160, 60);

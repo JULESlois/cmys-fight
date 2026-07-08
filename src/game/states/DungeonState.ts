@@ -119,7 +119,7 @@ export class DungeonState extends GameState {
 
     if (currentRoom && !currentRoom.cleared) {
        if (currentRoom.type === "treasure") {
-          if (!currentRoom.pickups) {
+          if (!currentRoom.pickups || currentRoom.pickups.length === 0) {
              const pts = template.pickupSpawnPoints;
              const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
              this.pickups.push(new Pickup(pt.x * 16 + 8, pt.y * 16 + 8, "weapon", 1, "shotgun"));

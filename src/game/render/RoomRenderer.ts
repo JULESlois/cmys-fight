@@ -65,6 +65,17 @@ export class RoomRenderer {
         if (tileId === 2) {
           ctx.fillStyle = p.floor;
           ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+          
+          // Pixel texture details
+          ctx.fillStyle = "rgba(0,0,0,0.1)";
+          ctx.fillRect(tx + 2, ty + 2, 2, 2);
+          ctx.fillRect(tx + 10, ty + 8, 2, 2);
+          ctx.fillRect(tx + 4, ty + 12, 4, 2);
+          
+          // Edge line
+          ctx.fillStyle = "rgba(0,0,0,0.05)";
+          ctx.fillRect(tx, ty + TILE_SIZE - 1, TILE_SIZE, 1);
+          ctx.fillRect(tx + TILE_SIZE - 1, ty, 1, TILE_SIZE);
         } else if (tileId === 3) {
           if (theme === "forest" || theme === "snow") {
             ctx.fillStyle = p.hazard1;
@@ -142,6 +153,12 @@ export class RoomRenderer {
         const ty = y * TILE_SIZE;
 
         if (tileId === 1) {
+          // General wall highlight/shadow
+          ctx.fillStyle = "rgba(255,255,255,0.1)";
+          ctx.fillRect(tx, ty, TILE_SIZE, 2);
+          ctx.fillStyle = "rgba(0,0,0,0.2)";
+          ctx.fillRect(tx, ty + TILE_SIZE - 2, TILE_SIZE, 2);
+
           if (theme === "forest") {
             ctx.fillStyle = p.wall;
             ctx.fillRect(tx + 6, ty + 8, 4, 8);
