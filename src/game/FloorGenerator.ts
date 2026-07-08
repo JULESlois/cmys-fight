@@ -9,6 +9,7 @@ export interface Room {
   visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
   enemies?: { x: number, y: number, type: "melee" | "ranged" | "boss", hp?: number }[];
+  pickups?: { x: number, y: number, type: "hp" | "mana" | "coin" | "weapon", value: number, weaponId?: string }[];
 }
 
 export interface FloorData {

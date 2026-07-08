@@ -34,6 +34,7 @@ export class DungeonState extends GameState {
   private transitionAlpha: number = 1;
   private pendingTransition: (() => void) | null = null;
   private roomClearTimer: number = 0;
+  private roomIntroTimer: number = 0;
   
   constructor(engine: Engine) {
     super(engine);
@@ -103,6 +104,7 @@ export class DungeonState extends GameState {
     this.projectiles = [];
     this.pickups = [];
     this.enemies = [];
+    this.roomIntroTimer = 0.5;
     this.portal = undefined;
 
     const floor = this.engine.data.data.floor;
@@ -111,11 +113,17 @@ export class DungeonState extends GameState {
     this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
     const template = getRoomTemplate(currentRoom);
 
+    if (currentRoom && currentRoom.pickups) {
+      this.pickups = currentRoom.pickups.map(p => new Pickup(p.x, p.y, p.type, p.value, p.weaponId));
+    }
+
     if (currentRoom && !currentRoom.cleared) {
        if (currentRoom.type === "treasure") {
-          const pts = template.pickupSpawnPoints;
-          const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-          this.pickups.push(new Pickup(pt.x * 16 + 8, pt.y * 16 + 8, "weapon", 1, "shotgun"));
+          if (!currentRoom.pickups) {
+             const pts = template.pickupSpawnPoints;
+             const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
+             this.pickups.push(new Pickup(pt.x * 16 + 8, pt.y * 16 + 8, "weapon", 1, "shotgun"));
+          }
           currentRoom.cleared = true;
        } else {
          if (currentRoom.enemies && currentRoom.enemies.length > 0) {
@@ -149,8 +157,11 @@ export class DungeonState extends GameState {
   private syncRoomState() {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-    if (currentRoom && !currentRoom.cleared && currentRoom.type !== "treasure" && currentRoom.type !== "start") {
-       currentRoom.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+    if (currentRoom) {
+       currentRoom.pickups = this.pickups.map(p => ({ x: p.x, y: p.y, type: p.type, value: p.value, weaponId: p.weaponId }));
+       if (!currentRoom.cleared && (currentRoom.type === "combat" || currentRoom.type === "boss")) {
+          currentRoom.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+       }
     }
   }
 
@@ -174,11 +185,17 @@ export class DungeonState extends GameState {
       }
     }
 
-    this.updatePlayer(dt);
-    this.updateEnemies(dt);
-    this.updateProjectiles(dt);
-    this.updatePickups(dt);
-    this.checkCollisions();
+    if (this.roomIntroTimer > 0) {
+      this.roomIntroTimer -= dt;
+      this.updatePlayer(dt);
+      this.updatePickups(dt);
+    } else {
+      this.updatePlayer(dt);
+      this.updateEnemies(dt);
+      this.updateProjectiles(dt);
+      this.updatePickups(dt);
+      this.checkCollisions();
+    }
     
     this.roomRenderer.update(dt);
     if (this.portal) {
@@ -658,6 +675,16 @@ export class DungeonState extends GameState {
     
     // Prompt
     PromptRenderer.draw(ctx, this.getInteractTarget(), time);
+
+    if (this.roomIntroTimer > 0 && this.transitionState === "none") {
+       ctx.fillStyle = "rgba(0,0,0,0.5)";
+       ctx.fillRect(0, 80, 320, 40);
+       ctx.fillStyle = "#FFF";
+       ctx.font = "bold 16px monospace";
+       ctx.textAlign = "center";
+       ctx.fillText("READY", 160, 105);
+       ctx.textAlign = "left";
+    }
 
     if (this.player.hp <= 0) {
       ctx.fillStyle = "rgba(0,0,0,0.7)";

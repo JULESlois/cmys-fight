@@ -70,6 +70,7 @@ export class Engine {
 
   public switchState(newState: string, params?: any) {
     this.states[this.currentState].exit();
+    this.input.clear();
     this.currentState = newState;
     if (["title", "character_select", "settings"].includes(newState)) {
        this.isPaused = false;

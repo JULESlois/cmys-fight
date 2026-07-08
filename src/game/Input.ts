@@ -10,6 +10,10 @@ export class Input {
     this.handleKeyUp = this.onKeyUp.bind(this);
     window.addEventListener("keydown", this.handleKeyDown);
     window.addEventListener("keyup", this.handleKeyUp);
+    window.addEventListener("blur", () => this.clear());
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) this.clear();
+    });
   }
 
   private normalizeKey(key: string): string {
@@ -39,6 +43,15 @@ export class Input {
     for (let key in this.justPressed) {
       this.justPressed[key] = false;
     }
+  }
+
+  public clear() {
+    this.keys = {};
+    this.justPressed = {};
+  }
+
+  public clearJustPressed() {
+    this.justPressed = {};
   }
 
   public cleanup() {
