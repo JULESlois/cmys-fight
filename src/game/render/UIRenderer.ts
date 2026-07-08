@@ -23,54 +23,44 @@ export class UIRenderer {
     
     // Pixel UI Layout for Stats
     
-    // HP - Red Hearts/Blocks
-    for (let i = 0; i < player.maxHp; i++) {
-        const x = 10 + i * 7;
-        const y = 10;
-        ctx.fillStyle = "#1a1c2c";
-        ctx.fillRect(x, y, 6, 6);
-        if (i < player.hp) {
-           ctx.fillStyle = "#e43b44";
-           ctx.fillRect(x + 1, y + 1, 4, 4);
-           ctx.fillStyle = "#fff";
-           ctx.fillRect(x + 2, y + 2, 1, 1); // shine
-        } else {
-           ctx.fillStyle = "#641E16";
-           ctx.fillRect(x + 1, y + 1, 4, 4);
-        }
-    }
-    
-    // Armor - Silver Shields
-    if (player.maxArmor > 0) {
-        for (let i = 0; i < player.maxArmor; i++) {
-            const x = 10 + i * 6;
-            const y = 18;
+    // Pixel UI Layout for Stats
+    const drawBar = (x: number, y: number, current: number, max: number, maxBlocks: number, size: number, colorOn: string, colorOff: string, hasShine: boolean = false) => {
+        const blocks = Math.min(max, maxBlocks);
+        const fillBlocks = Math.ceil((current / max) * blocks);
+        for (let i = 0; i < blocks; i++) {
+            const bx = x + i * (size + 1);
             ctx.fillStyle = "#1a1c2c";
-            ctx.fillRect(x, y, 5, 5);
-            if (i < player.armor) {
-               ctx.fillStyle = "#BDC3C7";
-               ctx.fillRect(x + 1, y + 1, 3, 3);
+            ctx.fillRect(bx, y, size, size);
+            if (i < fillBlocks) {
+                ctx.fillStyle = colorOn;
+                ctx.fillRect(bx + 1, y + 1, size - 2, size - 2);
+                if (hasShine) {
+                    ctx.fillStyle = "#fff";
+                    ctx.fillRect(bx + 2, y + 2, 1, 1);
+                }
             } else {
-               ctx.fillStyle = "#4D5656";
-               ctx.fillRect(x + 1, y + 1, 3, 3);
+                ctx.fillStyle = colorOff;
+                ctx.fillRect(bx + 1, y + 1, size - 2, size - 2);
             }
         }
+        
+        // Value text
+        ctx.fillStyle = "#FFF";
+        ctx.font = "8px monospace";
+        ctx.fillText(`${Math.floor(current)}/${max}`, x + blocks * (size + 1) + 4, y + size - 1);
+    };
+
+    // HP - Red Blocks (max 10 blocks)
+    drawBar(10, 10, player.hp, player.maxHp, 10, 6, "#e43b44", "#641E16", true);
+    
+    // Armor - Silver Blocks (max 10 blocks)
+    if (player.maxArmor > 0) {
+        drawBar(10, 18, player.armor, player.maxArmor, 10, 5, "#BDC3C7", "#4D5656", false);
     }
     
-    // Mana - Blue Gems
-    for (let i = 0; i < player.maxMana; i++) {
-        const x = 10 + i * 5;
-        const y = player.maxArmor > 0 ? 25 : 18; // Shift up if no armor
-        ctx.fillStyle = "#1a1c2c";
-        ctx.fillRect(x, y, 4, 4);
-        if (i < player.mana) {
-           ctx.fillStyle = "#29adff";
-           ctx.fillRect(x + 1, y + 1, 2, 2);
-        } else {
-           ctx.fillStyle = "#154360";
-           ctx.fillRect(x + 1, y + 1, 2, 2);
-        }
-    }
+    // Mana - Blue Gems (max 10 blocks)
+    const manaY = player.maxArmor > 0 ? 25 : 18;
+    drawBar(10, manaY, player.mana, player.maxMana, 10, 5, "#29adff", "#154360", false);
     
     // Coins
     SpriteRenderer.drawPixelSprite(ctx, "pickup_coin", 14, 38, 1);

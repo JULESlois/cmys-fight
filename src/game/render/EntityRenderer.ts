@@ -1,4 +1,4 @@
-import { Player } from "../entities/Player";
+import { Player, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, PLAYER_MUZZLE_OFFSET_X, PLAYER_MUZZLE_OFFSET_Y, PLAYER_HAND_OFFSET_Y } from "../entities/Player";
 import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
@@ -21,41 +21,55 @@ export class EntityRenderer {
 
     // Body
     ctx.save();
-    if (player.facingLeft) {
-      ctx.scale(-1, 1);
-    }
+
 
     const isHit = player.hitFlash > 0;
     const charConfig = CHARACTERS[player.characterId] || CHARACTERS["knight"];
     
-    const spriteName = `player_${player.characterId}_idle`;
+    let animFacing: string = player.facing;
+    let flipX = false;
+    if (animFacing === "left") {
+        animFacing = "side";
+        flipX = true;
+    } else if (animFacing === "right") {
+        animFacing = "side";
+    }
+    
+    let spriteName = `player_${player.characterId}_${player.animState}_${animFacing}`;
+    if (player.animState === "walk") {
+        spriteName += `_${player.animFrame}`;
+    }
+    
     const paletteOverride = charConfig ? { "2": charConfig.color } : undefined;
     
-    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 1.5, { 
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, { 
       hitFlash: isHit,
-      paletteOverride
+      paletteOverride,
+      flipX
     });
     ctx.restore();
 
     // Weapon
     ctx.save();
-    ctx.translate(0, -2); // Roughly hand level
+    ctx.translate(0, PLAYER_HAND_OFFSET_Y); // Roughly hand level
     ctx.rotate(player.aimAngle);
     if (Math.abs(player.aimAngle) > Math.PI / 2) {
       ctx.scale(1, -1);
     }
     
     // Shift weapon forward
-    SpriteRenderer.drawPixelSprite(ctx, `pickup_${player.currentWeaponId}`, 10, -2, 1);
+    SpriteRenderer.drawPixelSprite(ctx, `pickup_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1);
 
     if (player.muzzleFlash > 0) {
       // Pixel muzzle flash at barrel end
       ctx.fillStyle = "rgba(241, 196, 15, " + player.muzzleFlash + ")";
-      ctx.fillRect(18, -6, 4, 4);
-      ctx.fillRect(22, -8, 2, 8);
-      ctx.fillRect(24, -4, 2, 4);
+      const mx = PLAYER_MUZZLE_OFFSET_X;
+      const my = PLAYER_MUZZLE_OFFSET_Y;
+      ctx.fillRect(mx, my - 2, 4, 4);
+      ctx.fillRect(mx + 4, my - 4, 2, 8);
+      ctx.fillRect(mx + 6, my, 2, 4);
       ctx.fillStyle = "rgba(255, 255, 255, " + player.muzzleFlash + ")";
-      ctx.fillRect(20, -4, 2, 2);
+      ctx.fillRect(mx + 2, my, 2, 2);
     }
     ctx.restore();
 
@@ -76,8 +90,8 @@ export class EntityRenderer {
     const isHit = enemy.hitFlash > 0;
     
     ctx.translate(0, animOffset);
-    let scale = 1.5;
-    if (enemy.type === "boss") scale = 2.5;
+    let scale = 2;
+    if (enemy.type === "boss") scale = 3;
     
     SpriteRenderer.drawPixelSprite(ctx, `enemy_${enemy.type}_idle`, 0, -8, scale, { hitFlash: isHit });
     ctx.restore();

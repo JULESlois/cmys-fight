@@ -202,25 +202,37 @@ export class DungeonState extends GameState {
        this.portalTime += dt;
     }
     
-    // Player facing direction based on movement
-    if (this.engine.input.getAxis().x < 0) this.player.facingLeft = true;
-    else if (this.engine.input.getAxis().x > 0) this.player.facingLeft = false;
-
-    // Update aim angle
+    // Update aim angle based on movement or target
+    this.player.aimAngle = this.getPlayerAimAngle();
     const aimTarget = this.getClosestEnemy();
-    if (aimTarget) {
-      this.player.aimAngle = Math.atan2(aimTarget.y - this.player.y, aimTarget.x - this.player.x);
-      // Auto face target if not moving horizontally
-      if (this.engine.input.getAxis().x === 0) {
-         this.player.facingLeft = aimTarget.x < this.player.x;
-      }
+    
+    // Update player facing and animation state
+    const axis = this.engine.input.getAxis();
+    if (axis.x !== 0 || axis.y !== 0) {
+       this.player.animState = "walk";
+       this.player.animTimer += dt;
+       this.player.animFrame = Math.floor(this.player.animTimer * 8) % 2;
+       
+       if (Math.abs(axis.x) > Math.abs(axis.y)) {
+           this.player.facing = axis.x > 0 ? "right" : "left";
+       } else {
+           this.player.facing = axis.y > 0 ? "down" : "up";
+       }
+       this.player.facingLeft = this.player.facing === "left";
     } else {
-      const axis = this.engine.input.getAxis();
-      if (axis.x !== 0 || axis.y !== 0) {
-        this.player.aimAngle = Math.atan2(axis.y, axis.x);
-      } else {
-        this.player.aimAngle = this.player.facingLeft ? Math.PI : 0;
-      }
+       this.player.animState = "idle";
+       this.player.animFrame = 0;
+       // Auto face target if not moving
+       if (aimTarget) {
+          const cosA = Math.cos(this.player.aimAngle);
+          const sinA = Math.sin(this.player.aimAngle);
+          if (Math.abs(cosA) > Math.abs(sinA)) {
+              this.player.facing = cosA > 0 ? "right" : "left";
+          } else {
+              this.player.facing = sinA > 0 ? "down" : "up";
+          }
+          this.player.facingLeft = this.player.facing === "left";
+       }
     }
 
     if (this.player.muzzleFlash > 0) this.player.muzzleFlash = Math.max(0, this.player.muzzleFlash - dt * 5);
@@ -452,23 +464,11 @@ export class DungeonState extends GameState {
     this.player.muzzleFlash = 1.0;
     audio.playShoot();
     
-    let target = this.getClosestEnemy();
-    let dx = 1, dy = 0;
-    if (target) {
-      const dist = Math.hypot(target.x - this.player.x, target.y - this.player.y);
-      if (dist > 0.001) {
-         dx = (target.x - this.player.x) / dist;
-         dy = (target.y - this.player.y) / dist;
-      }
-    } else {
-      const axis = this.engine.input.getAxis();
-      if (axis.x !== 0 || axis.y !== 0) {
-        dx = axis.x;
-        dy = axis.y;
-      }
-    }
+    const baseAngle = this.getPlayerAimAngle();
+    this.player.aimAngle = baseAngle;
+    this.player.facingLeft = Math.cos(baseAngle) < 0;
     
-    const baseAngle = Math.atan2(dy, dx);
+    const muzzle = this.player.getPlayerMuzzlePosition(baseAngle);
     
     for (let i = 0; i < weapon.pelletCount; i++) {
       const angle = baseAngle + (Math.random() - 0.5) * weapon.spread;
@@ -476,13 +476,31 @@ export class DungeonState extends GameState {
       const vy = Math.sin(angle) * weapon.bulletSpeed;
       
       this.projectiles.push(new Projectile(
-        this.player.x, this.player.y,
+        muzzle.x, muzzle.y,
         vx, vy,
         3, weapon.damage, "player", 2.0, weapon.color
       ));
     }
   }
   
+  private getPlayerAimAngle(): number {
+    const aimTarget = this.getClosestEnemy();
+    if (aimTarget) {
+      return Math.atan2(aimTarget.y - this.player.y, aimTarget.x - this.player.x);
+    } else {
+      const axis = this.engine.input.getAxis();
+      if (axis.x !== 0 || axis.y !== 0) {
+        return Math.atan2(axis.y, axis.x);
+      } else {
+        if (this.player.facing === "left") return Math.PI;
+        if (this.player.facing === "right") return 0;
+        if (this.player.facing === "up") return -Math.PI / 2;
+        if (this.player.facing === "down") return Math.PI / 2;
+        return this.player.facingLeft ? Math.PI : 0;
+      }
+    }
+  }
+
   private getClosestEnemy(): Enemy | null {
     let closest = null;
     let minDist = Infinity;

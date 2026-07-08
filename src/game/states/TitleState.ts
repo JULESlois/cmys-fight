@@ -104,7 +104,7 @@ export class TitleState extends GameState {
     ctx.ellipse(240, 160, 16, 6, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    SpriteRenderer.drawPixelSprite(ctx, `player_${displayChar.id}_idle`, 240, 160 - 16, 4, {
+    SpriteRenderer.drawPixelSprite(ctx, `player_${displayChar.id}_idle_down`, 240, 160 - 16, 4, {
       paletteOverride: { "2": displayChar.color }
     });
 

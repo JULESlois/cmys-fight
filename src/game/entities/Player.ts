@@ -1,3 +1,9 @@
+export const PLAYER_WEAPON_OFFSET_X = 10;
+export const PLAYER_WEAPON_OFFSET_Y = -2;
+export const PLAYER_HAND_OFFSET_Y = -2;
+export const PLAYER_MUZZLE_OFFSET_X = 18;
+export const PLAYER_MUZZLE_OFFSET_Y = -4;
+
 export class Player {
   public x: number;
   public y: number;
@@ -19,6 +25,11 @@ export class Player {
   public aimAngle: number = 0;
   
   public facingLeft: boolean = false;
+  public facing: "right" | "left" | "up" | "down" = "right";
+  public animState: "idle" | "walk" | "shoot" = "idle";
+  public animTimer: number = 0;
+  public animFrame: number = 0;
+
   public muzzleFlash: number = 0;
   public hitFlash: number = 0;
 
@@ -30,5 +41,22 @@ export class Player {
     this.maxMana = 100;
     this.mana = this.maxMana;
     this.armor = this.maxArmor;
+  }
+
+  public getPlayerMuzzlePosition(angle: number) {
+    const handX = this.x;
+    const handY = this.y + PLAYER_HAND_OFFSET_Y;
+    const localMuzzleX = PLAYER_MUZZLE_OFFSET_X;
+    const localMuzzleY = PLAYER_MUZZLE_OFFSET_Y;
+    
+    let my = localMuzzleY;
+    if (Math.abs(angle) > Math.PI / 2) {
+      my = -my;
+    }
+    
+    return {
+      x: handX + Math.cos(angle) * localMuzzleX - Math.sin(angle) * my,
+      y: handY + Math.sin(angle) * localMuzzleX + Math.cos(angle) * my
+    };
   }
 }

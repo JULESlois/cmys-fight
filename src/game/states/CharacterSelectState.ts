@@ -44,8 +44,8 @@ export class CharacterSelectState extends GameState {
 
     MenuRenderer.drawTitle(ctx, "SELECT CHARACTER", 160, 30);
 
-    const cardW = 80;
-    const cardH = 140;
+    const cardW = 85;
+    const cardH = 130;
     const spacing = 15;
     const totalW = this.characters.length * cardW + (this.characters.length - 1) * spacing;
     const startX = 160 - totalW / 2;
@@ -70,37 +70,40 @@ export class CharacterSelectState extends GameState {
       ctx.strokeRect(x, startY, cardW, cardH);
       
       // Character sprite
-      SpriteRenderer.drawPixelSprite(ctx, `player_${char.id}_idle`, x + cardW / 2, startY + 15, 2, {
+      SpriteRenderer.drawPixelSprite(ctx, `player_${char.id}_idle_down`, x + cardW / 2, startY + 20, 2, {
         paletteOverride: { "2": char.color }
       });
       
-      // Name & Title
+      // Name
       ctx.fillStyle = "#FFF";
       ctx.textAlign = "center";
       ctx.font = "bold 10px monospace";
-      ctx.fillText(char.name, x + cardW/2, startY + 40);
-      ctx.fillStyle = "#BDC3C7";
-      ctx.font = "8px monospace";
-      ctx.fillText(char.title, x + cardW/2, startY + 50);
+      ctx.fillText(char.name, x + cardW/2, startY + 45);
       
       // Stats
       ctx.textAlign = "left";
-      MenuRenderer.drawStatBar(ctx, "HP", char.maxHp, 10, x + 5, startY + 70, "#E74C3C");
-      MenuRenderer.drawStatBar(ctx, "AR", char.maxArmor, 10, x + 5, startY + 85, "#BDC3C7");
-      MenuRenderer.drawStatBar(ctx, "MP", char.maxMana, 150, x + 5, startY + 100, "#3498DB");
-      MenuRenderer.drawStatBar(ctx, "SP", char.speed, 150, x + 5, startY + 115, "#F1C40F");
+      MenuRenderer.drawStatBar(ctx, "HP", char.maxHp, 10, x + 5, startY + 65, "#E74C3C");
+      MenuRenderer.drawStatBar(ctx, "AR", char.maxArmor, 10, x + 5, startY + 80, "#BDC3C7");
+      MenuRenderer.drawStatBar(ctx, "MP", char.maxMana, 150, x + 5, startY + 95, "#3498DB");
+      MenuRenderer.drawStatBar(ctx, "SP", char.speed, 150, x + 5, startY + 110, "#F1C40F");
       
-      // Weapon
-      ctx.fillStyle = "#FFF";
-      ctx.fillText(char.starterWeapon.toUpperCase(), x + 5, startY + 130);
+      // Weapon (small label)
+      ctx.fillStyle = "#BDC3C7";
+      ctx.font = "8px monospace";
+      ctx.fillText(`WPN: ${char.starterWeapon.toUpperCase()}`, x + 5, startY + 122);
     }
     
-    // Passive for selected char
+    // Passive & Title for selected char
     ctx.textAlign = "center";
-    ctx.fillStyle = "#F1C40F";
-    ctx.font = "10px monospace";
     const selectedChar = this.characters[this.selectedIndex];
-    ctx.fillText(`PASSIVE: ${selectedChar.passive}`, 160, 210);
+    
+    ctx.fillStyle = selectedChar.color;
+    ctx.font = "bold 10px monospace";
+    ctx.fillText(selectedChar.title.toUpperCase(), 160, 202);
+    
+    ctx.fillStyle = "#F1C40F";
+    ctx.font = "9px monospace";
+    ctx.fillText(`[PASSIVE] ${selectedChar.passive}`, 160, 214);
 
     // Bottom tips
     ctx.fillStyle = "#00F2FE";

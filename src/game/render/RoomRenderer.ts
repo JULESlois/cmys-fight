@@ -240,13 +240,56 @@ export class RoomRenderer {
 
     if (currentRoom) {
       const isLocked = !currentRoom.cleared;
-      const doorColor = isLocked ? "rgba(231, 76, 60, 0.6)" : "rgba(46, 204, 113, 0.4)";
-      ctx.fillStyle = doorColor;
       
-      if (currentRoom.doors.left) ctx.fillRect(0, DOOR_ZONES.left.yMin * TILE_SIZE, 16, (DOOR_ZONES.left.yMax - DOOR_ZONES.left.yMin + 1) * TILE_SIZE);
-      if (currentRoom.doors.right) ctx.fillRect((MAP_WIDTH - 1) * TILE_SIZE, DOOR_ZONES.right.yMin * TILE_SIZE, 16, (DOOR_ZONES.right.yMax - DOOR_ZONES.right.yMin + 1) * TILE_SIZE);
-      if (currentRoom.doors.up) ctx.fillRect(DOOR_ZONES.up.xMin * TILE_SIZE, 0, (DOOR_ZONES.up.xMax - DOOR_ZONES.up.xMin + 1) * TILE_SIZE, 16);
-      if (currentRoom.doors.down) ctx.fillRect(DOOR_ZONES.down.xMin * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE, (DOOR_ZONES.down.xMax - DOOR_ZONES.down.xMin + 1) * TILE_SIZE, 16);
+      const drawDoor = (x: number, y: number, w: number, h: number) => {
+         const frameColor = isLocked ? "#C0392B" : "#27AE60";
+         const innerColor = isLocked ? "rgba(231, 76, 60, 0.2)" : "rgba(46, 204, 113, 0.1)";
+         
+         ctx.fillStyle = innerColor;
+         ctx.fillRect(x, y, w, h);
+         
+         ctx.fillStyle = frameColor;
+         
+         if (isLocked) {
+             ctx.fillStyle = "rgba(231, 76, 60, 0.8)";
+             if (w > h) {
+                // Horizontal barrier
+                for (let i = x + 4; i < x + w; i += 8) {
+                   ctx.fillRect(i, y + 2, 2, h - 4);
+                }
+             } else {
+                // Vertical barrier
+                for (let i = y + 4; i < y + h; i += 8) {
+                   ctx.fillRect(x + 2, i, w - 4, 2);
+                }
+             }
+             
+             // Draw frame on edges
+             ctx.fillStyle = frameColor;
+             if (w > h) {
+                 ctx.fillRect(x, y, w, 2);
+                 ctx.fillRect(x, y + h - 2, w, 2);
+             } else {
+                 ctx.fillRect(x, y, 2, h);
+                 ctx.fillRect(x + w - 2, y, 2, h);
+             }
+         } else {
+             // Open door frame details (just sides)
+             ctx.fillStyle = frameColor;
+             if (w > h) {
+                ctx.fillRect(x, y, 4, h);
+                ctx.fillRect(x + w - 4, y, 4, h);
+             } else {
+                ctx.fillRect(x, y, w, 4);
+                ctx.fillRect(x, y + h - 4, w, 4);
+             }
+         }
+      };
+      
+      if (currentRoom.doors.left) drawDoor(0, DOOR_ZONES.left.yMin * TILE_SIZE, 16, (DOOR_ZONES.left.yMax - DOOR_ZONES.left.yMin + 1) * TILE_SIZE);
+      if (currentRoom.doors.right) drawDoor((MAP_WIDTH - 1) * TILE_SIZE, DOOR_ZONES.right.yMin * TILE_SIZE, 16, (DOOR_ZONES.right.yMax - DOOR_ZONES.right.yMin + 1) * TILE_SIZE);
+      if (currentRoom.doors.up) drawDoor(DOOR_ZONES.up.xMin * TILE_SIZE, 0, (DOOR_ZONES.up.xMax - DOOR_ZONES.up.xMin + 1) * TILE_SIZE, 16);
+      if (currentRoom.doors.down) drawDoor(DOOR_ZONES.down.xMin * TILE_SIZE, (MAP_HEIGHT - 1) * TILE_SIZE, (DOOR_ZONES.down.xMax - DOOR_ZONES.down.xMin + 1) * TILE_SIZE, 16);
       
 
     }

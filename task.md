@@ -1,104 +1,105 @@
-继续开发 cmys-fight。这一轮只做美术落地，不新增玩法。
+继续修复 cmys-fight。这一轮重点解决两个实际体验问题：
+1. 武器射出的子弹和武器/枪口不在一条线上。
+2. 角色没有方向动画，只有静态 idle sprite。
 
-当前问题：
-虽然已经新增 SpriteRenderer 和 sprites.ts，但 EntityRenderer.drawPlayer() / drawEnemy() 仍然主要使用旧几何图形，所以实际试玩仍显得简陋。必须把主角、敌人、Boss、掉落物、门和 HUD 进一步像素化。
+不要新增玩法，专注射击视觉对齐和最小角色动画系统。
 
 必须完成：
 
-1. 真正接入玩家 sprite。
-   - EntityRenderer.drawPlayer() 不要再用 cloak 梯形、圆形头、矩形 visor 作为主体。
-   - 根据 player.characterId 选择：
-     - knight -> player_knight_idle
-     - mage -> player_mage_idle
-     - rogue -> player_rogue_idle
-   - 使用 SpriteRenderer.drawPixelSprite() 绘制主体。
-   - 保留 shadow / facingLeft / hitFlash / muzzleFlash。
-   - muzzleFlash 可以继续用 Canvas 图形，但要改为像素爆闪，例如几个小方块，而不是圆形光球。
-   - 角色颜色可以通过 paletteOverride 改第 2 色或第 5 色。
+1. 统一射击角度计算。
+   - 在 DungeonState 中新增 getPlayerAimAngle()。
+   - 规则：
+     - 有最近敌人：朝最近敌人。
+     - 无敌人但有移动输入：朝移动方向。
+     - 无输入：朝当前 facingLeft / facing 方向。
+   - update() 和 fireWeapon() 都使用这个函数。
+   - fireWeapon() 计算出 angle 后必须写：
+       this.player.aimAngle = angle;
+       this.player.facingLeft = Math.cos(angle) < 0;
 
-2. 真正接入敌人 sprite。
-   - EntityRenderer.drawEnemy() 不要再用圆形、方形、菱形作为主体。
-   - melee 使用 enemy_melee_idle。
-   - ranged 使用 enemy_ranged_idle。
-   - boss 使用 enemy_boss_idle，scale 更大。
-   - 保留 bobbing 动画、hitFlash、shadow、HP bar。
-   - HP bar 可以像素化为黑底红/绿小条。
+2. 修复子弹出生点。
+   - 当前 Projectile 从 this.player.x / this.player.y 生成，导致子弹从身体中心出现。
+   - 新增 getPlayerMuzzlePosition(angle)。
+   - 使用和 EntityRenderer 中枪口一致的 forward/side 偏移。
+   - projectile 必须从 muzzle.x / muzzle.y 生成，而不是 player.x / player.y。
+   - muzzleFlash 的位置也要和 getPlayerMuzzlePosition 使用的偏移一致。
+   - 建议常量：
+       PLAYER_WEAPON_FORWARD = 18
+       PLAYER_WEAPON_SIDE = -2
+   - 不要在 EntityRenderer 和 DungeonState 中写两套不一致的 magic number。
 
-3. 扩展 sprites.ts。
-   - 当前 sprite 太小且辨识度不足。
-   - 把 player 和 enemy sprite 从 8x8 扩到 12x12 或 16x16。
-   - 三个角色需要明显差异：
-     - Knight：盔甲/盾感
-     - Mage：法袍/法杖感
-     - Rogue：兜帽/轻甲感
-   - 敌人也要明显差异：
-     - melee：兽角/爪子
-     - ranged：炮口/眼睛
-     - boss：大型核心/外壳/光环
+3. 把武器绘制常量集中。
+   - 新增或导出统一常量：
+       PLAYER_WEAPON_OFFSET_X
+       PLAYER_WEAPON_OFFSET_Y
+       PLAYER_MUZZLE_OFFSET_X
+       PLAYER_MUZZLE_OFFSET_Y
+   - EntityRenderer.drawPlayer() 和 DungeonState.fireWeapon() 使用同一组常量。
+   - 目标：视觉枪口、muzzle flash、projectile 起点完全一致。
 
-4. 掉落物继续优化。
-   - pickup_hp 改成药瓶或红心。
-   - pickup_mana 改成蓝色晶体。
-   - pickup_coin 改成更清晰的金币。
-   - pickup_weapon 按当前武器类型显示不同图标：
-     - pistol
-     - shotgun
-     - laser
-   - 如果暂时不做多武器 sprite，至少 weapon pickup 要比一条斜线更像武器。
+4. 增加角色方向与动画字段。
+   - Player 增加：
+       facing: "right" | "left" | "up" | "down"
+       animState: "idle" | "walk" | "shoot"
+       animTimer
+       animFrame
+   - 保留 facingLeft，但可以由 facing 派生或兼容旧逻辑。
 
-5. 改造门的视觉。
-   - RoomRenderer 当前门还是半透明红/绿矩形。
-   - 改成像素门框：
-     - locked：红色能量栅栏
-     - cleared：绿色/蓝色开放门框
-   - 仍然使用 DOOR_ZONES，不改变碰撞和切房逻辑。
-   - 左右上下门都要正确绘制。
+5. DungeonState.updatePlayer() 更新动画状态。
+   - 有移动输入：
+       animState = "walk"
+       animTimer += dt
+       animFrame = Math.floor(animTimer * 8) % 2
+       根据主方向设置 facing。
+   - 无移动输入：
+       animState = "idle"
+       animFrame = 0
+   - 射击时可以短暂设置 animState = "shoot"，但第一版不是必须。
 
-6. 改造 RoomRenderer tile。
-   - 当前 floor 只是加了固定纹理点，所有 tile 纹理重复明显。
-   - 增加 deterministic noise，基于 x/y 生成不同裂纹/点，而不是每格完全一样。
-   - wall tile 增加主题化边缘：
-     - forest：树干/花冠
-     - dungeon：砖块
-     - snow：冰棱
-     - lava：黑曜石裂缝
-   - 不要破坏 isSolid / getMapData / DOOR_ZONES。
+6. 扩展 sprites.ts 的玩家 sprite。
+   - 至少为每个角色增加：
+       idle_down
+       walk_down_0
+       walk_down_1
+       idle_side
+       walk_side_0
+       walk_side_1
+       idle_up
+       walk_up_0
+       walk_up_1
+   - 左方向使用 side sprite + flipX。
+   - 如果工作量过大，至少先做 knight 全套，再让 mage/rogue 复用结构并替换颜色；但最终三名角色都要能正常显示。
 
-7. HUD 进一步像素化。
-   - HP 不要只用长条，改成红色心格或红色生命块。
-   - Armor 改成盾牌格。
-   - Mana 改成蓝色能量格。
-   - Weapon card 显示武器 sprite。
-   - Room status 做成小徽章，而不是纯文本框。
+7. EntityRenderer.drawPlayer() 根据动画选择 sprite。
+   - 根据 player.characterId、player.facing、player.animState、player.animFrame 选择 spriteName。
+   - 例如：
+       player_knight_walk_side_0
+       player_mage_idle_down
+   - 缺失 sprite 时 fallback 到 player_${id}_idle_down，再 fallback 到 player_knight_idle_down。
+   - 不要再只画 player_${id}_idle。
 
-8. 菜单首页加视觉主体。
-   - TitleState 首页加入：
-     - 背景星点/扫描线/缓慢漂移网格
-     - 中央或侧边显示当前选择角色 sprite
-     - 标题做像素描边
-   - CharacterSelectState 卡片里显示对应角色 sprite，而不是只显示色块。
+8. 身体方向和武器方向分离。
+   - 身体方向主要跟随移动方向。
+   - 武器方向跟随 aimAngle。
+   - 如果角色静止并自动瞄准敌人，可以让 facingLeft 根据 aimAngle 更新，但不要影响上下方向动画过于频繁抖动。
+   - 目标：移动时角色有方向动画，射击时武器正确指向敌人。
 
-9. 修复 treasure 小边角。
-   - DungeonState.loadRoom() 中 treasure 判断改为：
-     if (!currentRoom.pickups || currentRoom.pickups.length === 0)
-   - 避免 pickups: [] 时不生成奖励。
-
-10. 保持机制不回退：
-   - Room.pickups 字段保留。
-   - loadRoom 必须恢复 currentRoom.pickups。
-   - syncRoomState 必须保存 pickups。
-   - enemies 只同步 combat/boss。
-   - Input normalizeKey / clear 逻辑不回退。
-   - roomIntroTimer 保留。
-   - MapData.getRoomTemplate 必须优先使用 templateId。
-   - DOOR_ZONES 继续统一门洞和切房判定。
+9. 保持不回退：
+   - 玩家主体继续使用 SpriteRenderer。
+   - 敌人主体继续使用 SpriteRenderer。
+   - 掉落物继续使用 SpriteRenderer。
+   - Room.pickups 持久化不回退。
+   - roomIntroTimer 不回退。
+   - Input normalizeKey / clear 不回退。
+   - DOOR_ZONES 不回退。
+   - HUD 固定格数显示，不要重新让 mana 按 maxMana 逐像素溢出。
    - npm run lint 和 npm run build 必须通过。
 
 完成后输出：
-- 哪些旧几何绘制被替换
-- 新增/修改 sprite 列表
-- 玩家/敌人/掉落物 sprite 接入说明
-- 门和 tile 美术改造说明
-- HUD/Menu 改造说明
+- 子弹与枪口对齐说明
+- getPlayerAimAngle / getPlayerMuzzlePosition 实现说明
+- 新增玩家动画字段
+- 新增 sprite 列表
+- EntityRenderer 动画选择逻辑
 - npm run lint 结果
 - npm run build 结果

@@ -15,8 +15,30 @@ export class SpriteRenderer {
     scale: number = 1,
     options: SpriteOptions = {}
   ) {
-    const spriteData = SPRITES[spriteName];
-    if (!spriteData) return;
+    let spriteData = SPRITES[spriteName];
+    if (!spriteData) {
+       // Fallback logic
+       if (spriteName.startsWith("player_")) {
+           // Try idle down first
+           const parts = spriteName.split("_");
+           if (parts.length >= 2) {
+               spriteData = SPRITES[`player_${parts[1]}_idle_down`];
+           }
+           if (!spriteData) spriteData = SPRITES["player_knight_idle_down"];
+       }
+       else if (spriteName.startsWith("enemy_")) spriteData = SPRITES["enemy_melee_idle"];
+       else if (spriteName.startsWith("pickup_")) spriteData = SPRITES["pickup_weapon"] || SPRITES["pickup_pistol"];
+       
+       // Global fallback box if still nothing
+       if (!spriteData) {
+         ctx.fillStyle = "#FF00FF";
+         ctx.fillRect(Math.round(x) - 4 * scale, Math.round(y) - 4 * scale, 8 * scale, 8 * scale);
+         return;
+       }
+    }
+
+    // Force scale to be integer
+    scale = Math.max(1, Math.round(scale));
 
     const rows = spriteData.length;
     const cols = spriteData[0].length;
@@ -24,22 +46,22 @@ export class SpriteRenderer {
     const h = rows * scale;
     
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(Math.round(x), Math.round(y));
     
     if (options.flipX) {
       ctx.scale(-1, 1);
     }
     
     // Draw centered
-    const startX = -w / 2;
-    const startY = -h / 2;
+    const startX = Math.round(-w / 2);
+    const startY = Math.round(-h / 2);
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const char = spriteData[row][col];
         if (char === '.') continue;
         
-        let color = DEFAULT_PALETTE[char];
+        let color = DEFAULT_PALETTE[char] || "#FF00FF";
         if (options.paletteOverride && options.paletteOverride[char]) {
           color = options.paletteOverride[char];
         }
