@@ -19,11 +19,23 @@ export class SpriteRenderer {
     if (!spriteData) {
        // Fallback logic
        if (spriteName.startsWith("player_")) {
-           // Try idle down first
            const parts = spriteName.split("_");
-           if (parts.length >= 2) {
+           if (parts.length >= 4) {
+               // parts = ["player", id, state, facing, maybe frame]
+               const charId = parts[1];
+               const facing = parts[3];
+               // If shoot/walk is missing, fallback to idle of same facing
+               spriteData = SPRITES[`player_${charId}_idle_${facing}`];
+               
+               // If that specific character doesn't have that facing, try knight
+               if (!spriteData) spriteData = SPRITES[`player_knight_idle_${facing}`];
+           }
+           
+           // If still missing (e.g. facing was undefined or weird), fallback to down
+           if (!spriteData) {
                spriteData = SPRITES[`player_${parts[1]}_idle_down`];
            }
+           
            if (!spriteData) spriteData = SPRITES["player_knight_idle_down"];
        }
        else if (spriteName.startsWith("enemy_")) spriteData = SPRITES["enemy_melee_idle"];
@@ -31,8 +43,11 @@ export class SpriteRenderer {
        
        // Global fallback box if still nothing
        if (!spriteData) {
-         ctx.fillStyle = "#FF00FF";
+         console.warn("Missing sprite", spriteName); ctx.fillStyle = "#FF00FF";
          ctx.fillRect(Math.round(x) - 4 * scale, Math.round(y) - 4 * scale, 8 * scale, 8 * scale);
+         ctx.fillStyle = "white";
+         ctx.font = "10px monospace";
+         ctx.fillText(spriteName, x, y - 10);
          return;
        }
     }

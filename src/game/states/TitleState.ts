@@ -94,20 +94,6 @@ export class TitleState extends GameState {
     
     ctx.textAlign = "left";
 
-    // Draw random or selected character on the side
-    const charIds = Object.keys(CHARACTERS);
-    const displayChar = CHARACTERS[charIds[Math.floor(t) % charIds.length]];
-    
-    // shadow for sprite
-    ctx.fillStyle = "rgba(0,0,0,0.4)";
-    ctx.beginPath();
-    ctx.ellipse(240, 160, 16, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    SpriteRenderer.drawPixelSprite(ctx, `player_${displayChar.id}_idle_down`, 240, 160 - 16, 4, {
-      paletteOverride: { "2": displayChar.color }
-    });
-
     const startY = 120;
     const hasSave = this.engine.data.hasValidSave();
     for (let i = 0; i < this.options.length; i++) {

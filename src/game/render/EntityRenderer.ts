@@ -19,10 +19,14 @@ export class EntityRenderer {
     ctx.ellipse(0, 8, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    const weaponBehindBody = Math.sin(player.aimAngle) < -0.35;
+    
+    if (weaponBehindBody) {
+       EntityRenderer.drawPlayerWeapon(ctx, player);
+    }
+
     // Body
     ctx.save();
-
-
     const isHit = player.hitFlash > 0;
     const charConfig = CHARACTERS[player.characterId] || CHARACTERS["knight"];
     
@@ -49,7 +53,14 @@ export class EntityRenderer {
     });
     ctx.restore();
 
-    // Weapon
+    if (!weaponBehindBody) {
+       EntityRenderer.drawPlayerWeapon(ctx, player);
+    }
+
+    ctx.restore();
+  }
+
+  private static drawPlayerWeapon(ctx: CanvasRenderingContext2D, player: Player) {
     ctx.save();
     ctx.translate(0, PLAYER_HAND_OFFSET_Y); // Roughly hand level
     ctx.rotate(player.aimAngle);
@@ -72,9 +83,8 @@ export class EntityRenderer {
       ctx.fillRect(mx + 2, my, 2, 2);
     }
     ctx.restore();
-
-    ctx.restore();
   }
+
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string) {
     ctx.save();
     ctx.translate(enemy.x, enemy.y);
