@@ -112,11 +112,18 @@ export class GameData {
         if (needsMigration) {
            console.warn("Old floor data migrated");
            this.data.floor = generateFloor(this.data.floor.depth || 1);
+           this.save();
         }
       } catch (e) {
         console.error("Failed to load save:", e);
       }
     }
+  }
+
+  hasValidSave(): boolean {
+    if (!localStorage.getItem("retro_rpg_save")) return false;
+    if (this.data.player.hp <= 0) return false;
+    return true;
   }
 
   startNewRun(characterId: string) {

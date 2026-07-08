@@ -71,6 +71,9 @@ export class Engine {
   public switchState(newState: string, params?: any) {
     this.states[this.currentState].exit();
     this.currentState = newState;
+    if (["title", "character_select", "settings"].includes(newState)) {
+       this.isPaused = false;
+    }
     this.states[this.currentState].enter(params);
   }
 
@@ -85,8 +88,12 @@ export class Engine {
   }
 
   private update(dt: number) {
-    if (this.input.justPressed["p"] || this.input.justPressed["P"]) {
+    const canPause = ["dungeon", "legacy_rpg", "legacy_tactics"].includes(this.currentState);
+    if (canPause && this.input.wasPressed("p")) {
       this.isPaused = !this.isPaused;
+    }
+    if (!canPause) {
+      this.isPaused = false;
     }
 
     // Cap dt to prevent huge jumps

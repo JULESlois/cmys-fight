@@ -33,7 +33,9 @@ export class TitleState extends GameState {
     if (opt === "NEW RUN" || opt === "CHARACTER") {
       this.engine.switchState("character_select");
     } else if (opt === "CONTINUE") {
-      // Could check if save exists, for now just enter dungeon
+      if (!this.engine.data.hasValidSave()) {
+        this.engine.data.startNewRun("knight");
+      }
       this.engine.switchState("dungeon");
     } else if (opt === "SETTINGS") {
       this.engine.switchState("settings");
@@ -58,8 +60,14 @@ export class TitleState extends GameState {
     MenuRenderer.drawTitle(ctx, "CMYS FIGHT", 160, 60);
 
     const startY = 120;
+    const hasSave = this.engine.data.hasValidSave();
     for (let i = 0; i < this.options.length; i++) {
-      MenuRenderer.drawButton(ctx, this.options[i], 120, startY + i * 20, i === this.selectedIndex);
+      let label = this.options[i];
+      if (label === "CONTINUE" && !hasSave) {
+        ctx.globalAlpha = 0.5;
+      }
+      MenuRenderer.drawButton(ctx, label, 120, startY + i * 20, i === this.selectedIndex);
+      ctx.globalAlpha = 1.0;
     }
     
     ctx.fillStyle = "#34495E";

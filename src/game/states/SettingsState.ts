@@ -86,7 +86,7 @@ export class SettingsState extends GameState {
       } else if (opt === "CRT FILTER") {
          ctx.fillText(settings.crtFilter ? "ON" : "OFF", 260, startY + i * 20);
       } else if (opt === "CONTROLS") {
-         ctx.fillText("VIEW >", 260, startY + i * 20);
+         ctx.fillText("WIP", 260, startY + i * 20);
       }
       ctx.textAlign = "left";
     }

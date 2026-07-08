@@ -12,19 +12,26 @@ export class Input {
     window.addEventListener("keyup", this.handleKeyUp);
   }
 
+  private normalizeKey(key: string): string {
+    if (key === " ") return " ";
+    return key.toLowerCase();
+  }
+
   private onKeyDown(e: KeyboardEvent) {
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
       e.preventDefault();
     }
-    if (!this.keys[e.key]) {
-      this.justPressed[e.key] = true;
+    const nk = this.normalizeKey(e.key);
+    if (!this.keys[nk]) {
+      this.justPressed[nk] = true;
     }
-    this.keys[e.key] = true;
+    this.keys[nk] = true;
   }
 
   private onKeyUp(e: KeyboardEvent) {
-    this.keys[e.key] = false;
-    this.justPressed[e.key] = false;
+    const nk = this.normalizeKey(e.key);
+    this.keys[nk] = false;
+    this.justPressed[nk] = false;
   }
 
   public update() {
@@ -40,21 +47,21 @@ export class Input {
   }
 
   public isDown(key: string): boolean {
-    return !!this.keys[key];
+    return !!this.keys[this.normalizeKey(key)];
   }
 
   public wasPressed(key: string): boolean {
-    return !!this.justPressed[key];
+    return !!this.justPressed[this.normalizeKey(key)];
   }
 
   public getAxis(): { x: number; y: number } {
     let x = 0;
     let y = 0;
     
-    if (this.isDown("ArrowLeft") || this.isDown("a") || this.isDown("A")) x -= 1;
-    if (this.isDown("ArrowRight") || this.isDown("d") || this.isDown("D")) x += 1;
-    if (this.isDown("ArrowUp") || this.isDown("w") || this.isDown("W")) y -= 1;
-    if (this.isDown("ArrowDown") || this.isDown("s") || this.isDown("S")) y += 1;
+    if (this.isDown("arrowleft") || this.isDown("a")) x -= 1;
+    if (this.isDown("arrowright") || this.isDown("d")) x += 1;
+    if (this.isDown("arrowup") || this.isDown("w")) y -= 1;
+    if (this.isDown("arrowdown") || this.isDown("s")) y += 1;
     
     // Normalize if moving diagonally
     if (x !== 0 && y !== 0) {

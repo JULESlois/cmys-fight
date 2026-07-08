@@ -93,11 +93,16 @@ export class CharacterSelectState extends GameState {
       ctx.fillText(char.starterWeapon.toUpperCase(), x + 5, startY + 130);
     }
     
-    // Bottom tips
+    // Passive for selected char
     ctx.textAlign = "center";
-    ctx.fillStyle = "#00F2FE";
+    ctx.fillStyle = "#F1C40F";
     ctx.font = "10px monospace";
-    ctx.fillText("PRESS ENTER TO START", 160, 220);
+    const selectedChar = this.characters[this.selectedIndex];
+    ctx.fillText(`PASSIVE: ${selectedChar.passive}`, 160, 210);
+
+    // Bottom tips
+    ctx.fillStyle = "#00F2FE";
+    ctx.fillText("PRESS ENTER TO START", 160, 225);
     ctx.fillStyle = "#BDC3C7";
     ctx.font = "8px monospace";
     ctx.fillText("Arrows to select | ESC to back", 160, 235);
