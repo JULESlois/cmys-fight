@@ -6,7 +6,7 @@ import { RoomRenderer } from "../render/RoomRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
 import { Enemy } from "../entities/Enemy";
 import { RoomTemplate } from "../data/roomTemplates";
-import { TILE_SIZE, getRoomTemplate, getMapData } from "../MapData";
+import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
 import { UIRenderer } from "../render/UIRenderer";
 import { audio } from "../audio/AudioManager";
 import { PortalRenderer, PortalState } from "../render/PortalRenderer";
@@ -36,7 +36,7 @@ export class DungeonState extends GameState {
   private transitionAlpha: number = 1.0;
   private pendingTransition: (() => void) | null = null;
   
-  private currentMapData: any;
+  private currentMapData: number[] = [];
   
   private roomPhase: RoomPhase = "entering";
   private phaseTimer: number = 0;
@@ -45,6 +45,12 @@ export class DungeonState extends GameState {
   constructor(engine: Engine) {
     super(engine);
     this.player = new Player(160, 120);
+  }
+
+  enter(params?: any) {
+    this.transitionState = "fade_in";
+    this.transitionAlpha = 1.0;
+    
     this.player.characterId = this.engine.data.data.player.characterId;
     
     const savedP = this.engine.data.data.player;
@@ -58,11 +64,6 @@ export class DungeonState extends GameState {
     }
     
     this.loadRoom();
-  }
-
-  enter(params?: any) {
-    this.transitionState = "fade_in";
-    this.transitionAlpha = 1.0;
     
     if (params && params.fromLegacy && params.result !== "loss") {
        const floor = this.engine.data.data.floor;
@@ -263,8 +264,10 @@ export class DungeonState extends GameState {
       if (this.transitionAlpha >= 1) {
         this.transitionAlpha = 1;
         if (this.pendingTransition) {
-           this.pendingTransition();
+           const cb = this.pendingTransition;
            this.pendingTransition = null;
+           cb();
+           this.transitionState = "fade_in";
         }
       }
       return; 
@@ -497,8 +500,9 @@ export class DungeonState extends GameState {
       const tx = Math.floor(p.x / TILE_SIZE);
       const ty = Math.floor(p.y / TILE_SIZE);
       
-      if (tx >= 0 && tx < this.currentMapData.length && ty >= 0 && ty < this.currentMapData[0].length) {
-        if (this.currentMapData[ty][tx] === 1) return true;
+      if (tx >= 0 && tx < MAP_WIDTH && ty >= 0 && ty < MAP_HEIGHT) {
+        const tileId = this.currentMapData[ty * MAP_WIDTH + tx];
+        if (tileId === 1) return true;
       } else {
         return true;
       }
