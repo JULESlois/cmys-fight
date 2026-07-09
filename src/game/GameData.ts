@@ -129,6 +129,8 @@ export class GameData {
   startNewRun(characterId: string) {
     const char = CHARACTERS[characterId] || CHARACTERS["knight"];
     this.data.player.characterId = characterId;
+    this.data.player.x = 160;
+    this.data.player.y = 120;
     this.data.player.maxHp = char.maxHp;
     this.data.player.hp = char.maxHp;
     this.data.player.maxArmor = char.maxArmor;

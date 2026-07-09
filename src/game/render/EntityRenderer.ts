@@ -53,7 +53,7 @@ export class EntityRenderer {
     
     // Shift weapon forward
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1, {
-      paletteOverride: PLAYER_PALETTE
+      
     });
 
     if (player.muzzleFlash > 0) {

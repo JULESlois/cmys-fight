@@ -51,13 +51,18 @@ export class DungeonState extends GameState {
     this.transitionState = "fade_in";
     this.transitionAlpha = 1.0;
     
-    this.player.characterId = this.engine.data.data.player.characterId;
-    
     const savedP = this.engine.data.data.player;
-    if (savedP.hp) this.player.hp = savedP.hp;
-    if (savedP.armor !== undefined) this.player.armor = savedP.armor;
-    if (savedP.mana) this.player.mana = savedP.mana;
-    if (savedP.currentWeaponId) this.player.currentWeaponId = savedP.currentWeaponId;
+    this.player = new Player(savedP.x ?? 160, savedP.y ?? 120);
+    this.player.characterId = savedP.characterId;
+    
+    this.player.hp = savedP.hp;
+    this.player.maxHp = savedP.maxHp;
+    this.player.armor = savedP.armor ?? 0;
+    this.player.maxArmor = savedP.maxArmor ?? 0;
+    this.player.mana = savedP.mana;
+    this.player.maxMana = savedP.maxMana;
+    if (savedP.speed) this.player.speed = savedP.speed;
+    this.player.currentWeaponId = savedP.currentWeaponId;
     
     if (!this.engine.data.data.floor || this.engine.data.data.floor.depth === 0) {
       this.engine.data.data.floor = generateFloor(1);
@@ -109,7 +114,9 @@ export class DungeonState extends GameState {
     const r = floor.rooms.find((rm: Room) => rm.x === floor.currentRoomX && rm.y === floor.currentRoomY);
     if (r) {
       r.pickups = this.pickups.map(p => ({ x: p.x, y: p.y, type: p.type, value: p.value, weaponId: p.weaponId }));
-      r.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+      if (!r.cleared && (r.type === 'combat' || r.type === 'boss')) {
+          r.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+      }
     }
   }
 
@@ -283,11 +290,16 @@ export class DungeonState extends GameState {
     this.updateRoomPhase(dt);
     
     // Always update animation/facing
+    this.player.aimAngle = this.getPlayerAimAngle();
     this.updatePlayerFacingAndAnimation(dt);
     
     // Firing logic
     if (this.player.fireCooldown > 0) {
       this.player.fireCooldown -= dt;
+    }
+    if (this.player.muzzleFlash > 0) {
+      this.player.muzzleFlash -= dt * 10;
+      if (this.player.muzzleFlash < 0) this.player.muzzleFlash = 0;
     }
 
     // Interactive objects

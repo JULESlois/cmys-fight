@@ -82,10 +82,14 @@ export class Engine {
     const dt = (time - this.lastTime) / 1000;
     this.lastTime = time;
 
-    this.update(dt);
-    this.draw();
-
-    this.reqId = requestAnimationFrame(this.loop.bind(this));
+    try {
+      this.update(dt);
+      this.draw();
+    } catch (e) {
+      console.error("[Engine.loop] frame crashed:", e);
+    } finally {
+      this.reqId = requestAnimationFrame(this.loop.bind(this));
+    }
   }
 
   private update(dt: number) {
