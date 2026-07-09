@@ -25,8 +25,8 @@ export class Player {
   public aimAngle: number = 0;
   
   public facingLeft: boolean = false;
-  public facing: "right" | "left" | "up" | "down" = "right";
-  public animState: "idle" | "walk" | "shoot" = "idle";
+  public facing: "right" | "left" = "right";
+  public animState: "idle" | "walk" = "idle";
   public animTimer: number = 0;
   public animFrame: number = 0;
 

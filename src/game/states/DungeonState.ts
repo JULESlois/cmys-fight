@@ -435,7 +435,11 @@ export class DungeonState extends GameState {
     this.player.muzzleFlash = 1.0;
     audio.playShoot();
     
-    const baseAngle = this.player.aimAngle;
+    // Ensure aim angle and facing are up-to-date at the exact moment of firing
+    const baseAngle = this.getPlayerAimAngle();
+    this.player.aimAngle = baseAngle;
+    this.player.facing = Math.cos(baseAngle) >= 0 ? "right" : "left";
+    this.player.facingLeft = this.player.facing === "left";
     
     const muzzle = this.player.getPlayerMuzzlePosition(baseAngle);
     
@@ -451,77 +455,36 @@ export class DungeonState extends GameState {
       ));
     }
   }
-  
-  private angleToFacing(angle: number): "right" | "left" | "up" | "down" {
-    const cosA = Math.cos(angle);
-    const sinA = Math.sin(angle);
-    if (Math.abs(cosA) > Math.abs(sinA)) {
-      return cosA > 0 ? "right" : "left";
-    } else {
-      return sinA > 0 ? "down" : "up";
-    }
-  }
-
-  private axisToFacing(axis: { x: number, y: number }): "right" | "left" | "up" | "down" {
-    if (Math.abs(axis.x) > Math.abs(axis.y)) {
-      return axis.x > 0 ? "right" : "left";
-    } else {
-      return axis.y > 0 ? "down" : "up";
-    }
-  }
 
   private updatePlayerFacingAndAnimation(dt: number) {
     const axis = this.engine.input.getAxis();
     const isMoving = axis.x !== 0 || axis.y !== 0;
-    const isShooting = this.engine.input.keys["Space"];
-    const aimTarget = this.getClosestEnemy();
 
-    // Body facing logic
-    if (aimTarget || isShooting) {
-      // Prioritize aim angle when aiming at enemy or shooting
-      const targetFacing = this.angleToFacing(this.player.aimAngle);
-      
-      if (!isMoving && !isShooting && aimTarget) {
-         // Auto-aim while stationary: only update left/right to prevent up/down jitter
-         const cosA = Math.cos(this.player.aimAngle);
-         this.player.facing = cosA > 0 ? "right" : "left";
-      } else {
-         this.player.facing = targetFacing;
-      }
-    } else if (isMoving) {
-      // No enemies/shooting, use movement direction
-      this.player.facing = this.axisToFacing(axis);
-    }
-
+    this.player.facing = Math.cos(this.player.aimAngle) >= 0 ? "right" : "left";
     this.player.facingLeft = this.player.facing === "left";
 
-    // Animation state logic
     if (isMoving) {
-       this.player.animState = "walk";
-       this.player.animTimer += dt;
-       this.player.animFrame = Math.floor(this.player.animTimer * 8) % 2;
+      this.player.animState = "walk";
+      this.player.animTimer += dt;
+      this.player.animFrame = Math.floor(this.player.animTimer * 8) % 2;
     } else {
-       this.player.animState = "idle";
-       this.player.animFrame = 0;
+      this.player.animState = "idle";
+      this.player.animFrame = 0;
     }
   }
 
   private getPlayerAimAngle(): number {
-    const aimTarget = this.getClosestEnemy();
-    if (aimTarget) {
-      return Math.atan2(aimTarget.y - this.player.y, aimTarget.x - this.player.x);
-    } else {
-      const axis = this.engine.input.getAxis();
-      if (axis.x !== 0 || axis.y !== 0) {
-        return Math.atan2(axis.y, axis.x);
-      } else {
-        if (this.player.facing === "left") return Math.PI;
-        if (this.player.facing === "right") return 0;
-        if (this.player.facing === "up") return -Math.PI / 2;
-        if (this.player.facing === "down") return Math.PI / 2;
-        return this.player.facingLeft ? Math.PI : 0;
-      }
+    const target = this.getClosestEnemy();
+    if (target) {
+      return Math.atan2(target.y - this.player.y, target.x - this.player.x);
     }
+
+    const axis = this.engine.input.getAxis();
+    if (axis.x !== 0 || axis.y !== 0) {
+      return Math.atan2(axis.y, axis.x);
+    }
+
+    return this.player.aimAngle;
   }
 
   private getClosestEnemy(): Enemy | null {

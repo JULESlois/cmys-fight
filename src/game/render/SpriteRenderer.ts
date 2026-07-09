@@ -19,25 +19,9 @@ export class SpriteRenderer {
     if (!spriteData) {
        // Fallback logic
        if (spriteName.startsWith("player_")) {
-           const parts = spriteName.split("_");
-           if (parts.length >= 4) {
-               // parts = ["player", id, state, facing, maybe frame]
-               const charId = parts[1];
-               const facing = parts[3];
-               // If shoot/walk is missing, fallback to idle of same facing
-               spriteData = SPRITES[`player_${charId}_idle_${facing}`];
-               
-               // If that specific character doesn't have that facing, try knight
-               if (!spriteData) spriteData = SPRITES[`player_knight_idle_${facing}`];
-           }
-           
-           // If still missing (e.g. facing was undefined or weird), fallback to down
-           if (!spriteData) {
-               spriteData = SPRITES[`player_${parts[1]}_idle_down`];
-           }
-           
-           if (!spriteData) spriteData = SPRITES["player_knight_idle_down"];
+           spriteData = SPRITES["player_main_side_idle"];
        }
+       else if (spriteName.startsWith("weapon_")) spriteData = SPRITES["weapon_pistol"];
        else if (spriteName.startsWith("enemy_")) spriteData = SPRITES["enemy_melee_idle"];
        else if (spriteName.startsWith("pickup_")) spriteData = SPRITES["pickup_weapon"] || SPRITES["pickup_pistol"];
        

@@ -2,6 +2,7 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
+import { PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 
@@ -70,8 +71,8 @@ export class CharacterSelectState extends GameState {
       ctx.strokeRect(x, startY, cardW, cardH);
       
       // Character sprite
-      SpriteRenderer.drawPixelSprite(ctx, `player_${char.id}_idle_down`, x + cardW / 2, startY + 20, 2, {
-        paletteOverride: { "2": char.color }
+      SpriteRenderer.drawPixelSprite(ctx, "player_main_side_idle", x + cardW / 2, startY + 20, 2, {
+        paletteOverride: { ...PLAYER_PALETTE, "2": char.color }
       });
       
       // Name

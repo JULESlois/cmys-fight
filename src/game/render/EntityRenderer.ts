@@ -4,6 +4,7 @@ import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
 import { PALETTES } from "../data/palettes";
 import { CHARACTERS } from "../data/characters";
+import { PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 export class EntityRenderer {
@@ -19,43 +20,25 @@ export class EntityRenderer {
     ctx.ellipse(0, 8, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const weaponBehindBody = Math.sin(player.aimAngle) < -0.35;
-    
-    if (weaponBehindBody) {
-       EntityRenderer.drawPlayerWeapon(ctx, player);
-    }
-
     // Body
     ctx.save();
-    const isHit = player.hitFlash > 0;
-    const charConfig = CHARACTERS[player.characterId] || CHARACTERS["knight"];
-    
-    let animFacing: string = player.facing;
-    let flipX = false;
-    if (animFacing === "left") {
-        animFacing = "side";
-        flipX = true;
-    } else if (animFacing === "right") {
-        animFacing = "side";
-    }
-    
-    let spriteName = `player_${player.characterId}_${player.animState}_${animFacing}`;
+    let spriteName = "player_main_side_idle";
+
     if (player.animState === "walk") {
-        spriteName += `_${player.animFrame}`;
+      spriteName = `player_main_side_walk_${player.animFrame}`;
     }
-    
-    const paletteOverride = charConfig ? { "2": charConfig.color } : undefined;
+
+    const flipX = player.facing === "left";
     
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, { 
-      hitFlash: isHit,
-      paletteOverride,
-      flipX
+      hitFlash: player.hitFlash > 0,
+      flipX,
+      paletteOverride: PLAYER_PALETTE
     });
     ctx.restore();
 
-    if (!weaponBehindBody) {
-       EntityRenderer.drawPlayerWeapon(ctx, player);
-    }
+    // Weapon always on top
+    EntityRenderer.drawPlayerWeapon(ctx, player);
 
     ctx.restore();
   }
@@ -69,7 +52,9 @@ export class EntityRenderer {
     }
     
     // Shift weapon forward
-    SpriteRenderer.drawPixelSprite(ctx, `pickup_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1);
+    SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1, {
+      paletteOverride: PLAYER_PALETTE
+    });
 
     if (player.muzzleFlash > 0) {
       // Pixel muzzle flash at barrel end
@@ -79,8 +64,6 @@ export class EntityRenderer {
       ctx.fillRect(mx, my - 2, 4, 4);
       ctx.fillRect(mx + 4, my - 4, 2, 8);
       ctx.fillRect(mx + 6, my, 2, 4);
-      ctx.fillStyle = "rgba(255, 255, 255, " + player.muzzleFlash + ")";
-      ctx.fillRect(mx + 2, my, 2, 2);
     }
     ctx.restore();
   }
