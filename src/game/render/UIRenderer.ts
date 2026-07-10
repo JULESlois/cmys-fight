@@ -4,7 +4,7 @@ import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 export class UIRenderer {
-  public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData) {
+  public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
 
     
     // Top Left: HUD (HP, Armor, Mana)
@@ -109,11 +109,21 @@ export class UIRenderer {
     ctx.fillText(`FLOOR ${floor.depth} ${floor.theme.toUpperCase()}`, 310, 222);
     
     if (currentRoom) {
-      let statusColor = currentRoom.cleared ? "#27AE60" : "#C0392B";
-      let statusText = currentRoom.cleared ? "CLEARED" : "LOCKED";
+      let statusColor = "#C0392B";
+      let statusText = "LOCKED";
+      
       if (currentRoom.type === "start" || currentRoom.type === "npc") {
          statusColor = "#7F8C8D";
-         statusText = "SAFE ZONE";
+         statusText = "SAFE";
+      } else if (roomPhase === "exploration") {
+         statusColor = "#27AE60";
+         statusText = "OPEN";
+      } else if (roomPhase === "cleared") {
+         statusColor = "#2980B9";
+         statusText = "CLEAR";
+      } else if (roomPhase === "reward") {
+         statusColor = "#F39C12";
+         statusText = "REWARD";
       }
       
       // Badge background

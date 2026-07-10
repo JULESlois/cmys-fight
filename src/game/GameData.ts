@@ -37,6 +37,7 @@ export interface GameSave {
     clearedRooms: string[];
     legacyRewardsClaimed: string[];
   };
+  saveVersion?: number;
 }
 
 export const defaultSave: GameSave = {
@@ -74,7 +75,8 @@ export const defaultSave: GameSave = {
     },
     clearedRooms: [],
     legacyRewardsClaimed: [],
-  }
+  },
+  saveVersion: 2
 };
 
 export class GameData {
@@ -100,18 +102,19 @@ export class GameData {
         this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
         
         // Save migration
-        let needsMigration = false;
-        if (this.data.floor && this.data.floor.rooms) {
-           for (const r of this.data.floor.rooms) {
-              if (r.templateId === undefined || !r.enemies) {
-                 needsMigration = true;
-                 break;
+        if ((this.data.saveVersion || 0) < 2) {
+           console.warn("Migrating save to version 2");
+           if (this.data.floor && this.data.floor.rooms) {
+              for (const r of this.data.floor.rooms) {
+                 r.combatCleared = r.combatCleared ?? r.cleared;
+                 r.rewardGenerated = r.rewardGenerated ?? false;
+                 r.interactionCompleted = r.interactionCompleted ?? false;
+                 if (r.type === "combat" || r.type === "boss") {
+                    r.enemies = r.enemies ?? [];
+                 }
               }
            }
-        }
-        if (needsMigration) {
-           console.warn("Old floor data migrated");
-           this.data.floor = generateFloor(this.data.floor.depth || 1);
+           this.data.saveVersion = 2;
            this.save();
         }
       } catch (e) {
@@ -144,14 +147,25 @@ export class GameData {
     this.save();
   }
 
-  resetRun() {
-    this.data.player.hp = this.data.player.maxHp;
-    this.data.player.armor = this.data.player.maxArmor;
-    this.data.player.mana = this.data.player.maxMana;
-    this.data.player.currentWeaponId = "pistol";
+  restartCurrentRun() {
+    const char = CHARACTERS[this.data.player.characterId] || CHARACTERS["knight"];
+    this.data.player.x = 160;
+    this.data.player.y = 120;
+    this.data.player.hp = char.maxHp;
+    this.data.player.maxHp = char.maxHp;
+    this.data.player.armor = char.maxArmor;
+    this.data.player.maxArmor = char.maxArmor;
+    this.data.player.mana = char.maxMana;
+    this.data.player.maxMana = char.maxMana;
+    this.data.player.speed = char.speed;
+    this.data.player.currentWeaponId = char.starterWeapon;
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
     this.save();
+  }
+  
+  resetRun() {
+    this.restartCurrentRun();
   }
 
   logEvent(event: string) {

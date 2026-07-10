@@ -83,12 +83,12 @@ export class LegacyDialogState extends GameState {
           this.displayedText += targetText[this.displayedText.length];
           this.typeTimer = 0;
         }
-      } else if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
+      } else if (this.engine.input.wasPressed(" ") || this.engine.input.wasPressed("enter")) {
         this.currentLine++;
         this.displayedText = "";
       }
     } else {
-      if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
+      if (this.engine.input.wasPressed(" ") || this.engine.input.wasPressed("enter")) {
         events.emit("state:change", this.payload.returnState || "legacy_rpg", {
            sourceRoomId: this.payload.sourceRoomId,
            legacyType: this.payload.legacyType

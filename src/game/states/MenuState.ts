@@ -15,18 +15,18 @@ export class MenuState extends GameState {
   exit() {}
 
   update(dt: number) {
-    if (this.engine.input.justPressed["ArrowUp"] || this.engine.input.justPressed["w"]) {
+    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
       this.selection = (this.selection - 1 + this.options.length) % this.options.length;
     }
-    if (this.engine.input.justPressed["ArrowDown"] || this.engine.input.justPressed["s"]) {
+    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
       this.selection = (this.selection + 1) % this.options.length;
     }
     
-    if (this.engine.input.justPressed["Enter"] || this.engine.input.justPressed[" "]) {
+    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       this.handleSelect();
     }
     
-    if (this.engine.input.justPressed["Escape"]) {
+    if (this.engine.input.wasPressed("escape")) {
       events.emit("state:change", "dungeon", { resume: true });
     }
   }

@@ -133,7 +133,7 @@ export class RoomRenderer {
     }
   }
 
-  public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, player: Player) {
+  public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, player: Player, isLocked: boolean = false) {
     const mapData = getMapData(currentRoom, theme);
     const p = PALETTES[theme] || PALETTES["forest"];
 
@@ -239,8 +239,6 @@ export class RoomRenderer {
     }
 
     if (currentRoom) {
-      const isLocked = !currentRoom.cleared;
-      
       const drawDoor = (x: number, y: number, w: number, h: number) => {
          const frameColor = isLocked ? "#C0392B" : "#27AE60";
          const innerColor = isLocked ? "rgba(231, 76, 60, 0.2)" : "rgba(46, 204, 113, 0.1)";

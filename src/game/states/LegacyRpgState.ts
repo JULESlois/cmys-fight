@@ -163,7 +163,7 @@ export class LegacyRpgState extends GameState {
     }
 
     // Handle menu state change
-    if (this.engine.input.justPressed["Enter"]) {
+    if (this.engine.input.wasPressed("enter")) {
       events.emit("state:change", "menu");
       return;
     }
@@ -191,10 +191,10 @@ export class LegacyRpgState extends GameState {
       let dx = 0;
       let dy = 0;
 
-      if (this.engine.input.keys["ArrowUp"] || this.engine.input.keys["w"]) dy = -1;
-      else if (this.engine.input.keys["ArrowDown"] || this.engine.input.keys["s"]) dy = 1;
-      else if (this.engine.input.keys["ArrowLeft"] || this.engine.input.keys["a"]) dx = -1;
-      else if (this.engine.input.keys["ArrowRight"] || this.engine.input.keys["d"]) dx = 1;
+      if (this.engine.input.isDown("arrowup") || this.engine.input.isDown("w")) dy = -1;
+      else if (this.engine.input.isDown("arrowdown") || this.engine.input.isDown("s")) dy = 1;
+      else if (this.engine.input.isDown("arrowleft") || this.engine.input.isDown("a")) dx = -1;
+      else if (this.engine.input.isDown("arrowright") || this.engine.input.isDown("d")) dx = 1;
 
       if (dx !== 0 || dy !== 0) {
         if (dx < 0) this.pDir = "left";
@@ -208,7 +208,7 @@ export class LegacyRpgState extends GameState {
     }
 
     // Check interaction
-    if (this.engine.input.justPressed[" "]) {
+    if (this.engine.input.wasPressed(" ")) {
       this.interact();
     }
 

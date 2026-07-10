@@ -140,13 +140,13 @@ export class DungeonState extends GameState {
 
     if (currentRoom) {
       currentRoom.visited = true;
-      if (currentRoom.type === "start") {
+      if (currentRoom.type === "start" || currentRoom.type === "npc") {
          this.setPhase("exploration");
-      } else if (currentRoom.cleared) {
+      } else if (currentRoom.combatCleared) {
          this.setPhase("exploration");
          currentRoom.enemies = []; // Clear any enemies from old saves
          
-         if (currentRoom.type === "treasure" && !currentRoom.pickups) {
+         if (currentRoom.type === "treasure" && !currentRoom.interactionCompleted) {
              const pts = template.pickupSpawnPoints;
              const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
              this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: "shotgun", opened: false };
@@ -224,7 +224,10 @@ export class DungeonState extends GameState {
       audio.playClearRoom();
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-      if (currentRoom) currentRoom.cleared = true;
+      if (currentRoom) {
+         currentRoom.cleared = true; // legacy compatibility
+         currentRoom.combatCleared = true;
+      }
     } else if (phase === "reward") {
       // Spawn rewards
       this.spawnRoomRewards();
@@ -288,14 +291,11 @@ export class DungeonState extends GameState {
       return; 
     }
 
-    if (this.engine.input.justPressed["Enter"] && this.player.hp <= 0) {
-      this.engine.data.data.floor = generateFloor(1);
+    if (this.engine.input.wasPressed("enter") && this.player.hp <= 0) {
+      this.engine.data.restartCurrentRun();
       const savedP = this.engine.data.data.player;
-      savedP.hp = savedP.maxHp;
-      savedP.mana = savedP.maxMana;
-      savedP.armor = 0;
       
-      this.player = new Player(160, 120);
+      this.player = new Player(savedP.x, savedP.y);
       this.player.characterId = savedP.characterId;
       this.player.hp = savedP.hp;
       this.player.maxHp = savedP.maxHp;
@@ -315,6 +315,7 @@ export class DungeonState extends GameState {
       this.transitionState = "fade_in";
       this.transitionAlpha = 1;
       this.loadRoom();
+      return;
     }
 
     const previousX = this.player.x;
@@ -356,7 +357,7 @@ export class DungeonState extends GameState {
     // 4. Handle Fire input
     if (this.engine.input.isDown(" ") && this.player.fireCooldown <= 0) {
       if (interactTarget) {
-         if (this.engine.input.justPressed[" "]) {
+         if (this.engine.input.wasPressed(" ")) {
              this.handleInteract(interactTarget);
          }
       } else if (this.roomPhase === "combat" || this.roomPhase === "cleared" || this.roomPhase === "exiting" || this.roomPhase === "reward" || this.roomPhase === "exploration") {
@@ -382,8 +383,17 @@ export class DungeonState extends GameState {
     } else if (this.portal && this.portal.state === "activating") {
        this.portal.timer -= dt;
        if (this.portal.timer <= 0) {
-          this.engine.data.data.floor = generateFloor(this.engine.data.data.floor.depth + 1);
-          this.loadRoom();
+          this.transitionState = "fade_out";
+          this.transitionAlpha = 0;
+          this.pendingTransition = () => {
+             this.syncRoomState();
+             const nextDepth = this.engine.data.data.floor.depth + 1;
+             this.engine.data.data.floor = generateFloor(nextDepth);
+             this.player.x = 160;
+             this.player.y = 120;
+             this.engine.input.clear();
+             this.loadRoom();
+          };
        }
     }
   }
@@ -509,6 +519,12 @@ export class DungeonState extends GameState {
     } else if (target.type === "treasure" && this.chest && !this.chest.opened) {
        this.chest.opened = true;
        audio.playPickup();
+       const floor = this.engine.data.data.floor;
+       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+       if (currentRoom) {
+          currentRoom.interactionCompleted = true;
+          currentRoom.rewardGenerated = true;
+       }
        this.pickups.push(new Pickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
     }
   }
@@ -517,7 +533,7 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
 
-    if (currentRoom && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics")) {
+    if (currentRoom && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") && !currentRoom.interactionCompleted) {
       const template = getRoomTemplate(currentRoom);
       const lx = template.legacySpawnPoint ? template.legacySpawnPoint.x * 16 + 8 : 160;
       const ly = template.legacySpawnPoint ? template.legacySpawnPoint.y * 16 + 8 : 120;
@@ -785,7 +801,8 @@ export class DungeonState extends GameState {
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     
     this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
-    this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", this.player);
+    const doorLocked = this.roomPhase !== "exploration";
+    this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", this.player, doorLocked);
 
     const time = Date.now() / 1000;
     
@@ -828,7 +845,7 @@ export class DungeonState extends GameState {
        EntityRenderer.drawProjectile(ctx, p);
     }
     
-    UIRenderer.draw(ctx, this.player, this.engine, floor);
+    UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
     
     if (this.roomPhase === "cleared" && this.phaseTimer > 0) {
       ctx.save();

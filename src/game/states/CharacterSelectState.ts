@@ -18,21 +18,21 @@ export class CharacterSelectState extends GameState {
   exit() {}
 
   update(dt: number) {
-    if (this.engine.input.justPressed["escape"]) {
+    if (this.engine.input.wasPressed("escape")) {
        this.engine.switchState("title");
        return;
     }
     
-    if (this.engine.input.justPressed["arrowleft"] || this.engine.input.justPressed["a"]) {
+    if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a")) {
       this.selectedIndex = (this.selectedIndex - 1 + this.characters.length) % this.characters.length;
       audio.playShoot();
     }
-    if (this.engine.input.justPressed["arrowright"] || this.engine.input.justPressed["d"]) {
+    if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d")) {
       this.selectedIndex = (this.selectedIndex + 1) % this.characters.length;
       audio.playShoot();
     }
 
-    if (this.engine.input.justPressed["enter"] || this.engine.input.justPressed[" "]) {
+    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       const char = this.characters[this.selectedIndex];
       this.engine.data.startNewRun(char.id);
       this.engine.switchState("dungeon");

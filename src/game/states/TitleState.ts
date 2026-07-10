@@ -17,15 +17,15 @@ export class TitleState extends GameState {
   exit() {}
 
   update(dt: number) {
-    if (this.engine.input.justPressed["arrowup"] || this.engine.input.justPressed["w"]) {
+    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
       this.selectedIndex = (this.selectedIndex - 1 + this.options.length) % this.options.length;
       audio.playShoot(); // Reuse some sound for blip
     }
-    if (this.engine.input.justPressed["arrowdown"] || this.engine.input.justPressed["s"]) {
+    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
       this.selectedIndex = (this.selectedIndex + 1) % this.options.length;
       audio.playShoot();
     }
-    if (this.engine.input.justPressed["enter"] || this.engine.input.justPressed[" "]) {
+    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       this.handleSelect();
     }
   }

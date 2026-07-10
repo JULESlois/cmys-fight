@@ -15,30 +15,30 @@ export class SettingsState extends GameState {
   exit() {}
 
   update(dt: number) {
-    if (this.engine.input.justPressed["escape"]) {
+    if (this.engine.input.wasPressed("escape")) {
        this.engine.switchState("title");
        return;
     }
     
-    if (this.engine.input.justPressed["arrowup"] || this.engine.input.justPressed["w"]) {
+    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
       this.selectedIndex = (this.selectedIndex - 1 + this.options.length) % this.options.length;
       audio.playShoot();
     }
-    if (this.engine.input.justPressed["arrowdown"] || this.engine.input.justPressed["s"]) {
+    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
       this.selectedIndex = (this.selectedIndex + 1) % this.options.length;
       audio.playShoot();
     }
     
     // Toggle values for left/right
     const opt = this.options[this.selectedIndex];
-    if (this.engine.input.justPressed["arrowleft"] || this.engine.input.justPressed["a"]) {
+    if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a")) {
       this.adjustSetting(opt, -1);
     }
-    if (this.engine.input.justPressed["arrowright"] || this.engine.input.justPressed["d"]) {
+    if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d")) {
       this.adjustSetting(opt, 1);
     }
 
-    if (this.engine.input.justPressed["enter"] || this.engine.input.justPressed[" "]) {
+    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       if (opt === "BACK") {
         this.engine.switchState("title");
       } else {

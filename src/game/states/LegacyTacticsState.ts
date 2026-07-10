@@ -106,7 +106,7 @@ export class LegacyTacticsState extends GameState {
 
   update(dt: number) {
     if (this.phase === "end") {
-      if (this.engine.input.justPressed[" "] || this.engine.input.justPressed["Enter"]) {
+      if (this.engine.input.wasPressed(" ") || this.engine.input.wasPressed("enter")) {
         events.emit("state:change", this.params?.returnState || "dungeon", {
           fromLegacy: true,
           legacyType: "legacy_tactics",
@@ -130,10 +130,10 @@ export class LegacyTacticsState extends GameState {
       let dx = 0;
       let dy = 0;
 
-      if (this.engine.input.justPressed["ArrowUp"] || this.engine.input.justPressed["w"]) dy = -1;
-      else if (this.engine.input.justPressed["ArrowDown"] || this.engine.input.justPressed["s"]) dy = 1;
-      else if (this.engine.input.justPressed["ArrowLeft"] || this.engine.input.justPressed["a"]) dx = -1;
-      else if (this.engine.input.justPressed["ArrowRight"] || this.engine.input.justPressed["d"]) dx = 1;
+      if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) dy = -1;
+      else if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) dy = 1;
+      else if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a")) dx = -1;
+      else if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d")) dx = 1;
 
       if (dx !== 0 || dy !== 0) {
         this.handlePlayerAction(dx, dy);
