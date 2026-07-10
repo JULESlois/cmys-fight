@@ -19,7 +19,7 @@ import { hashSeed, normalizeSeed } from "./Random";
 import { BuffSystem, type BuffId } from "./combat/BuffSystem";
 import { ShopSystem } from "./shop/ShopSystem";
 
-const CURRENT_SAVE_VERSION = 9;
+const CURRENT_SAVE_VERSION = 10;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {

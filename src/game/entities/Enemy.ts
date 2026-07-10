@@ -1,3 +1,5 @@
+import type { EnemyBehavior, EnemyRole } from "../data/enemies";
+
 export class Enemy {
   public id: number;
   public x: number;
@@ -6,7 +8,13 @@ export class Enemy {
   public hp: number;
   public maxHp: number;
   public speed: number;
-  public type: "melee" | "ranged" | "boss";
+  public type: EnemyRole;
+  public enemyId: string;
+  public name: string = "Enemy";
+  public behavior: EnemyBehavior;
+  public displayColor: string = "#FFFFFF";
+  public isElite: boolean = false;
+  public eliteCoinReward: number = 0;
   public state: "idle" | "chase" | "flee" = "chase";
   public hitFlash: number = 0;
   public attackState: "idle" | "windup" | "recover" = "idle";
@@ -16,16 +24,26 @@ export class Enemy {
   public attackDamage: number = 2;
   public projectileSpeed: number = 90;
   public projectileCount: number = 1;
+  public projectileSpread: number = 0.28;
   public attackInterval: number = 1;
   public attackWindup: number = 0.4;
+  public attackTargetX: number = 0;
+  public attackTargetY: number = 0;
+  public chargeDistance: number = 48;
+  public areaRadius: number = 30;
+  public summonEnemyId?: string;
+  public bossPhase: 1 | 2 | 3 = 1;
+  public attackSequence: number = 0;
 
   private static nextId = 0;
 
-  constructor(x: number, y: number, type: "melee" | "ranged" | "boss") {
+  constructor(x: number, y: number, type: EnemyRole) {
     this.id = Enemy.nextId++;
     this.x = x;
     this.y = y;
     this.type = type;
+    this.enemyId = type;
+    this.behavior = type === "melee" ? "melee" : type === "ranged" ? "shoot" : "boss";
     
     if (type === "melee") {
       this.maxHp = 10;

@@ -126,14 +126,52 @@ export class EntityRenderer {
       ctx.fillStyle = `rgba(231, 76, 60, ${pulse * 0.2})`;
       ctx.lineWidth = 2;
 
-      if (enemy.type === "melee") {
+      if (enemy.behavior === "charge") {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(
+          Math.cos(enemy.attackAngle) * enemy.chargeDistance,
+          Math.sin(enemy.attackAngle) * enemy.chargeDistance,
+        );
+        ctx.stroke();
+        ctx.strokeRect(
+          Math.round(Math.cos(enemy.attackAngle) * enemy.chargeDistance) - 4,
+          Math.round(Math.sin(enemy.attackAngle) * enemy.chargeDistance) - 4,
+          8,
+          8,
+        );
+      } else if (enemy.behavior === "area") {
+        ctx.beginPath();
+        ctx.arc(
+          enemy.attackTargetX - enemy.x,
+          enemy.attackTargetY - enemy.y,
+          enemy.areaRadius,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+        ctx.stroke();
+      } else if (enemy.behavior === "summon") {
+        ctx.beginPath();
+        ctx.arc(0, 0, enemy.radius + 12 + Math.sin(time * 18) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (enemy.behavior === "melee") {
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, 22, enemy.attackAngle - 0.85, enemy.attackAngle + 0.85);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-      } else if (enemy.type === "ranged") {
+      } else if (enemy.behavior === "scatter") {
+        const spread = Math.max(0.18, enemy.projectileSpread * Math.max(1, enemy.projectileCount - 1));
+        for (const offset of [-spread / 2, 0, spread / 2]) {
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(enemy.attackAngle + offset) * 8, Math.sin(enemy.attackAngle + offset) * 8);
+          ctx.lineTo(Math.cos(enemy.attackAngle + offset) * 34, Math.sin(enemy.attackAngle + offset) * 34);
+          ctx.stroke();
+        }
+      } else if (enemy.behavior === "shoot") {
         ctx.beginPath();
         ctx.moveTo(Math.cos(enemy.attackAngle) * 8, Math.sin(enemy.attackAngle) * 8);
         ctx.lineTo(Math.cos(enemy.attackAngle) * 34, Math.sin(enemy.attackAngle) * 34);
@@ -144,12 +182,21 @@ export class EntityRenderer {
           4,
           4
         );
-      } else {
+      } else if (enemy.behavior === "boss") {
         ctx.beginPath();
-        ctx.arc(0, 0, 28 + Math.sin(time * 18) * 3, 0, Math.PI * 2);
+        ctx.arc(0, 0, 26 + enemy.bossPhase * 3 + Math.sin(time * 18) * 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
       }
+    }
+
+    if (enemy.isElite) {
+      const elitePulse = 0.5 + Math.sin(time * 8 + enemy.id) * 0.2;
+      ctx.strokeStyle = `rgba(241, 196, 15, ${elitePulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -2, enemy.radius + 5, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // Shadow
@@ -163,10 +210,14 @@ export class EntityRenderer {
     const isHit = enemy.hitFlash > 0;
     
     ctx.translate(0, animOffset);
-    let scale = 2;
+    let scale = enemy.isElite ? 2.35 : 2;
     if (enemy.type === "boss") scale = 3;
     
     SpriteRenderer.drawPixelSprite(ctx, `enemy_${enemy.type}_idle`, 0, -8, scale, { hitFlash: isHit });
+    ctx.fillStyle = enemy.displayColor;
+    ctx.globalAlpha = enemy.isElite ? 0.9 : 0.65;
+    ctx.fillRect(-2, -enemy.radius - 8, 4, 3);
+    ctx.globalAlpha = 1;
     ctx.restore();
 
     // Pixel HP bar
@@ -179,8 +230,15 @@ export class EntityRenderer {
     ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
     ctx.fillStyle = "#e43b44";
     ctx.fillRect(barX, barY, barW, barH);
-    ctx.fillStyle = "#2ECC71";
+    ctx.fillStyle = enemy.isElite ? "#F1C40F" : "#2ECC71";
     ctx.fillRect(barX, barY, Math.round(barW * (enemy.hp / enemy.maxHp)), barH);
+
+    if (enemy.type === "boss") {
+      for (let phase = 1; phase <= 3; phase++) {
+        ctx.fillStyle = phase <= enemy.bossPhase ? enemy.displayColor : "#34495E";
+        ctx.fillRect(barX + (phase - 1) * 6, barY - 5, 4, 2);
+      }
+    }
   }
 public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
     ctx.save();

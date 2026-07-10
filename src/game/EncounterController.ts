@@ -4,6 +4,8 @@ export interface EnemySpawn {
   x: number;
   y: number;
   type: "melee" | "ranged" | "boss";
+  enemyId?: string;
+  isElite?: boolean;
 }
 
 export interface Wave {
@@ -23,7 +25,7 @@ export interface SerializedEncounterState {
   waves: Wave[];
   currentWaveIndex: number;
   timer: number;
-  telegraphs: { x: number, y: number, timeLeft: number, type: "melee"|"ranged"|"boss" }[];
+  telegraphs: { x: number, y: number, timeLeft: number, type: "melee"|"ranged"|"boss", enemyId?: string, isElite?: boolean }[];
 }
 
 export class EncounterController {
@@ -34,7 +36,7 @@ export class EncounterController {
   public state: "waiting_delay" | "telegraphing" | "spawning" | "combat" | "finished" = "finished";
   private timer: number = 0;
   
-  public telegraphs: { x: number, y: number, timeLeft: number, type: "melee"|"ranged"|"boss" }[] = [];
+  public telegraphs: { x: number, y: number, timeLeft: number, type: "melee"|"ranged"|"boss", enemyId?: string, isElite?: boolean }[] = [];
   
   constructor() {}
   
@@ -92,7 +94,14 @@ export class EncounterController {
         // Start telegraphing
         const wave = this.waves[this.currentWaveIndex];
         this.timer = wave.telegraphTime;
-        this.telegraphs = wave.spawns.map(s => ({ x: s.x, y: s.y, timeLeft: wave.telegraphTime, type: s.type }));
+        this.telegraphs = wave.spawns.map(s => ({
+          x: s.x,
+          y: s.y,
+          timeLeft: wave.telegraphTime,
+          type: s.type,
+          enemyId: s.enemyId,
+          isElite: s.isElite,
+        }));
         this.state = "telegraphing";
       }
     } else if (this.state === "telegraphing") {

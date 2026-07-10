@@ -3,7 +3,14 @@ import type { Room, StageData } from "./FloorGenerator";
 import type { RoomTemplate } from "./data/roomTemplates";
 import { Enemy } from "./entities/Enemy";
 import { createSeededRandom, hashSeed } from "./Random";
-import { applyStageDifficulty, getStageDifficulty } from "./combat/StageDifficulty";
+import { getStageDifficulty } from "./combat/StageDifficulty";
+import { EnemyFactory } from "./EnemyFactory";
+import {
+  getBossDefinition,
+  getEnemyPool,
+  getThemeForChapter,
+  type EnemyRole,
+} from "./data/enemies";
 
 export interface EncounterFactoryInput {
   stage: StageData;
@@ -20,21 +27,33 @@ function shuffle<T>(values: T[], random: () => number): T[] {
   return copy;
 }
 
+function choose<T>(values: T[], random: () => number): T {
+  return values[Math.min(values.length - 1, Math.floor(random() * values.length))];
+}
+
 export class EncounterFactory {
   static create(input: EncounterFactoryInput): EncounterDef {
     const { stage, room, template } = input;
     const difficulty = getStageDifficulty(stage);
     const seed = room.encounterSeed ?? hashSeed(stage.seed, room.id);
     const random = createSeededRandom(seed);
+    const theme = getThemeForChapter(stage.chapterIndex);
 
     if (room.type === "boss") {
       const point = template.enemySpawnPoints[0] ?? { x: 10, y: 6 };
+      const boss = getBossDefinition(theme);
       return {
         id: room.encounterId ?? `enc_boss_${stage.globalStageIndex}_${room.id}`,
         waves: [{
           delay: 0.75,
           telegraphTime: 0.85,
-          spawns: [{ x: point.x * 16 + 8, y: point.y * 16 + 8, type: "boss" }],
+          spawns: [{
+            x: point.x * 16 + 8,
+            y: point.y * 16 + 8,
+            type: "boss",
+            enemyId: boss.id,
+            isElite: false,
+          }],
         }],
       };
     }
@@ -50,16 +69,22 @@ export class EncounterFactory {
       const spawns: EnemySpawn[] = [];
       for (let i = 0; i < spawnCount; i++) {
         const point = points[i];
-        const ranged = random() < difficulty.rangedChance;
+        const role: EnemyRole = random() < difficulty.rangedChance ? "ranged" : "melee";
+        const rolePool = getEnemyPool(theme, role);
+        const definition = choose(rolePool.length > 0 ? rolePool : getEnemyPool(theme), random);
         spawns.push({
           x: point.x * 16 + 8,
           y: point.y * 16 + 8,
-          type: ranged ? "ranged" : "melee",
+          type: definition.role,
+          enemyId: definition.id,
+          isElite: random() < difficulty.eliteChance,
         });
       }
 
       if (spawns.length > 1 && spawns.every(spawn => spawn.type === "ranged")) {
+        const melee = choose(getEnemyPool(theme, "melee"), random);
         spawns[0].type = "melee";
+        spawns[0].enemyId = melee.id;
       }
 
       waves.push({
@@ -76,6 +101,6 @@ export class EncounterFactory {
   }
 
   static createEnemy(stage: StageData, spawn: EnemySpawn): Enemy {
-    return applyStageDifficulty(new Enemy(spawn.x, spawn.y, spawn.type), getStageDifficulty(stage));
+    return EnemyFactory.create(stage, spawn);
   }
 }

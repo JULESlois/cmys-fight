@@ -171,11 +171,17 @@ export class DungeonState extends GameState {
           x: e.x,
           y: e.y,
           type: e.type,
+          enemyId: e.enemyId,
+          isElite: e.isElite,
           hp: e.hp,
           attackState: e.attackState,
           attackCooldown: e.attackCooldown,
           attackTimer: e.attackTimer,
           attackAngle: e.attackAngle,
+          attackTargetX: e.attackTargetX,
+          attackTargetY: e.attackTargetY,
+          bossPhase: e.bossPhase,
+          attackSequence: e.attackSequence,
         }));
         r.encounterState = this.roomPhase === "combat" && this.encounterCtrl.active
           ? this.encounterCtrl.serialize()
@@ -294,6 +300,10 @@ export class DungeonState extends GameState {
         if (savedEnemy.attackCooldown !== undefined) enemy.attackCooldown = savedEnemy.attackCooldown;
         if (savedEnemy.attackTimer !== undefined) enemy.attackTimer = savedEnemy.attackTimer;
         if (savedEnemy.attackAngle !== undefined) enemy.attackAngle = savedEnemy.attackAngle;
+        if (savedEnemy.attackTargetX !== undefined) enemy.attackTargetX = savedEnemy.attackTargetX;
+        if (savedEnemy.attackTargetY !== undefined) enemy.attackTargetY = savedEnemy.attackTargetY;
+        if (savedEnemy.bossPhase !== undefined) enemy.bossPhase = savedEnemy.bossPhase;
+        if (savedEnemy.attackSequence !== undefined) enemy.attackSequence = savedEnemy.attackSequence;
         this.enemies.push(enemy);
       }
 
@@ -680,6 +690,23 @@ export class DungeonState extends GameState {
   }
 
   private spawnEnemyDeathDrop(enemy: Enemy) {
+    if (enemy.isElite) {
+      const difficulty = getStageDifficulty(this.engine.data.data.floor);
+      this.pickups.push(new Pickup(
+        enemy.x,
+        enemy.y,
+        "coin",
+        Math.max(1, Math.round(enemy.eliteCoinReward * difficulty.rewardMultiplier)),
+      ));
+      this.pickups.push(new Pickup(
+        enemy.x + 8,
+        enemy.y,
+        Math.random() < 0.5 ? "mana" : "hp",
+        12,
+      ));
+      return;
+    }
+
     if (Math.random() < 0.3) {
       this.pickups.push(new Pickup(
         enemy.x,
@@ -955,6 +982,7 @@ export class DungeonState extends GameState {
     
     for (const e of this.enemies) {
       const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
+      if (e.type === "boss") this.updateBossPhase(e);
       
       let nextX = e.x;
       let nextY = e.y;
@@ -984,7 +1012,18 @@ export class DungeonState extends GameState {
         continue;
       }
 
-      if (e.type === "melee") {
+      if (e.type === "melee" && e.behavior === "charge") {
+        if (dist <= 110 && e.attackCooldown <= 0) {
+          this.beginEnemyAttack(e, e.attackWindup);
+          continue;
+        }
+
+        if (dist > 28) {
+          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          nextX += Math.cos(angle) * currentSpeed * dt;
+          nextY += Math.sin(angle) * currentSpeed * dt;
+        }
+      } else if (e.type === "melee") {
         const attackRange = e.radius + this.player.radius + 8;
         if (dist <= attackRange && e.attackCooldown <= 0) {
           this.beginEnemyAttack(e, e.attackWindup);
@@ -997,7 +1036,8 @@ export class DungeonState extends GameState {
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
       } else if (e.type === "ranged") {
-        if (e.attackCooldown <= 0 && dist <= 190) {
+        const canAttack = e.behavior !== "summon" || this.enemies.length < 7;
+        if (canAttack && e.attackCooldown <= 0 && dist <= 190) {
           this.beginEnemyAttack(e, e.attackWindup);
           continue;
         }
@@ -1013,11 +1053,12 @@ export class DungeonState extends GameState {
         }
       } else if (e.type === "boss") {
         if (e.attackCooldown <= 0) {
-          this.beginEnemyAttack(e, e.attackWindup);
+          const phaseWindup = e.attackWindup * (e.bossPhase === 1 ? 1 : e.bossPhase === 2 ? 0.88 : 0.76);
+          this.beginEnemyAttack(e, phaseWindup);
           continue;
         }
 
-        if (dist > 60) {
+        if (dist > (e.bossPhase === 3 ? 48 : 60)) {
           const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
@@ -1078,14 +1119,27 @@ export class DungeonState extends GameState {
     if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
   }
 
+  private updateBossPhase(enemy: Enemy) {
+    const healthRatio = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
+    const nextPhase: 1 | 2 | 3 = healthRatio <= 0.33 ? 3 : healthRatio <= 0.66 ? 2 : 1;
+    if (nextPhase === enemy.bossPhase) return;
+    enemy.bossPhase = nextPhase;
+    enemy.attackState = "recover";
+    enemy.attackTimer = 0.35;
+    enemy.attackCooldown = Math.min(enemy.attackCooldown, 0.45);
+    enemy.hitFlash = 0.35;
+  }
+
   private beginEnemyAttack(enemy: Enemy, windup: number) {
     enemy.attackState = "windup";
     enemy.attackTimer = windup;
     enemy.attackAngle = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
+    enemy.attackTargetX = this.player.x;
+    enemy.attackTargetY = this.player.y;
   }
 
   private resolveEnemyAttack(enemy: Enemy) {
-    if (enemy.type === "melee") {
+    if (enemy.behavior === "melee") {
       const dx = this.player.x - enemy.x;
       const dy = this.player.y - enemy.y;
       const distance = Math.hypot(dx, dy);
@@ -1100,39 +1154,130 @@ export class DungeonState extends GameState {
         if (result.applied) audio.playHurt();
       }
       enemy.attackCooldown = enemy.attackInterval;
-    } else if (enemy.type === "ranged") {
-      this.projectiles.push(new Projectile(
-        enemy.x,
-        enemy.y,
-        Math.cos(enemy.attackAngle) * enemy.projectileSpeed,
-        Math.sin(enemy.attackAngle) * enemy.projectileSpeed,
-        3,
-        enemy.attackDamage,
-        "enemy",
-        3.0,
-        "#E74C3C"
-      ));
+    } else if (enemy.behavior === "charge") {
+      this.resolveChargeAttack(enemy);
       enemy.attackCooldown = enemy.attackInterval;
-    } else {
-      for (let i = 0; i < enemy.projectileCount; i++) {
-        const angle = (Math.PI * 2 / enemy.projectileCount) * i;
-        this.projectiles.push(new Projectile(
-          enemy.x,
-          enemy.y,
-          Math.cos(angle) * enemy.projectileSpeed,
-          Math.sin(angle) * enemy.projectileSpeed,
-          4,
-          enemy.attackDamage,
-          "enemy",
-          4.0,
-          "#F1C40F"
-        ));
+    } else if (enemy.behavior === "shoot") {
+      this.spawnEnemyProjectile(enemy, enemy.attackAngle);
+      enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "scatter") {
+      const count = Math.max(2, enemy.projectileCount);
+      for (let i = 0; i < count; i++) {
+        const offset = (i - (count - 1) / 2) * enemy.projectileSpread;
+        this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset);
       }
       enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "summon") {
+      this.spawnSummonedEnemy(enemy);
+      enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "area") {
+      const distance = Math.hypot(
+        this.player.x - enemy.attackTargetX,
+        this.player.y - enemy.attackTargetY,
+      );
+      if (distance <= enemy.areaRadius + this.player.radius) {
+        const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
+        if (result.applied) audio.playHurt();
+      }
+      enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "boss") {
+      this.resolveBossAttack(enemy);
+      const phaseMultiplier = enemy.bossPhase === 1 ? 1 : enemy.bossPhase === 2 ? 0.78 : 0.58;
+      enemy.attackCooldown = enemy.attackInterval * phaseMultiplier;
     }
 
+    enemy.attackSequence++;
     enemy.attackState = "recover";
     enemy.attackTimer = 0.16;
+  }
+
+  private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3) {
+    this.projectiles.push(new Projectile(
+      enemy.x,
+      enemy.y,
+      Math.cos(angle) * enemy.projectileSpeed,
+      Math.sin(angle) * enemy.projectileSpeed,
+      radius,
+      enemy.attackDamage,
+      "enemy",
+      life,
+      enemy.displayColor,
+    ));
+  }
+
+  private resolveChargeAttack(enemy: Enemy) {
+    const startX = enemy.x;
+    const startY = enemy.y;
+    const steps = Math.max(1, Math.ceil(enemy.chargeDistance / 4));
+    for (let step = 1; step <= steps; step++) {
+      const distance = enemy.chargeDistance * (step / steps);
+      const nextX = startX + Math.cos(enemy.attackAngle) * distance;
+      const nextY = startY + Math.sin(enemy.attackAngle) * distance;
+      if (this.isCollidingWithMap(nextX, nextY, enemy.radius)) break;
+      enemy.x = Math.max(16, Math.min(304, nextX));
+      enemy.y = Math.max(16, Math.min(224, nextY));
+    }
+
+    const hit = segmentCircleHit(
+      startX,
+      startY,
+      enemy.x,
+      enemy.y,
+      this.player.x,
+      this.player.y,
+      enemy.radius + this.player.radius + 2,
+    );
+    if (hit) {
+      const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
+      if (result.applied) audio.playHurt();
+    }
+  }
+
+  private spawnSummonedEnemy(enemy: Enemy) {
+    if (!enemy.summonEnemyId || this.enemies.length >= 7) return;
+    const angle = enemy.attackSequence * 2.3999632297;
+    const distance = enemy.radius + 18;
+    const x = enemy.x + Math.cos(angle) * distance;
+    const y = enemy.y + Math.sin(angle) * distance;
+    if (this.isCollidingWithMap(x, y, 8)) return;
+    const summoned = EncounterFactory.createEnemy(this.engine.data.data.floor, {
+      x,
+      y,
+      type: "melee",
+      enemyId: enemy.summonEnemyId,
+      isElite: false,
+    });
+    summoned.attackCooldown = Math.max(0.6, summoned.attackCooldown);
+    this.enemies.push(summoned);
+  }
+
+  private resolveBossAttack(enemy: Enemy) {
+    const radial = (count: number, offset: number, speedScale = 1) => {
+      const originalSpeed = enemy.projectileSpeed;
+      enemy.projectileSpeed *= speedScale;
+      for (let i = 0; i < count; i++) {
+        this.spawnEnemyProjectile(enemy, offset + Math.PI * 2 * i / count, 4, 4);
+      }
+      enemy.projectileSpeed = originalSpeed;
+    };
+
+    if (enemy.bossPhase === 1) {
+      radial(enemy.projectileCount, enemy.attackSequence * 0.12);
+      return;
+    }
+
+    if (enemy.bossPhase === 2) {
+      radial(enemy.projectileCount + 2, enemy.attackSequence * 0.2, 1.08);
+      this.spawnEnemyProjectile(enemy, enemy.attackAngle, 4, 4);
+      return;
+    }
+
+    const fanCount = 5;
+    for (let i = 0; i < fanCount; i++) {
+      const offset = (i - 2) * 0.18;
+      this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset, 4, 4);
+    }
+    radial(Math.max(6, enemy.projectileCount), enemy.attackSequence * 0.28, 1.15);
   }
 
   private updateProjectiles(dt: number) {
@@ -1303,13 +1448,13 @@ export class DungeonState extends GameState {
     
     // Draw telegraphs
     for (const t of this.encounterCtrl.telegraphs) {
-       ctx.strokeStyle = "rgba(231, 76, 60, 0.8)";
+       ctx.strokeStyle = t.isElite ? "rgba(241, 196, 15, 0.95)" : "rgba(231, 76, 60, 0.8)";
        ctx.lineWidth = 2;
        ctx.beginPath();
-       const rad = t.type === "boss" ? 24 : 12;
+       const rad = (t.type === "boss" ? 24 : 12) + (t.isElite ? 4 : 0);
        ctx.arc(t.x, t.y, rad, 0, Math.PI * 2);
        ctx.stroke();
-       ctx.fillStyle = "rgba(231, 76, 60, 0.2)";
+       ctx.fillStyle = t.isElite ? "rgba(241, 196, 15, 0.18)" : "rgba(231, 76, 60, 0.2)";
        ctx.fill();
     }
 

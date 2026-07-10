@@ -35,11 +35,17 @@ export interface Room {
     x: number;
     y: number;
     type: "melee" | "ranged" | "boss";
+    enemyId?: string;
+    isElite?: boolean;
     hp?: number;
     attackState?: "idle" | "windup" | "recover";
     attackCooldown?: number;
     attackTimer?: number;
     attackAngle?: number;
+    attackTargetX?: number;
+    attackTargetY?: number;
+    bossPhase?: 1 | 2 | 3;
+    attackSequence?: number;
   }[];
   pickups?: {
     x: number;
