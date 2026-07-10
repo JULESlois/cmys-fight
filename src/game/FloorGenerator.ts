@@ -10,6 +10,7 @@ import {
 } from "./RunProgress";
 import { createRandomSeed, createSeededRandom, hashSeed, type RandomSource } from "./Random";
 import type { BuffId } from "./combat/BuffSystem";
+import type { ShopItem } from "./shop/ShopSystem";
 
 export type ThemeId = "forest" | "dungeon" | "snow" | "lava";
 
@@ -17,7 +18,7 @@ export interface Room {
   id: string;
   x: number;
   y: number;
-  type: "start" | "combat" | "treasure" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
+  type: "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
   cleared: boolean;
   combatCleared?: boolean;
   rewardGenerated?: boolean;
@@ -27,6 +28,8 @@ export interface Room {
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
   encounterId?: string;
   encounterSeed?: number;
+  shopSeed?: number;
+  shopStock?: ShopItem[];
   encounterState?: SerializedEncounterState;
   enemies?: {
     x: number;
@@ -80,7 +83,7 @@ function createRoom(x: number, y: number, type: Room["type"]): Room {
     x,
     y,
     type,
-    cleared: type === "start" || type === "treasure" || type === "exit" || type === "npc" || type === "legacy_rpg" || type === "legacy_tactics",
+    cleared: type === "start" || type === "treasure" || type === "shop" || type === "exit" || type === "npc" || type === "legacy_rpg" || type === "legacy_tactics",
     doors: { up: false, down: false, left: false, right: false },
   };
 }
@@ -177,7 +180,7 @@ function assignTemplates(stage: StageData, random: RandomSource): void {
 
 function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, random: RandomSource): StageData {
   const start = createRoom(0, 0, "start");
-  const preparation = createRoom(1, 0, "treasure");
+  const preparation = createRoom(1, 0, "shop");
   const boss = createRoom(2, 0, "boss");
   const rooms = [start, preparation, boss];
   const mapGrid: Record<string, Room> = {
@@ -262,7 +265,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
 
   const specialDeadEnds = deadEnds.filter(room => room !== exitRoom);
   const remainingCombat = rooms.filter(room => room.type === "combat");
-  assignRoomType("treasure", specialDeadEnds, remainingCombat, random);
+  assignRoomType(random() < 0.55 ? "shop" : "treasure", specialDeadEnds, remainingCombat, random);
   if (random() < 0.5) {
     assignRoomType("legacy_rpg", specialDeadEnds, remainingCombat, random);
   } else {

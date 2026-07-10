@@ -1,4 +1,4 @@
-export type RoomType = "start" | "combat" | "treasure" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
+export type RoomType = "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
 
 export interface DoorMask {
   up: boolean;
@@ -22,7 +22,7 @@ export interface RoomTemplate {
 export const ROOM_TEMPLATES: RoomTemplate[] = [
 {
     id: "horizontal_corridor",
-    allowedRoomTypes: ["combat", "npc"],
+    allowedRoomTypes: ["combat", "shop", "npc"],
     doorMask: { left: true, right: true, up: false, down: false },
     tiles: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,4,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,2,2,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,1,1,1,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,1,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,1,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,1,1,1,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,2,2,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     enemySpawnPoints: [{x: 10, y: 5}, {x: 10, y: 9}, {x: 5, y: 7}, {x: 15, y: 7}],
@@ -73,7 +73,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end",
-    allowedRoomTypes: ["treasure"],
+    allowedRoomTypes: ["treasure", "shop"],
     doorMask: "any",
     tiles: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,0,0,0,0,0,0,0,0,4,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,2,2,2,2,2,2,2,2,0,0,0,1,1,1,1,1,0,0,0,2,2,0,0,0,0,0,0,2,2,0,0,0,1,1,2,2,0,0,2,2,0,0,0,0,0,0,0,0,2,2,0,0,1,1,2,2,0,0,2,2,0,0,0,0,0,0,0,0,2,2,0,0,1,1,1,1,0,0,0,2,2,0,0,0,0,0,0,2,2,0,0,0,1,1,1,1,1,0,0,0,2,2,2,2,2,2,2,2,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,4,0,0,0,0,0,0,0,0,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     enemySpawnPoints: [],
@@ -174,7 +174,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_up",
-    allowedRoomTypes: ["combat", "treasure", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: false, right: false, up: true, down: false },
     tiles: [
       1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,
@@ -200,7 +200,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_down",
-    allowedRoomTypes: ["combat", "treasure", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: false, right: false, up: false, down: true },
     tiles: [
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -226,7 +226,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_left",
-    allowedRoomTypes: ["combat", "treasure", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: true, right: false, up: false, down: false },
     tiles: [
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -252,7 +252,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_right",
-    allowedRoomTypes: ["combat", "treasure", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: false, right: true, up: false, down: false },
     tiles: [
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,

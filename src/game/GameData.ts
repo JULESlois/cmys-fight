@@ -17,8 +17,9 @@ import {
 } from "./data/weapons";
 import { hashSeed, normalizeSeed } from "./Random";
 import { BuffSystem, type BuffId } from "./combat/BuffSystem";
+import { ShopSystem } from "./shop/ShopSystem";
 
-const CURRENT_SAVE_VERSION = 8;
+const CURRENT_SAVE_VERSION = 9;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -344,10 +345,27 @@ export class GameData {
     stage.seed = normalizeSeed(
       Number(stage.seed) || hashSeed(0xC0FFEE, `${run.globalStageIndex}:${roomSignature}`),
     );
+
+    if (stage.isBossStage && !stage.rooms.some(room => room.type === "shop")) {
+      const preparation = stage.rooms.find(room => room.type === "treasure");
+      if (preparation) {
+        preparation.type = "shop";
+        preparation.templateId = "horizontal_corridor";
+        preparation.interactionCompleted = false;
+        preparation.rewardGenerated = false;
+        preparation.pickups = [];
+        preparation.shopStock = undefined;
+      }
+    }
+
     for (const room of stage.rooms) {
       room.encounterSeed = normalizeSeed(
         Number(room.encounterSeed) || hashSeed(stage.seed, room.id),
       );
+      if (room.type === "shop") {
+        room.shopSeed = ShopSystem.getSeed(stage, room);
+        room.shopStock = ShopSystem.normalizeStock(room.shopStock);
+      }
     }
   }
 

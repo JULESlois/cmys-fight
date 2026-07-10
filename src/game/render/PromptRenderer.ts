@@ -15,6 +15,8 @@ export class PromptRenderer {
        msg = "[SPACE] TACTICS";
     } else if (target.type === "treasure") {
        msg = "[SPACE] OPEN";
+    } else if (target.type === "shop") {
+       msg = "[SPACE] SHOP";
     }
     
     if (msg) {

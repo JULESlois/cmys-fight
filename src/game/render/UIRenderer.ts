@@ -201,6 +201,9 @@ export class UIRenderer {
       } else if (currentRoom.type === "exit") {
          statusColor = "#16A085";
          statusText = "PORTAL";
+      } else if (currentRoom.type === "shop") {
+         statusColor = "#D4AC0D";
+         statusText = "MERCHANT";
       } else if (roomPhase === "exploration") {
          statusColor = "#27AE60";
          statusText = "OPEN";

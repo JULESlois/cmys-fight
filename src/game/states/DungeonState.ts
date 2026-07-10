@@ -24,6 +24,8 @@ import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
 import { hashSeed } from "../Random";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
+import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
+import { ShopRenderer } from "../render/ShopRenderer";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -51,6 +53,9 @@ export class DungeonState extends GameState {
   private encounterCtrl = new EncounterController();
   private lightningArcs: LightningArc[] = [];
   private buffSelection: BuffId[] | null = null;
+  private shopOpen: boolean = false;
+  private shopFailure?: ShopPurchaseFailure;
+  private shopFailureTimer: number = 0;
 
   constructor(engine: Engine) {
     super(engine);
@@ -128,8 +133,11 @@ export class DungeonState extends GameState {
     savedP.x = this.player.x;
     savedP.y = this.player.y;
     savedP.hp = this.player.hp;
+    savedP.maxHp = this.player.maxHp;
     savedP.armor = this.player.armor;
+    savedP.maxArmor = this.player.maxArmor;
     savedP.mana = this.player.mana;
+    savedP.maxMana = this.player.maxMana;
     savedP.weaponSlots = this.player.weaponSlots[1]
       ? [this.player.weaponSlots[0], this.player.weaponSlots[1]]
       : [this.player.weaponSlots[0]];
@@ -186,6 +194,9 @@ export class DungeonState extends GameState {
     this.lightningArcs = [];
     this.portal = undefined;
     this.chest = null;
+    this.shopOpen = false;
+    this.shopFailure = undefined;
+    this.shopFailureTimer = 0;
     this.encounterCtrl = new EncounterController();
     
     const floor = this.engine.data.data.floor;
@@ -238,6 +249,12 @@ export class DungeonState extends GameState {
         const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
         this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: "shotgun", opened: false };
       }
+      this.setPhase("exploration");
+      return;
+    }
+
+    if (currentRoom.type === "shop") {
+      currentRoom.shopStock = ShopSystem.reconcileStock(floor, currentRoom, this.player);
       this.setPhase("exploration");
       return;
     }
@@ -385,6 +402,58 @@ export class DungeonState extends GameState {
     this.engine.input.clear();
   }
 
+  private updateShop(dt: number) {
+    this.shopFailureTimer = Math.max(0, this.shopFailureTimer - dt);
+    if (this.shopFailureTimer <= 0) this.shopFailure = undefined;
+
+    if (this.engine.input.wasPressed("escape") || this.engine.input.wasPressed(" ")) {
+      this.shopOpen = false;
+      this.shopFailure = undefined;
+      this.engine.input.clear();
+      return;
+    }
+
+    const floor = this.engine.data.data.floor;
+    const room = floor.rooms.find(candidate =>
+      candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+    );
+    if (!room || room.type !== "shop") {
+      this.shopOpen = false;
+      return;
+    }
+
+    room.shopStock = ShopSystem.reconcileStock(floor, room, this.player);
+    const keys = ["1", "2", "3", "4"];
+    const selectedIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
+    if (selectedIndex < 0 || selectedIndex >= room.shopStock.length) return;
+
+    const item = room.shopStock[selectedIndex];
+    const coins = this.engine.data.data.player.coins;
+    const result = ShopSystem.purchase(this.player, item, coins);
+    if (!result.success) {
+      this.shopFailure = result.reason;
+      this.shopFailureTimer = 1.4;
+      audio.playHurt();
+      return;
+    }
+
+    this.engine.data.data.player.coins = result.coinsAfter;
+    if (result.droppedWeaponId) {
+      const dropped = new Pickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
+      dropped.blockedUntilPlayerLeaves = true;
+      (dropped as any).bounceTimer = 0.2;
+      (dropped as any).baseY = dropped.y;
+      this.pickups.push(dropped);
+    }
+
+    this.shopFailure = undefined;
+    this.syncPlayerState();
+    this.syncRoomState();
+    this.engine.data.save();
+    audio.playPickup();
+    this.engine.input.clearJustPressed();
+  }
+
   private spawnRoomRewards() {
     const floor = this.engine.data.data.floor;
     const difficulty = getStageDifficulty(floor);
@@ -449,6 +518,11 @@ export class DungeonState extends GameState {
 
     if (this.buffSelection) {
       this.updateBuffSelection();
+      return;
+    }
+
+    if (this.shopOpen) {
+      this.updateShop(dt);
       return;
     }
 
@@ -732,6 +806,12 @@ export class DungeonState extends GameState {
     }
   }
 
+  private getShopPosition(room: Room): { x: number; y: number } {
+    const template = getRoomTemplate(room);
+    const point = template.pickupSpawnPoints[0] ?? { x: 10, y: 7.5 };
+    return { x: point.x * 16 + 8, y: point.y * 16 + 8 };
+  }
+
   private handleInteract(target: any) {
     if (target.type === "portal" && this.portal) {
        this.portal.state = "activating";
@@ -750,6 +830,12 @@ export class DungeonState extends GameState {
           currentRoom.rewardGenerated = true;
        }
        this.pickups.push(new Pickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
+    } else if (target.type === "shop") {
+       this.shopOpen = true;
+       this.shopFailure = undefined;
+       this.shopFailureTimer = 0;
+       audio.playPickup();
+       this.engine.input.clearJustPressed();
     }
   }
 
@@ -763,6 +849,13 @@ export class DungeonState extends GameState {
       const ly = template.legacySpawnPoint ? template.legacySpawnPoint.y * 16 + 8 : 120;
       if (Math.abs(this.player.x - lx) < 20 && Math.abs(this.player.y - ly) < 20) {
          return { type: currentRoom.type, x: lx, y: ly, roomId: currentRoom.id };
+      }
+    }
+
+    if (currentRoom?.type === "shop") {
+      const shop = this.getShopPosition(currentRoom);
+      if (Math.hypot(this.player.x - shop.x, this.player.y - shop.y) < 32) {
+        return { type: "shop", x: shop.x, y: shop.y, roomId: currentRoom.id };
       }
     }
 
@@ -1251,6 +1344,11 @@ export class DungeonState extends GameState {
        ctx.fillRect(this.chest.x - 8, this.chest.y - 8, 16, 4);
     }
 
+    if (currentRoom?.type === "shop") {
+      const shop = this.getShopPosition(currentRoom);
+      ShopRenderer.drawMerchant(ctx, shop.x, shop.y, time);
+    }
+
     for (const p of this.pickups) {
        EntityRenderer.drawPickup(ctx, p, time);
     }
@@ -1300,6 +1398,15 @@ export class DungeonState extends GameState {
 
     if (this.buffSelection) {
       BuffSelectionRenderer.draw(ctx, this.buffSelection);
+    }
+
+    if (this.shopOpen && currentRoom?.type === "shop") {
+      ShopRenderer.drawOverlay(
+        ctx,
+        currentRoom.shopStock ?? [],
+        this.engine.data.data.player.coins,
+        this.shopFailure,
+      );
     }
     
     if (this.player.hp <= 0) {
