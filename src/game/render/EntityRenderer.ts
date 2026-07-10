@@ -20,6 +20,10 @@ export class EntityRenderer {
     ctx.ellipse(0, 8, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) {
+      ctx.globalAlpha = 0.45;
+    }
+
     const weaponBehindBody = Math.sin(player.aimAngle) < -0.35;
 
     if (weaponBehindBody) {
@@ -78,6 +82,38 @@ export class EntityRenderer {
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string) {
     ctx.save();
     ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
+
+    if (enemy.attackState === "windup") {
+      const pulse = 0.55 + Math.sin(time * 22) * 0.2;
+      ctx.strokeStyle = `rgba(231, 76, 60, ${pulse})`;
+      ctx.fillStyle = `rgba(231, 76, 60, ${pulse * 0.2})`;
+      ctx.lineWidth = 2;
+
+      if (enemy.type === "melee") {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 22, enemy.attackAngle - 0.85, enemy.attackAngle + 0.85);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (enemy.type === "ranged") {
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(enemy.attackAngle) * 8, Math.sin(enemy.attackAngle) * 8);
+        ctx.lineTo(Math.cos(enemy.attackAngle) * 34, Math.sin(enemy.attackAngle) * 34);
+        ctx.stroke();
+        ctx.fillRect(
+          Math.round(Math.cos(enemy.attackAngle) * 34) - 2,
+          Math.round(Math.sin(enemy.attackAngle) * 34) - 2,
+          4,
+          4
+        );
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, 28 + Math.sin(time * 18) * 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
 
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.3)";

@@ -16,6 +16,7 @@ import { WEAPONS } from "../data/weapons";
 import { Pickup } from "../entities/Pickup";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController, EncounterDef } from "../EncounterController";
+import { DamageSystem } from "../combat/DamageSystem";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -124,7 +125,16 @@ export class DungeonState extends GameState {
       normalizeRoomState(r);
       r.pickups = this.pickups.map(p => ({ x: p.x, y: p.y, type: p.type, value: p.value, weaponId: p.weaponId }));
       if (isCombatRoom(r) && !isCombatCleared(r)) {
-        r.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+        r.enemies = this.enemies.map(e => ({
+          x: e.x,
+          y: e.y,
+          type: e.type,
+          hp: e.hp,
+          attackState: e.attackState,
+          attackCooldown: e.attackCooldown,
+          attackTimer: e.attackTimer,
+          attackAngle: e.attackAngle,
+        }));
         r.encounterState = this.roomPhase === "combat" && this.encounterCtrl.active
           ? this.encounterCtrl.serialize()
           : undefined;
@@ -209,6 +219,10 @@ export class DungeonState extends GameState {
       for (const savedEnemy of currentRoom.enemies) {
         const enemy = new Enemy(savedEnemy.x, savedEnemy.y, savedEnemy.type);
         if (savedEnemy.hp !== undefined) enemy.hp = savedEnemy.hp;
+        if (savedEnemy.attackState !== undefined) enemy.attackState = savedEnemy.attackState;
+        if (savedEnemy.attackCooldown !== undefined) enemy.attackCooldown = savedEnemy.attackCooldown;
+        if (savedEnemy.attackTimer !== undefined) enemy.attackTimer = savedEnemy.attackTimer;
+        if (savedEnemy.attackAngle !== undefined) enemy.attackAngle = savedEnemy.attackAngle;
         this.enemies.push(enemy);
       }
 
@@ -395,6 +409,7 @@ export class DungeonState extends GameState {
     if (this.player.hitFlash > 0) {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
+    DamageSystem.updatePlayer(this.player, dt);
 
     // Interactive objects
     const interactTarget = this.getInteractTarget();
@@ -716,53 +731,132 @@ export class DungeonState extends GameState {
       
       let currentSpeed = e.speed;
       if (e.hitFlash > 0) {
-         e.hitFlash -= dt;
-         currentSpeed *= 0.5;
+        e.hitFlash = Math.max(0, e.hitFlash - dt);
+        currentSpeed *= 0.5;
+      }
+
+      e.attackCooldown = Math.max(0, e.attackCooldown - dt);
+
+      if (e.attackState === "windup") {
+        e.attackTimer -= dt;
+        if (e.attackTimer <= 0) {
+          this.resolveEnemyAttack(e);
+        }
+        continue;
+      }
+
+      if (e.attackState === "recover") {
+        e.attackTimer -= dt;
+        if (e.attackTimer <= 0) {
+          e.attackState = "idle";
+          e.attackTimer = 0;
+        }
+        continue;
       }
 
       if (e.type === "melee") {
-         if (dist > 5) {
-            const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
-            nextX += Math.cos(angle) * currentSpeed * dt;
-            nextY += Math.sin(angle) * currentSpeed * dt;
-         }
-      } else if (e.type === "ranged") {
-         if (dist > 100) {
-            const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
-            nextX += Math.cos(angle) * currentSpeed * dt;
-            nextY += Math.sin(angle) * currentSpeed * dt;
-         } else if (dist < 80) {
-            const angle = Math.atan2(e.y - this.player.y, e.x - this.player.x);
-            nextX += Math.cos(angle) * currentSpeed * dt;
-            nextY += Math.sin(angle) * currentSpeed * dt;
-         }
-      } else if (e.type === "boss") {
+        const attackRange = e.radius + this.player.radius + 8;
+        if (dist <= attackRange && e.attackCooldown <= 0) {
+          this.beginEnemyAttack(e, 0.32);
+          continue;
+        }
+
+        if (dist > attackRange - 2) {
           const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
+        }
+      } else if (e.type === "ranged") {
+        if (e.attackCooldown <= 0 && dist <= 190) {
+          this.beginEnemyAttack(e, 0.5);
+          continue;
+        }
+
+        if (dist > 112) {
+          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          nextX += Math.cos(angle) * currentSpeed * dt;
+          nextY += Math.sin(angle) * currentSpeed * dt;
+        } else if (dist < 78) {
+          const angle = Math.atan2(e.y - this.player.y, e.x - this.player.x);
+          nextX += Math.cos(angle) * currentSpeed * dt;
+          nextY += Math.sin(angle) * currentSpeed * dt;
+        }
+      } else if (e.type === "boss") {
+        if (e.attackCooldown <= 0) {
+          this.beginEnemyAttack(e, 0.65);
+          continue;
+        }
+
+        if (dist > 60) {
+          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          nextX += Math.cos(angle) * currentSpeed * dt;
+          nextY += Math.sin(angle) * currentSpeed * dt;
+        }
       }
       
       if (!this.isCollidingWithMap(nextX, e.y, e.radius)) e.x = nextX;
       if (!this.isCollidingWithMap(e.x, nextY, e.radius)) e.y = nextY;
       
-      if (e.type === "boss") {
-         if (e.shootCooldown > 0) e.shootCooldown -= dt;
-         if (e.shootCooldown <= 0) {
-            for (let i = 0; i < 8; i++) {
-               const angle = (Math.PI * 2 / 8) * i;
-               this.projectiles.push(new Projectile(
-                  e.x, e.y,
-                  Math.cos(angle)*60, Math.sin(angle)*60,
-                  4, 3, "enemy", 4.0, "#F1C40F"
-               ));
-            }
-            e.shootCooldown = 3.0;
-         }
-      }
-      
       e.x = Math.max(16, Math.min(320 - 16, e.x));
       e.y = Math.max(16, Math.min(240 - 16, e.y));
     }
+  }
+
+  private beginEnemyAttack(enemy: Enemy, windup: number) {
+    enemy.attackState = "windup";
+    enemy.attackTimer = windup;
+    enemy.attackAngle = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
+  }
+
+  private resolveEnemyAttack(enemy: Enemy) {
+    if (enemy.type === "melee") {
+      const dx = this.player.x - enemy.x;
+      const dy = this.player.y - enemy.y;
+      const distance = Math.hypot(dx, dy);
+      const targetAngle = Math.atan2(dy, dx);
+      const angleDelta = Math.atan2(
+        Math.sin(targetAngle - enemy.attackAngle),
+        Math.cos(targetAngle - enemy.attackAngle)
+      );
+
+      if (distance <= enemy.radius + this.player.radius + 11 && Math.abs(angleDelta) <= Math.PI * 0.42) {
+        const result = DamageSystem.damagePlayer(this.player, 2);
+        if (result.applied) audio.playHurt();
+      }
+      enemy.attackCooldown = 0.85;
+    } else if (enemy.type === "ranged") {
+      this.projectiles.push(new Projectile(
+        enemy.x,
+        enemy.y,
+        Math.cos(enemy.attackAngle) * 90,
+        Math.sin(enemy.attackAngle) * 90,
+        3,
+        2,
+        "enemy",
+        3.0,
+        "#E74C3C"
+      ));
+      enemy.attackCooldown = 1.45;
+    } else {
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 / 8) * i;
+        this.projectiles.push(new Projectile(
+          enemy.x,
+          enemy.y,
+          Math.cos(angle) * 60,
+          Math.sin(angle) * 60,
+          4,
+          3,
+          "enemy",
+          4.0,
+          "#F1C40F"
+        ));
+      }
+      enemy.attackCooldown = 2.35;
+    }
+
+    enemy.attackState = "recover";
+    enemy.attackTimer = 0.16;
   }
 
   private updateProjectiles(dt: number) {
@@ -810,10 +904,9 @@ export class DungeonState extends GameState {
         for (let j = this.enemies.length - 1; j >= 0; j--) {
           const e = this.enemies[j];
           if (Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius) {
-            audio.playHit();
-            e.hp -= p.damage;
-            e.hitFlash = 0.1;
-            if (e.hp <= 0) {
+            const result = DamageSystem.damageEnemy(e, p.damage);
+            if (result.applied) audio.playHit();
+            if (result.killed) {
               if (Math.random() < 0.3) {
                  this.pickups.push(new Pickup(e.x, e.y, Math.random() < 0.5 ? "mana" : "hp", 10));
               }
@@ -825,19 +918,8 @@ export class DungeonState extends GameState {
         }
       } else if (p.faction === "enemy" && this.player.hp > 0) {
         if (Math.hypot(p.x - this.player.x, p.y - this.player.y) < p.radius + this.player.radius) {
-          audio.playHurt();
-          if (this.player.armor > 0) {
-            this.player.armor -= p.damage;
-            this.player.hitFlash = 0.08;
-            if (this.player.armor < 0) {
-              this.player.hp += this.player.armor;
-              this.player.armor = 0;
-              this.player.hitFlash = 0.2;
-            }
-          } else {
-             this.player.hp -= p.damage;
-             this.player.hitFlash = 0.2;
-          }
+          const result = DamageSystem.damagePlayer(this.player, p.damage);
+          if (result.applied) audio.playHurt();
           hit = true;
         }
       }

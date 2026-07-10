@@ -32,6 +32,7 @@ export class Player {
 
   public muzzleFlash: number = 0;
   public hitFlash: number = 0;
+  public invulnerabilityTimer: number = 0;
 
   constructor(x: number, y: number) {
     this.x = x;

@@ -18,7 +18,16 @@ export interface Room {
   encounterId?: string;
   encounterState?: SerializedEncounterState;
   // Fallback for remaining enemies if player leaves and comes back
-  enemies?: { x: number, y: number, type: "melee" | "ranged" | "boss", hp?: number }[];
+  enemies?: {
+    x: number;
+    y: number;
+    type: "melee" | "ranged" | "boss";
+    hp?: number;
+    attackState?: "idle" | "windup" | "recover";
+    attackCooldown?: number;
+    attackTimer?: number;
+    attackAngle?: number;
+  }[];
   pickups?: { x: number, y: number, type: "hp" | "mana" | "coin" | "weapon", value: number, weaponId?: string }[];
 }
 
