@@ -175,7 +175,7 @@ export class UIRenderer {
     ctx.textAlign = "right";
     ctx.fillStyle = "#FFF";
     ctx.font = "bold 9px monospace";
-    ctx.fillText(`FLOOR ${floor.depth} ${floor.theme.toUpperCase()}`, 310, 222);
+    ctx.fillText(`${floor.chapterIndex}-${floor.stageIndex} ${floor.theme.toUpperCase()}`, 310, 222);
     
     if (currentRoom) {
       let statusColor = "#C0392B";
@@ -184,6 +184,9 @@ export class UIRenderer {
       if (currentRoom.type === "start" || currentRoom.type === "npc") {
          statusColor = "#7F8C8D";
          statusText = "SAFE";
+      } else if (currentRoom.type === "exit") {
+         statusColor = "#16A085";
+         statusText = "PORTAL";
       } else if (roomPhase === "exploration") {
          statusColor = "#27AE60";
          statusText = "OPEN";

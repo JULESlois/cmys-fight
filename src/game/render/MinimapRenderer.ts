@@ -35,6 +35,8 @@ export class MinimapRenderer {
          ctx.fillStyle = "#FFF"; // Current
        } else if (r.type === "boss") {
          ctx.fillStyle = r.cleared ? "#C0392B" : "#E74C3C"; 
+       } else if (r.type === "exit") {
+         ctx.fillStyle = "#00F2FE";
        } else if (r.type === "treasure") {
          ctx.fillStyle = r.cleared ? "#F39C12" : "#F1C40F";
        } else if (r.type === "legacy_rpg" || r.type === "legacy_tactics") {

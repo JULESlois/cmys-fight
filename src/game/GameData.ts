@@ -1,6 +1,14 @@
-import { FloorData, generateFloor } from "./FloorGenerator";
+import { generateStage, type FloorData } from "./FloorGenerator";
 import { CHARACTERS } from "./data/characters";
 import { normalizeRoomState } from "./RoomState";
+import {
+  advanceRunProgress,
+  createInitialRunProgress,
+  createRunProgressFromGlobalStage,
+  isBossStage,
+  normalizeRunProgress,
+  type RunProgress,
+} from "./RunProgress";
 import {
   createStarterWeaponSlots,
   isWeaponId,
@@ -8,7 +16,8 @@ import {
   type WeaponSlots,
 } from "./data/weapons";
 
-const CURRENT_SAVE_VERSION = 5;
+const CURRENT_SAVE_VERSION = 6;
+const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
   player: {
@@ -42,6 +51,8 @@ export interface GameSave {
     crtFilter: boolean;
   };
   recentEvents: string[];
+  run: RunProgress;
+  /** Compatibility name retained while the value now represents one Stage. */
   floor: FloorData;
   legacyData: {
     player: {
@@ -89,7 +100,8 @@ export const defaultSave: GameSave = {
     crtFilter: true,
   },
   recentEvents: ["Started the journey"],
-  floor: generateFloor(1),
+  run: INITIAL_RUN,
+  floor: generateStage(INITIAL_RUN),
   legacyData: {
     player: {
       x: 2,
@@ -102,7 +114,7 @@ export const defaultSave: GameSave = {
     clearedRooms: [],
     legacyRewardsClaimed: [],
   },
-  saveVersion: CURRENT_SAVE_VERSION
+  saveVersion: CURRENT_SAVE_VERSION,
 };
 
 export class GameData {
@@ -115,10 +127,10 @@ export class GameData {
   save() {
     this.normalizePlayerWeapons();
     this.normalizePlayerSkills();
-    if (this.data.floor && Array.isArray(this.data.floor.rooms)) {
-      for (const room of this.data.floor.rooms) {
-        normalizeRoomState(room);
-      }
+    this.data.run = normalizeRunProgress(this.data.run);
+    this.normalizeStageMetadata();
+    for (const room of this.data.floor.rooms) {
+      normalizeRoomState(room);
     }
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     localStorage.setItem("retro_rpg_save", JSON.stringify(this.data));
@@ -126,47 +138,55 @@ export class GameData {
 
   load() {
     const saved = localStorage.getItem("retro_rpg_save");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        this.data = { ...defaultSave, ...parsed };
-        this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
-        if (!Array.isArray(parsed.player?.weaponSlots)) {
-          const legacyWeapon = isWeaponId(parsed.player?.currentWeaponId)
-            ? parsed.player.currentWeaponId
-            : "pistol";
-          this.data.player.weaponSlots = [legacyWeapon];
-          this.data.player.activeWeaponSlot = 0;
-        }
-        this.normalizePlayerWeapons();
-        if (typeof parsed.player?.knightGuardReady !== "boolean") {
-          this.data.player.knightGuardReady = this.data.player.characterId === "knight";
-        }
-        this.normalizePlayerSkills();
-        this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
-        this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
-        this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
-        
-        const loadedVersion = Number(parsed.saveVersion || 0);
-        const needsMigration = loadedVersion < CURRENT_SAVE_VERSION;
+    if (!saved) return;
 
-        if (needsMigration) {
-          console.warn(`Migrating save from version ${loadedVersion} to ${CURRENT_SAVE_VERSION}`);
-        }
+    try {
+      const parsed = JSON.parse(saved);
+      const loadedVersion = Number(parsed.saveVersion || 0);
+      const needsMigration = loadedVersion < CURRENT_SAVE_VERSION;
 
-        if (!this.data.floor || !Array.isArray(this.data.floor.rooms)) {
-          this.data.floor = generateFloor(1);
-        } else {
-          for (const room of this.data.floor.rooms) {
-            normalizeRoomState(room);
-          }
-        }
-
-        this.data.saveVersion = CURRENT_SAVE_VERSION;
-        if (needsMigration) this.save();
-      } catch (e) {
-        console.error("Failed to load save:", e);
+      this.data = { ...defaultSave, ...parsed };
+      this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
+      if (!Array.isArray(parsed.player?.weaponSlots)) {
+        const legacyWeapon = isWeaponId(parsed.player?.currentWeaponId)
+          ? parsed.player.currentWeaponId
+          : "pistol";
+        this.data.player.weaponSlots = [legacyWeapon];
+        this.data.player.activeWeaponSlot = 0;
       }
+      this.normalizePlayerWeapons();
+      if (typeof parsed.player?.knightGuardReady !== "boolean") {
+        this.data.player.knightGuardReady = this.data.player.characterId === "knight";
+      }
+      this.normalizePlayerSkills();
+      this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
+      this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
+      this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
+
+      const legacyGlobalStage = Number(parsed.floor?.globalStageIndex ?? parsed.floor?.depth ?? 1);
+      this.data.run = parsed.run
+        ? normalizeRunProgress(parsed.run)
+        : createRunProgressFromGlobalStage(legacyGlobalStage);
+
+      const stageCompatible = this.isStageCompatible(parsed.floor, this.data.run);
+      if (loadedVersion < 6 || !stageCompatible) {
+        this.data.floor = generateStage(this.data.run);
+        this.data.player.x = 160;
+        this.data.player.y = 120;
+      } else {
+        this.data.floor = parsed.floor;
+        this.normalizeStageMetadata();
+        for (const room of this.data.floor.rooms) normalizeRoomState(room);
+      }
+
+      if (needsMigration) {
+        console.warn(`Migrating save from version ${loadedVersion} to ${CURRENT_SAVE_VERSION}`);
+      }
+
+      this.data.saveVersion = CURRENT_SAVE_VERSION;
+      if (needsMigration || !stageCompatible) this.save();
+    } catch (error) {
+      console.error("Failed to load save:", error);
     }
   }
 
@@ -177,7 +197,7 @@ export class GameData {
   }
 
   startNewRun(characterId: string) {
-    const char = CHARACTERS[characterId] || CHARACTERS["knight"];
+    const char = CHARACTERS[characterId] || CHARACTERS.knight;
     this.data.player.characterId = char.id;
     this.data.player.x = 160;
     this.data.player.y = 120;
@@ -191,13 +211,16 @@ export class GameData {
     this.setStarterWeapons(char.starterWeapon);
     this.resetSkillState(char.id);
     this.data.player.coins = 0;
-    this.data.floor = generateFloor(1);
+    this.data.run = createInitialRunProgress();
+    this.data.floor = generateStage(this.data.run);
+    this.data.legacyData.clearedRooms = [];
+    this.data.legacyData.legacyRewardsClaimed = [];
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
   }
 
   restartCurrentRun() {
-    const char = CHARACTERS[this.data.player.characterId] || CHARACTERS["knight"];
+    const char = CHARACTERS[this.data.player.characterId] || CHARACTERS.knight;
     this.data.player.x = 160;
     this.data.player.y = 120;
     this.data.player.hp = char.maxHp;
@@ -210,11 +233,23 @@ export class GameData {
     this.setStarterWeapons(char.starterWeapon);
     this.resetSkillState(this.data.player.characterId);
     this.data.player.coins = 0;
-    this.data.floor = generateFloor(1);
+    this.data.run = createInitialRunProgress();
+    this.data.floor = generateStage(this.data.run);
+    this.data.legacyData.clearedRooms = [];
+    this.data.legacyData.legacyRewardsClaimed = [];
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
   }
-  
+
+  advanceStage() {
+    this.data.run = advanceRunProgress(this.data.run);
+    this.data.player.x = 160;
+    this.data.player.y = 120;
+    this.data.floor = generateStage(this.data.run);
+    this.data.saveVersion = CURRENT_SAVE_VERSION;
+    this.save();
+  }
+
   resetRun() {
     this.restartCurrentRun();
   }
@@ -222,7 +257,8 @@ export class GameData {
   resetAll() {
     localStorage.removeItem("retro_rpg_save");
     this.data = JSON.parse(JSON.stringify(defaultSave));
-    this.data.floor = generateFloor(1);
+    this.data.run = createInitialRunProgress();
+    this.data.floor = generateStage(this.data.run);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
   }
@@ -264,6 +300,33 @@ export class GameData {
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
     player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
+  }
+
+  private normalizeStageMetadata() {
+    const run = normalizeRunProgress(this.data.run);
+    this.data.run = run;
+    const stage = this.data.floor;
+    if (!stage || !Array.isArray(stage.rooms)) {
+      this.data.floor = generateStage(run);
+      return;
+    }
+    stage.depth = run.globalStageIndex;
+    stage.chapterIndex = run.chapterIndex;
+    stage.stageIndex = run.stageIndex;
+    stage.globalStageIndex = run.globalStageIndex;
+    stage.isBossStage = isBossStage(run);
+  }
+
+  private isStageCompatible(stage: any, run: RunProgress): boolean {
+    if (!stage || !Array.isArray(stage.rooms) || stage.rooms.length === 0) return false;
+    if (stage.chapterIndex !== run.chapterIndex || stage.stageIndex !== run.stageIndex) return false;
+    if (stage.globalStageIndex !== run.globalStageIndex) return false;
+
+    const bossRooms = stage.rooms.filter((room: any) => room.type === "boss").length;
+    const exitRooms = stage.rooms.filter((room: any) => room.type === "exit").length;
+    return isBossStage(run)
+      ? stage.isBossStage === true && bossRooms === 1 && exitRooms === 0
+      : stage.isBossStage === false && bossRooms === 0 && exitRooms === 1;
   }
 
   logEvent(event: string) {

@@ -1,12 +1,21 @@
 import { ROOM_TEMPLATES } from "./data/roomTemplates";
 import type { SerializedEncounterState } from "./EncounterController";
 import { normalizeRoomState } from "./RoomState";
+import {
+  createRunProgressFromGlobalStage,
+  getStageLabel,
+  isBossStage,
+  normalizeRunProgress,
+  type RunProgress,
+} from "./RunProgress";
+
+export type ThemeId = "forest" | "dungeon" | "snow" | "lava";
 
 export interface Room {
   id: string;
   x: number;
   y: number;
-  type: "start" | "combat" | "treasure" | "boss" | "npc" | "legacy_rpg" | "legacy_tactics";
+  type: "start" | "combat" | "treasure" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
   cleared: boolean;
   combatCleared?: boolean;
   rewardGenerated?: boolean;
@@ -14,10 +23,8 @@ export interface Room {
   templateId?: string;
   visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
-  // Encounter logic instead of direct enemies
   encounterId?: string;
   encounterState?: SerializedEncounterState;
-  // Fallback for remaining enemies if player leaves and comes back
   enemies?: {
     x: number;
     y: number;
@@ -38,193 +45,252 @@ export interface Room {
   }[];
 }
 
-export interface FloorData {
+export interface StageData {
+  /** Compatibility index used by older systems as a difficulty value. */
   depth: number;
-  theme: "forest" | "dungeon" | "snow" | "lava";
+  chapterIndex: number;
+  stageIndex: number;
+  globalStageIndex: number;
+  isBossStage: boolean;
+  theme: ThemeId;
   rooms: Room[];
   currentRoomX: number;
   currentRoomY: number;
 }
 
-export function generateFloor(depth: number): FloorData {
-  const rooms: Room[] = [];
-  const minMainPathLength = 3 + Math.floor(depth / 2);
-  const maxBranches = 2 + Math.floor(depth / 3);
+/** @deprecated The old floor field now stores a StageData object. */
+export type FloorData = StageData;
 
-  const themes: ("forest" | "dungeon" | "snow" | "lava")[] = ["forest", "dungeon", "snow", "lava"];
-  const theme = themes[(depth - 1) % themes.length];
+const THEMES: ThemeId[] = ["forest", "dungeon", "snow", "lava"];
 
-  let mapGrid: Record<string, Room> = {};
+type RandomSource = () => number;
 
-  const getRoom = (x: number, y: number) => mapGrid[`${x},${y}`];
-  const setRoom = (x: number, y: number, r: Room) => {
-    mapGrid[`${x},${y}`] = r;
-    rooms.push(r);
-  };
+function choose<T>(items: T[], random: RandomSource): T {
+  return items[Math.min(items.length - 1, Math.floor(random() * items.length))];
+}
 
-  // 1. Start room
-  const startRoom: Room = {
-    id: "0,0", x: 0, y: 0, type: "start", cleared: true,
-    doors: { up: false, down: false, left: false, right: false }
-  };
-  setRoom(0, 0, startRoom);
-
-  // Helper for directions
-  const dirs = [
-    { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
-  ];
-
-  // 2. Main path
-  let currX = 0, currY = 0;
-  for (let i = 0; i < minMainPathLength; i++) {
-    const available = dirs.filter(d => !getRoom(currX + d.dx, currY + d.dy));
-    if (available.length === 0) break;
-    const chosen = available[Math.floor(Math.random() * available.length)];
-    currX += chosen.dx;
-    currY += chosen.dy;
-    setRoom(currX, currY, {
-      id: `${currX},${currY}`, x: currX, y: currY, type: "combat", cleared: false,
-      doors: { up: false, down: false, left: false, right: false }
-    });
-  }
-
-  // 3. Branches
-  let branchesAdded = 0;
-  let attempts = 0;
-  while (branchesAdded < maxBranches && attempts < 50) {
-    attempts++;
-    const r = rooms[Math.floor(Math.random() * rooms.length)];
-    if (r.type === "start") continue;
-    const available = dirs.filter(d => !getRoom(r.x + d.dx, r.y + d.dy));
-    if (available.length > 0) {
-      const chosen = available[Math.floor(Math.random() * available.length)];
-      const nx = r.x + chosen.dx;
-      const ny = r.y + chosen.dy;
-      setRoom(nx, ny, {
-        id: `${nx},${ny}`, x: nx, y: ny, type: "combat", cleared: false,
-        doors: { up: false, down: false, left: false, right: false }
-      });
-      branchesAdded++;
-    }
-  }
-
-  // Connect doors based on grid adjacency
-  for (const r of rooms) {
-    if (getRoom(r.x, r.y - 1)) r.doors.up = true;
-    if (getRoom(r.x, r.y + 1)) r.doors.down = true;
-    if (getRoom(r.x - 1, r.y)) r.doors.left = true;
-    if (getRoom(r.x + 1, r.y)) r.doors.right = true;
-  }
-
-  // BFS to find distances from start
-  const dists: Record<string, number> = { "0,0": 0 };
-  const q: Room[] = [startRoom];
-  let maxDist = 0;
-  let furthestRooms: Room[] = [];
-
-  while (q.length > 0) {
-    const r = q.shift()!;
-    const d = dists[r.id];
-    
-    if (d > maxDist) {
-      maxDist = d;
-      furthestRooms = [r];
-    } else if (d === maxDist) {
-      furthestRooms.push(r);
-    }
-
-    const neighbors = [
-      getRoom(r.x, r.y - 1), getRoom(r.x, r.y + 1),
-      getRoom(r.x - 1, r.y), getRoom(r.x + 1, r.y)
-    ].filter(n => n && dists[n.id] === undefined);
-
-    for (const n of neighbors) {
-      dists[n!.id] = d + 1;
-      q.push(n!);
-    }
-  }
-
-  // Boss is the furthest room
-  const bossRoom = furthestRooms[Math.floor(Math.random() * furthestRooms.length)];
-  bossRoom.type = "boss";
-
-  // Find dead ends (only 1 door) for special rooms
-  const deadEnds = rooms.filter(r => 
-    r.id !== "0,0" && r.type !== "boss" &&
-    [r.doors.up, r.doors.down, r.doors.left, r.doors.right].filter(Boolean).length === 1
-  );
-
-  // Other rooms
-  const nonMain = rooms.filter(r => r.id !== "0,0" && r.type !== "boss");
-
-  const assignType = (targetType: Room["type"], preferredSet: Room[], fallbackSet: Room[]) => {
-    let choices = preferredSet.filter(r => r.type === "combat");
-    if (choices.length === 0) choices = fallbackSet.filter(r => r.type === "combat");
-    if (choices.length > 0) {
-      const chosen = choices[Math.floor(Math.random() * choices.length)];
-      chosen.type = targetType;
-      // Also mark it as not cleared initially, though it might change below
-    }
-  };
-
-  assignType("treasure", deadEnds, nonMain);
-  if (Math.random() < 0.5) assignType("legacy_rpg", deadEnds, nonMain);
-  else assignType("legacy_tactics", deadEnds, nonMain);
-
-  // Set cleared status correctly
-  for (const r of rooms) {
-    if (r.type === "treasure" || r.type === "start" || r.type === "npc" || r.type === "legacy_rpg" || r.type === "legacy_tactics") {
-      r.cleared = true; 
-      // Note: Treasure might spawn chest, but room itself is "cleared" from combat perspective
-    }
-  }
-
-  // Template matching
-  for (const r of rooms) {
-     let validTemplates = ROOM_TEMPLATES.filter(t => t.allowedRoomTypes.includes(r.type));
-     if (validTemplates.length === 0) validTemplates = ROOM_TEMPLATES;
-     
-     let matchedDoors = validTemplates.filter(t => {
-       if (t.doorMask === "any") return true;
-       return t.doorMask.left === r.doors.left &&
-              t.doorMask.right === r.doors.right &&
-              t.doorMask.up === r.doors.up &&
-              t.doorMask.down === r.doors.down;
-     });
-     
-     if (matchedDoors.length === 0) {
-       matchedDoors = validTemplates.filter(t => t.doorMask === "any");
-     }
-     if (matchedDoors.length === 0) {
-       matchedDoors = ROOM_TEMPLATES.filter(t => t.doorMask === "any");
-     }
-     if (matchedDoors.length === 0) {
-       matchedDoors = ROOM_TEMPLATES;
-     }
-
-     let totalWeight = matchedDoors.reduce((sum, t) => sum + t.weight, 0);
-     let rand = Math.random() * totalWeight;
-     let selected = matchedDoors[0];
-     for (const t of matchedDoors) {
-        rand -= t.weight;
-        if (rand <= 0) {
-           selected = t;
-           break;
-        }
-     }
-     
-     r.templateId = selected.id;
-     r.encounterId = `enc_${r.type}_${depth}`; // Basic encounter ID based on type and depth
-     normalizeRoomState(r);
-  }
-
-  console.log(`[MapGen] Generated ${rooms.length} rooms. Boss Dist: ${maxDist}`);
-
+function createRoom(x: number, y: number, type: Room["type"]): Room {
   return {
-    depth,
+    id: `${x},${y}`,
+    x,
+    y,
+    type,
+    cleared: type === "start" || type === "treasure" || type === "exit" || type === "npc" || type === "legacy_rpg" || type === "legacy_tactics",
+    doors: { up: false, down: false, left: false, right: false },
+  };
+}
+
+function connectDoors(rooms: Room[], mapGrid: Record<string, Room>): void {
+  const getRoom = (x: number, y: number) => mapGrid[`${x},${y}`];
+  for (const room of rooms) {
+    room.doors.up = Boolean(getRoom(room.x, room.y - 1));
+    room.doors.down = Boolean(getRoom(room.x, room.y + 1));
+    room.doors.left = Boolean(getRoom(room.x - 1, room.y));
+    room.doors.right = Boolean(getRoom(room.x + 1, room.y));
+  }
+}
+
+function getDistances(mapGrid: Record<string, Room>): Record<string, number> {
+  const start = mapGrid["0,0"];
+  const distances: Record<string, number> = { "0,0": 0 };
+  const queue: Room[] = start ? [start] : [];
+
+  while (queue.length > 0) {
+    const room = queue.shift()!;
+    const distance = distances[room.id];
+    const neighbors = [
+      mapGrid[`${room.x},${room.y - 1}`],
+      mapGrid[`${room.x},${room.y + 1}`],
+      mapGrid[`${room.x - 1},${room.y}`],
+      mapGrid[`${room.x + 1},${room.y}`],
+    ].filter((candidate): candidate is Room => Boolean(candidate));
+
+    for (const neighbor of neighbors) {
+      if (distances[neighbor.id] !== undefined) continue;
+      distances[neighbor.id] = distance + 1;
+      queue.push(neighbor);
+    }
+  }
+
+  return distances;
+}
+
+function getDoorCount(room: Room): number {
+  return [room.doors.up, room.doors.down, room.doors.left, room.doors.right].filter(Boolean).length;
+}
+
+function assignRoomType(
+  type: Room["type"],
+  preferred: Room[],
+  fallback: Room[],
+  random: RandomSource,
+): Room | null {
+  const preferredChoices = preferred.filter(room => room.type === "combat");
+  const fallbackChoices = fallback.filter(room => room.type === "combat");
+  const choices = preferredChoices.length > 0 ? preferredChoices : fallbackChoices;
+  if (choices.length === 0) return null;
+  const selected = choose(choices, random);
+  selected.type = type;
+  selected.cleared = true;
+  return selected;
+}
+
+function assignTemplates(stage: StageData, random: RandomSource): void {
+  for (const room of stage.rooms) {
+    let validTemplates = ROOM_TEMPLATES.filter(template => template.allowedRoomTypes.includes(room.type));
+    if (validTemplates.length === 0) validTemplates = ROOM_TEMPLATES;
+
+    let matchedDoors = validTemplates.filter(template => {
+      if (template.doorMask === "any") return true;
+      return template.doorMask.left === room.doors.left &&
+        template.doorMask.right === room.doors.right &&
+        template.doorMask.up === room.doors.up &&
+        template.doorMask.down === room.doors.down;
+    });
+
+    if (matchedDoors.length === 0) matchedDoors = validTemplates.filter(template => template.doorMask === "any");
+    if (matchedDoors.length === 0) matchedDoors = ROOM_TEMPLATES.filter(template => template.doorMask === "any");
+    if (matchedDoors.length === 0) matchedDoors = ROOM_TEMPLATES;
+
+    const totalWeight = matchedDoors.reduce((sum, template) => sum + template.weight, 0);
+    let roll = random() * totalWeight;
+    let selected = matchedDoors[0];
+    for (const template of matchedDoors) {
+      roll -= template.weight;
+      if (roll <= 0) {
+        selected = template;
+        break;
+      }
+    }
+
+    room.templateId = selected.id;
+    room.encounterId = `enc_${room.type}_${stage.globalStageIndex}`;
+    normalizeRoomState(room);
+  }
+}
+
+function createBossStage(progress: RunProgress, theme: ThemeId, random: RandomSource): StageData {
+  const start = createRoom(0, 0, "start");
+  const preparation = createRoom(1, 0, "treasure");
+  const boss = createRoom(2, 0, "boss");
+  const rooms = [start, preparation, boss];
+  const mapGrid: Record<string, Room> = {
+    [start.id]: start,
+    [preparation.id]: preparation,
+    [boss.id]: boss,
+  };
+  connectDoors(rooms, mapGrid);
+
+  const stage: StageData = {
+    depth: progress.globalStageIndex,
+    chapterIndex: progress.chapterIndex,
+    stageIndex: progress.stageIndex,
+    globalStageIndex: progress.globalStageIndex,
+    isBossStage: true,
     theme,
     rooms,
     currentRoomX: 0,
-    currentRoomY: 0
+    currentRoomY: 0,
   };
+  assignTemplates(stage, random);
+  start.templateId = "cross_room";
+  preparation.templateId = "horizontal_corridor";
+  boss.templateId = "boss_arena";
+  return stage;
+}
+
+function createNormalStage(progress: RunProgress, theme: ThemeId, random: RandomSource): StageData {
+  const rooms: Room[] = [];
+  const mapGrid: Record<string, Room> = {};
+  const directions = [
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 },
+    { dx: 1, dy: 0 },
+  ];
+  const addRoom = (room: Room) => {
+    mapGrid[room.id] = room;
+    rooms.push(room);
+  };
+  const getRoom = (x: number, y: number) => mapGrid[`${x},${y}`];
+
+  addRoom(createRoom(0, 0, "start"));
+
+  const mainPathLength = 3 + Math.min(2, Math.floor((progress.stageIndex - 1) / 2));
+  const branchCount = 2 + Math.min(2, Math.floor((progress.chapterIndex - 1) / 2));
+  let currentX = 0;
+  let currentY = 0;
+
+  for (let i = 0; i < mainPathLength; i++) {
+    const available = directions.filter(direction => !getRoom(currentX + direction.dx, currentY + direction.dy));
+    if (available.length === 0) break;
+    const direction = choose(available, random);
+    currentX += direction.dx;
+    currentY += direction.dy;
+    addRoom(createRoom(currentX, currentY, "combat"));
+  }
+
+  let branchesAdded = 0;
+  let attempts = 0;
+  while (branchesAdded < branchCount && attempts < 80) {
+    attempts++;
+    const originChoices = rooms.filter(room => room.type !== "start");
+    const origin = choose(originChoices, random);
+    const available = directions.filter(direction => !getRoom(origin.x + direction.dx, origin.y + direction.dy));
+    if (available.length === 0) continue;
+    const direction = choose(available, random);
+    addRoom(createRoom(origin.x + direction.dx, origin.y + direction.dy, "combat"));
+    branchesAdded++;
+  }
+
+  connectDoors(rooms, mapGrid);
+  const distances = getDistances(mapGrid);
+  const deadEnds = rooms.filter(room => room.type !== "start" && getDoorCount(room) === 1);
+  const endpointPool = deadEnds.length > 0 ? deadEnds : rooms.filter(room => room.type !== "start");
+  const maxDistance = Math.max(...endpointPool.map(room => distances[room.id] ?? 0));
+  const furthest = endpointPool.filter(room => (distances[room.id] ?? 0) === maxDistance);
+  const exitRoom = choose(furthest, random);
+  exitRoom.type = "exit";
+  exitRoom.cleared = true;
+
+  const specialDeadEnds = deadEnds.filter(room => room !== exitRoom);
+  const remainingCombat = rooms.filter(room => room.type === "combat");
+  assignRoomType("treasure", specialDeadEnds, remainingCombat, random);
+  if (random() < 0.5) {
+    assignRoomType("legacy_rpg", specialDeadEnds, remainingCombat, random);
+  } else {
+    assignRoomType("legacy_tactics", specialDeadEnds, remainingCombat, random);
+  }
+
+  const stage: StageData = {
+    depth: progress.globalStageIndex,
+    chapterIndex: progress.chapterIndex,
+    stageIndex: progress.stageIndex,
+    globalStageIndex: progress.globalStageIndex,
+    isBossStage: false,
+    theme,
+    rooms,
+    currentRoomX: 0,
+    currentRoomY: 0,
+  };
+  assignTemplates(stage, random);
+  return stage;
+}
+
+export function generateStage(progressValue: RunProgress, random: RandomSource = Math.random): StageData {
+  const progress = normalizeRunProgress(progressValue);
+  const theme = THEMES[(progress.chapterIndex - 1) % THEMES.length];
+  const stage = isBossStage(progress)
+    ? createBossStage(progress, theme, random)
+    : createNormalStage(progress, theme, random);
+
+  console.log(
+    `[StageGen] Generated ${getStageLabel(progress)} with ${stage.rooms.length} rooms (${stage.isBossStage ? "boss" : "normal"}).`,
+  );
+  return stage;
+}
+
+/** @deprecated Use generateStage with RunProgress. */
+export function generateFloor(depth: number): StageData {
+  return generateStage(createRunProgressFromGlobalStage(depth));
 }
