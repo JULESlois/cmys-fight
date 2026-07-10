@@ -14,11 +14,13 @@ import { MinimapRenderer } from "../render/MinimapRenderer";
 
 import { Pickup } from "../entities/Pickup";
 import { PromptRenderer } from "../render/PromptRenderer";
-import { EncounterController, EncounterDef } from "../EncounterController";
+import { EncounterController } from "../EncounterController";
+import { EncounterFactory } from "../EncounterFactory";
 import { DamageSystem } from "../combat/DamageSystem";
 import { WeaponController } from "../combat/WeaponController";
 import { segmentCircleHit } from "../combat/Collision";
 import { LightningArc, SkillController } from "../combat/SkillController";
+import { getStageDifficulty } from "../combat/StageDifficulty";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -257,7 +259,7 @@ export class DungeonState extends GameState {
       }
 
       for (const savedEnemy of currentRoom.enemies) {
-        const enemy = new Enemy(savedEnemy.x, savedEnemy.y, savedEnemy.type);
+        const enemy = EncounterFactory.createEnemy(floor, savedEnemy);
         if (savedEnemy.hp !== undefined) enemy.hp = savedEnemy.hp;
         if (savedEnemy.attackState !== undefined) enemy.attackState = savedEnemy.attackState;
         if (savedEnemy.attackCooldown !== undefined) enemy.attackCooldown = savedEnemy.attackCooldown;
@@ -304,35 +306,12 @@ export class DungeonState extends GameState {
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       const template = getRoomTemplate(currentRoom);
-      
-      const encounterDef: EncounterDef = {
-        id: currentRoom.encounterId || "default",
-        waves: [
-          {
-            delay: 0.5,
-            telegraphTime: 0.6,
-            spawns: template.enemySpawnPoints.map((pt: any) => ({
-              x: pt.x * 16 + 8,
-              y: pt.y * 16 + 8,
-              type: currentRoom.type === "boss" ? "boss" : (Math.random() > 0.5 ? "melee" : "ranged")
-            }))
-          }
-        ]
-      };
-      
-      if (currentRoom.type === "combat" && Math.random() > 0.5) {
-        // Optional second wave
-        encounterDef.waves.push({
-           delay: 1.0,
-           telegraphTime: 0.6,
-           spawns: [
-              { x: 160, y: 120, type: "melee" },
-              { x: 100, y: 120, type: "ranged" }
-           ]
-        });
-      }
-      
-      this.encounterCtrl.start(encounterDef);
+
+      this.encounterCtrl.start(EncounterFactory.create({
+        stage: floor,
+        room: currentRoom,
+        template,
+      }));
     } else if (phase === "cleared") {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
@@ -357,6 +336,7 @@ export class DungeonState extends GameState {
   
   private spawnRoomRewards() {
     const floor = this.engine.data.data.floor;
+    const difficulty = getStageDifficulty(floor);
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     if (!currentRoom || currentRoom.rewardGenerated) return;
     const template = getRoomTemplate(currentRoom);
@@ -365,11 +345,16 @@ export class DungeonState extends GameState {
        if (template.portalSpawnPoint) {
          this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8, state: "spawning", timer: 0.6 };
        }
-       this.pickups.push(new Pickup(160, 120, "hp", 20));
-       this.pickups.push(new Pickup(140, 120, "coin", 50));
+       this.pickups.push(new Pickup(160, 120, "hp", Math.round(20 * difficulty.rewardMultiplier)));
+       this.pickups.push(new Pickup(140, 120, "coin", Math.round(50 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "combat") {
-       this.pickups.push(new Pickup(160, 120, Math.random() > 0.5 ? "hp" : "mana", 15));
-       this.pickups.push(new Pickup(150, 110, "coin", 20));
+       this.pickups.push(new Pickup(
+         160,
+         120,
+         Math.random() > 0.5 ? "hp" : "mana",
+         Math.round(15 * difficulty.rewardMultiplier),
+       ));
+       this.pickups.push(new Pickup(150, 110, "coin", Math.round(20 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "treasure") {
        const pts = template.pickupSpawnPoints;
        const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
@@ -609,7 +594,7 @@ export class DungeonState extends GameState {
       if (this.phaseTimer <= 0) this.setPhase("combat");
     } else if (this.roomPhase === "combat") {
       this.encounterCtrl.update(dt, this.enemies, (spawn) => {
-         this.enemies.push(new Enemy(spawn.x, spawn.y, spawn.type));
+         this.enemies.push(EncounterFactory.createEnemy(this.engine.data.data.floor, spawn));
       });
       if (!this.encounterCtrl.active && this.enemies.length === 0) {
          this.setPhase("cleared");
@@ -853,7 +838,7 @@ export class DungeonState extends GameState {
       if (e.type === "melee") {
         const attackRange = e.radius + this.player.radius + 8;
         if (dist <= attackRange && e.attackCooldown <= 0) {
-          this.beginEnemyAttack(e, 0.32);
+          this.beginEnemyAttack(e, e.attackWindup);
           continue;
         }
 
@@ -864,7 +849,7 @@ export class DungeonState extends GameState {
         }
       } else if (e.type === "ranged") {
         if (e.attackCooldown <= 0 && dist <= 190) {
-          this.beginEnemyAttack(e, 0.5);
+          this.beginEnemyAttack(e, e.attackWindup);
           continue;
         }
 
@@ -879,7 +864,7 @@ export class DungeonState extends GameState {
         }
       } else if (e.type === "boss") {
         if (e.attackCooldown <= 0) {
-          this.beginEnemyAttack(e, 0.65);
+          this.beginEnemyAttack(e, e.attackWindup);
           continue;
         }
 
@@ -962,39 +947,39 @@ export class DungeonState extends GameState {
       );
 
       if (distance <= enemy.radius + this.player.radius + 11 && Math.abs(angleDelta) <= Math.PI * 0.42) {
-        const result = DamageSystem.damagePlayer(this.player, 2);
+        const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
         if (result.applied) audio.playHurt();
       }
-      enemy.attackCooldown = 0.85;
+      enemy.attackCooldown = enemy.attackInterval;
     } else if (enemy.type === "ranged") {
       this.projectiles.push(new Projectile(
         enemy.x,
         enemy.y,
-        Math.cos(enemy.attackAngle) * 90,
-        Math.sin(enemy.attackAngle) * 90,
+        Math.cos(enemy.attackAngle) * enemy.projectileSpeed,
+        Math.sin(enemy.attackAngle) * enemy.projectileSpeed,
         3,
-        2,
+        enemy.attackDamage,
         "enemy",
         3.0,
         "#E74C3C"
       ));
-      enemy.attackCooldown = 1.45;
+      enemy.attackCooldown = enemy.attackInterval;
     } else {
-      for (let i = 0; i < 8; i++) {
-        const angle = (Math.PI * 2 / 8) * i;
+      for (let i = 0; i < enemy.projectileCount; i++) {
+        const angle = (Math.PI * 2 / enemy.projectileCount) * i;
         this.projectiles.push(new Projectile(
           enemy.x,
           enemy.y,
-          Math.cos(angle) * 60,
-          Math.sin(angle) * 60,
+          Math.cos(angle) * enemy.projectileSpeed,
+          Math.sin(angle) * enemy.projectileSpeed,
           4,
-          3,
+          enemy.attackDamage,
           "enemy",
           4.0,
           "#F1C40F"
         ));
       }
-      enemy.attackCooldown = 2.35;
+      enemy.attackCooldown = enemy.attackInterval;
     }
 
     enemy.attackState = "recover";

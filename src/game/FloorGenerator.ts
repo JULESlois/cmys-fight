@@ -8,6 +8,7 @@ import {
   normalizeRunProgress,
   type RunProgress,
 } from "./RunProgress";
+import { createRandomSeed, createSeededRandom, hashSeed, type RandomSource } from "./Random";
 
 export type ThemeId = "forest" | "dungeon" | "snow" | "lava";
 
@@ -24,6 +25,7 @@ export interface Room {
   visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
   encounterId?: string;
+  encounterSeed?: number;
   encounterState?: SerializedEncounterState;
   enemies?: {
     x: number;
@@ -52,6 +54,7 @@ export interface StageData {
   stageIndex: number;
   globalStageIndex: number;
   isBossStage: boolean;
+  seed: number;
   theme: ThemeId;
   rooms: Room[];
   currentRoomX: number;
@@ -62,8 +65,6 @@ export interface StageData {
 export type FloorData = StageData;
 
 const THEMES: ThemeId[] = ["forest", "dungeon", "snow", "lava"];
-
-type RandomSource = () => number;
 
 function choose<T>(items: T[], random: RandomSource): T {
   return items[Math.min(items.length - 1, Math.floor(random() * items.length))];
@@ -165,11 +166,12 @@ function assignTemplates(stage: StageData, random: RandomSource): void {
 
     room.templateId = selected.id;
     room.encounterId = `enc_${room.type}_${stage.globalStageIndex}`;
+    room.encounterSeed = hashSeed(stage.seed, room.id);
     normalizeRoomState(room);
   }
 }
 
-function createBossStage(progress: RunProgress, theme: ThemeId, random: RandomSource): StageData {
+function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, random: RandomSource): StageData {
   const start = createRoom(0, 0, "start");
   const preparation = createRoom(1, 0, "treasure");
   const boss = createRoom(2, 0, "boss");
@@ -187,6 +189,7 @@ function createBossStage(progress: RunProgress, theme: ThemeId, random: RandomSo
     stageIndex: progress.stageIndex,
     globalStageIndex: progress.globalStageIndex,
     isBossStage: true,
+    seed,
     theme,
     rooms,
     currentRoomX: 0,
@@ -199,7 +202,7 @@ function createBossStage(progress: RunProgress, theme: ThemeId, random: RandomSo
   return stage;
 }
 
-function createNormalStage(progress: RunProgress, theme: ThemeId, random: RandomSource): StageData {
+function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, random: RandomSource): StageData {
   const rooms: Room[] = [];
   const mapGrid: Record<string, Room> = {};
   const directions = [
@@ -268,6 +271,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, random: Random
     stageIndex: progress.stageIndex,
     globalStageIndex: progress.globalStageIndex,
     isBossStage: false,
+    seed,
     theme,
     rooms,
     currentRoomX: 0,
@@ -279,10 +283,12 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, random: Random
 
 export function generateStage(progressValue: RunProgress, random: RandomSource = Math.random): StageData {
   const progress = normalizeRunProgress(progressValue);
+  const seed = createRandomSeed(random);
+  const seededRandom = createSeededRandom(seed);
   const theme = THEMES[(progress.chapterIndex - 1) % THEMES.length];
   const stage = isBossStage(progress)
-    ? createBossStage(progress, theme, random)
-    : createNormalStage(progress, theme, random);
+    ? createBossStage(progress, theme, seed, seededRandom)
+    : createNormalStage(progress, theme, seed, seededRandom);
 
   console.log(
     `[StageGen] Generated ${getStageLabel(progress)} with ${stage.rooms.length} rooms (${stage.isBossStage ? "boss" : "normal"}).`,

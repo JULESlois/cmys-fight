@@ -13,6 +13,11 @@ export class Enemy {
   public attackCooldown: number = 0;
   public attackTimer: number = 0;
   public attackAngle: number = 0;
+  public attackDamage: number = 2;
+  public projectileSpeed: number = 90;
+  public projectileCount: number = 1;
+  public attackInterval: number = 1;
+  public attackWindup: number = 0.4;
 
   private static nextId = 0;
 
@@ -26,14 +31,26 @@ export class Enemy {
       this.maxHp = 10;
       this.speed = 40;
       this.attackCooldown = 0.35;
+      this.attackDamage = 2;
+      this.attackInterval = 0.85;
+      this.attackWindup = 0.32;
     } else if (type === "ranged") {
       this.maxHp = 6;
       this.speed = 25;
       this.attackCooldown = 0.8;
+      this.attackDamage = 2;
+      this.projectileSpeed = 90;
+      this.attackInterval = 1.45;
+      this.attackWindup = 0.5;
     } else {
       this.maxHp = 50;
       this.speed = 30;
       this.attackCooldown = 1.2;
+      this.attackDamage = 3;
+      this.projectileSpeed = 60;
+      this.projectileCount = 8;
+      this.attackInterval = 2.35;
+      this.attackWindup = 0.65;
     }
     this.hp = this.maxHp;
   }

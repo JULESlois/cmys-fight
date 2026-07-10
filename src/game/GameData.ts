@@ -15,8 +15,9 @@ import {
   normalizeWeaponSlots,
   type WeaponSlots,
 } from "./data/weapons";
+import { hashSeed, normalizeSeed } from "./Random";
 
-const CURRENT_SAVE_VERSION = 6;
+const CURRENT_SAVE_VERSION = 7;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -315,6 +316,18 @@ export class GameData {
     stage.stageIndex = run.stageIndex;
     stage.globalStageIndex = run.globalStageIndex;
     stage.isBossStage = isBossStage(run);
+    const roomSignature = stage.rooms
+      .map(room => `${room.id}:${room.type}`)
+      .sort()
+      .join("|");
+    stage.seed = normalizeSeed(
+      Number(stage.seed) || hashSeed(0xC0FFEE, `${run.globalStageIndex}:${roomSignature}`),
+    );
+    for (const room of stage.rooms) {
+      room.encounterSeed = normalizeSeed(
+        Number(room.encounterSeed) || hashSeed(stage.seed, room.id),
+      );
+    }
   }
 
   private isStageCompatible(stage: any, run: RunProgress): boolean {
