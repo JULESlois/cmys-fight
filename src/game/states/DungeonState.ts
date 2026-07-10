@@ -11,12 +11,12 @@ import { UIRenderer } from "../render/UIRenderer";
 import { audio } from "../audio/AudioManager";
 import { PortalRenderer, PortalState } from "../render/PortalRenderer";
 import { MinimapRenderer } from "../render/MinimapRenderer";
-import { WEAPONS } from "../data/weapons";
 
 import { Pickup } from "../entities/Pickup";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController, EncounterDef } from "../EncounterController";
 import { DamageSystem } from "../combat/DamageSystem";
+import { WeaponController } from "../combat/WeaponController";
 import { segmentCircleHit } from "../combat/Collision";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
@@ -60,7 +60,7 @@ export class DungeonState extends GameState {
     player.mana = savedP.mana;
     player.maxMana = savedP.maxMana;
     player.speed = savedP.speed;
-    player.currentWeaponId = savedP.currentWeaponId;
+    player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
     return player;
   }
 
@@ -116,6 +116,10 @@ export class DungeonState extends GameState {
     savedP.hp = this.player.hp;
     savedP.armor = this.player.armor;
     savedP.mana = this.player.mana;
+    savedP.weaponSlots = this.player.weaponSlots[1]
+      ? [this.player.weaponSlots[0], this.player.weaponSlots[1]]
+      : [this.player.weaponSlots[0]];
+    savedP.activeWeaponSlot = this.player.activeWeaponSlot;
     savedP.currentWeaponId = this.player.currentWeaponId;
   }
 
@@ -124,7 +128,14 @@ export class DungeonState extends GameState {
     const r = floor.rooms.find((rm: Room) => rm.x === floor.currentRoomX && rm.y === floor.currentRoomY);
     if (r) {
       normalizeRoomState(r);
-      r.pickups = this.pickups.map(p => ({ x: p.x, y: p.y, type: p.type, value: p.value, weaponId: p.weaponId }));
+      r.pickups = this.pickups.map(p => ({
+        x: p.x,
+        y: p.y,
+        type: p.type,
+        value: p.value,
+        weaponId: p.weaponId,
+        blockedUntilPlayerLeaves: p.blockedUntilPlayerLeaves,
+      }));
       if (isCombatRoom(r) && !isCombatCleared(r)) {
         r.enemies = this.enemies.map(e => ({
           x: e.x,
@@ -169,7 +180,11 @@ export class DungeonState extends GameState {
     const template = getRoomTemplate(currentRoom);
 
     if (currentRoom && currentRoom.pickups) {
-      this.pickups = currentRoom.pickups.map((p: any) => new Pickup(p.x, p.y, p.type, p.value, p.weaponId));
+      this.pickups = currentRoom.pickups.map((p: any) => {
+        const pickup = new Pickup(p.x, p.y, p.type, p.value, p.weaponId);
+        pickup.blockedUntilPlayerLeaves = p.blockedUntilPlayerLeaves === true;
+        return pickup;
+      });
     }
 
     currentRoom.visited = true;
@@ -411,6 +426,16 @@ export class DungeonState extends GameState {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
     DamageSystem.updatePlayer(this.player, dt);
+
+    if (
+      this.player.hp > 0 &&
+      (this.engine.input.wasPressed("q") || this.engine.input.wasPressed("tab"))
+    ) {
+      if (WeaponController.switchWeapon(this.player)) {
+        this.player.muzzleFlash = 0;
+        audio.playPickup();
+      }
+    }
 
     // Interactive objects
     const interactTarget = this.getInteractTarget();
@@ -666,31 +691,11 @@ export class DungeonState extends GameState {
 
   // TODO: Move to PlayerController
   private fireWeapon() {
-    const weapon = WEAPONS[this.player.currentWeaponId];
-    if (this.player.mana < weapon.manaCost) return;
-    
-    this.player.mana -= weapon.manaCost;
-    this.player.fireCooldown = 1 / weapon.fireRate;
-    this.player.muzzleFlash = 1.0;
-    audio.playShoot();
-    
     const baseAngle = this.getPlayerAimAngle();
-    this.player.aimAngle = baseAngle;
-    this.player.facing = Math.cos(baseAngle) >= 0 ? "right" : "left";
-    this.player.facingLeft = this.player.facing === "left";
-    
-    const muzzle = this.player.getPlayerMuzzlePosition(baseAngle);
-    
-    for (let i = 0; i < weapon.pelletCount; i++) {
-      const angle = baseAngle + (Math.random() - 0.5) * weapon.spread;
-      const vx = Math.cos(angle) * weapon.bulletSpeed;
-      const vy = Math.sin(angle) * weapon.bulletSpeed;
-      
-      this.projectiles.push(new Projectile(
-        muzzle.x, muzzle.y,
-        vx, vy,
-        3, weapon.damage, "player", 2.0, weapon.color
-      ));
+    const result = WeaponController.fire(this.player, baseAngle);
+    if (result.fired) {
+      this.projectiles.push(...result.projectiles);
+      audio.playShoot();
     }
   }
 
@@ -932,7 +937,10 @@ export class DungeonState extends GameState {
           p.x = p.previousX + (p.x - p.previousX) * closestHitT;
           p.y = p.previousY + (p.y - p.previousY) * closestHitT;
           const result = DamageSystem.damageEnemy(e, p.damage);
-          if (result.applied) audio.playHit();
+          if (result.applied) {
+            this.applyProjectileKnockback(e, p);
+            audio.playHit();
+          }
           if (result.killed) {
             if (Math.random() < 0.3) {
               this.pickups.push(new Pickup(e.x, e.y, Math.random() < 0.5 ? "mana" : "hp", 10));
@@ -958,6 +966,25 @@ export class DungeonState extends GameState {
       if (entityHit || environmentHitT !== null || p.life <= 0) {
         this.projectiles.splice(i, 1);
       }
+    }
+  }
+
+  private applyProjectileKnockback(enemy: Enemy, projectile: Projectile) {
+    if (projectile.knockback <= 0 || enemy.type === "boss") return;
+
+    const velocityLength = Math.hypot(projectile.vx, projectile.vy);
+    if (velocityLength <= 0) return;
+
+    const pushX = (projectile.vx / velocityLength) * projectile.knockback;
+    const pushY = (projectile.vy / velocityLength) * projectile.knockback;
+    const nextX = enemy.x + pushX;
+    const nextY = enemy.y + pushY;
+
+    if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) {
+      enemy.x = Math.max(16, Math.min(304, nextX));
+    }
+    if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) {
+      enemy.y = Math.max(16, Math.min(224, nextY));
     }
   }
 
@@ -987,19 +1014,37 @@ export class DungeonState extends GameState {
            const jump = Math.sin(((p as any).bounceTimer / 0.2) * Math.PI) * 10;
            p.y = (p as any).baseY - jump;
         }
+
+        const pickupDistance = Math.hypot(p.x - this.player.x, p.y - this.player.y);
+        const pickupRange = p.radius + this.player.radius;
+        if (p.blockedUntilPlayerLeaves) {
+           if (pickupDistance > pickupRange + 6) {
+              p.blockedUntilPlayerLeaves = false;
+           }
+           continue;
+        }
         
-        if (Math.hypot(p.x - this.player.x, p.y - this.player.y) < p.radius + this.player.radius) {
-           audio.playPickup();
+        if (pickupDistance < pickupRange) {
+           let droppedWeapon: Pickup | null = null;
            if (p.type === "mana") {
               this.player.mana = Math.min(this.player.maxMana, this.player.mana + p.value);
            } else if (p.type === "hp") {
               this.player.hp = Math.min(this.player.maxHp, this.player.hp + p.value);
            } else if (p.type === "weapon" && p.weaponId) {
-              this.player.currentWeaponId = p.weaponId;
+              const result = WeaponController.equipWeapon(this.player, p.weaponId);
+              if (!result.consumed) continue;
+              if (result.droppedWeaponId) {
+                 droppedWeapon = new Pickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
+                 droppedWeapon.blockedUntilPlayerLeaves = true;
+                 (droppedWeapon as any).bounceTimer = 0.2;
+                 (droppedWeapon as any).baseY = droppedWeapon.y;
+              }
            } else if (p.type === "coin") {
               this.engine.data.data.player.coins += p.value;
            }
+           audio.playPickup();
            this.pickups.splice(i, 1);
+           if (droppedWeapon) this.pickups.push(droppedWeapon);
         }
      }
   }

@@ -28,7 +28,14 @@ export interface Room {
     attackTimer?: number;
     attackAngle?: number;
   }[];
-  pickups?: { x: number, y: number, type: "hp" | "mana" | "coin" | "weapon", value: number, weaponId?: string }[];
+  pickups?: {
+    x: number;
+    y: number;
+    type: "hp" | "mana" | "coin" | "weapon";
+    value: number;
+    weaponId?: string;
+    blockedUntilPlayerLeaves?: boolean;
+  }[];
 }
 
 export interface FloorData {

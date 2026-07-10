@@ -27,7 +27,7 @@ export class Input {
   }
 
   private onKeyDown(e: KeyboardEvent) {
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"].includes(e.key)) {
       e.preventDefault();
     }
     const nk = this.normalizeKey(e.key);

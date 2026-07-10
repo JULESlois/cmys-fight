@@ -1,3 +1,5 @@
+import type { WeaponSlots } from "../data/weapons";
+
 export const PLAYER_WEAPON_OFFSET_X = 10;
 export const PLAYER_WEAPON_OFFSET_Y = -2;
 export const PLAYER_HAND_OFFSET_Y = -2;
@@ -20,7 +22,8 @@ export class Player {
   
   public speed: number = 80;
   public characterId: string = "knight";
-  public currentWeaponId: string = "pistol";
+  public weaponSlots: WeaponSlots = ["pistol"];
+  public activeWeaponSlot: 0 | 1 = 0;
   public fireCooldown: number = 0;
   public aimAngle: number = 0;
   
@@ -45,6 +48,19 @@ export class Player {
     this.maxMana = 100;
     this.mana = this.maxMana;
     this.armor = this.maxArmor;
+  }
+
+  public get currentWeaponId(): string {
+    return this.weaponSlots[this.activeWeaponSlot] ?? this.weaponSlots[0] ?? "pistol";
+  }
+
+  public set currentWeaponId(weaponId: string) {
+    this.weaponSlots[this.activeWeaponSlot] = weaponId;
+  }
+
+  public setWeaponLoadout(slots: WeaponSlots, activeSlot: 0 | 1): void {
+    this.weaponSlots = slots[1] ? [slots[0], slots[1]] : [slots[0]];
+    this.activeWeaponSlot = activeSlot === 1 && this.weaponSlots[1] ? 1 : 0;
   }
 
   public getPlayerMuzzlePosition(angle: number) {

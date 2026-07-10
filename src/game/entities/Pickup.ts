@@ -6,6 +6,7 @@ export class Pickup {
   public type: "hp" | "mana" | "coin" | "weapon";
   public value: number;
   public weaponId?: string;
+  public blockedUntilPlayerLeaves: boolean = false;
 
   private static nextId = 0;
 

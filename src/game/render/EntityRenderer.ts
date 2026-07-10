@@ -169,10 +169,14 @@ public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
     ctx.rotate(angle);
 
     if (p.faction === "player") {
-      ctx.fillStyle = "rgba(52, 152, 219, 0.4)";
-      ctx.fillRect(-6, -p.radius, 12, p.radius*2);
+      ctx.fillStyle = p.critical ? "rgba(255, 215, 0, 0.55)" : "rgba(52, 152, 219, 0.4)";
+      ctx.fillRect(p.critical ? -8 : -6, -p.radius, p.critical ? 16 : 12, p.radius*2);
       ctx.fillStyle = p.color;
       ctx.fillRect(-2, -p.radius/2, 4, p.radius);
+      if (p.critical) {
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, -1, 3, 2);
+      }
     } else {
       if (p.damage >= 3) {
          ctx.fillStyle = "rgba(241, 196, 15, 0.6)";

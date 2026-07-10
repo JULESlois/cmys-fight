@@ -78,26 +78,53 @@ export class UIRenderer {
     ctx.font = "9px monospace";
     ctx.fillText(`x ${engine.data.data.player.coins}`, 22, 42);
     
-    // Bottom Left: Weapon Card
-    const weapon = WEAPONS[player.currentWeaponId];
+    // Bottom Left: Dual weapon slots
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
     ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
-    ctx.fillRect(5, 210, 100, 25);
-    ctx.strokeRect(5, 210, 100, 25);
-    
-    ctx.fillStyle = "#00F2FE";
-    ctx.fillRect(4, 209, 3, 3);
-    ctx.fillRect(103, 209, 3, 3);
-    ctx.fillRect(4, 233, 3, 3);
-    ctx.fillRect(103, 233, 3, 3);
-    
-    ctx.fillStyle = "#00F2FE";
-    ctx.font = "bold 9px monospace";
-    ctx.fillText(weapon.name.toUpperCase(), 24, 222);
-    SpriteRenderer.drawPixelSprite(ctx, `pickup_${weapon.id}`, 14, 222, 1);
-    ctx.fillStyle = "#8E9EAB";
-    ctx.font = "7px monospace";
-    ctx.fillText(`MP:-${weapon.manaCost} SPD:${weapon.fireRate}`, 24, 231);
+    ctx.fillRect(5, 202, 190, 33);
+    ctx.strokeRect(5, 202, 190, 33);
+
+    const rarityColor = (rarity: string) => {
+      if (rarity === "rare") return "#00F2FE";
+      if (rarity === "uncommon") return "#2ECC71";
+      return "#8E9EAB";
+    };
+
+    const drawWeaponSlot = (slotIndex: 0 | 1, x: number) => {
+      const weaponId = player.weaponSlots[slotIndex];
+      const weapon = weaponId ? WEAPONS[weaponId] : undefined;
+      const active = player.activeWeaponSlot === slotIndex;
+
+      ctx.fillStyle = active ? "rgba(0, 242, 254, 0.12)" : "rgba(255, 255, 255, 0.03)";
+      ctx.fillRect(x, 205, 86, 25);
+      ctx.strokeStyle = active ? "#00F2FE" : weapon ? rarityColor(weapon.rarity) : "#34495E";
+      ctx.strokeRect(x, 205, 86, 25);
+
+      ctx.fillStyle = active ? "#00F2FE" : "#7F8C8D";
+      ctx.font = "bold 7px monospace";
+      ctx.fillText(`${active ? ">" : " "}${slotIndex + 1}`, x + 3, 212);
+
+      if (!weapon) {
+        ctx.fillStyle = "#566573";
+        ctx.font = "7px monospace";
+        ctx.fillText("EMPTY", x + 27, 219);
+        return;
+      }
+
+      SpriteRenderer.drawPixelSprite(ctx, `pickup_${weapon.id}`, x + 17, 218, 1);
+      ctx.fillStyle = active ? "#FFF" : "#BDC3C7";
+      ctx.font = "bold 7px monospace";
+      ctx.fillText(weapon.name.toUpperCase().slice(0, 11), x + 27, 215);
+      ctx.fillStyle = rarityColor(weapon.rarity);
+      ctx.font = "6px monospace";
+      ctx.fillText(`EN ${weapon.manaCost}  DMG ${weapon.damage}`, x + 27, 225);
+    };
+
+    drawWeaponSlot(0, 8);
+    drawWeaponSlot(1, 101);
+    ctx.fillStyle = "#F1C40F";
+    ctx.font = "6px monospace";
+    ctx.fillText("Q", 95, 219);
 
     // Bottom Right: Room State
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);

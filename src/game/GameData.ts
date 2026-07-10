@@ -1,8 +1,14 @@
 import { FloorData, generateFloor } from "./FloorGenerator";
 import { CHARACTERS } from "./data/characters";
 import { normalizeRoomState } from "./RoomState";
+import {
+  createStarterWeaponSlots,
+  isWeaponId,
+  normalizeWeaponSlots,
+  type WeaponSlots,
+} from "./data/weapons";
 
-const CURRENT_SAVE_VERSION = 3;
+const CURRENT_SAVE_VERSION = 4;
 
 export interface GameSave {
   player: {
@@ -14,6 +20,9 @@ export interface GameSave {
     maxArmor: number;
     mana: number;
     maxMana: number;
+    weaponSlots: WeaponSlots;
+    activeWeaponSlot: 0 | 1;
+    /** Compatibility mirror for saves created before dual weapon slots. */
     currentWeaponId: string;
     level: number;
     exp: number;
@@ -53,6 +62,8 @@ export const defaultSave: GameSave = {
     maxArmor: 5,
     mana: 100,
     maxMana: 100,
+    weaponSlots: ["pistol"],
+    activeWeaponSlot: 0,
     currentWeaponId: "pistol",
     level: 1,
     exp: 0,
@@ -90,6 +101,7 @@ export class GameData {
   }
 
   save() {
+    this.normalizePlayerWeapons();
     if (this.data.floor && Array.isArray(this.data.floor.rooms)) {
       for (const room of this.data.floor.rooms) {
         normalizeRoomState(room);
@@ -106,6 +118,14 @@ export class GameData {
         const parsed = JSON.parse(saved);
         this.data = { ...defaultSave, ...parsed };
         this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
+        if (!Array.isArray(parsed.player?.weaponSlots)) {
+          const legacyWeapon = isWeaponId(parsed.player?.currentWeaponId)
+            ? parsed.player.currentWeaponId
+            : "pistol";
+          this.data.player.weaponSlots = [legacyWeapon];
+          this.data.player.activeWeaponSlot = 0;
+        }
+        this.normalizePlayerWeapons();
         this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
         this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
         this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
@@ -151,7 +171,7 @@ export class GameData {
     this.data.player.maxMana = char.maxMana;
     this.data.player.mana = char.maxMana;
     this.data.player.speed = char.speed;
-    this.data.player.currentWeaponId = char.starterWeapon;
+    this.setStarterWeapons(char.starterWeapon);
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
@@ -169,7 +189,7 @@ export class GameData {
     this.data.player.mana = char.maxMana;
     this.data.player.maxMana = char.maxMana;
     this.data.player.speed = char.speed;
-    this.data.player.currentWeaponId = char.starterWeapon;
+    this.setStarterWeapons(char.starterWeapon);
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
@@ -186,6 +206,21 @@ export class GameData {
     this.data.floor = generateFloor(1);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
+  }
+
+  private setStarterWeapons(starterWeapon: string) {
+    const slots = createStarterWeaponSlots(starterWeapon);
+    this.data.player.weaponSlots = slots[1] ? [slots[0], slots[1]] : [slots[0]];
+    this.data.player.activeWeaponSlot = 0;
+    this.data.player.currentWeaponId = this.data.player.weaponSlots[0];
+  }
+
+  private normalizePlayerWeapons() {
+    const player = this.data.player;
+    const fallback = isWeaponId(player.currentWeaponId) ? player.currentWeaponId : "pistol";
+    player.weaponSlots = normalizeWeaponSlots(player.weaponSlots, fallback);
+    player.activeWeaponSlot = player.activeWeaponSlot === 1 && player.weaponSlots[1] ? 1 : 0;
+    player.currentWeaponId = player.weaponSlots[player.activeWeaponSlot] ?? player.weaponSlots[0];
   }
 
   logEvent(event: string) {

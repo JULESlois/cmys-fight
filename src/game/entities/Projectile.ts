@@ -11,6 +11,8 @@ export class Projectile {
   public faction: "player" | "enemy";
   public life: number;
   public color: string;
+  public knockback: number;
+  public critical: boolean;
 
   private static nextId = 0;
 
@@ -20,7 +22,9 @@ export class Projectile {
     radius: number, damage: number, 
     faction: "player" | "enemy", 
     life: number = 2.0,
-    color: string = "#FFF"
+    color: string = "#FFF",
+    knockback: number = 0,
+    critical: boolean = false,
   ) {
     this.id = Projectile.nextId++;
     this.x = x;
@@ -34,6 +38,8 @@ export class Projectile {
     this.faction = faction;
     this.life = life;
     this.color = color;
+    this.knockback = knockback;
+    this.critical = critical;
   }
 
   update(dt: number) {
