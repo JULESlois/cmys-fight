@@ -1,3 +1,5 @@
+import type { StatusEffectId } from "../combat/StatusEffectSystem";
+
 export class Projectile {
   public id: number;
   public x: number;
@@ -15,6 +17,8 @@ export class Projectile {
   public critical: boolean;
   public pierceRemaining: number;
   public wallBouncesRemaining: number;
+  public statusEffect?: StatusEffectId;
+  public statusDuration: number;
   public hitEnemyIds: Set<number> = new Set();
 
   private static nextId = 0;
@@ -30,6 +34,8 @@ export class Projectile {
     critical: boolean = false,
     pierceRemaining: number = 0,
     wallBouncesRemaining: number = 0,
+    statusEffect?: StatusEffectId,
+    statusDuration: number = 0,
   ) {
     this.id = Projectile.nextId++;
     this.x = x;
@@ -47,6 +53,8 @@ export class Projectile {
     this.critical = critical;
     this.pierceRemaining = pierceRemaining;
     this.wallBouncesRemaining = wallBouncesRemaining;
+    this.statusEffect = statusEffect;
+    this.statusDuration = statusDuration;
   }
 
   update(dt: number) {

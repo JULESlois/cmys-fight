@@ -49,6 +49,8 @@ export class EnemyFactory {
     enemy.chargeDistance = definition.chargeDistance ?? enemy.chargeDistance;
     enemy.areaRadius = definition.areaRadius ?? enemy.areaRadius;
     enemy.summonEnemyId = definition.summonEnemyId;
+    enemy.statusEffect = definition.statusEffect;
+    enemy.statusDuration = definition.statusDuration ?? 0;
     enemy.attackCooldown = Math.min(enemy.attackCooldown, enemy.attackInterval);
     return enemy;
   }

@@ -1,3 +1,5 @@
+import type { StatusEffectId } from "../combat/StatusEffectSystem";
+
 export type EnemyRole = "melee" | "ranged" | "boss";
 export type EnemyBehavior = "melee" | "charge" | "shoot" | "scatter" | "summon" | "area" | "boss";
 export type EnemyTheme = "forest" | "dungeon" | "snow" | "lava";
@@ -21,6 +23,8 @@ export interface EnemyDefinition {
   chargeDistance?: number;
   areaRadius?: number;
   summonEnemyId?: string;
+  statusEffect?: StatusEffectId;
+  statusDuration?: number;
 }
 
 export const ENEMIES: Record<string, EnemyDefinition> = {
@@ -31,17 +35,17 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   thorn_archer: {
     id: "thorn_archer", name: "Thorn Archer", theme: "forest", role: "ranged", behavior: "shoot",
     color: "#8BC34A", maxHp: 7, speed: 26, radius: 8, attackDamage: 2, attackInterval: 1.4, attackWindup: 0.48,
-    projectileSpeed: 90,
+    projectileSpeed: 90, statusEffect: "poison", statusDuration: 2.4,
   },
   boar_charger: {
     id: "boar_charger", name: "Bramble Boar", theme: "forest", role: "melee", behavior: "charge",
     color: "#795548", maxHp: 9, speed: 31, radius: 9, attackDamage: 3, attackInterval: 1.55, attackWindup: 0.62,
-    chargeDistance: 54,
+    chargeDistance: 54, statusEffect: "root", statusDuration: 0.65,
   },
   forest_guardian: {
     id: "forest_guardian", name: "Forest Guardian", theme: "forest", role: "boss", behavior: "boss",
     color: "#2E7D32", maxHp: 50, speed: 28, radius: 14, attackDamage: 3, attackInterval: 2.35, attackWindup: 0.65,
-    projectileSpeed: 60, projectileCount: 8,
+    projectileSpeed: 60, projectileCount: 8, statusEffect: "poison", statusDuration: 2.2,
   },
 
   bone_guard: {
@@ -67,42 +71,43 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   frost_hound: {
     id: "frost_hound", name: "Frost Hound", theme: "snow", role: "melee", behavior: "charge",
     color: "#81D4FA", maxHp: 10, speed: 40, radius: 8, attackDamage: 3, attackInterval: 1.4, attackWindup: 0.5,
-    chargeDistance: 60,
+    chargeDistance: 60, statusEffect: "slow", statusDuration: 2,
   },
   ice_shaman: {
     id: "ice_shaman", name: "Ice Shaman", theme: "snow", role: "ranged", behavior: "area",
     color: "#4FC3F7", maxHp: 9, speed: 21, radius: 8, attackDamage: 3, attackInterval: 2.0, attackWindup: 0.78,
-    areaRadius: 31,
+    areaRadius: 31, statusEffect: "slow", statusDuration: 2.6,
   },
   snow_turret: {
     id: "snow_turret", name: "Snow Turret", theme: "snow", role: "ranged", behavior: "scatter",
     color: "#B3E5FC", maxHp: 12, speed: 14, radius: 9, attackDamage: 2, attackInterval: 1.35, attackWindup: 0.42,
-    projectileSpeed: 100, projectileCount: 4, projectileSpread: 0.22,
+    projectileSpeed: 100, projectileCount: 4, projectileSpread: 0.22, statusEffect: "slow", statusDuration: 1.8,
   },
   frost_titan: {
     id: "frost_titan", name: "Frost Titan", theme: "snow", role: "boss", behavior: "boss",
     color: "#0288D1", maxHp: 64, speed: 25, radius: 16, attackDamage: 4, attackInterval: 2.15, attackWindup: 0.68,
-    projectileSpeed: 64, projectileCount: 10,
+    projectileSpeed: 64, projectileCount: 10, statusEffect: "slow", statusDuration: 2.4,
   },
 
   ember_knight: {
     id: "ember_knight", name: "Ember Knight", theme: "lava", role: "melee", behavior: "melee",
     color: "#FF7043", maxHp: 15, speed: 36, radius: 9, attackDamage: 3, attackInterval: 0.75, attackWindup: 0.26,
+    statusEffect: "burn", statusDuration: 2.2,
   },
   magma_spitter: {
     id: "magma_spitter", name: "Magma Spitter", theme: "lava", role: "ranged", behavior: "scatter",
     color: "#FF5722", maxHp: 10, speed: 24, radius: 8, attackDamage: 3, attackInterval: 1.45, attackWindup: 0.46,
-    projectileSpeed: 96, projectileCount: 5, projectileSpread: 0.34,
+    projectileSpeed: 96, projectileCount: 5, projectileSpread: 0.34, statusEffect: "burn", statusDuration: 2.5,
   },
   cinder_oracle: {
     id: "cinder_oracle", name: "Cinder Oracle", theme: "lava", role: "ranged", behavior: "area",
     color: "#FF9800", maxHp: 12, speed: 22, radius: 9, attackDamage: 4, attackInterval: 1.9, attackWindup: 0.7,
-    areaRadius: 35,
+    areaRadius: 35, statusEffect: "burn", statusDuration: 3,
   },
   inferno_core: {
     id: "inferno_core", name: "Inferno Core", theme: "lava", role: "boss", behavior: "boss",
     color: "#E64A19", maxHp: 70, speed: 29, radius: 16, attackDamage: 4, attackInterval: 2.0, attackWindup: 0.6,
-    projectileSpeed: 68, projectileCount: 12,
+    projectileSpeed: 68, projectileCount: 12, statusEffect: "burn", statusDuration: 2.8,
   },
 };
 

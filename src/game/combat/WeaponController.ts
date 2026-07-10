@@ -81,6 +81,7 @@ export class WeaponController {
     }
 
     const modifiers = BuffSystem.getWeaponModifiers(player);
+    const projectileStatus = BuffSystem.getProjectileStatus(player);
     player.mana -= weapon.manaCost;
     player.fireCooldown = 1 / (weapon.fireRate * modifiers.fireRateMultiplier);
     player.muzzleFlash = 1;
@@ -118,6 +119,8 @@ export class WeaponController {
           critical,
           modifiers.pierce,
           modifiers.wallBounces,
+          projectileStatus?.id,
+          projectileStatus?.duration ?? 0,
         ));
       }
     }

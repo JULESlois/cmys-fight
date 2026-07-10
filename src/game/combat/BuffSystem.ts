@@ -7,7 +7,8 @@ export type BuffId =
   | "scattershot" | "rapid_fire" | "heavy_rounds" | "critical_focus"
   | "piercing_shots" | "rebound_rounds" | "reinforced_heart"
   | "armor_capacitor" | "fast_recharge" | "emergency_barrier"
-  | "skill_accelerator" | "energy_feedback";
+  | "skill_accelerator" | "energy_feedback" | "status_resistance"
+  | "elemental_rounds";
 
 export interface BuffDefinition {
   id: BuffId;
@@ -31,6 +32,8 @@ export const BUFFS: Record<BuffId, BuffDefinition> = {
   emergency_barrier: { id: "emergency_barrier", name: "EMERGENCY BARRIER", description: "Survive one lethal hit at 1 HP.", shortCode: "BAR", rarity: "rare", category: "defense" },
   skill_accelerator: { id: "skill_accelerator", name: "SKILL ACCELERATOR", description: "Skill cooldowns reduced by 20%.", shortCode: "CD-", rarity: "uncommon", category: "skill" },
   energy_feedback: { id: "energy_feedback", name: "ENERGY FEEDBACK", description: "Using a skill restores 10 Energy.", shortCode: "ENG", rarity: "common", category: "skill" },
+  status_resistance: { id: "status_resistance", name: "PURIFIER CORE", description: "Negative status duration reduced by 40%.", shortCode: "RES", rarity: "uncommon", category: "defense" },
+  elemental_rounds: { id: "elemental_rounds", name: "EMBER PAYLOAD", description: "Player projectiles inflict Burn.", shortCode: "FIR", rarity: "rare", category: "weapon" },
 };
 
 const ALL_BUFF_IDS = Object.keys(BUFFS) as BuffId[];
@@ -108,5 +111,13 @@ export class BuffSystem {
 
   static getSkillEnergyRestore(player: Player): number {
     return BuffSystem.has(player, "energy_feedback") ? 10 : 0;
+  }
+
+  static getStatusDurationMultiplier(player: Player): number {
+    return BuffSystem.has(player, "status_resistance") ? 0.6 : 1;
+  }
+
+  static getProjectileStatus(player: Player): { id: "burn"; duration: number } | null {
+    return BuffSystem.has(player, "elemental_rounds") ? { id: "burn", duration: 2.4 } : null;
   }
 }

@@ -26,6 +26,11 @@ import { hashSeed } from "../Random";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
+import { StatusEffectSystem } from "../combat/StatusEffectSystem";
+import {
+  EnvironmentSystem,
+  type EnvironmentHazard,
+} from "../environment/EnvironmentSystem";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -56,6 +61,8 @@ export class DungeonState extends GameState {
   private shopOpen: boolean = false;
   private shopFailure?: ShopPurchaseFailure;
   private shopFailureTimer: number = 0;
+  private environmentHazards: EnvironmentHazard[] = [];
+  private environmentTime: number = 0;
 
   constructor(engine: Engine) {
     super(engine);
@@ -82,6 +89,7 @@ export class DungeonState extends GameState {
     player.knightGuardReady = savedP.knightGuardReady ?? player.characterId === "knight";
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
+    player.statusEffects = StatusEffectSystem.normalize(savedP.statusEffects);
     BuffSystem.applyRuntimeStats(player);
     return player;
   }
@@ -151,6 +159,7 @@ export class DungeonState extends GameState {
     savedP.knightGuardReady = this.player.knightGuardReady;
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
+    savedP.statusEffects = StatusEffectSystem.normalize(this.player.statusEffects);
   }
 
   private syncRoomState() {
@@ -182,6 +191,7 @@ export class DungeonState extends GameState {
           attackTargetY: e.attackTargetY,
           bossPhase: e.bossPhase,
           attackSequence: e.attackSequence,
+          statusEffects: StatusEffectSystem.normalize(e.statusEffects),
         }));
         r.encounterState = this.roomPhase === "combat" && this.encounterCtrl.active
           ? this.encounterCtrl.serialize()
@@ -203,6 +213,8 @@ export class DungeonState extends GameState {
     this.shopOpen = false;
     this.shopFailure = undefined;
     this.shopFailureTimer = 0;
+    this.environmentHazards = [];
+    this.environmentTime = 0;
     this.encounterCtrl = new EncounterController();
     
     const floor = this.engine.data.data.floor;
@@ -220,6 +232,7 @@ export class DungeonState extends GameState {
 
     normalizeRoomState(currentRoom);
     this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
+    this.environmentHazards = EnvironmentSystem.generate(floor, currentRoom, this.currentMapData);
     const template = getRoomTemplate(currentRoom);
 
     if (currentRoom && currentRoom.pickups) {
@@ -304,6 +317,7 @@ export class DungeonState extends GameState {
         if (savedEnemy.attackTargetY !== undefined) enemy.attackTargetY = savedEnemy.attackTargetY;
         if (savedEnemy.bossPhase !== undefined) enemy.bossPhase = savedEnemy.bossPhase;
         if (savedEnemy.attackSequence !== undefined) enemy.attackSequence = savedEnemy.attackSequence;
+        enemy.statusEffects = StatusEffectSystem.normalize(savedEnemy.statusEffects);
         this.enemies.push(enemy);
       }
 
@@ -552,10 +566,16 @@ export class DungeonState extends GameState {
       return;
     }
 
+    DamageSystem.updatePlayer(this.player, dt);
+    StatusEffectSystem.updatePlayer(this.player, dt);
+    if (this.player.hp <= 0) return;
+    this.updateEnemyStatuses(dt);
+
     const previousX = this.player.x;
     const previousY = this.player.y;
 
     this.updateRoomPhase(dt);
+    this.updateEnvironmentHazards(dt);
     
     const moved = Math.hypot(this.player.x - previousX, this.player.y - previousY) > 0.01;
 
@@ -577,7 +597,6 @@ export class DungeonState extends GameState {
     if (this.player.hitFlash > 0) {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
-    DamageSystem.updatePlayer(this.player, dt);
     SkillController.update(this.player, dt);
     this.updateLightningArcs(dt);
 
@@ -729,13 +748,31 @@ export class DungeonState extends GameState {
     if (this.player.hp > 0 && this.transitionState === "none") {
        const axis = this.engine.input.getAxis();
        const isDashing = SkillController.isRogueDashing(this.player);
-       const moveX = isDashing ? this.player.skillDirectionX : axis.x;
-       const moveY = isDashing ? this.player.skillDirectionY : axis.y;
-       const moveSpeed = isDashing
+       const statusMovement = StatusEffectSystem.getMovementMultiplier(this.player);
+       const inputX = isDashing ? this.player.skillDirectionX : axis.x;
+       const inputY = isDashing ? this.player.skillDirectionY : axis.y;
+       const moveSpeed = (isDashing
          ? SkillController.ROGUE_DASH_SPEED * (this.portal?.state === "activating" ? 0 : 1)
-         : this.player.speed * speedMult;
-       const nextX = this.player.x + moveX * moveSpeed * dt;
-       const nextY = this.player.y + moveY * moveSpeed * dt;
+         : this.player.speed * speedMult) * statusMovement;
+
+       const onIce = !isDashing && this.environmentHazards.some(hazard =>
+         hazard.type === "ice" && EnvironmentSystem.contains(hazard, this.player.x, this.player.y, this.player.radius)
+       );
+       let velocityX = inputX * moveSpeed;
+       let velocityY = inputY * moveSpeed;
+       if (onIce && statusMovement > 0) {
+         const response = Math.min(1, dt * (axis.x || axis.y ? 4.2 : 1.35));
+         this.player.vx += (velocityX - this.player.vx) * response;
+         this.player.vy += (velocityY - this.player.vy) * response;
+         velocityX = this.player.vx;
+         velocityY = this.player.vy;
+       } else {
+         this.player.vx = velocityX;
+         this.player.vy = velocityY;
+       }
+
+       const nextX = this.player.x + velocityX * dt;
+       const nextY = this.player.y + velocityY * dt;
        
        if (!this.isCollidingWithMap(nextX, this.player.y, this.player.radius)) this.player.x = nextX;
        if (!this.isCollidingWithMap(this.player.x, nextY, this.player.radius)) this.player.y = nextY;
@@ -762,6 +799,40 @@ export class DungeonState extends GameState {
     } else if (this.roomPhase === "reward") {
       this.phaseTimer -= dt;
       if (this.phaseTimer <= 0) this.setPhase("exploration");
+    }
+  }
+
+  private updateEnemyStatuses(dt: number) {
+    for (let index = this.enemies.length - 1; index >= 0; index--) {
+      const enemy = this.enemies[index];
+      if (!StatusEffectSystem.updateEnemy(enemy, dt)) continue;
+      this.spawnEnemyDeathDrop(enemy);
+      this.enemies.splice(index, 1);
+    }
+  }
+
+  private updateEnvironmentHazards(dt: number) {
+    this.environmentTime += dt;
+    if (["entering", "intro", "locking"].includes(this.roomPhase)) return;
+    for (const hazard of this.environmentHazards) {
+      hazard.triggerCooldown = Math.max(0, hazard.triggerCooldown - dt);
+      if (!EnvironmentSystem.contains(hazard, this.player.x, this.player.y, this.player.radius)) continue;
+
+      if (hazard.type === "poison_pool" && hazard.triggerCooldown <= 0) {
+        StatusEffectSystem.applyPlayer(this.player, "poison", 2.4);
+        hazard.triggerCooldown = 1.1;
+      } else if (hazard.type === "lava" && hazard.triggerCooldown <= 0) {
+        StatusEffectSystem.applyPlayer(this.player, "burn", 2.6);
+        hazard.triggerCooldown = 0.9;
+      } else if (
+        hazard.type === "spikes" &&
+        hazard.triggerCooldown <= 0 &&
+        EnvironmentSystem.isSpikeActive(hazard, this.environmentTime)
+      ) {
+        const result = DamageSystem.damagePlayer(this.player, 1, 0.35);
+        if (result.applied) audio.playHurt();
+        hazard.triggerCooldown = 0.72;
+      }
     }
   }
 
@@ -988,6 +1059,7 @@ export class DungeonState extends GameState {
       let nextY = e.y;
       
       let currentSpeed = e.speed;
+      currentSpeed *= StatusEffectSystem.getMovementMultiplier(e);
       if (e.hitFlash > 0) {
         e.hitFlash = Math.max(0, e.hitFlash - dt);
         currentSpeed *= 0.5;
@@ -1151,7 +1223,10 @@ export class DungeonState extends GameState {
 
       if (distance <= enemy.radius + this.player.radius + 11 && Math.abs(angleDelta) <= Math.PI * 0.42) {
         const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
-        if (result.applied) audio.playHurt();
+        if (result.applied) {
+          this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
+          audio.playHurt();
+        }
       }
       enemy.attackCooldown = enemy.attackInterval;
     } else if (enemy.behavior === "charge") {
@@ -1177,7 +1252,10 @@ export class DungeonState extends GameState {
       );
       if (distance <= enemy.areaRadius + this.player.radius) {
         const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
-        if (result.applied) audio.playHurt();
+        if (result.applied) {
+          this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
+          audio.playHurt();
+        }
       }
       enemy.attackCooldown = enemy.attackInterval;
     } else if (enemy.behavior === "boss") {
@@ -1202,6 +1280,12 @@ export class DungeonState extends GameState {
       "enemy",
       life,
       enemy.displayColor,
+      0,
+      false,
+      0,
+      0,
+      enemy.statusEffect,
+      enemy.statusDuration,
     ));
   }
 
@@ -1229,8 +1313,16 @@ export class DungeonState extends GameState {
     );
     if (hit) {
       const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
-      if (result.applied) audio.playHurt();
+      if (result.applied) {
+        this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
+        audio.playHurt();
+      }
     }
+  }
+
+  private applyEnemyStatusToPlayer(enemy: Enemy, dealtDamage: boolean) {
+    if (!dealtDamage || !enemy.statusEffect || enemy.statusDuration <= 0) return;
+    StatusEffectSystem.applyPlayer(this.player, enemy.statusEffect, enemy.statusDuration);
   }
 
   private spawnSummonedEnemy(enemy: Enemy) {
@@ -1311,6 +1403,9 @@ export class DungeonState extends GameState {
           p.hitEnemyIds.add(e.id);
           if (result.applied) {
             this.applyProjectileKnockback(e, p);
+            if (p.statusEffect && p.statusDuration > 0) {
+              StatusEffectSystem.applyEnemy(e, p.statusEffect, p.statusDuration);
+            }
             audio.playHit();
           }
           if (result.killed) {
@@ -1332,7 +1427,16 @@ export class DungeonState extends GameState {
           p.x = hit.x;
           p.y = hit.y;
           const result = DamageSystem.damagePlayer(this.player, p.damage);
-          if (result.applied) audio.playHurt();
+          if (result.applied) {
+            if (
+              result.armorDamage + result.hpDamage > 0 &&
+              p.statusEffect &&
+              p.statusDuration > 0
+            ) {
+              StatusEffectSystem.applyPlayer(this.player, p.statusEffect, p.statusDuration);
+            }
+            audio.playHurt();
+          }
           entityHit = true;
         }
       }
@@ -1441,10 +1545,10 @@ export class DungeonState extends GameState {
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     
     this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
+    const time = Date.now() / 1000;
+    EnvironmentSystem.draw(ctx, this.environmentHazards, this.environmentTime);
     const doorLocked = this.roomPhase !== "exploration";
     this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", doorLocked);
-
-    const time = Date.now() / 1000;
     
     // Draw telegraphs
     for (const t of this.encounterCtrl.telegraphs) {

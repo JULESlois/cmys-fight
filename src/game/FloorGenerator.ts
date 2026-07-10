@@ -10,6 +10,7 @@ import {
 } from "./RunProgress";
 import { createRandomSeed, createSeededRandom, hashSeed, type RandomSource } from "./Random";
 import type { BuffId } from "./combat/BuffSystem";
+import type { ActiveStatusEffect } from "./combat/StatusEffectSystem";
 import type { ShopItem } from "./shop/ShopSystem";
 
 export type ThemeId = "forest" | "dungeon" | "snow" | "lava";
@@ -46,6 +47,7 @@ export interface Room {
     attackTargetY?: number;
     bossPhase?: 1 | 2 | 3;
     attackSequence?: number;
+    statusEffects?: ActiveStatusEffect[];
   }[];
   pickups?: {
     x: number;

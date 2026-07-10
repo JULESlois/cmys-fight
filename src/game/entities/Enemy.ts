@@ -1,4 +1,5 @@
 import type { EnemyBehavior, EnemyRole } from "../data/enemies";
+import type { ActiveStatusEffect, StatusEffectId } from "../combat/StatusEffectSystem";
 
 export class Enemy {
   public id: number;
@@ -34,6 +35,9 @@ export class Enemy {
   public summonEnemyId?: string;
   public bossPhase: 1 | 2 | 3 = 1;
   public attackSequence: number = 0;
+  public statusEffect?: StatusEffectId;
+  public statusDuration: number = 0;
+  public statusEffects: ActiveStatusEffect[] = [];
 
   private static nextId = 0;
 

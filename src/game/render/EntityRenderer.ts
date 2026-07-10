@@ -29,6 +29,22 @@ export class EntityRenderer {
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
 
+    if (player.statusEffects.length > 0) {
+      const colors: Record<string, string> = {
+        poison: "rgba(139, 195, 74, 0.8)",
+        burn: "rgba(255, 112, 67, 0.85)",
+        slow: "rgba(129, 212, 250, 0.85)",
+        root: "rgba(161, 136, 127, 0.85)",
+      };
+      player.statusEffects.slice(0, 3).forEach((status, index) => {
+        ctx.strokeStyle = colors[status.id] ?? "rgba(255,255,255,0.7)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, -4, 10 + index * 2, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+
     if (player.characterId === "knight" && player.skillActiveTimer > 0) {
       ctx.strokeStyle = "rgba(241, 196, 15, 0.9)";
       ctx.lineWidth = 2;
@@ -119,6 +135,22 @@ export class EntityRenderer {
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string) {
     ctx.save();
     ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
+
+    if (enemy.statusEffects.length > 0) {
+      const colors: Record<string, string> = {
+        poison: "rgba(139, 195, 74, 0.8)",
+        burn: "rgba(255, 112, 67, 0.85)",
+        slow: "rgba(129, 212, 250, 0.85)",
+        root: "rgba(161, 136, 127, 0.85)",
+      };
+      enemy.statusEffects.slice(0, 3).forEach((status, index) => {
+        ctx.strokeStyle = colors[status.id] ?? "rgba(255,255,255,0.7)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, enemy.radius + 3 + index * 2, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
 
     if (enemy.attackState === "windup") {
       const pulse = 0.55 + Math.sin(time * 22) * 0.2;

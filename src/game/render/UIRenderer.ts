@@ -123,6 +123,31 @@ export class UIRenderer {
       ctx.font = "bold 5px monospace";
       ctx.fillText(buff.shortCode, x, 47);
     });
+
+    if (player.statusEffects.length > 0) {
+      const statusColors: Record<string, string> = {
+        poison: "#8BC34A",
+        burn: "#FF7043",
+        slow: "#81D4FA",
+        root: "#A1887F",
+      };
+      const statusCodes: Record<string, string> = {
+        poison: "PSN",
+        burn: "BRN",
+        slow: "SLW",
+        root: "ROT",
+      };
+      ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
+      ctx.fillRect(5, 53, 120, 12);
+      ctx.strokeStyle = "rgba(231, 76, 60, 0.45)";
+      ctx.strokeRect(5, 53, 120, 12);
+      player.statusEffects.slice(0, 4).forEach((status, index) => {
+        const x = 9 + index * 29;
+        ctx.fillStyle = statusColors[status.id] ?? "#FFF";
+        ctx.font = "bold 5px monospace";
+        ctx.fillText(`${statusCodes[status.id] ?? status.id.toUpperCase()}${status.stacks > 1 ? status.stacks : ""}`, x, 61);
+      });
+    }
     
     // Bottom Left: Dual weapon slots
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";

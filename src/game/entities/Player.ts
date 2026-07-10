@@ -1,5 +1,6 @@
 import type { WeaponSlots } from "../data/weapons";
 import type { BuffId } from "../combat/BuffSystem";
+import type { ActiveStatusEffect } from "../combat/StatusEffectSystem";
 
 export const PLAYER_WEAPON_OFFSET_X = 10;
 export const PLAYER_WEAPON_OFFSET_Y = -2;
@@ -48,6 +49,7 @@ export class Player {
   public knightGuardReady: boolean = false;
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;
+  public statusEffects: ActiveStatusEffect[] = [];
 
   constructor(x: number, y: number) {
     this.x = x;

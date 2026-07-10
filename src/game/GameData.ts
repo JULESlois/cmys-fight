@@ -18,8 +18,9 @@ import {
 import { hashSeed, normalizeSeed } from "./Random";
 import { BuffSystem, type BuffId } from "./combat/BuffSystem";
 import { ShopSystem } from "./shop/ShopSystem";
+import { StatusEffectSystem, type ActiveStatusEffect } from "./combat/StatusEffectSystem";
 
-const CURRENT_SAVE_VERSION = 10;
+const CURRENT_SAVE_VERSION = 11;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -49,6 +50,7 @@ export interface GameSave {
     knightGuardReady: boolean;
     buffs: BuffId[];
     emergencyBarrierReady: boolean;
+    statusEffects: ActiveStatusEffect[];
   };
   settings: {
     masterVolume: number;
@@ -100,6 +102,7 @@ export const defaultSave: GameSave = {
     knightGuardReady: true,
     buffs: [],
     emergencyBarrierReady: false,
+    statusEffects: [],
   },
   settings: {
     masterVolume: 100,
@@ -135,6 +138,7 @@ export class GameData {
     this.normalizePlayerWeapons();
     this.normalizePlayerSkills();
     this.normalizePlayerBuffs();
+    this.normalizePlayerStatuses();
     this.data.run = normalizeRunProgress(this.data.run);
     this.normalizeStageMetadata();
     for (const room of this.data.floor.rooms) {
@@ -168,6 +172,7 @@ export class GameData {
       }
       this.normalizePlayerSkills();
       this.normalizePlayerBuffs();
+      this.normalizePlayerStatuses();
       this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
       this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
       this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
@@ -220,6 +225,7 @@ export class GameData {
     this.setStarterWeapons(char.starterWeapon);
     this.resetSkillState(char.id);
     this.resetBuffState();
+    this.data.player.statusEffects = [];
     this.data.player.coins = 0;
     this.data.run = createInitialRunProgress();
     this.data.floor = generateStage(this.data.run);
@@ -243,6 +249,7 @@ export class GameData {
     this.setStarterWeapons(char.starterWeapon);
     this.resetSkillState(this.data.player.characterId);
     this.resetBuffState();
+    this.data.player.statusEffects = [];
     this.data.player.coins = 0;
     this.data.run = createInitialRunProgress();
     this.data.floor = generateStage(this.data.run);
@@ -325,6 +332,10 @@ export class GameData {
       player.buffs.includes("emergency_barrier") && player.emergencyBarrierReady === true;
   }
 
+  private normalizePlayerStatuses() {
+    this.data.player.statusEffects = StatusEffectSystem.normalize(this.data.player.statusEffects);
+  }
+
   private normalizeStageMetadata() {
     const run = normalizeRunProgress(this.data.run);
     this.data.run = run;
@@ -362,6 +373,9 @@ export class GameData {
       room.encounterSeed = normalizeSeed(
         Number(room.encounterSeed) || hashSeed(stage.seed, room.id),
       );
+      for (const enemy of room.enemies ?? []) {
+        enemy.statusEffects = StatusEffectSystem.normalize(enemy.statusEffects);
+      }
       if (room.type === "shop") {
         room.shopSeed = ShopSystem.getSeed(stage, room);
         room.shopStock = ShopSystem.normalizeStock(room.shopStock);
