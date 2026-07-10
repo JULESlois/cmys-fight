@@ -1,4 +1,6 @@
 export const STAGES_PER_CHAPTER = 5;
+export const FINAL_CHAPTER = 4;
+export const FINAL_GLOBAL_STAGE = FINAL_CHAPTER * STAGES_PER_CHAPTER;
 
 export interface RunProgress {
   chapterIndex: number;
@@ -62,6 +64,10 @@ export function advanceRunProgress(progress: RunProgress): RunProgress {
 
 export function isBossStage(progress: Pick<RunProgress, "stageIndex">): boolean {
   return progress.stageIndex === STAGES_PER_CHAPTER;
+}
+
+export function isFinalStage(progress: Pick<RunProgress, "chapterIndex" | "stageIndex">): boolean {
+  return progress.chapterIndex === FINAL_CHAPTER && progress.stageIndex === STAGES_PER_CHAPTER;
 }
 
 export function getStageLabel(progress: Pick<RunProgress, "chapterIndex" | "stageIndex">): string {

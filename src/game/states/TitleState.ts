@@ -3,7 +3,7 @@ import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
 import { SpriteRenderer } from "../render/SpriteRenderer";
-import { CHARACTERS } from "../data/characters";
+import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
 
 export class TitleState extends GameState {
     protected options = ["NEW RUN", "CONTINUE", "CHARACTER", "SETTINGS"];
@@ -36,7 +36,8 @@ export class TitleState extends GameState {
       this.engine.switchState("character_select");
     } else if (opt === "CONTINUE") {
       if (!this.engine.data.hasValidSave()) {
-        this.engine.data.startNewRun("knight");
+        this.engine.switchState("character_select");
+        return;
       }
       this.engine.switchState("dungeon");
     } else if (opt === "SETTINGS") {
@@ -108,7 +109,13 @@ export class TitleState extends GameState {
     ctx.fillStyle = "#34495E";
     ctx.font = "8px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("v0.2.0 - Retro Framework", 160, 230);
+    const meta = this.engine.data.meta;
+    const bestTime = meta.bestVictoryTime === null
+      ? "--:--"
+      : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
+    const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
+    ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
+    ctx.fillText("v0.3.0 - DEEP DELVE", 160, 230);
     ctx.textAlign = "left";
   }
 }

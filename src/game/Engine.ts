@@ -10,6 +10,7 @@ import { DungeonState } from "./states/DungeonState";
 import { TitleState } from "./states/TitleState";
 import { CharacterSelectState } from "./states/CharacterSelectState";
 import { SettingsState } from "./states/SettingsState";
+import { RunResultState } from "./states/RunResultState";
 import { events } from "./EventBus";
 
 export class Engine {
@@ -36,6 +37,7 @@ export class Engine {
       title: new TitleState(this),
       character_select: new CharacterSelectState(this),
       settings: new SettingsState(this),
+      run_result: new RunResultState(this),
       dungeon: new DungeonState(this),
       menu: new MenuState(this),
       legacy_rpg: new LegacyRpgState(this),
@@ -95,7 +97,7 @@ export class Engine {
     this.states[this.currentState].exit();
     this.input.clear();
     this.currentState = newState;
-    if (["title", "character_select", "settings"].includes(newState)) {
+    if (["title", "character_select", "settings", "run_result"].includes(newState)) {
        this.isPaused = false;
     }
     this.states[this.currentState].enter(params);

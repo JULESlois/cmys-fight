@@ -31,6 +31,8 @@ import {
   EnvironmentSystem,
   type EnvironmentHazard,
 } from "../environment/EnvironmentSystem";
+import { isFinalStage } from "../RunProgress";
+import type { RunOutcome } from "../RunStats";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -550,25 +552,18 @@ export class DungeonState extends GameState {
       return;
     }
 
-    if (this.engine.input.wasPressed("enter") && this.player.hp <= 0) {
-      this.engine.data.restartCurrentRun();
-      this.player = this.createPlayerFromSave();
-      
-      this.player.fireCooldown = 0;
-      this.player.muzzleFlash = 0;
-      this.player.hitFlash = 0;
-      this.player.animState = "idle";
-      this.player.animFrame = 0;
-      
-      this.transitionState = "fade_in";
-      this.transitionAlpha = 1;
-      this.loadRoom();
+    if (this.player.hp <= 0) {
+      this.finishRun("defeat");
       return;
     }
 
+    this.engine.data.recordRunTime(dt);
     DamageSystem.updatePlayer(this.player, dt);
     StatusEffectSystem.updatePlayer(this.player, dt);
-    if (this.player.hp <= 0) return;
+    if (this.player.hp <= 0) {
+      this.finishRun("defeat");
+      return;
+    }
     this.updateEnemyStatuses(dt);
 
     const previousX = this.player.x;
@@ -576,6 +571,10 @@ export class DungeonState extends GameState {
 
     this.updateRoomPhase(dt);
     this.updateEnvironmentHazards(dt);
+    if (this.player.hp <= 0) {
+      this.finishRun("defeat");
+      return;
+    }
     
     const moved = Math.hypot(this.player.x - previousX, this.player.y - previousY) > 0.01;
 
@@ -645,8 +644,16 @@ export class DungeonState extends GameState {
     if (this.roomPhase === "combat") {
        this.updateEnemies(dt);
     }
+    if (this.player.hp <= 0) {
+      this.finishRun("defeat");
+      return;
+    }
     
     this.updateProjectiles(dt);
+    if (this.player.hp <= 0) {
+      this.finishRun("defeat");
+      return;
+    }
     this.updatePickups(dt);
     
     if (this.portal && this.portal.state === "spawning") {
@@ -662,6 +669,10 @@ export class DungeonState extends GameState {
           this.pendingTransition = () => {
              this.syncPlayerState();
              this.syncRoomState();
+             if (isFinalStage(this.engine.data.data.run)) {
+               this.finishRun("victory");
+               return;
+             }
              this.engine.data.advanceStage();
              this.player.x = 160;
              this.player.y = 120;
@@ -670,6 +681,14 @@ export class DungeonState extends GameState {
           };
        }
     }
+  }
+
+  private finishRun(outcome: Exclude<RunOutcome, "active">) {
+    if (this.engine.data.data.runStats.settled) return;
+    this.syncPlayerState();
+    this.syncRoomState();
+    const summary = this.engine.data.finalizeRun(outcome);
+    this.engine.switchState("run_result", { summary });
   }
 
   private activateCharacterSkill() {
@@ -693,7 +712,7 @@ export class DungeonState extends GameState {
       for (let i = this.enemies.length - 1; i >= 0; i--) {
         const enemy = this.enemies[i];
         if (!killed.has(enemy.id)) continue;
-        this.spawnEnemyDeathDrop(enemy);
+        this.handleEnemyKilled(enemy);
         this.enemies.splice(i, 1);
       }
     }
@@ -734,6 +753,11 @@ export class DungeonState extends GameState {
         10,
       ));
     }
+  }
+
+  private handleEnemyKilled(enemy: Enemy) {
+    this.engine.data.recordEnemyKill(enemy);
+    this.spawnEnemyDeathDrop(enemy);
   }
 
   private updateRoomPhase(dt: number) {
@@ -806,7 +830,7 @@ export class DungeonState extends GameState {
     for (let index = this.enemies.length - 1; index >= 0; index--) {
       const enemy = this.enemies[index];
       if (!StatusEffectSystem.updateEnemy(enemy, dt)) continue;
-      this.spawnEnemyDeathDrop(enemy);
+      this.handleEnemyKilled(enemy);
       this.enemies.splice(index, 1);
     }
   }
@@ -1409,7 +1433,7 @@ export class DungeonState extends GameState {
             audio.playHit();
           }
           if (result.killed) {
-            this.spawnEnemyDeathDrop(e);
+            this.handleEnemyKilled(e);
             this.enemies.splice(closestEnemyIndex, 1);
           }
           if (p.pierceRemaining > 0) {

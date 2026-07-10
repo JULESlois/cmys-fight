@@ -5,16 +5,23 @@ import { audio } from "../audio/AudioManager";
 import { PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
+import { WEAPONS } from "../data/weapons";
 
 export class CharacterSelectState extends GameState {
     protected characters = Object.values(CHARACTERS);
   protected selectedIndex = 0;
+  protected selectedWeaponIndex = 0;
 
   constructor(engine: Engine) {
     super(engine);
   }
 
-  enter() {}
+  enter() {
+    const unlockedWeapons = this.getUnlockedWeapons();
+    const character = this.characters[this.selectedIndex];
+    const preferred = this.engine.data.getStarterWeaponForCharacter(character.id);
+    this.selectedWeaponIndex = Math.max(0, unlockedWeapons.findIndex(weapon => weapon.id === preferred));
+  }
   exit() {}
 
   update(dt: number) {
@@ -32,11 +39,32 @@ export class CharacterSelectState extends GameState {
       audio.playShoot();
     }
 
+    const unlockedWeapons = this.getUnlockedWeapons();
+    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
+      this.selectedWeaponIndex = (this.selectedWeaponIndex - 1 + unlockedWeapons.length) % unlockedWeapons.length;
+      audio.playShoot();
+    }
+    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
+      this.selectedWeaponIndex = (this.selectedWeaponIndex + 1) % unlockedWeapons.length;
+      audio.playShoot();
+    }
+
     if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       const char = this.characters[this.selectedIndex];
-      this.engine.data.startNewRun(char.id);
+      if (!this.engine.data.isCharacterUnlocked(char.id)) {
+        audio.playHurt();
+        return;
+      }
+      this.engine.data.startNewRun(char.id, unlockedWeapons[this.selectedWeaponIndex]?.id);
       this.engine.switchState("dungeon");
     }
+  }
+
+  private getUnlockedWeapons() {
+    const weapons = Object.values(WEAPONS).filter(weapon =>
+      this.engine.data.isStarterWeaponUnlocked(weapon.id)
+    );
+    return weapons.length > 0 ? weapons : [WEAPONS.pistol];
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -44,6 +72,10 @@ export class CharacterSelectState extends GameState {
     ctx.fillRect(0, 0, 320, 240);
 
     MenuRenderer.drawTitle(ctx, "SELECT CHARACTER", 160, 30);
+    ctx.fillStyle = "#7F8C8D";
+    ctx.textAlign = "center";
+    ctx.font = "6px monospace";
+    ctx.fillText("ARMORY: SHOTGUN 1-5/30 SHARDS | LASER WIN RUN", 160, 48);
 
     const cardW = 85;
     const cardH = 130;
@@ -56,6 +88,7 @@ export class CharacterSelectState extends GameState {
       const char = this.characters[i];
       const x = startX + i * (cardW + spacing);
       const isSelected = (i === this.selectedIndex);
+      const isUnlocked = this.engine.data.isCharacterUnlocked(char.id);
       
       // Card BG
       if (isSelected) {
@@ -69,6 +102,7 @@ export class CharacterSelectState extends GameState {
       }
       ctx.lineWidth = 1;
       ctx.strokeRect(x, startY, cardW, cardH);
+      if (!isUnlocked) ctx.globalAlpha = 0.35;
       
       // Character sprite
       SpriteRenderer.drawPixelSprite(ctx, "player_main_side_idle", x + cardW / 2, startY + 20, 2, {
@@ -91,27 +125,42 @@ export class CharacterSelectState extends GameState {
       // Weapon (small label)
       ctx.fillStyle = "#BDC3C7";
       ctx.font = "8px monospace";
-      ctx.fillText(`WPN: ${char.starterWeapon.toUpperCase()}`, x + 5, startY + 122);
+      const defaultUnlocked = this.engine.data.isStarterWeaponUnlocked(char.starterWeapon);
+      ctx.fillText(`DEF: ${defaultUnlocked ? char.starterWeapon.toUpperCase() : "LOCKED"}`, x + 5, startY + 122);
+      ctx.globalAlpha = 1;
+      if (!isUnlocked) {
+        ctx.fillStyle = "#E74C3C";
+        ctx.textAlign = "center";
+        ctx.font = "bold 9px monospace";
+        ctx.fillText("LOCKED", x + cardW / 2, startY + 58);
+      }
     }
     
     // Passive & Title for selected char
     ctx.textAlign = "center";
     const selectedChar = this.characters[this.selectedIndex];
+    const selectedUnlocked = this.engine.data.isCharacterUnlocked(selectedChar.id);
     
     ctx.fillStyle = selectedChar.color;
     ctx.font = "bold 10px monospace";
     ctx.fillText(selectedChar.title.toUpperCase(), 160, 202);
     
-    ctx.fillStyle = "#F1C40F";
+    ctx.fillStyle = selectedUnlocked ? "#F1C40F" : "#E74C3C";
     ctx.font = "9px monospace";
-    ctx.fillText(`[PASSIVE] ${selectedChar.passive}`, 160, 214);
+    const detail = selectedUnlocked
+      ? `[PASSIVE] ${selectedChar.passive}`
+      : selectedChar.id === "mage"
+        ? "UNLOCK: REACH 2-1 OR EARN 50 SHARDS"
+        : "UNLOCK: WIN A RUN OR EARN 120 SHARDS";
+    ctx.fillText(detail, 160, 214);
 
-    // Bottom tips
+    const selectedWeapon = this.getUnlockedWeapons()[this.selectedWeaponIndex] ?? WEAPONS.pistol;
     ctx.fillStyle = "#00F2FE";
-    ctx.fillText("PRESS ENTER TO START", 160, 225);
-    ctx.fillStyle = "#BDC3C7";
-    ctx.font = "8px monospace";
-    ctx.fillText("Arrows to select | ESC to back", 160, 235);
+    ctx.font = "bold 8px monospace";
+    ctx.fillText(`STARTER: ${selectedWeapon.name.toUpperCase()}  [UP/DOWN]`, 160, 225);
+    ctx.fillStyle = selectedUnlocked ? "#BDC3C7" : "#E74C3C";
+    ctx.font = "7px monospace";
+    ctx.fillText(selectedUnlocked ? "ENTER START | LEFT/RIGHT CHARACTER | ESC BACK" : "CHARACTER LOCKED", 160, 236);
     ctx.textAlign = "left";
   }
 }

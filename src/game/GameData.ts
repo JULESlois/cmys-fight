@@ -5,6 +5,8 @@ import {
   advanceRunProgress,
   createInitialRunProgress,
   createRunProgressFromGlobalStage,
+  FINAL_GLOBAL_STAGE,
+  isFinalStage,
   isBossStage,
   normalizeRunProgress,
   type RunProgress,
@@ -19,8 +21,25 @@ import { hashSeed, normalizeSeed } from "./Random";
 import { BuffSystem, type BuffId } from "./combat/BuffSystem";
 import { ShopSystem } from "./shop/ShopSystem";
 import { StatusEffectSystem, type ActiveStatusEffect } from "./combat/StatusEffectSystem";
+import {
+  calculateRunReward,
+  createRunStats,
+  normalizeRunStats,
+  type RunOutcome,
+  type RunStats,
+  type RunSummary,
+} from "./RunStats";
+import {
+  applyMetaUnlocks,
+  createDefaultMetaProgress,
+  normalizeMetaProgress,
+  type MetaProgress,
+} from "./MetaProgress";
+import type { Enemy } from "./entities/Enemy";
 
-const CURRENT_SAVE_VERSION = 11;
+export const RUN_SAVE_KEY = "retro_rpg_save";
+export const META_SAVE_KEY = "retro_rpg_meta";
+const CURRENT_SAVE_VERSION = 12;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -59,6 +78,7 @@ export interface GameSave {
   };
   recentEvents: string[];
   run: RunProgress;
+  runStats: RunStats;
   /** Compatibility name retained while the value now represents one Stage. */
   floor: FloorData;
   legacyData: {
@@ -111,6 +131,7 @@ export const defaultSave: GameSave = {
   },
   recentEvents: ["Started the journey"],
   run: INITIAL_RUN,
+  runStats: createRunStats(INITIAL_RUN),
   floor: generateStage(INITIAL_RUN),
   legacyData: {
     player: {
@@ -129,9 +150,13 @@ export const defaultSave: GameSave = {
 
 export class GameData {
   public data: GameSave;
+  public meta: MetaProgress;
 
   constructor() {
     this.data = JSON.parse(JSON.stringify(defaultSave));
+    this.data.run = createInitialRunProgress();
+    this.data.runStats = createRunStats(this.data.run);
+    this.meta = createDefaultMetaProgress();
   }
 
   save() {
@@ -140,16 +165,18 @@ export class GameData {
     this.normalizePlayerBuffs();
     this.normalizePlayerStatuses();
     this.data.run = normalizeRunProgress(this.data.run);
+    this.data.runStats = normalizeRunStats(this.data.runStats, this.data.run);
     this.normalizeStageMetadata();
     for (const room of this.data.floor.rooms) {
       normalizeRoomState(room);
     }
     this.data.saveVersion = CURRENT_SAVE_VERSION;
-    localStorage.setItem("retro_rpg_save", JSON.stringify(this.data));
+    localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(this.data));
   }
 
   load() {
-    const saved = localStorage.getItem("retro_rpg_save");
+    this.loadMeta();
+    const saved = localStorage.getItem(RUN_SAVE_KEY);
     if (!saved) return;
 
     try {
@@ -181,6 +208,10 @@ export class GameData {
       this.data.run = parsed.run
         ? normalizeRunProgress(parsed.run)
         : createRunProgressFromGlobalStage(legacyGlobalStage);
+      if (loadedVersion < 12 && this.data.run.globalStageIndex > FINAL_GLOBAL_STAGE) {
+        this.data.run = createRunProgressFromGlobalStage(FINAL_GLOBAL_STAGE);
+      }
+      this.data.runStats = normalizeRunStats(parsed.runStats, this.data.run);
 
       const stageCompatible = this.isStageCompatible(parsed.floor, this.data.run);
       if (loadedVersion < 6 || !stageCompatible) {
@@ -205,13 +236,17 @@ export class GameData {
   }
 
   hasValidSave(): boolean {
-    if (!localStorage.getItem("retro_rpg_save")) return false;
+    if (!localStorage.getItem(RUN_SAVE_KEY)) return false;
     if (this.data.player.hp <= 0) return false;
+    if (this.data.runStats.settled || this.data.runStats.outcome !== "active") return false;
     return true;
   }
 
-  startNewRun(characterId: string) {
-    const char = CHARACTERS[characterId] || CHARACTERS.knight;
+  startNewRun(characterId: string, starterWeaponId?: string) {
+    const requested = CHARACTERS[characterId];
+    const char = requested && this.isCharacterUnlocked(requested.id)
+      ? requested
+      : CHARACTERS.knight;
     this.data.player.characterId = char.id;
     this.data.player.x = 160;
     this.data.player.y = 120;
@@ -222,12 +257,16 @@ export class GameData {
     this.data.player.maxMana = char.maxMana;
     this.data.player.mana = char.maxMana;
     this.data.player.speed = char.speed;
-    this.setStarterWeapons(char.starterWeapon);
+    const starterWeapon = starterWeaponId && this.isStarterWeaponUnlocked(starterWeaponId)
+      ? starterWeaponId
+      : this.getStarterWeaponForCharacter(char.id);
+    this.setStarterWeapons(starterWeapon);
     this.resetSkillState(char.id);
     this.resetBuffState();
     this.data.player.statusEffects = [];
     this.data.player.coins = 0;
     this.data.run = createInitialRunProgress();
+    this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.legacyData.clearedRooms = [];
     this.data.legacyData.legacyRewardsClaimed = [];
@@ -246,12 +285,13 @@ export class GameData {
     this.data.player.mana = char.maxMana;
     this.data.player.maxMana = char.maxMana;
     this.data.player.speed = char.speed;
-    this.setStarterWeapons(char.starterWeapon);
+    this.setStarterWeapons(this.getStarterWeaponForCharacter(char.id));
     this.resetSkillState(this.data.player.characterId);
     this.resetBuffState();
     this.data.player.statusEffects = [];
     this.data.player.coins = 0;
     this.data.run = createInitialRunProgress();
+    this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.legacyData.clearedRooms = [];
     this.data.legacyData.legacyRewardsClaimed = [];
@@ -261,6 +301,14 @@ export class GameData {
 
   advanceStage() {
     this.data.run = advanceRunProgress(this.data.run);
+    this.data.runStats.stagesCleared = Math.max(
+      this.data.runStats.stagesCleared,
+      this.data.run.stagesCleared,
+    );
+    this.data.runStats.highestStage = Math.max(
+      this.data.runStats.highestStage,
+      this.data.run.globalStageIndex,
+    );
     this.data.player.x = 160;
     this.data.player.y = 120;
     this.data.floor = generateStage(this.data.run);
@@ -273,9 +321,12 @@ export class GameData {
   }
 
   resetAll() {
-    localStorage.removeItem("retro_rpg_save");
+    localStorage.removeItem(RUN_SAVE_KEY);
+    localStorage.removeItem(META_SAVE_KEY);
+    this.meta = createDefaultMetaProgress();
     this.data = JSON.parse(JSON.stringify(defaultSave));
     this.data.run = createInitialRunProgress();
+    this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
@@ -286,6 +337,99 @@ export class GameData {
     this.data.player.weaponSlots = slots[1] ? [slots[0], slots[1]] : [slots[0]];
     this.data.player.activeWeaponSlot = 0;
     this.data.player.currentWeaponId = this.data.player.weaponSlots[0];
+  }
+
+  public isCharacterUnlocked(characterId: string): boolean {
+    return this.meta.unlockedCharacters.includes(characterId);
+  }
+
+  public isStarterWeaponUnlocked(weaponId: string): boolean {
+    return this.meta.unlockedStarterWeapons.includes(weaponId);
+  }
+
+  public getStarterWeaponForCharacter(characterId: string): string {
+    const character = CHARACTERS[characterId] || CHARACTERS.knight;
+    return this.isStarterWeaponUnlocked(character.starterWeapon)
+      ? character.starterWeapon
+      : "pistol";
+  }
+
+  public recordRunTime(dt: number): void {
+    if (this.data.runStats.settled || this.data.runStats.outcome !== "active") return;
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    this.data.runStats.elapsedSeconds += dt;
+  }
+
+  public recordEnemyKill(enemy: Pick<Enemy, "type" | "isElite">): void {
+    if (this.data.runStats.settled || this.data.runStats.outcome !== "active") return;
+    this.data.runStats.kills++;
+    if (enemy.isElite) this.data.runStats.eliteKills++;
+    if (enemy.type === "boss") this.data.runStats.bossKills++;
+  }
+
+  public finalizeRun(outcome: Exclude<RunOutcome, "active">): RunSummary {
+    const stats = normalizeRunStats(this.data.runStats, this.data.run);
+    const alreadyClaimed =
+      (stats.settled && stats.outcome !== "active") ||
+      this.meta.claimedRunIds.includes(stats.runId);
+    const resolvedOutcome = (stats.settled || alreadyClaimed) && stats.outcome !== "active"
+      ? stats.outcome
+      : outcome;
+    stats.highestStage = Math.max(stats.highestStage, this.data.run.globalStageIndex);
+    stats.stagesCleared = Math.max(
+      stats.stagesCleared,
+      this.data.run.stagesCleared + (resolvedOutcome === "victory" && isFinalStage(this.data.run) ? 1 : 0),
+    );
+    stats.outcome = resolvedOutcome;
+    stats.settled = true;
+
+    let rewardEarned = 0;
+    let newUnlocks: string[] = [];
+    if (!alreadyClaimed) {
+      rewardEarned = calculateRunReward(stats, resolvedOutcome);
+      this.meta.currency += rewardEarned;
+      this.meta.highestStage = Math.max(this.meta.highestStage, stats.highestStage);
+      this.meta.totalRuns++;
+      if (resolvedOutcome === "victory") {
+        this.meta.victories++;
+        this.meta.bestVictoryTime = this.meta.bestVictoryTime === null
+          ? stats.elapsedSeconds
+          : Math.min(this.meta.bestVictoryTime, stats.elapsedSeconds);
+      }
+      this.meta.claimedRunIds.push(stats.runId);
+      this.meta.claimedRunIds = this.meta.claimedRunIds.slice(-100);
+      newUnlocks = applyMetaUnlocks(this.meta);
+      this.saveMeta();
+    }
+
+    this.data.runStats = stats;
+    this.save();
+    return {
+      ...stats,
+      rewardEarned,
+      totalCurrency: this.meta.currency,
+      newUnlocks,
+      alreadyClaimed,
+    };
+  }
+
+  public saveMeta(): void {
+    this.meta = normalizeMetaProgress(this.meta);
+    localStorage.setItem(META_SAVE_KEY, JSON.stringify(this.meta));
+  }
+
+  public loadMeta(): void {
+    const saved = localStorage.getItem(META_SAVE_KEY);
+    if (!saved) {
+      this.meta = createDefaultMetaProgress();
+      return;
+    }
+    try {
+      this.meta = normalizeMetaProgress(JSON.parse(saved));
+    } catch (error) {
+      console.error("Failed to load meta progress:", error);
+      this.meta = createDefaultMetaProgress();
+    }
   }
 
   private normalizePlayerWeapons() {
