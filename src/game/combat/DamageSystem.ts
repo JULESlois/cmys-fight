@@ -18,6 +18,14 @@ const NO_DAMAGE: DamageResult = {
 export class DamageSystem {
   static updatePlayer(player: Player, dt: number): void {
     player.invulnerabilityTimer = Math.max(0, player.invulnerabilityTimer - dt);
+    if (player.hp <= 0 || player.maxArmor <= 0 || player.armor >= player.maxArmor) {
+      return;
+    }
+
+    player.armorRechargeTimer = Math.max(0, player.armorRechargeTimer - dt);
+    if (player.armorRechargeTimer <= 0) {
+      player.armor = Math.min(player.maxArmor, player.armor + player.armorRechargeRate * dt);
+    }
   }
 
   static damagePlayer(player: Player, amount: number, invulnerabilityDuration = 0.55): DamageResult {
@@ -32,6 +40,7 @@ export class DamageSystem {
     player.armor = Math.max(0, player.armor - armorDamage);
     player.hp = Math.max(0, player.hp - hpDamage);
     player.invulnerabilityTimer = invulnerabilityDuration;
+    player.armorRechargeTimer = player.armorRechargeDelay;
     player.hitFlash = hpDamage > 0 ? 0.2 : 0.1;
 
     return {

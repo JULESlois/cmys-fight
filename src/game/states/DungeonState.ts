@@ -17,6 +17,7 @@ import { Pickup } from "../entities/Pickup";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController, EncounterDef } from "../EncounterController";
 import { DamageSystem } from "../combat/DamageSystem";
+import { segmentCircleHit } from "../combat/Collision";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -436,7 +437,6 @@ export class DungeonState extends GameState {
     // WORLD UPDATE SEQUENCE
     if (this.roomPhase === "combat") {
        this.updateEnemies(dt);
-       this.checkCollisions();
     }
     
     this.updateProjectiles(dt);
@@ -800,6 +800,52 @@ export class DungeonState extends GameState {
       e.x = Math.max(16, Math.min(320 - 16, e.x));
       e.y = Math.max(16, Math.min(240 - 16, e.y));
     }
+
+    this.separateEnemies();
+  }
+
+  private separateEnemies() {
+    for (let i = 0; i < this.enemies.length; i++) {
+      for (let j = i + 1; j < this.enemies.length; j++) {
+        const a = this.enemies[i];
+        const b = this.enemies[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let distance = Math.hypot(dx, dy);
+        const minDistance = a.radius + b.radius + 2;
+        if (distance >= minDistance) continue;
+
+        if (distance < 0.001) {
+          const angle = ((a.id * 31 + b.id * 17) % 360) * Math.PI / 180;
+          distance = 0.001;
+          dx = Math.cos(angle) * distance;
+          dy = Math.sin(angle) * distance;
+        }
+
+        const nx = dx / distance;
+        const ny = dy / distance;
+        const overlap = minDistance - distance;
+        let aShare = 0.5;
+        let bShare = 0.5;
+        if (a.type === "boss" && b.type !== "boss") {
+          aShare = 0.15;
+          bShare = 0.85;
+        } else if (b.type === "boss" && a.type !== "boss") {
+          aShare = 0.85;
+          bShare = 0.15;
+        }
+
+        this.moveEnemyBy(a, -nx * overlap * aShare, -ny * overlap * aShare);
+        this.moveEnemyBy(b, nx * overlap * bShare, ny * overlap * bShare);
+      }
+    }
+  }
+
+  private moveEnemyBy(enemy: Enemy, dx: number, dy: number) {
+    const nextX = Math.max(16, Math.min(320 - 16, enemy.x + dx));
+    const nextY = Math.max(16, Math.min(240 - 16, enemy.y + dy));
+    if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
+    if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
   }
 
   private beginEnemyAttack(enemy: Enemy, windup: number) {
@@ -863,10 +909,73 @@ export class DungeonState extends GameState {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.update(dt);
-      if (p.life <= 0 || p.x < 0 || p.x > 320 || p.y < 0 || p.y > 240 || this.isCollidingWithMap(p.x, p.y, p.radius)) {
+      const environmentHitT = this.getProjectileEnvironmentHitT(p);
+      let entityHit = false;
+
+      if (p.faction === "player") {
+        let closestEnemyIndex = -1;
+        let closestHitT = Infinity;
+        for (let j = this.enemies.length - 1; j >= 0; j--) {
+          const e = this.enemies[j];
+          const hit = segmentCircleHit(
+            p.previousX, p.previousY, p.x, p.y,
+            e.x, e.y, p.radius + e.radius,
+          );
+          if (hit && hit.t < closestHitT) {
+            closestHitT = hit.t;
+            closestEnemyIndex = j;
+          }
+        }
+
+        if (closestEnemyIndex >= 0 && (environmentHitT === null || closestHitT <= environmentHitT)) {
+          const e = this.enemies[closestEnemyIndex];
+          p.x = p.previousX + (p.x - p.previousX) * closestHitT;
+          p.y = p.previousY + (p.y - p.previousY) * closestHitT;
+          const result = DamageSystem.damageEnemy(e, p.damage);
+          if (result.applied) audio.playHit();
+          if (result.killed) {
+            if (Math.random() < 0.3) {
+              this.pickups.push(new Pickup(e.x, e.y, Math.random() < 0.5 ? "mana" : "hp", 10));
+            }
+            this.enemies.splice(closestEnemyIndex, 1);
+          }
+          entityHit = true;
+        }
+      } else if (p.faction === "enemy" && this.player.hp > 0) {
+        const hit = segmentCircleHit(
+          p.previousX, p.previousY, p.x, p.y,
+          this.player.x, this.player.y, p.radius + this.player.radius,
+        );
+        if (hit && (environmentHitT === null || hit.t <= environmentHitT)) {
+          p.x = hit.x;
+          p.y = hit.y;
+          const result = DamageSystem.damagePlayer(this.player, p.damage);
+          if (result.applied) audio.playHurt();
+          entityHit = true;
+        }
+      }
+
+      if (entityHit || environmentHitT !== null || p.life <= 0) {
         this.projectiles.splice(i, 1);
       }
     }
+  }
+
+  private getProjectileEnvironmentHitT(projectile: Projectile): number | null {
+    const dx = projectile.x - projectile.previousX;
+    const dy = projectile.y - projectile.previousY;
+    const distance = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(distance / 4));
+
+    for (let step = 1; step <= steps; step++) {
+      const t = step / steps;
+      const x = projectile.previousX + dx * t;
+      const y = projectile.previousY + dy * t;
+      if (x < 0 || x > 320 || y < 0 || y > 240 || this.isCollidingWithMap(x, y, projectile.radius)) {
+        return t;
+      }
+    }
+    return null;
   }
 
   private updatePickups(dt: number) {
@@ -895,41 +1004,6 @@ export class DungeonState extends GameState {
      }
   }
 
-  private checkCollisions() {
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      const p = this.projectiles[i];
-      let hit = false;
-      
-      if (p.faction === "player") {
-        for (let j = this.enemies.length - 1; j >= 0; j--) {
-          const e = this.enemies[j];
-          if (Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius) {
-            const result = DamageSystem.damageEnemy(e, p.damage);
-            if (result.applied) audio.playHit();
-            if (result.killed) {
-              if (Math.random() < 0.3) {
-                 this.pickups.push(new Pickup(e.x, e.y, Math.random() < 0.5 ? "mana" : "hp", 10));
-              }
-              this.enemies.splice(j, 1);
-            }
-            hit = true;
-            break;
-          }
-        }
-      } else if (p.faction === "enemy" && this.player.hp > 0) {
-        if (Math.hypot(p.x - this.player.x, p.y - this.player.y) < p.radius + this.player.radius) {
-          const result = DamageSystem.damagePlayer(this.player, p.damage);
-          if (result.applied) audio.playHurt();
-          hit = true;
-        }
-      }
-      
-      if (hit) {
-        this.projectiles.splice(i, 1);
-      }
-    }
-  }
-
   draw(ctx: CanvasRenderingContext2D) {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -950,6 +1024,11 @@ export class DungeonState extends GameState {
        ctx.stroke();
        ctx.fillStyle = "rgba(231, 76, 60, 0.2)";
        ctx.fill();
+    }
+
+    const aimTarget = this.getClosestEnemy();
+    if (this.player.hp > 0 && aimTarget) {
+      EntityRenderer.drawTargetMarker(ctx, aimTarget, time);
     }
 
     if (this.chest) {

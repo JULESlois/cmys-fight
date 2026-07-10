@@ -2,6 +2,8 @@ export class Projectile {
   public id: number;
   public x: number;
   public y: number;
+  public previousX: number;
+  public previousY: number;
   public vx: number;
   public vy: number;
   public radius: number;
@@ -23,6 +25,8 @@ export class Projectile {
     this.id = Projectile.nextId++;
     this.x = x;
     this.y = y;
+    this.previousX = x;
+    this.previousY = y;
     this.vx = vx;
     this.vy = vy;
     this.radius = radius;
@@ -33,6 +37,8 @@ export class Projectile {
   }
 
   update(dt: number) {
+    this.previousX = this.x;
+    this.previousY = this.y;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.life -= dt;

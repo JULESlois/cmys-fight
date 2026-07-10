@@ -8,6 +8,21 @@ import { PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 export class EntityRenderer {
+  public static drawTargetMarker(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
+    const pulse = 1 + Math.sin(time * 8) * 0.15;
+    const radius = (enemy.type === "boss" ? 18 : 11) * pulse;
+    ctx.save();
+    ctx.translate(Math.round(enemy.x), Math.round(enemy.y + enemy.radius + 4));
+    ctx.strokeStyle = "rgba(0, 242, 254, 0.9)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radius, radius * 0.35, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(0, 242, 254, 0.75)";
+    ctx.fillRect(-1, -1, 2, 2);
+    ctx.restore();
+  }
+
     public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
     if (player.hp <= 0) return;
 

@@ -33,6 +33,9 @@ export class Player {
   public muzzleFlash: number = 0;
   public hitFlash: number = 0;
   public invulnerabilityTimer: number = 0;
+  public armorRechargeTimer: number = 3;
+  public armorRechargeDelay: number = 3;
+  public armorRechargeRate: number = 4;
 
   constructor(x: number, y: number) {
     this.x = x;

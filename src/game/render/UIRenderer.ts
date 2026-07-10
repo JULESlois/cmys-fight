@@ -55,7 +55,17 @@ export class UIRenderer {
     
     // Armor - Silver Blocks (max 10 blocks)
     if (player.maxArmor > 0) {
-        drawBar(10, 18, player.armor, player.maxArmor, 10, 5, "#BDC3C7", "#4D5656", false);
+        const armorRecharging = player.armor < player.maxArmor && player.armorRechargeTimer <= 0;
+        drawBar(10, 18, player.armor, player.maxArmor, 10, 5, armorRecharging ? "#00F2FE" : "#BDC3C7", "#4D5656", false);
+        if (player.armor < player.maxArmor) {
+            const readiness = armorRecharging
+              ? 1
+              : Math.max(0, 1 - player.armorRechargeTimer / player.armorRechargeDelay);
+            ctx.fillStyle = "#1a1c2c";
+            ctx.fillRect(10, 24, 59, 1);
+            ctx.fillStyle = armorRecharging ? "#00F2FE" : "#F1C40F";
+            ctx.fillRect(10, 24, Math.round(59 * readiness), 1);
+        }
     }
     
     // Mana - Blue Gems (max 10 blocks)
