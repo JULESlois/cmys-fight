@@ -39,6 +39,12 @@ export class Player {
   public armorRechargeTimer: number = 3;
   public armorRechargeDelay: number = 3;
   public armorRechargeRate: number = 4;
+  public skillCooldown: number = 0;
+  public skillActiveTimer: number = 0;
+  public skillDirectionX: number = 0;
+  public skillDirectionY: number = 0;
+  public rogueCritTimer: number = 0;
+  public knightGuardReady: boolean = false;
 
   constructor(x: number, y: number) {
     this.x = x;

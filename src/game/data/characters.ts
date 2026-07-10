@@ -22,7 +22,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     maxMana: 50,
     speed: 80,
     starterWeapon: "pistol",
-    passive: "Starts with high armor"
+    passive: "Full armor prepares a guard that reduces the next hit by 1"
   },
   mage: {
     id: "mage",
@@ -34,7 +34,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     maxMana: 150,
     speed: 90,
     starterWeapon: "laser",
-    passive: "High mana capacity"
+    passive: "Clearing a combat room restores 15 energy"
   },
   rogue: {
     id: "rogue",
@@ -46,6 +46,6 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     maxMana: 80,
     speed: 120,
     starterWeapon: "shotgun",
-    passive: "High movement speed"
+    passive: "Dashing grants +25% critical chance for 2 seconds"
   }
 };

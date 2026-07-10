@@ -18,20 +18,33 @@ const NO_DAMAGE: DamageResult = {
 export class DamageSystem {
   static updatePlayer(player: Player, dt: number): void {
     player.invulnerabilityTimer = Math.max(0, player.invulnerabilityTimer - dt);
-    if (player.hp <= 0 || player.maxArmor <= 0 || player.armor >= player.maxArmor) {
+    if (player.hp <= 0 || player.maxArmor <= 0) {
       return;
     }
 
     player.armorRechargeTimer = Math.max(0, player.armorRechargeTimer - dt);
-    if (player.armorRechargeTimer <= 0) {
+    if (player.armor < player.maxArmor && player.armorRechargeTimer <= 0) {
       player.armor = Math.min(player.maxArmor, player.armor + player.armorRechargeRate * dt);
+    }
+
+    if (
+      player.characterId === "knight" &&
+      player.armor >= player.maxArmor &&
+      player.armorRechargeTimer <= 0
+    ) {
+      player.knightGuardReady = true;
     }
   }
 
   static damagePlayer(player: Player, amount: number, invulnerabilityDuration = 0.55): DamageResult {
-    const damage = Math.max(0, amount);
+    let damage = Math.max(0, amount);
     if (damage <= 0 || player.hp <= 0 || player.invulnerabilityTimer > 0) {
       return { ...NO_DAMAGE, killed: player.hp <= 0 };
+    }
+
+    if (player.characterId === "knight" && player.knightGuardReady) {
+      damage = Math.max(0, damage - 1);
+      player.knightGuardReady = false;
     }
 
     const armorDamage = Math.min(player.armor, damage);

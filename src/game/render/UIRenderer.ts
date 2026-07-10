@@ -2,6 +2,7 @@ import { Player } from "../entities/Player";
 import { WEAPONS } from "../data/weapons";
 import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
+import { SkillController } from "../combat/SkillController";
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
@@ -77,6 +78,37 @@ export class UIRenderer {
     ctx.fillStyle = "#FFF";
     ctx.font = "9px monospace";
     ctx.fillText(`x ${engine.data.data.player.coins}`, 22, 42);
+
+    // Top center: character skill
+    const skill = SkillController.getConfig(player.characterId);
+    const skillReady = player.skillCooldown <= 0;
+    const skillActive = player.skillActiveTimer > 0;
+    ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
+    ctx.strokeStyle = skillReady ? "#2ECC71" : "rgba(0, 242, 254, 0.5)";
+    ctx.fillRect(132, 5, 92, 31);
+    ctx.strokeRect(132, 5, 92, 31);
+    ctx.fillStyle = skillReady ? "#2ECC71" : "#00F2FE";
+    ctx.font = "bold 7px monospace";
+    ctx.fillText(`E ${skill.name}`, 137, 15);
+    ctx.fillStyle = "#1a1c2c";
+    ctx.fillRect(137, 20, 81, 5);
+    const skillProgress = skillReady
+      ? 1
+      : Math.max(0, 1 - player.skillCooldown / skill.cooldown);
+    ctx.fillStyle = skillActive ? "#F1C40F" : skillReady ? "#2ECC71" : "#3498DB";
+    ctx.fillRect(138, 21, Math.round(79 * skillProgress), 3);
+    ctx.fillStyle = "#BDC3C7";
+    ctx.font = "6px monospace";
+    const skillStatus = skillActive
+      ? "ACTIVE"
+      : skillReady
+        ? "READY"
+        : `CD ${player.skillCooldown.toFixed(1)}S`;
+    ctx.fillText(skillStatus, 137, 32);
+    if (player.rogueCritTimer > 0) {
+      ctx.fillStyle = "#F1C40F";
+      ctx.fillText(`CRIT+ ${player.rogueCritTimer.toFixed(1)}S`, 178, 32);
+    }
     
     // Bottom Left: Dual weapon slots
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";

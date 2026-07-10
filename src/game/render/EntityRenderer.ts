@@ -29,6 +29,28 @@ export class EntityRenderer {
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
 
+    if (player.characterId === "knight" && player.skillActiveTimer > 0) {
+      ctx.strokeStyle = "rgba(241, 196, 15, 0.9)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-12, -18, 24, 26);
+    } else if (player.characterId === "rogue" && player.skillActiveTimer > 0) {
+      ctx.fillStyle = "rgba(46, 204, 113, 0.25)";
+      ctx.fillRect(
+        Math.round(-player.skillDirectionX * 18) - 7,
+        Math.round(-player.skillDirectionY * 18) - 14,
+        14,
+        22,
+      );
+    }
+
+    if (player.characterId === "knight" && player.knightGuardReady) {
+      ctx.strokeStyle = "rgba(0, 242, 254, 0.65)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, -4, 13, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.3)";
     ctx.beginPath();

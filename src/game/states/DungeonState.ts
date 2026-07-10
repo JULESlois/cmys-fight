@@ -18,6 +18,7 @@ import { EncounterController, EncounterDef } from "../EncounterController";
 import { DamageSystem } from "../combat/DamageSystem";
 import { WeaponController } from "../combat/WeaponController";
 import { segmentCircleHit } from "../combat/Collision";
+import { LightningArc, SkillController } from "../combat/SkillController";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -43,6 +44,7 @@ export class DungeonState extends GameState {
   private roomPhase: RoomPhase = "entering";
   private phaseTimer: number = 0;
   private encounterCtrl = new EncounterController();
+  private lightningArcs: LightningArc[] = [];
 
   constructor(engine: Engine) {
     super(engine);
@@ -61,6 +63,12 @@ export class DungeonState extends GameState {
     player.maxMana = savedP.maxMana;
     player.speed = savedP.speed;
     player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
+    player.skillCooldown = savedP.skillCooldown ?? 0;
+    player.skillActiveTimer = savedP.skillActiveTimer ?? 0;
+    player.skillDirectionX = savedP.skillDirectionX ?? 0;
+    player.skillDirectionY = savedP.skillDirectionY ?? 0;
+    player.rogueCritTimer = savedP.rogueCritTimer ?? 0;
+    player.knightGuardReady = savedP.knightGuardReady ?? player.characterId === "knight";
     return player;
   }
 
@@ -121,6 +129,12 @@ export class DungeonState extends GameState {
       : [this.player.weaponSlots[0]];
     savedP.activeWeaponSlot = this.player.activeWeaponSlot;
     savedP.currentWeaponId = this.player.currentWeaponId;
+    savedP.skillCooldown = this.player.skillCooldown;
+    savedP.skillActiveTimer = this.player.skillActiveTimer;
+    savedP.skillDirectionX = this.player.skillDirectionX;
+    savedP.skillDirectionY = this.player.skillDirectionY;
+    savedP.rogueCritTimer = this.player.rogueCritTimer;
+    savedP.knightGuardReady = this.player.knightGuardReady;
   }
 
   private syncRoomState() {
@@ -161,6 +175,7 @@ export class DungeonState extends GameState {
     this.projectiles = [];
     this.pickups = [];
     this.enemies = [];
+    this.lightningArcs = [];
     this.portal = undefined;
     this.chest = null;
     this.encounterCtrl = new EncounterController();
@@ -312,6 +327,9 @@ export class DungeonState extends GameState {
     } else if (phase === "cleared") {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
+      if (this.player.characterId === "mage") {
+        this.player.mana = Math.min(this.player.maxMana, this.player.mana + 15);
+      }
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       if (currentRoom) {
@@ -426,6 +444,17 @@ export class DungeonState extends GameState {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
     DamageSystem.updatePlayer(this.player, dt);
+    SkillController.update(this.player, dt);
+    this.updateLightningArcs(dt);
+
+    const canUseSkill = ["combat", "cleared", "reward", "exiting", "exploration"].includes(this.roomPhase);
+    if (
+      canUseSkill &&
+      this.transitionState === "none" &&
+      this.engine.input.wasPressed("e")
+    ) {
+      this.activateCharacterSkill();
+    }
 
     if (
       this.player.hp > 0 &&
@@ -490,6 +519,53 @@ export class DungeonState extends GameState {
     }
   }
 
+  private activateCharacterSkill() {
+    const result = SkillController.activate(
+      this.player,
+      this.enemies,
+      this.engine.input.getAxis(),
+      this.player.aimAngle,
+    );
+    if (!result.activated) return;
+
+    if (result.lightningArcs.length > 0) {
+      this.lightningArcs.push(...result.lightningArcs);
+      audio.playHit();
+    } else {
+      audio.playPickup();
+    }
+
+    if (result.killedEnemyIds.length > 0) {
+      const killed = new Set(result.killedEnemyIds);
+      for (let i = this.enemies.length - 1; i >= 0; i--) {
+        const enemy = this.enemies[i];
+        if (!killed.has(enemy.id)) continue;
+        this.spawnEnemyDeathDrop(enemy);
+        this.enemies.splice(i, 1);
+      }
+    }
+  }
+
+  private updateLightningArcs(dt: number) {
+    for (let i = this.lightningArcs.length - 1; i >= 0; i--) {
+      this.lightningArcs[i].life -= dt;
+      if (this.lightningArcs[i].life <= 0) {
+        this.lightningArcs.splice(i, 1);
+      }
+    }
+  }
+
+  private spawnEnemyDeathDrop(enemy: Enemy) {
+    if (Math.random() < 0.3) {
+      this.pickups.push(new Pickup(
+        enemy.x,
+        enemy.y,
+        Math.random() < 0.5 ? "mana" : "hp",
+        10,
+      ));
+    }
+  }
+
   private updateRoomPhase(dt: number) {
     // Player movement
     const isLocked = this.roomPhase === "entering" || this.roomPhase === "intro" || this.roomPhase === "locking" || this.portal?.state === "activating";
@@ -501,8 +577,14 @@ export class DungeonState extends GameState {
     
     if (this.player.hp > 0 && this.transitionState === "none") {
        const axis = this.engine.input.getAxis();
-       const nextX = this.player.x + axis.x * this.player.speed * speedMult * dt;
-       const nextY = this.player.y + axis.y * this.player.speed * speedMult * dt;
+       const isDashing = SkillController.isRogueDashing(this.player);
+       const moveX = isDashing ? this.player.skillDirectionX : axis.x;
+       const moveY = isDashing ? this.player.skillDirectionY : axis.y;
+       const moveSpeed = isDashing
+         ? SkillController.ROGUE_DASH_SPEED * (this.portal?.state === "activating" ? 0 : 1)
+         : this.player.speed * speedMult;
+       const nextX = this.player.x + moveX * moveSpeed * dt;
+       const nextY = this.player.y + moveY * moveSpeed * dt;
        
        if (!this.isCollidingWithMap(nextX, this.player.y, this.player.radius)) this.player.x = nextX;
        if (!this.isCollidingWithMap(this.player.x, nextY, this.player.radius)) this.player.y = nextY;
@@ -942,9 +1024,7 @@ export class DungeonState extends GameState {
             audio.playHit();
           }
           if (result.killed) {
-            if (Math.random() < 0.3) {
-              this.pickups.push(new Pickup(e.x, e.y, Math.random() < 0.5 ? "mana" : "hp", 10));
-            }
+            this.spawnEnemyDeathDrop(e);
             this.enemies.splice(closestEnemyIndex, 1);
           }
           entityHit = true;
@@ -1069,6 +1149,25 @@ export class DungeonState extends GameState {
        ctx.stroke();
        ctx.fillStyle = "rgba(231, 76, 60, 0.2)";
        ctx.fill();
+    }
+
+    for (const arc of this.lightningArcs) {
+      const alpha = Math.max(0, arc.life / arc.maxLife);
+      const midX = (arc.x1 + arc.x2) / 2;
+      const midY = (arc.y1 + arc.y2) / 2;
+      const dx = arc.x2 - arc.x1;
+      const dy = arc.y2 - arc.y1;
+      const length = Math.hypot(dx, dy) || 1;
+      const bend = 4 * alpha;
+      ctx.strokeStyle = `rgba(0, 242, 254, ${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(arc.x1, arc.y1);
+      ctx.lineTo(midX - dy / length * bend, midY + dx / length * bend);
+      ctx.lineTo(arc.x2, arc.y2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillRect(Math.round(arc.x2) - 2, Math.round(arc.y2) - 2, 4, 4);
     }
 
     const aimTarget = this.getClosestEnemy();

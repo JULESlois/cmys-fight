@@ -8,7 +8,7 @@ import {
   type WeaponSlots,
 } from "./data/weapons";
 
-const CURRENT_SAVE_VERSION = 4;
+const CURRENT_SAVE_VERSION = 5;
 
 export interface GameSave {
   player: {
@@ -29,6 +29,12 @@ export interface GameSave {
     coins: number;
     characterId: string;
     speed: number;
+    skillCooldown: number;
+    skillActiveTimer: number;
+    skillDirectionX: number;
+    skillDirectionY: number;
+    rogueCritTimer: number;
+    knightGuardReady: boolean;
   };
   settings: {
     masterVolume: number;
@@ -70,6 +76,12 @@ export const defaultSave: GameSave = {
     coins: 0,
     characterId: "knight",
     speed: 80,
+    skillCooldown: 0,
+    skillActiveTimer: 0,
+    skillDirectionX: 0,
+    skillDirectionY: 0,
+    rogueCritTimer: 0,
+    knightGuardReady: true,
   },
   settings: {
     masterVolume: 100,
@@ -102,6 +114,7 @@ export class GameData {
 
   save() {
     this.normalizePlayerWeapons();
+    this.normalizePlayerSkills();
     if (this.data.floor && Array.isArray(this.data.floor.rooms)) {
       for (const room of this.data.floor.rooms) {
         normalizeRoomState(room);
@@ -126,6 +139,10 @@ export class GameData {
           this.data.player.activeWeaponSlot = 0;
         }
         this.normalizePlayerWeapons();
+        if (typeof parsed.player?.knightGuardReady !== "boolean") {
+          this.data.player.knightGuardReady = this.data.player.characterId === "knight";
+        }
+        this.normalizePlayerSkills();
         this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
         this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
         this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
@@ -161,7 +178,7 @@ export class GameData {
 
   startNewRun(characterId: string) {
     const char = CHARACTERS[characterId] || CHARACTERS["knight"];
-    this.data.player.characterId = characterId;
+    this.data.player.characterId = char.id;
     this.data.player.x = 160;
     this.data.player.y = 120;
     this.data.player.maxHp = char.maxHp;
@@ -172,6 +189,7 @@ export class GameData {
     this.data.player.mana = char.maxMana;
     this.data.player.speed = char.speed;
     this.setStarterWeapons(char.starterWeapon);
+    this.resetSkillState(char.id);
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
@@ -190,6 +208,7 @@ export class GameData {
     this.data.player.maxMana = char.maxMana;
     this.data.player.speed = char.speed;
     this.setStarterWeapons(char.starterWeapon);
+    this.resetSkillState(this.data.player.characterId);
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
@@ -221,6 +240,30 @@ export class GameData {
     player.weaponSlots = normalizeWeaponSlots(player.weaponSlots, fallback);
     player.activeWeaponSlot = player.activeWeaponSlot === 1 && player.weaponSlots[1] ? 1 : 0;
     player.currentWeaponId = player.weaponSlots[player.activeWeaponSlot] ?? player.weaponSlots[0];
+  }
+
+  private resetSkillState(characterId: string) {
+    const player = this.data.player;
+    player.skillCooldown = 0;
+    player.skillActiveTimer = 0;
+    player.skillDirectionX = 0;
+    player.skillDirectionY = 0;
+    player.rogueCritTimer = 0;
+    player.knightGuardReady = characterId === "knight";
+  }
+
+  private normalizePlayerSkills() {
+    const player = this.data.player;
+    const finiteNonNegative = (value: unknown) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? Math.max(0, number) : 0;
+    };
+    player.skillCooldown = finiteNonNegative(player.skillCooldown);
+    player.skillActiveTimer = finiteNonNegative(player.skillActiveTimer);
+    player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
+    player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
+    player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
+    player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
   }
 
   logEvent(event: string) {

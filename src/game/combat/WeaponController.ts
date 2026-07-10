@@ -1,6 +1,7 @@
 import { WEAPONS, isWeaponId } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
+import { SkillController } from "./SkillController";
 
 export interface EquipWeaponResult {
   consumed: boolean;
@@ -88,23 +89,32 @@ export class WeaponController {
     const muzzle = player.getPlayerMuzzlePosition(aimAngle);
     const projectiles: Projectile[] = [];
 
-    for (let i = 0; i < weapon.pelletCount; i++) {
-      const angle = aimAngle + (random() - 0.5) * weapon.spread;
-      const critical = random() < weapon.critChance;
-      const damage = critical ? weapon.damage * 2 : weapon.damage;
-      projectiles.push(new Projectile(
-        muzzle.x,
-        muzzle.y,
-        Math.cos(angle) * weapon.bulletSpeed,
-        Math.sin(angle) * weapon.bulletSpeed,
-        3,
-        damage,
-        "player",
-        2,
-        weapon.color,
-        weapon.knockback,
-        critical,
-      ));
+    const dualFireActive = player.characterId === "knight" && player.skillActiveTimer > 0;
+    const volleyCount = dualFireActive ? 2 : 1;
+    const rogueCritBonus = player.characterId === "rogue" && player.rogueCritTimer > 0
+      ? SkillController.ROGUE_CRIT_BONUS
+      : 0;
+
+    for (let volley = 0; volley < volleyCount; volley++) {
+      const volleyOffset = dualFireActive ? (volley === 0 ? -0.035 : 0.035) : 0;
+      for (let i = 0; i < weapon.pelletCount; i++) {
+        const angle = aimAngle + volleyOffset + (random() - 0.5) * weapon.spread;
+        const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus);
+        const damage = critical ? weapon.damage * 2 : weapon.damage;
+        projectiles.push(new Projectile(
+          muzzle.x,
+          muzzle.y,
+          Math.cos(angle) * weapon.bulletSpeed,
+          Math.sin(angle) * weapon.bulletSpeed,
+          3,
+          damage,
+          "player",
+          2,
+          weapon.color,
+          weapon.knockback,
+          critical,
+        ));
+      }
     }
 
     return { fired: true, projectiles };
