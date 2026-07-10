@@ -1,5 +1,6 @@
 import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
+import { BuffSystem } from "./BuffSystem";
 
 export interface DamageResult {
   applied: boolean;
@@ -51,15 +52,22 @@ export class DamageSystem {
     const hpDamage = damage - armorDamage;
 
     player.armor = Math.max(0, player.armor - armorDamage);
+    const hpBefore = player.hp;
     player.hp = Math.max(0, player.hp - hpDamage);
+    let actualHpDamage = hpBefore - player.hp;
+    if (player.hp <= 0 && player.emergencyBarrierReady && BuffSystem.has(player, "emergency_barrier")) {
+      player.hp = 1;
+      actualHpDamage = Math.max(0, hpBefore - 1);
+      player.emergencyBarrierReady = false;
+    }
     player.invulnerabilityTimer = invulnerabilityDuration;
     player.armorRechargeTimer = player.armorRechargeDelay;
-    player.hitFlash = hpDamage > 0 ? 0.2 : 0.1;
+    player.hitFlash = actualHpDamage > 0 ? 0.2 : 0.1;
 
     return {
       applied: true,
       armorDamage,
-      hpDamage,
+      hpDamage: actualHpDamage,
       killed: player.hp <= 0,
     };
   }

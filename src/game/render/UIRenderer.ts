@@ -3,6 +3,7 @@ import { WEAPONS } from "../data/weapons";
 import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { SkillController } from "../combat/SkillController";
+import { BUFFS, BuffSystem } from "../combat/BuffSystem";
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
@@ -92,9 +93,10 @@ export class UIRenderer {
     ctx.fillText(`E ${skill.name}`, 137, 15);
     ctx.fillStyle = "#1a1c2c";
     ctx.fillRect(137, 20, 81, 5);
+    const effectiveSkillCooldown = skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
     const skillProgress = skillReady
       ? 1
-      : Math.max(0, 1 - player.skillCooldown / skill.cooldown);
+      : Math.max(0, 1 - player.skillCooldown / effectiveSkillCooldown);
     ctx.fillStyle = skillActive ? "#F1C40F" : skillReady ? "#2ECC71" : "#3498DB";
     ctx.fillRect(138, 21, Math.round(79 * skillProgress), 3);
     ctx.fillStyle = "#BDC3C7";
@@ -109,6 +111,18 @@ export class UIRenderer {
       ctx.fillStyle = "#F1C40F";
       ctx.fillText(`CRIT+ ${player.rogueCritTimer.toFixed(1)}S`, 178, 32);
     }
+
+    ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
+    ctx.fillRect(132, 39, 92, 12);
+    ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
+    ctx.strokeRect(132, 39, 92, 12);
+    player.buffs.forEach((id, index) => {
+      const buff = BUFFS[id];
+      const x = 135 + index * 17;
+      ctx.fillStyle = buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
+      ctx.font = "bold 5px monospace";
+      ctx.fillText(buff.shortCode, x, 47);
+    });
     
     // Bottom Left: Dual weapon slots
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";

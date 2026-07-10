@@ -1,6 +1,7 @@
 import { DamageSystem } from "./DamageSystem";
 import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
+import { BuffSystem } from "./BuffSystem";
 
 export type SkillId = "dual_fire" | "chain_lightning" | "shadow_dash";
 
@@ -94,10 +95,15 @@ export class SkillController {
     if (player.skillCooldown > 0) return { ...EMPTY_RESULT, reason: "cooldown" };
 
     const config = SkillController.getConfig(player.characterId);
+    const cooldown = config.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
+    const restoreEnergy = () => {
+      player.mana = Math.min(player.maxMana, player.mana + BuffSystem.getSkillEnergyRestore(player));
+    };
 
     if (config.id === "dual_fire") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = config.cooldown;
+      player.skillCooldown = cooldown;
+      restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -109,8 +115,9 @@ export class SkillController {
       player.skillDirectionX /= length;
       player.skillDirectionY /= length;
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = config.cooldown;
+      player.skillCooldown = cooldown;
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, config.duration + 0.08);
+      restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -143,7 +150,8 @@ export class SkillController {
       current = SkillController.findClosestEnemy(fromX, fromY, enemies, visited, 82);
     }
 
-    player.skillCooldown = config.cooldown;
+    player.skillCooldown = cooldown;
+    restoreEnergy();
     return { activated: true, killedEnemyIds, lightningArcs };
   }
 

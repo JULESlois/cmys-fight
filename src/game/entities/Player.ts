@@ -1,4 +1,5 @@
 import type { WeaponSlots } from "../data/weapons";
+import type { BuffId } from "../combat/BuffSystem";
 
 export const PLAYER_WEAPON_OFFSET_X = 10;
 export const PLAYER_WEAPON_OFFSET_Y = -2;
@@ -45,6 +46,8 @@ export class Player {
   public skillDirectionY: number = 0;
   public rogueCritTimer: number = 0;
   public knightGuardReady: boolean = false;
+  public buffs: BuffId[] = [];
+  public emergencyBarrierReady: boolean = false;
 
   constructor(x: number, y: number) {
     this.x = x;

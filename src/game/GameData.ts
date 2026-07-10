@@ -16,8 +16,9 @@ import {
   type WeaponSlots,
 } from "./data/weapons";
 import { hashSeed, normalizeSeed } from "./Random";
+import { BuffSystem, type BuffId } from "./combat/BuffSystem";
 
-const CURRENT_SAVE_VERSION = 7;
+const CURRENT_SAVE_VERSION = 8;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -45,6 +46,8 @@ export interface GameSave {
     skillDirectionY: number;
     rogueCritTimer: number;
     knightGuardReady: boolean;
+    buffs: BuffId[];
+    emergencyBarrierReady: boolean;
   };
   settings: {
     masterVolume: number;
@@ -94,6 +97,8 @@ export const defaultSave: GameSave = {
     skillDirectionY: 0,
     rogueCritTimer: 0,
     knightGuardReady: true,
+    buffs: [],
+    emergencyBarrierReady: false,
   },
   settings: {
     masterVolume: 100,
@@ -128,6 +133,7 @@ export class GameData {
   save() {
     this.normalizePlayerWeapons();
     this.normalizePlayerSkills();
+    this.normalizePlayerBuffs();
     this.data.run = normalizeRunProgress(this.data.run);
     this.normalizeStageMetadata();
     for (const room of this.data.floor.rooms) {
@@ -160,6 +166,7 @@ export class GameData {
         this.data.player.knightGuardReady = this.data.player.characterId === "knight";
       }
       this.normalizePlayerSkills();
+      this.normalizePlayerBuffs();
       this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
       this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
       this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
@@ -211,6 +218,7 @@ export class GameData {
     this.data.player.speed = char.speed;
     this.setStarterWeapons(char.starterWeapon);
     this.resetSkillState(char.id);
+    this.resetBuffState();
     this.data.player.coins = 0;
     this.data.run = createInitialRunProgress();
     this.data.floor = generateStage(this.data.run);
@@ -233,6 +241,7 @@ export class GameData {
     this.data.player.speed = char.speed;
     this.setStarterWeapons(char.starterWeapon);
     this.resetSkillState(this.data.player.characterId);
+    this.resetBuffState();
     this.data.player.coins = 0;
     this.data.run = createInitialRunProgress();
     this.data.floor = generateStage(this.data.run);
@@ -301,6 +310,18 @@ export class GameData {
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
     player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
+  }
+
+  private resetBuffState() {
+    this.data.player.buffs = [];
+    this.data.player.emergencyBarrierReady = false;
+  }
+
+  private normalizePlayerBuffs() {
+    const player = this.data.player;
+    player.buffs = BuffSystem.normalizeBuffs(player.buffs);
+    player.emergencyBarrierReady =
+      player.buffs.includes("emergency_barrier") && player.emergencyBarrierReady === true;
   }
 
   private normalizeStageMetadata() {

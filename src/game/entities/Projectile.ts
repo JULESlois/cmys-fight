@@ -13,6 +13,9 @@ export class Projectile {
   public color: string;
   public knockback: number;
   public critical: boolean;
+  public pierceRemaining: number;
+  public wallBouncesRemaining: number;
+  public hitEnemyIds: Set<number> = new Set();
 
   private static nextId = 0;
 
@@ -25,6 +28,8 @@ export class Projectile {
     color: string = "#FFF",
     knockback: number = 0,
     critical: boolean = false,
+    pierceRemaining: number = 0,
+    wallBouncesRemaining: number = 0,
   ) {
     this.id = Projectile.nextId++;
     this.x = x;
@@ -40,6 +45,8 @@ export class Projectile {
     this.color = color;
     this.knockback = knockback;
     this.critical = critical;
+    this.pierceRemaining = pierceRemaining;
+    this.wallBouncesRemaining = wallBouncesRemaining;
   }
 
   update(dt: number) {

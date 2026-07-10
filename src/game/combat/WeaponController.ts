@@ -2,6 +2,7 @@ import { WEAPONS, isWeaponId } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
 import { SkillController } from "./SkillController";
+import { BuffSystem } from "./BuffSystem";
 
 export interface EquipWeaponResult {
   consumed: boolean;
@@ -79,8 +80,9 @@ export class WeaponController {
       return { fired: false, projectiles: [], reason: "energy" };
     }
 
+    const modifiers = BuffSystem.getWeaponModifiers(player);
     player.mana -= weapon.manaCost;
-    player.fireCooldown = 1 / weapon.fireRate;
+    player.fireCooldown = 1 / (weapon.fireRate * modifiers.fireRateMultiplier);
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;
     player.facing = Math.cos(aimAngle) >= 0 ? "right" : "left";
@@ -97,10 +99,11 @@ export class WeaponController {
 
     for (let volley = 0; volley < volleyCount; volley++) {
       const volleyOffset = dualFireActive ? (volley === 0 ? -0.035 : 0.035) : 0;
-      for (let i = 0; i < weapon.pelletCount; i++) {
+      for (let i = 0; i < weapon.pelletCount + modifiers.extraPellets; i++) {
         const angle = aimAngle + volleyOffset + (random() - 0.5) * weapon.spread;
-        const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus);
-        const damage = critical ? weapon.damage * 2 : weapon.damage;
+        const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus + modifiers.critChanceBonus);
+        const baseDamage = Math.max(1, Math.round(weapon.damage * modifiers.damageMultiplier));
+        const damage = critical ? baseDamage * 2 : baseDamage;
         projectiles.push(new Projectile(
           muzzle.x,
           muzzle.y,
@@ -111,8 +114,10 @@ export class WeaponController {
           "player",
           2,
           weapon.color,
-          weapon.knockback,
+          weapon.knockback + modifiers.knockbackBonus,
           critical,
+          modifiers.pierce,
+          modifiers.wallBounces,
         ));
       }
     }

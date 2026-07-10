@@ -21,6 +21,9 @@ import { WeaponController } from "../combat/WeaponController";
 import { segmentCircleHit } from "../combat/Collision";
 import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
+import { BuffSystem, type BuffId } from "../combat/BuffSystem";
+import { hashSeed } from "../Random";
+import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -47,6 +50,7 @@ export class DungeonState extends GameState {
   private phaseTimer: number = 0;
   private encounterCtrl = new EncounterController();
   private lightningArcs: LightningArc[] = [];
+  private buffSelection: BuffId[] | null = null;
 
   constructor(engine: Engine) {
     super(engine);
@@ -71,6 +75,9 @@ export class DungeonState extends GameState {
     player.skillDirectionY = savedP.skillDirectionY ?? 0;
     player.rogueCritTimer = savedP.rogueCritTimer ?? 0;
     player.knightGuardReady = savedP.knightGuardReady ?? player.characterId === "knight";
+    player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
+    player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
+    BuffSystem.applyRuntimeStats(player);
     return player;
   }
 
@@ -134,6 +141,8 @@ export class DungeonState extends GameState {
     savedP.skillDirectionY = this.player.skillDirectionY;
     savedP.rogueCritTimer = this.player.rogueCritTimer;
     savedP.knightGuardReady = this.player.knightGuardReady;
+    savedP.buffs = [...this.player.buffs];
+    savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
   }
 
   private syncRoomState() {
@@ -181,6 +190,9 @@ export class DungeonState extends GameState {
     
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: Room) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    this.buffSelection = !floor.buffChoiceCompleted && floor.buffChoiceOptions?.length
+      ? BuffSystem.normalizeBuffs(floor.buffChoiceOptions).slice(0, 3)
+      : null;
 
     if (!currentRoom) {
       console.error(`[DungeonState] Missing room at ${floor.currentRoomX},${floor.currentRoomY}`);
@@ -324,6 +336,7 @@ export class DungeonState extends GameState {
          markCombatCleared(currentRoom);
          currentRoom.enemies = [];
          currentRoom.encounterState = undefined;
+         this.prepareBuffChoice(floor, currentRoom);
       }
     } else if (phase === "reward") {
       // Spawn rewards
@@ -334,6 +347,44 @@ export class DungeonState extends GameState {
     }
   }
   
+  private prepareBuffChoice(floor: typeof this.engine.data.data.floor, currentRoom: Room) {
+    if (floor.buffChoiceCompleted || floor.buffChoiceOptions?.length) return;
+    if (this.player.buffs.length >= BuffSystem.MAX_BUFFS) {
+      floor.buffChoiceCompleted = true;
+      return;
+    }
+    const seed = hashSeed(floor.seed, `buff:${currentRoom.id}:${this.player.buffs.join(",")}`);
+    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3);
+    if (options.length === 0) {
+      floor.buffChoiceCompleted = true;
+      return;
+    }
+    floor.buffChoiceOptions = options;
+    floor.buffChoiceRoomId = currentRoom.id;
+    floor.buffChoiceCompleted = false;
+    this.buffSelection = [...options];
+  }
+
+  private updateBuffSelection() {
+    if (!this.buffSelection) return;
+    const keys = ["1", "2", "3"];
+    const selectedIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
+    if (selectedIndex < 0 || selectedIndex >= this.buffSelection.length) return;
+    const selected = this.buffSelection[selectedIndex];
+    if (!BuffSystem.acquire(this.player, selected)) return;
+
+    const floor = this.engine.data.data.floor;
+    floor.buffChoiceCompleted = true;
+    floor.buffChoiceOptions = undefined;
+    floor.buffChoiceRoomId = undefined;
+    this.buffSelection = null;
+    this.syncPlayerState();
+    this.syncRoomState();
+    this.engine.data.save();
+    audio.playPickup();
+    this.engine.input.clear();
+  }
+
   private spawnRoomRewards() {
     const floor = this.engine.data.data.floor;
     const difficulty = getStageDifficulty(floor);
@@ -394,6 +445,11 @@ export class DungeonState extends GameState {
         this.transitionState = "fade_in";
       }
       return; 
+    }
+
+    if (this.buffSelection) {
+      this.updateBuffSelection();
+      return;
     }
 
     if (this.engine.input.wasPressed("enter") && this.player.hp <= 0) {
@@ -990,7 +1046,7 @@ export class DungeonState extends GameState {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.update(dt);
-      const environmentHitT = this.getProjectileEnvironmentHitT(p);
+      let environmentHitT = this.getProjectileEnvironmentHitT(p);
       let entityHit = false;
 
       if (p.faction === "player") {
@@ -998,6 +1054,7 @@ export class DungeonState extends GameState {
         let closestHitT = Infinity;
         for (let j = this.enemies.length - 1; j >= 0; j--) {
           const e = this.enemies[j];
+          if (p.hitEnemyIds.has(e.id)) continue;
           const hit = segmentCircleHit(
             p.previousX, p.previousY, p.x, p.y,
             e.x, e.y, p.radius + e.radius,
@@ -1013,6 +1070,7 @@ export class DungeonState extends GameState {
           p.x = p.previousX + (p.x - p.previousX) * closestHitT;
           p.y = p.previousY + (p.y - p.previousY) * closestHitT;
           const result = DamageSystem.damageEnemy(e, p.damage);
+          p.hitEnemyIds.add(e.id);
           if (result.applied) {
             this.applyProjectileKnockback(e, p);
             audio.playHit();
@@ -1021,7 +1079,11 @@ export class DungeonState extends GameState {
             this.spawnEnemyDeathDrop(e);
             this.enemies.splice(closestEnemyIndex, 1);
           }
-          entityHit = true;
+          if (p.pierceRemaining > 0) {
+            p.pierceRemaining--;
+          } else {
+            entityHit = true;
+          }
         }
       } else if (p.faction === "enemy" && this.player.hp > 0) {
         const hit = segmentCircleHit(
@@ -1035,6 +1097,19 @@ export class DungeonState extends GameState {
           if (result.applied) audio.playHurt();
           entityHit = true;
         }
+      }
+
+      if (!entityHit && environmentHitT !== null && p.wallBouncesRemaining > 0) {
+        const proposedX = p.x;
+        const proposedY = p.y;
+        const blockedX = proposedX < 0 || proposedX > 320 || this.isCollidingWithMap(proposedX, p.previousY, p.radius);
+        const blockedY = proposedY < 0 || proposedY > 240 || this.isCollidingWithMap(p.previousX, proposedY, p.radius);
+        if (blockedX || (!blockedX && !blockedY)) p.vx *= -1;
+        if (blockedY || (!blockedX && !blockedY)) p.vy *= -1;
+        p.x = p.previousX;
+        p.y = p.previousY;
+        p.wallBouncesRemaining--;
+        environmentHitT = null;
       }
 
       if (entityHit || environmentHitT !== null || p.life <= 0) {
@@ -1222,6 +1297,10 @@ export class DungeonState extends GameState {
     
     MinimapRenderer.draw(ctx, floor);
     PromptRenderer.draw(ctx, this.getInteractTarget(), time);
+
+    if (this.buffSelection) {
+      BuffSelectionRenderer.draw(ctx, this.buffSelection);
+    }
     
     if (this.player.hp <= 0) {
       ctx.fillStyle = "rgba(0,0,0,0.7)";

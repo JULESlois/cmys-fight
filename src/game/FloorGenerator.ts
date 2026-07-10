@@ -9,6 +9,7 @@ import {
   type RunProgress,
 } from "./RunProgress";
 import { createRandomSeed, createSeededRandom, hashSeed, type RandomSource } from "./Random";
+import type { BuffId } from "./combat/BuffSystem";
 
 export type ThemeId = "forest" | "dungeon" | "snow" | "lava";
 
@@ -55,6 +56,9 @@ export interface StageData {
   globalStageIndex: number;
   isBossStage: boolean;
   seed: number;
+  buffChoiceOptions?: BuffId[];
+  buffChoiceRoomId?: string;
+  buffChoiceCompleted?: boolean;
   theme: ThemeId;
   rooms: Room[];
   currentRoomX: number;
