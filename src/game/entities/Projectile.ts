@@ -19,6 +19,7 @@ export class Projectile {
   public wallBouncesRemaining: number;
   public statusEffect?: StatusEffectId;
   public statusDuration: number;
+  public sourceBoss: boolean;
   public hitEnemyIds: Set<number> = new Set();
 
   private static nextId = 0;
@@ -36,6 +37,7 @@ export class Projectile {
     wallBouncesRemaining: number = 0,
     statusEffect?: StatusEffectId,
     statusDuration: number = 0,
+    sourceBoss: boolean = false,
   ) {
     this.id = Projectile.nextId++;
     this.x = x;
@@ -55,6 +57,7 @@ export class Projectile {
     this.wallBouncesRemaining = wallBouncesRemaining;
     this.statusEffect = statusEffect;
     this.statusDuration = statusDuration;
+    this.sourceBoss = sourceBoss;
   }
 
   update(dt: number) {

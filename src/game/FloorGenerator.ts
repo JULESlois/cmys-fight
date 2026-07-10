@@ -67,6 +67,8 @@ export interface StageData {
   globalStageIndex: number;
   isBossStage: boolean;
   hardMode: boolean;
+  challengeId?: import("./ChallengeSystem").ChallengeId;
+  challengeKey?: string;
   seed: number;
   buffChoiceOptions?: BuffId[];
   buffChoiceRoomId?: string;
@@ -207,6 +209,8 @@ function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, ra
     globalStageIndex: progress.globalStageIndex,
     isBossStage: true,
     hardMode: progress.hardMode,
+    challengeId: progress.challengeId,
+    challengeKey: progress.challengeKey,
     seed,
     theme,
     rooms,
@@ -290,6 +294,8 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
     globalStageIndex: progress.globalStageIndex,
     isBossStage: false,
     hardMode: progress.hardMode,
+    challengeId: progress.challengeId,
+    challengeKey: progress.challengeKey,
     seed,
     theme,
     rooms,

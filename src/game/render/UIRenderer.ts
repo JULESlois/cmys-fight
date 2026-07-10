@@ -214,7 +214,7 @@ export class UIRenderer {
     ctx.textAlign = "right";
     ctx.fillStyle = "#FFF";
     ctx.font = "bold 9px monospace";
-    const modeLabel = floor.hardMode ? " HARD" : "";
+    const modeLabel = floor.challengeId ? " HARD+CH" : floor.hardMode ? " HARD" : "";
     ctx.fillText(`${floor.chapterIndex}-${floor.stageIndex} ${floor.theme.toUpperCase()}${modeLabel}`, 310, 222);
     
     if (currentRoom) {

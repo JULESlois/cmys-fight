@@ -3,6 +3,8 @@ import { getStageLabel, createRunProgressFromGlobalStage } from "../RunProgress"
 import type { RunSummary } from "../RunStats";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { GameState } from "./GameState";
+import { ACHIEVEMENTS, type AchievementId } from "../AchievementSystem";
+import { CHALLENGES } from "../ChallengeSystem";
 
 function formatTime(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
@@ -21,6 +23,10 @@ export class RunResultState extends GameState {
   enter(params?: { summary?: RunSummary }) {
     this.summary = params?.summary ?? {
       ...this.engine.data.data.runStats,
+      baseReward: 0,
+      challengeReward: 0,
+      achievementReward: 0,
+      newAchievements: [],
       rewardEarned: 0,
       totalCurrency: this.engine.data.meta.currency,
       newUnlocks: [],
@@ -102,21 +108,42 @@ export class RunResultState extends GameState {
     ctx.font = "7px monospace";
     ctx.fillText(`TOTAL SHARDS: ${summary.totalCurrency}`, 160, 173);
 
-    if (summary.newUnlocks.length > 0) {
+    if (!summary.alreadyClaimed) {
+      ctx.fillStyle = "#7F8C8D";
+      ctx.font = "6px monospace";
+      ctx.fillText(
+        `RUN ${summary.baseReward} | CHALLENGE ${summary.challengeReward} | ACHIEVEMENT ${summary.achievementReward}`,
+        160,
+        182,
+      );
+    }
+
+    if (summary.challengeCompleted && this.engine.data.data.run.challengeId) {
+      const challenge = CHALLENGES[this.engine.data.data.run.challengeId];
+      ctx.fillStyle = "#F1C40F";
+      ctx.font = "bold 7px monospace";
+      ctx.fillText(`CHALLENGE COMPLETE: ${challenge.name}`, 160, 191);
+    }
+
+    const achievementNames = summary.newAchievements
+      .map(id => ACHIEVEMENTS[id as AchievementId]?.name)
+      .filter(Boolean);
+    const notices = [...achievementNames, ...summary.newUnlocks];
+    if (notices.length > 0) {
       ctx.fillStyle = "#2ECC71";
       ctx.font = "bold 7px monospace";
-      const firstLine = summary.newUnlocks.slice(0, 2).join(" / ");
-      const secondLine = summary.newUnlocks.slice(2, 4).join(" / ");
-      ctx.fillText(`UNLOCKED: ${firstLine}`, 160, 187);
-      if (secondLine) ctx.fillText(secondLine, 160, 197);
+      const firstLine = notices.slice(0, 2).join(" / ");
+      const secondLine = notices.slice(2, 4).join(" / ");
+      ctx.fillText(`UNLOCKED: ${firstLine}`, 160, 200);
+      if (secondLine) ctx.fillText(secondLine, 160, 209);
     }
 
     ctx.fillStyle = "#00F2FE";
     ctx.font = "bold 8px monospace";
-    ctx.fillText("ENTER: TITLE", 160, 214);
+    ctx.fillText("ENTER: TITLE", 160, 220);
     ctx.fillStyle = "#7F8C8D";
     ctx.font = "7px monospace";
-    ctx.fillText("R: NEW RUN", 160, 228);
+    ctx.fillText("R: NEW RUN", 160, 233);
     ctx.textAlign = "left";
   }
 }

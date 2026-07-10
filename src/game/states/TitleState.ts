@@ -115,7 +115,7 @@ export class TitleState extends GameState {
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
     ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
-    ctx.fillText("v0.4.0 - DEEP HUB", 160, 230);
+    ctx.fillText("v0.5.0 - ARCHIVE TRIALS", 160, 230);
     ctx.textAlign = "left";
   }
 }

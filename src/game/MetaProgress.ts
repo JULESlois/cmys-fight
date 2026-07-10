@@ -1,4 +1,7 @@
 import { createDefaultMetaUpgrades, normalizeMetaUpgrades, type MetaUpgradeLevels } from "./MetaUpgrades";
+import { createDefaultCodex, normalizeCodex, type CodexProgress } from "./Codex";
+import { isAchievementId, type AchievementId } from "./AchievementSystem";
+import { isChallengeId, type ChallengeId } from "./ChallengeSystem";
 
 export interface MetaProgress {
   version: number;
@@ -13,9 +16,18 @@ export interface MetaProgress {
   upgrades: MetaUpgradeLevels;
   hardModeUnlocked: boolean;
   preferredHardMode: boolean;
+  preferredChallengeId?: ChallengeId;
+  lifetimeKills: number;
+  lifetimeEliteKills: number;
+  lifetimeBossKills: number;
+  completedChallenges: number;
+  claimedChallengeKeys: string[];
+  unlockedAchievements: AchievementId[];
+  claimedAchievementRewards: AchievementId[];
+  codex: CodexProgress;
 }
 
-export const META_SAVE_VERSION = 2;
+export const META_SAVE_VERSION = 3;
 
 export function createDefaultMetaProgress(): MetaProgress {
   return {
@@ -31,6 +43,15 @@ export function createDefaultMetaProgress(): MetaProgress {
     upgrades: createDefaultMetaUpgrades(),
     hardModeUnlocked: false,
     preferredHardMode: false,
+    preferredChallengeId: undefined,
+    lifetimeKills: 0,
+    lifetimeEliteKills: 0,
+    lifetimeBossKills: 0,
+    completedChallenges: 0,
+    claimedChallengeKeys: [],
+    unlockedAchievements: [],
+    claimedAchievementRewards: [],
+    codex: createDefaultCodex(),
   };
 }
 
@@ -60,11 +81,21 @@ export function normalizeMetaProgress(value: unknown): MetaProgress {
     upgrades: normalizeMetaUpgrades(raw.upgrades),
     hardModeUnlocked: raw.hardModeUnlocked === true || Math.max(0, Math.floor(Number(raw.victories) || 0)) > 0,
     preferredHardMode: raw.preferredHardMode === true,
+    preferredChallengeId: isChallengeId(raw.preferredChallengeId) ? raw.preferredChallengeId : undefined,
+    lifetimeKills: Math.max(0, Math.floor(Number(raw.lifetimeKills) || 0)),
+    lifetimeEliteKills: Math.max(0, Math.floor(Number(raw.lifetimeEliteKills) || 0)),
+    lifetimeBossKills: Math.max(0, Math.floor(Number(raw.lifetimeBossKills) || 0)),
+    completedChallenges: Math.max(0, Math.floor(Number(raw.completedChallenges) || 0)),
+    claimedChallengeKeys: uniqueStrings(raw.claimedChallengeKeys).slice(-100),
+    unlockedAchievements: uniqueStrings(raw.unlockedAchievements).filter(isAchievementId),
+    claimedAchievementRewards: uniqueStrings(raw.claimedAchievementRewards).filter(isAchievementId),
+    codex: normalizeCodex(raw.codex),
   };
   if (!meta.unlockedCharacters.includes("knight")) meta.unlockedCharacters.unshift("knight");
   if (!meta.unlockedStarterWeapons.includes("pistol")) meta.unlockedStarterWeapons.unshift("pistol");
   applyMetaUnlocks(meta);
   meta.preferredHardMode = meta.hardModeUnlocked && meta.preferredHardMode;
+  if (!meta.preferredHardMode) meta.preferredChallengeId = undefined;
   return meta;
 }
 

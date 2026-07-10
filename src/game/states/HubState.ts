@@ -9,6 +9,7 @@ import {
 import { audio } from "../audio/AudioManager";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { GameState } from "./GameState";
+import { CHALLENGES, getDailyChallengeId } from "../ChallengeSystem";
 
 export class HubState extends GameState {
   private selectedIndex = 0;
@@ -21,6 +22,10 @@ export class HubState extends GameState {
 
   enter() {
     this.engine.data.loadMeta();
+    const daily = getDailyChallengeId();
+    if (this.engine.data.meta.preferredChallengeId && this.engine.data.meta.preferredChallengeId !== daily) {
+      this.engine.data.setPreferredChallenge(undefined);
+    }
     this.selectedIndex = Math.min(this.selectedIndex, META_UPGRADE_IDS.length - 1);
     this.message = "SPACE: PREPARE RUN";
     this.refundArmed = false;
@@ -60,6 +65,22 @@ export class HubState extends GameState {
         this.message = `HARD MODE ${enabled ? "ENABLED" : "DISABLED"}`;
         audio.playPickup();
       }
+    }
+    if (this.engine.input.wasPressed("c")) {
+      if (!this.engine.data.meta.hardModeUnlocked || !this.engine.data.meta.preferredHardMode) {
+        this.message = "ENABLE HARD MODE BEFORE SELECTING A CHALLENGE";
+        audio.playHurt();
+      } else {
+        const daily = getDailyChallengeId();
+        const next = this.engine.data.meta.preferredChallengeId === daily ? undefined : daily;
+        this.engine.data.setPreferredChallenge(next);
+        this.message = next ? `${CHALLENGES[next].name} SELECTED` : "CHALLENGE DISABLED";
+        audio.playPickup();
+      }
+    }
+    if (this.engine.input.wasPressed("a")) {
+      this.engine.switchState("records");
+      return;
     }
     if (this.engine.input.wasPressed("r")) {
       this.refundArmed = true;
@@ -103,8 +124,12 @@ export class HubState extends GameState {
     MenuRenderer.drawTitle(ctx, "THE DEEP HUB", 160, 22);
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
-    ctx.font = "bold 10px monospace";
-    ctx.fillText(`SOUL SHARDS: ${meta.currency}`, 160, 39);
+    ctx.font = "bold 8px monospace";
+    ctx.fillText(
+      `SHARDS ${meta.currency} // ACH ${meta.unlockedAchievements.length}/6 // TRIALS ${meta.completedChallenges}`,
+      160,
+      39,
+    );
 
     META_UPGRADE_IDS.forEach((id, index) => {
       const definition = META_UPGRADES[id];
@@ -145,19 +170,28 @@ export class HubState extends GameState {
       160,
       205,
     );
+    const dailyChallenge = getDailyChallengeId();
+    const challengeEnabled = meta.preferredChallengeId === dailyChallenge && meta.preferredHardMode;
+    ctx.fillStyle = challengeEnabled ? "#F1C40F" : "#5D6D7E";
+    ctx.font = "bold 6px monospace";
+    ctx.fillText(
+      `C ${CHALLENGES[dailyChallenge].name}: ${CHALLENGES[dailyChallenge].shortObjective} ${challengeEnabled ? "ON" : "OFF"} +${CHALLENGES[dailyChallenge].reward}`,
+      160,
+      213,
+    );
     ctx.fillStyle = "#7F8C8D";
     ctx.font = "6px monospace";
     ctx.fillText(
       `RUN BONUS HP+${bonuses.maxHp} AR+${bonuses.maxArmor} COIN+${bonuses.startingCoins} REROLL ${bonuses.buffRerolls}`,
       160,
-      215,
+      221,
     );
     ctx.fillStyle = this.refundArmed ? "#E74C3C" : "#00F2FE";
     ctx.font = "bold 7px monospace";
-    ctx.fillText(this.message, 160, 225);
+    ctx.fillText(this.message, 160, 230);
     ctx.fillStyle = "#BDC3C7";
     ctx.font = "6px monospace";
-    ctx.fillText("ENTER BUY | SPACE START | R REFUND | ESC TITLE", 160, 236);
+    ctx.fillText("ENTER BUY | SPACE START | A RECORDS | H/C MODE | ESC", 160, 239);
     ctx.textAlign = "left";
   }
 }

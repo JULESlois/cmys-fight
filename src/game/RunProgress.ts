@@ -1,3 +1,5 @@
+import { isChallengeId, type ChallengeId } from "./ChallengeSystem";
+
 export const STAGES_PER_CHAPTER = 5;
 export const FINAL_CHAPTER = 4;
 export const FINAL_GLOBAL_STAGE = FINAL_CHAPTER * STAGES_PER_CHAPTER;
@@ -8,23 +10,36 @@ export interface RunProgress {
   globalStageIndex: number;
   stagesCleared: number;
   hardMode: boolean;
+  challengeId?: ChallengeId;
+  challengeKey?: string;
 }
 
 export function getGlobalStageIndex(chapterIndex: number, stageIndex: number): number {
   return (chapterIndex - 1) * STAGES_PER_CHAPTER + stageIndex;
 }
 
-export function createInitialRunProgress(hardMode = false): RunProgress {
+export function createInitialRunProgress(
+  hardMode = false,
+  challengeId?: ChallengeId,
+  challengeKey?: string,
+): RunProgress {
   return {
     chapterIndex: 1,
     stageIndex: 1,
     globalStageIndex: 1,
     stagesCleared: 0,
     hardMode,
+    challengeId: hardMode ? challengeId : undefined,
+    challengeKey: hardMode && challengeId ? challengeKey : undefined,
   };
 }
 
-export function createRunProgressFromGlobalStage(globalStageIndex: number, hardMode = false): RunProgress {
+export function createRunProgressFromGlobalStage(
+  globalStageIndex: number,
+  hardMode = false,
+  challengeId?: ChallengeId,
+  challengeKey?: string,
+): RunProgress {
   const safeGlobal = Math.max(1, Math.floor(Number(globalStageIndex) || 1));
   const chapterIndex = Math.floor((safeGlobal - 1) / STAGES_PER_CHAPTER) + 1;
   const stageIndex = ((safeGlobal - 1) % STAGES_PER_CHAPTER) + 1;
@@ -34,6 +49,8 @@ export function createRunProgressFromGlobalStage(globalStageIndex: number, hardM
     globalStageIndex: safeGlobal,
     stagesCleared: safeGlobal - 1,
     hardMode,
+    challengeId: hardMode ? challengeId : undefined,
+    challengeKey: hardMode && challengeId ? challengeKey : undefined,
   };
 }
 
@@ -50,6 +67,10 @@ export function normalizeRunProgress(value: Partial<RunProgress> | undefined): R
     Math.floor(Number(value.stagesCleared) || 0),
   );
   const hardMode = value.hardMode === true;
+  const challengeId = hardMode && isChallengeId(value.challengeId) ? value.challengeId : undefined;
+  const challengeKey = challengeId && typeof value.challengeKey === "string" && value.challengeKey.length > 0
+    ? value.challengeKey
+    : undefined;
 
   return {
     chapterIndex: normalizedChapter,
@@ -57,12 +78,19 @@ export function normalizeRunProgress(value: Partial<RunProgress> | undefined): R
     globalStageIndex,
     stagesCleared,
     hardMode,
+    challengeId,
+    challengeKey,
   };
 }
 
 export function advanceRunProgress(progress: RunProgress): RunProgress {
   const normalized = normalizeRunProgress(progress);
-  const next = createRunProgressFromGlobalStage(normalized.globalStageIndex + 1, normalized.hardMode);
+  const next = createRunProgressFromGlobalStage(
+    normalized.globalStageIndex + 1,
+    normalized.hardMode,
+    normalized.challengeId,
+    normalized.challengeKey,
+  );
   next.stagesCleared = normalized.stagesCleared + 1;
   return next;
 }

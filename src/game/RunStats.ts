@@ -10,11 +10,20 @@ export interface RunStats {
   bossKills: number;
   highestStage: number;
   stagesCleared: number;
+  weaponsUsed: string[];
+  bossFightActive: boolean;
+  currentBossDamageTaken: number;
+  noHitBossKills: number;
+  challengeCompleted: boolean;
   outcome: RunOutcome;
   settled: boolean;
 }
 
 export interface RunSummary extends RunStats {
+  baseReward: number;
+  challengeReward: number;
+  achievementReward: number;
+  newAchievements: string[];
   rewardEarned: number;
   totalCurrency: number;
   newUnlocks: string[];
@@ -36,6 +45,11 @@ export function createRunStats(progress: RunProgress): RunStats {
     bossKills: 0,
     highestStage: Math.max(1, progress.globalStageIndex),
     stagesCleared: Math.max(0, progress.stagesCleared),
+    weaponsUsed: [],
+    bossFightActive: false,
+    currentBossDamageTaken: 0,
+    noHitBossKills: 0,
+    challengeCompleted: false,
     outcome: "active",
     settled: false,
   };
@@ -59,6 +73,13 @@ export function normalizeRunStats(value: unknown, progress: RunProgress): RunSta
     bossKills: Math.max(0, Math.floor(Number(raw.bossKills) || 0)),
     highestStage: Math.max(1, Math.floor(Number(raw.highestStage) || progress.globalStageIndex)),
     stagesCleared: Math.max(0, Math.floor(Number(raw.stagesCleared) || progress.stagesCleared)),
+    weaponsUsed: Array.isArray(raw.weaponsUsed)
+      ? [...new Set(raw.weaponsUsed.filter(value => typeof value === "string"))]
+      : [],
+    bossFightActive: raw.bossFightActive === true,
+    currentBossDamageTaken: Math.max(0, Number(raw.currentBossDamageTaken) || 0),
+    noHitBossKills: Math.max(0, Math.floor(Number(raw.noHitBossKills) || 0)),
+    challengeCompleted: raw.challengeCompleted === true,
     outcome,
     settled: raw.settled === true || outcome !== "active",
   };

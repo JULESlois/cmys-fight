@@ -126,6 +126,7 @@ export class DungeonState extends GameState {
              this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
           } else if (params.legacyType === "legacy_tactics") {
              this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
+             this.engine.data.discoverWeapon("laser");
              this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 100));
           }
        }
@@ -168,6 +169,12 @@ export class DungeonState extends GameState {
     savedP.buffRerollsRemaining = this.player.buffRerollsRemaining;
     savedP.shopDiscount = this.player.shopDiscount;
     savedP.supplyDropBonus = this.player.supplyDropBonus;
+    this.engine.data.discoverPlayerBuild();
+  }
+
+  private addEnemy(enemy: Enemy) {
+    this.enemies.push(enemy);
+    this.engine.data.discoverEnemy(enemy.enemyId);
   }
 
   private syncRoomState() {
@@ -230,6 +237,7 @@ export class DungeonState extends GameState {
     this.buffSelection = !floor.buffChoiceCompleted && floor.buffChoiceOptions?.length
       ? BuffSystem.normalizeBuffs(floor.buffChoiceOptions).slice(0, 3)
       : null;
+    for (const buffId of this.buffSelection ?? []) this.engine.data.discoverBuff(buffId);
 
     if (!currentRoom) {
       console.error(`[DungeonState] Missing room at ${floor.currentRoomX},${floor.currentRoomY}`);
@@ -247,6 +255,7 @@ export class DungeonState extends GameState {
       this.pickups = currentRoom.pickups.map((p: any) => {
         const pickup = new Pickup(p.x, p.y, p.type, p.value, p.weaponId);
         pickup.blockedUntilPlayerLeaves = p.blockedUntilPlayerLeaves === true;
+        if (p.weaponId) this.engine.data.discoverWeapon(p.weaponId);
         return pickup;
       });
     }
@@ -282,6 +291,10 @@ export class DungeonState extends GameState {
 
     if (currentRoom.type === "shop") {
       currentRoom.shopStock = ShopSystem.reconcileStock(floor, currentRoom, this.player);
+      for (const item of currentRoom.shopStock) {
+        if (item.weaponId) this.engine.data.discoverWeapon(item.weaponId);
+        if (item.buffId) this.engine.data.discoverBuff(item.buffId);
+      }
       this.setPhase("exploration");
       return;
     }
@@ -326,7 +339,7 @@ export class DungeonState extends GameState {
         if (savedEnemy.bossPhase !== undefined) enemy.bossPhase = savedEnemy.bossPhase;
         if (savedEnemy.attackSequence !== undefined) enemy.attackSequence = savedEnemy.attackSequence;
         enemy.statusEffects = StatusEffectSystem.normalize(savedEnemy.statusEffects);
-        this.enemies.push(enemy);
+        this.addEnemy(enemy);
       }
 
       if (currentRoom.encounterState) {
@@ -360,6 +373,11 @@ export class DungeonState extends GameState {
     } else if (phase === "locking") {
       this.phaseTimer = 0.5;
     } else if (phase === "combat") {
+      const activeFloor = this.engine.data.data.floor;
+      const activeRoom = activeFloor.rooms.find(
+        room => room.x === activeFloor.currentRoomX && room.y === activeFloor.currentRoomY,
+      );
+      if (activeRoom?.type === "boss") this.engine.data.startBossFight();
       if (options?.startEncounter === false) {
          return;
       }
@@ -413,6 +431,7 @@ export class DungeonState extends GameState {
     floor.buffChoiceCompleted = false;
     floor.buffChoiceRerollCount = floor.buffChoiceRerollCount ?? 0;
     this.buffSelection = [...options];
+    for (const buffId of options) this.engine.data.discoverBuff(buffId);
   }
 
   private updateBuffSelection() {
@@ -429,6 +448,7 @@ export class DungeonState extends GameState {
         floor.buffChoiceRerollCount = rerollCount;
         floor.buffChoiceOptions = options;
         this.buffSelection = [...options];
+        for (const buffId of options) this.engine.data.discoverBuff(buffId);
         this.syncPlayerState();
         this.engine.data.save();
         audio.playShoot();
@@ -839,7 +859,7 @@ export class DungeonState extends GameState {
       if (this.phaseTimer <= 0) this.setPhase("combat");
     } else if (this.roomPhase === "combat") {
       this.encounterCtrl.update(dt, this.enemies, (spawn) => {
-         this.enemies.push(EncounterFactory.createEnemy(this.engine.data.data.floor, spawn));
+         this.addEnemy(EncounterFactory.createEnemy(this.engine.data.data.floor, spawn));
       });
       if (!this.encounterCtrl.active && this.enemies.length === 0) {
          this.setPhase("cleared");
@@ -881,7 +901,10 @@ export class DungeonState extends GameState {
         EnvironmentSystem.isSpikeActive(hazard, this.environmentTime)
       ) {
         const result = DamageSystem.damagePlayer(this.player, 1, 0.35);
-        if (result.applied) audio.playHurt();
+        if (result.applied) {
+          this.engine.data.recordPlayerDamage(result.armorDamage + result.hpDamage, false);
+          audio.playHurt();
+        }
         hazard.triggerCooldown = 0.72;
       }
     }
@@ -979,6 +1002,7 @@ export class DungeonState extends GameState {
           currentRoom.rewardGenerated = true;
        }
        this.pickups.push(new Pickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
+       this.engine.data.discoverWeapon(this.chest.weaponId);
     } else if (target.type === "shop") {
        this.shopOpen = true;
        this.shopFailure = undefined;
@@ -1069,6 +1093,7 @@ export class DungeonState extends GameState {
     const result = WeaponController.fire(this.player, baseAngle);
     if (result.fired) {
       this.projectiles.push(...result.projectiles);
+      this.engine.data.recordWeaponUsed(this.player.currentWeaponId);
       audio.playShoot();
     }
   }
@@ -1275,6 +1300,10 @@ export class DungeonState extends GameState {
       if (distance <= enemy.radius + this.player.radius + 11 && Math.abs(angleDelta) <= Math.PI * 0.42) {
         const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
         if (result.applied) {
+          this.engine.data.recordPlayerDamage(
+            result.armorDamage + result.hpDamage,
+            enemy.type === "boss",
+          );
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1304,6 +1333,10 @@ export class DungeonState extends GameState {
       if (distance <= enemy.areaRadius + this.player.radius) {
         const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
         if (result.applied) {
+          this.engine.data.recordPlayerDamage(
+            result.armorDamage + result.hpDamage,
+            enemy.type === "boss",
+          );
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1337,6 +1370,7 @@ export class DungeonState extends GameState {
       0,
       enemy.statusEffect,
       enemy.statusDuration,
+      enemy.type === "boss",
     ));
   }
 
@@ -1365,6 +1399,10 @@ export class DungeonState extends GameState {
     if (hit) {
       const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
       if (result.applied) {
+        this.engine.data.recordPlayerDamage(
+          result.armorDamage + result.hpDamage,
+          enemy.type === "boss",
+        );
         this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
         audio.playHurt();
       }
@@ -1391,7 +1429,7 @@ export class DungeonState extends GameState {
       isElite: false,
     });
     summoned.attackCooldown = Math.max(0.6, summoned.attackCooldown);
-    this.enemies.push(summoned);
+    this.addEnemy(summoned);
   }
 
   private resolveBossAttack(enemy: Enemy) {
@@ -1479,6 +1517,10 @@ export class DungeonState extends GameState {
           p.y = hit.y;
           const result = DamageSystem.damagePlayer(this.player, p.damage);
           if (result.applied) {
+            this.engine.data.recordPlayerDamage(
+              result.armorDamage + result.hpDamage,
+              p.sourceBoss,
+            );
             if (
               result.armorDamage + result.hpDamage > 0 &&
               p.statusEffect &&

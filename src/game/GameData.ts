@@ -44,10 +44,23 @@ import {
   META_UPGRADES,
   type MetaUpgradeId,
 } from "./MetaUpgrades";
+import {
+  evaluateAchievements,
+  getAchievementReward,
+  type AchievementId,
+} from "./AchievementSystem";
+import {
+  evaluateChallenge,
+  getChallengeDateKey,
+  getChallengeReward,
+  isChallengeId,
+  type ChallengeId,
+} from "./ChallengeSystem";
+import { ENEMIES, isEnemyId } from "./data/enemies";
 
 export const RUN_SAVE_KEY = "retro_rpg_save";
 export const META_SAVE_KEY = "retro_rpg_meta";
-const CURRENT_SAVE_VERSION = 13;
+const CURRENT_SAVE_VERSION = 14;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -285,12 +298,20 @@ export class GameData {
     this.data.player.buffRerollsRemaining = bonuses.buffRerolls;
     this.data.player.shopDiscount = bonuses.shopDiscount;
     this.data.player.supplyDropBonus = bonuses.supplyDropBonus;
-    this.data.run = createInitialRunProgress(this.meta.hardModeUnlocked && hardMode);
+    const useHardMode = this.meta.hardModeUnlocked && hardMode;
+    this.data.run = createInitialRunProgress(
+      useHardMode,
+      useHardMode ? this.meta.preferredChallengeId : undefined,
+      useHardMode && this.meta.preferredChallengeId
+        ? getChallengeDateKey(this.meta.preferredChallengeId)
+        : undefined,
+    );
     this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.legacyData.clearedRooms = [];
     this.data.legacyData.legacyRewardsClaimed = [];
     this.data.saveVersion = CURRENT_SAVE_VERSION;
+    this.discoverPlayerBuild();
     this.save();
   }
 
@@ -314,12 +335,20 @@ export class GameData {
     this.data.player.buffRerollsRemaining = bonuses.buffRerolls;
     this.data.player.shopDiscount = bonuses.shopDiscount;
     this.data.player.supplyDropBonus = bonuses.supplyDropBonus;
-    this.data.run = createInitialRunProgress(this.meta.hardModeUnlocked && this.meta.preferredHardMode);
+    const useHardMode = this.meta.hardModeUnlocked && this.meta.preferredHardMode;
+    this.data.run = createInitialRunProgress(
+      useHardMode,
+      useHardMode ? this.meta.preferredChallengeId : undefined,
+      useHardMode && this.meta.preferredChallengeId
+        ? getChallengeDateKey(this.meta.preferredChallengeId)
+        : undefined,
+    );
     this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.legacyData.clearedRooms = [];
     this.data.legacyData.legacyRewardsClaimed = [];
     this.data.saveVersion = CURRENT_SAVE_VERSION;
+    this.discoverPlayerBuild();
     this.save();
   }
 
@@ -409,8 +438,49 @@ export class GameData {
       return false;
     }
     this.meta.preferredHardMode = enabled;
+    if (!enabled) this.meta.preferredChallengeId = undefined;
     this.saveMeta();
     return true;
+  }
+
+  public setPreferredChallenge(challengeId?: ChallengeId): boolean {
+    if (!this.meta.hardModeUnlocked || !this.meta.preferredHardMode) {
+      this.meta.preferredChallengeId = undefined;
+      this.saveMeta();
+      return false;
+    }
+    this.meta.preferredChallengeId = isChallengeId(challengeId) ? challengeId : undefined;
+    this.saveMeta();
+    return true;
+  }
+
+  public discoverEnemy(enemyId: string): void {
+    if (!isEnemyId(enemyId)) return;
+    const collection = ENEMIES[enemyId].role === "boss"
+      ? this.meta.codex.bosses
+      : this.meta.codex.enemies;
+    if (collection.includes(enemyId)) return;
+    collection.push(enemyId);
+    this.saveMeta();
+  }
+
+  public discoverWeapon(weaponId: string): void {
+    if (!isWeaponId(weaponId) || this.meta.codex.weapons.includes(weaponId)) return;
+    this.meta.codex.weapons.push(weaponId);
+    this.saveMeta();
+  }
+
+  public discoverBuff(buffId: BuffId): void {
+    if (this.meta.codex.buffs.includes(buffId)) return;
+    this.meta.codex.buffs.push(buffId);
+    this.saveMeta();
+  }
+
+  public discoverPlayerBuild(): void {
+    for (const weaponId of this.data.player.weaponSlots) {
+      if (weaponId) this.discoverWeapon(weaponId);
+    }
+    for (const buffId of this.data.player.buffs) this.discoverBuff(buffId);
   }
 
   public recordRunTime(dt: number): void {
@@ -419,11 +489,40 @@ export class GameData {
     this.data.runStats.elapsedSeconds += dt;
   }
 
-  public recordEnemyKill(enemy: Pick<Enemy, "type" | "isElite">): void {
+  public recordWeaponUsed(weaponId: string): void {
+    if (this.data.runStats.settled || this.data.runStats.outcome !== "active") return;
+    if (!this.data.runStats.weaponsUsed.includes(weaponId)) {
+      this.data.runStats.weaponsUsed.push(weaponId);
+    }
+    this.discoverWeapon(weaponId);
+  }
+
+  public startBossFight(): void {
+    if (this.data.runStats.bossFightActive) return;
+    this.data.runStats.bossFightActive = true;
+    this.data.runStats.currentBossDamageTaken = 0;
+  }
+
+  public recordPlayerDamage(amount: number, bossSource: boolean): void {
+    if (!bossSource || !this.data.runStats.bossFightActive) return;
+    this.data.runStats.currentBossDamageTaken += Math.max(0, amount);
+  }
+
+  public recordEnemyKill(
+    enemy: Pick<Enemy, "type" | "isElite"> & Partial<Pick<Enemy, "enemyId">>,
+  ): void {
     if (this.data.runStats.settled || this.data.runStats.outcome !== "active") return;
     this.data.runStats.kills++;
     if (enemy.isElite) this.data.runStats.eliteKills++;
-    if (enemy.type === "boss") this.data.runStats.bossKills++;
+    if (enemy.enemyId) this.discoverEnemy(enemy.enemyId);
+    if (enemy.type === "boss") {
+      this.data.runStats.bossKills++;
+      if (this.data.runStats.bossFightActive && this.data.runStats.currentBossDamageTaken <= 0) {
+        this.data.runStats.noHitBossKills++;
+      }
+      this.data.runStats.bossFightActive = false;
+      this.data.runStats.currentBossDamageTaken = 0;
+    }
   }
 
   public finalizeRun(outcome: Exclude<RunOutcome, "active">): RunSummary {
@@ -442,12 +541,44 @@ export class GameData {
     stats.outcome = resolvedOutcome;
     stats.settled = true;
 
+    let baseReward = 0;
+    let challengeReward = 0;
+    let achievementReward = 0;
     let rewardEarned = 0;
     let newUnlocks: string[] = [];
+    let newAchievements: AchievementId[] = [];
     if (!alreadyClaimed) {
-      rewardEarned = Math.round(
+      baseReward = Math.round(
         calculateRunReward(stats, resolvedOutcome) * (this.data.run.hardMode ? 1.5 : 1),
       );
+      stats.challengeCompleted = evaluateChallenge(this.data.run.challengeId, stats, resolvedOutcome);
+      const challengeAlreadyClaimed = Boolean(
+        this.data.run.challengeKey && this.meta.claimedChallengeKeys.includes(this.data.run.challengeKey),
+      );
+      challengeReward = stats.challengeCompleted && !challengeAlreadyClaimed
+        ? getChallengeReward(this.data.run.challengeId)
+        : 0;
+
+      this.meta.lifetimeKills += stats.kills;
+      this.meta.lifetimeEliteKills += stats.eliteKills;
+      this.meta.lifetimeBossKills += stats.bossKills;
+      if (stats.challengeCompleted && !challengeAlreadyClaimed) {
+        this.meta.completedChallenges++;
+        if (this.data.run.challengeKey) {
+          this.meta.claimedChallengeKeys.push(this.data.run.challengeKey);
+          this.meta.claimedChallengeKeys = this.meta.claimedChallengeKeys.slice(-100);
+        }
+      }
+
+      newAchievements = evaluateAchievements(this.meta, stats, resolvedOutcome, this.data.run.hardMode);
+      const unclaimedAchievements = newAchievements.filter(
+        id => !this.meta.claimedAchievementRewards.includes(id),
+      );
+      achievementReward = getAchievementReward(unclaimedAchievements);
+      this.meta.unlockedAchievements.push(...newAchievements);
+      this.meta.claimedAchievementRewards.push(...unclaimedAchievements);
+
+      rewardEarned = baseReward + challengeReward + achievementReward;
       this.meta.currency += rewardEarned;
       this.meta.highestStage = Math.max(this.meta.highestStage, stats.highestStage);
       this.meta.totalRuns++;
@@ -467,6 +598,10 @@ export class GameData {
     this.save();
     return {
       ...stats,
+      baseReward,
+      challengeReward,
+      achievementReward,
+      newAchievements,
       rewardEarned,
       totalCurrency: this.meta.currency,
       newUnlocks,
@@ -487,7 +622,7 @@ export class GameData {
     }
     try {
       const parsed = JSON.parse(saved);
-      const migrated = Number(parsed?.version || 0) < 2;
+      const migrated = Number(parsed?.version || 0) < 3;
       this.meta = normalizeMetaProgress(parsed);
       if (migrated) this.saveMeta();
     } catch (error) {
@@ -565,6 +700,8 @@ export class GameData {
     stage.globalStageIndex = run.globalStageIndex;
     stage.isBossStage = isBossStage(run);
     stage.hardMode = run.hardMode;
+    stage.challengeId = run.challengeId;
+    stage.challengeKey = run.challengeKey;
     stage.buffChoiceRerollCount = Math.max(0, Math.floor(Number(stage.buffChoiceRerollCount) || 0));
     const roomSignature = stage.rooms
       .map(room => `${room.id}:${room.type}`)
@@ -605,6 +742,8 @@ export class GameData {
     if (stage.chapterIndex !== run.chapterIndex || stage.stageIndex !== run.stageIndex) return false;
     if (stage.globalStageIndex !== run.globalStageIndex) return false;
     if ((stage.hardMode === true) !== run.hardMode) return false;
+    if (stage.challengeId !== run.challengeId) return false;
+    if (stage.challengeKey !== run.challengeKey) return false;
 
     const bossRooms = stage.rooms.filter((room: any) => room.type === "boss").length;
     const exitRooms = stage.rooms.filter((room: any) => room.type === "exit").length;
