@@ -25,6 +25,7 @@ export class Engine {
   private reqId: number = 0;
   private eventUnsubscribers: Array<() => void> = [];
   private cleanedUp: boolean = false;
+  private overlayState: string | null = null;
 
   constructor() {
     this.input = new Input();
@@ -85,6 +86,12 @@ export class Engine {
   }
 
   public switchState(newState: string, params?: any) {
+    if (newState === "menu") {
+      this.openMenu();
+      return;
+    }
+
+    this.closeOverlayInternal();
     this.states[this.currentState].exit();
     this.input.clear();
     this.currentState = newState;
@@ -92,6 +99,51 @@ export class Engine {
        this.isPaused = false;
     }
     this.states[this.currentState].enter(params);
+  }
+
+  public openMenu() {
+    if (this.overlayState) return;
+
+    this.states[this.currentState].prepareForSave();
+    this.isPaused = false;
+    this.input.clear();
+    this.overlayState = "menu";
+    this.states.menu.enter();
+  }
+
+  public closeMenu() {
+    if (this.overlayState !== "menu") return;
+    this.closeOverlayInternal();
+    this.input.clear();
+  }
+
+  public saveFromMenu() {
+    this.states[this.currentState].prepareForSave();
+    this.data.save();
+  }
+
+  public reloadSaveFromMenu() {
+    this.rebuildStateAfterDataChange("dungeon", () => this.data.load());
+  }
+
+  public resetGameFromMenu() {
+    this.rebuildStateAfterDataChange("dungeon", () => this.data.resetAll());
+  }
+
+  private closeOverlayInternal() {
+    if (!this.overlayState) return;
+    this.states[this.overlayState].exit();
+    this.overlayState = null;
+  }
+
+  private rebuildStateAfterDataChange(newState: string, mutateData: () => void) {
+    this.closeOverlayInternal();
+    this.states[this.currentState].exit();
+    mutateData();
+    this.input.clear();
+    this.isPaused = false;
+    this.currentState = newState;
+    this.states[this.currentState].enter();
   }
 
   private loop(time: number) {
@@ -111,6 +163,14 @@ export class Engine {
   }
 
   private update(dt: number) {
+    const cappedDt = Math.min(dt, 0.1);
+
+    if (this.overlayState) {
+      this.states[this.overlayState].update(cappedDt);
+      this.input.update();
+      return;
+    }
+
     const canPause = ["dungeon", "legacy_rpg", "legacy_tactics"].includes(this.currentState);
     if (canPause && this.input.wasPressed("p")) {
       this.isPaused = !this.isPaused;
@@ -120,15 +180,11 @@ export class Engine {
     }
 
     if (canPause && this.isPaused && this.input.wasPressed("enter")) {
-      const returnState = this.currentState;
       this.isPaused = false;
-      this.switchState("menu", { returnState });
+      this.openMenu();
       this.input.update();
       return;
     }
-
-    // Cap dt to prevent huge jumps
-    const cappedDt = Math.min(dt, 0.1);
     
     if (!this.isPaused) {
       this.states[this.currentState].update(cappedDt);
@@ -156,15 +212,17 @@ export class Engine {
     this.ctx.translate(offsetX, offsetY);
     this.ctx.scale(scale, scale);
 
-    // Some states like dialog might want the map to draw first, but for simplicity let's just let states draw their own bg.
-    // Dialog uses transparent bg over whatever was there. To make that work, we'd need to draw Map then Dialog.
+    // Dialog is transparent, so draw the owning Legacy RPG state underneath it.
     if (this.currentState === "legacy_dialog") {
       this.states["legacy_rpg"].draw(this.ctx);
-    } else if (this.currentState === "menu") {
-      this.states["dungeon"].draw(this.ctx);
+      this.states[this.currentState].draw(this.ctx);
+    } else {
+      this.states[this.currentState].draw(this.ctx);
     }
-    
-    this.states[this.currentState].draw(this.ctx);
+
+    if (this.overlayState) {
+      this.states[this.overlayState].draw(this.ctx);
+    }
 
     if (this.isPaused) {
       PauseOverlayRenderer.draw(this.ctx);

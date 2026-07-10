@@ -180,6 +180,14 @@ export class GameData {
     this.restartCurrentRun();
   }
 
+  resetAll() {
+    localStorage.removeItem("retro_rpg_save");
+    this.data = JSON.parse(JSON.stringify(defaultSave));
+    this.data.floor = generateFloor(1);
+    this.data.saveVersion = CURRENT_SAVE_VERSION;
+    this.save();
+  }
+
   logEvent(event: string) {
     this.data.recentEvents.push(event);
     if (this.data.recentEvents.length > 5) {

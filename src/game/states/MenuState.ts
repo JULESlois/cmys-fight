@@ -1,17 +1,13 @@
 import { GameState } from "./GameState";
-import { events } from "../EventBus";
-import { defaultSave } from "../GameData";
 
 export class MenuState extends GameState {
   private selection = 0;
   private options = ["RESUME JOURNEY", "ARCHIVE SAVE", "RESTORE ARCHIVE", "RESET GAME"];
   private message = "";
-  private returnState = "dungeon";
   
-  enter(params?: { returnState?: string }) {
+  enter() {
     this.selection = 0;
     this.message = "System Menu Loaded.";
-    this.returnState = params?.returnState || "dungeon";
   }
 
   exit() {}
@@ -29,29 +25,24 @@ export class MenuState extends GameState {
     }
     
     if (this.engine.input.wasPressed("escape")) {
-      events.emit("state:change", this.returnState, { resume: true });
+      this.engine.closeMenu();
     }
   }
   
   private handleSelect() {
     switch (this.selection) {
       case 0:
-        events.emit("state:change", this.returnState, { resume: true });
+        this.engine.closeMenu();
         break;
       case 1:
-        this.engine.data.save();
+        this.engine.saveFromMenu();
         this.message = "Archive save completed!";
         break;
       case 2:
-        this.engine.data.load();
-        this.returnState = "dungeon";
-        this.message = "Archive loaded!";
+        this.engine.reloadSaveFromMenu();
         break;
       case 3:
-        localStorage.removeItem("retro_rpg_save");
-        this.engine.data.data = JSON.parse(JSON.stringify(defaultSave));
-        this.returnState = "dungeon";
-        this.message = "Journey reset successfully!";
+        this.engine.resetGameFromMenu();
         break;
     }
   }

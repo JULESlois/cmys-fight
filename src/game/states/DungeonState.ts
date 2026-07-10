@@ -99,6 +99,10 @@ export class DungeonState extends GameState {
   }
   
   exit() {
+    this.prepareForSave();
+  }
+
+  prepareForSave() {
     this.syncPlayerState();
     this.syncRoomState();
   }
