@@ -59,6 +59,10 @@ export class ShopRenderer {
     stock: ShopItem[],
     coins: number,
     failure?: ShopPurchaseFailure,
+    selectedIndex = 0,
+    confirmPrompt = "SPACE",
+    cyclePrompt = "Q",
+    closePrompt = "ESC",
   ) {
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
@@ -69,7 +73,7 @@ export class ShopRenderer {
     ctx.fillText("FIELD SHOP", 160, 30);
     ctx.fillStyle = "#ECF0F1";
     ctx.font = "8px monospace";
-    ctx.fillText(`COINS ${coins}  |  1-4 BUY  |  SPACE / ESC CLOSE`, 160, 44);
+    ctx.fillText(`COINS ${coins} | 1-4 OR ${cyclePrompt}+${confirmPrompt} | ${closePrompt} CLOSE`, 160, 44);
 
     const width = 70;
     const gap = 6;
@@ -80,9 +84,14 @@ export class ShopRenderer {
       const color = item.purchased ? "#566573" : RARITY_COLORS[item.rarity ?? "common"] ?? "#F1C40F";
       ctx.fillStyle = item.purchased ? "rgba(35, 42, 50, 0.95)" : "rgba(12, 18, 30, 0.97)";
       ctx.fillRect(x, y, width, 132);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      const selected = index === selectedIndex;
+      ctx.strokeStyle = selected ? "#FFFFFF" : color;
+      ctx.lineWidth = selected ? 3 : 2;
       ctx.strokeRect(x, y, width, 132);
+      if (selected) {
+        ctx.fillStyle = "rgba(255,255,255,0.07)";
+        ctx.fillRect(x + 3, y + 3, width - 6, 126);
+      }
 
       ctx.fillStyle = color;
       ctx.font = "bold 11px monospace";

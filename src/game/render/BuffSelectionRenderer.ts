@@ -7,7 +7,14 @@ const RARITY_COLORS: Record<BuffRarity, string> = {
 };
 
 export class BuffSelectionRenderer {
-  static draw(ctx: CanvasRenderingContext2D, options: BuffId[], rerollsRemaining = 0) {
+  static draw(
+    ctx: CanvasRenderingContext2D,
+    options: BuffId[],
+    rerollsRemaining = 0,
+    selectedIndex = 0,
+    confirmPrompt = "SPACE",
+    cyclePrompt = "Q",
+  ) {
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.84)";
     ctx.fillRect(0, 0, 320, 240);
@@ -18,7 +25,7 @@ export class BuffSelectionRenderer {
     ctx.fillStyle = "#8E9EAB";
     ctx.font = "7px monospace";
     const rerollText = rerollsRemaining > 0 ? ` | R REROLL x${rerollsRemaining}` : "";
-    ctx.fillText(`PRESS 1 / 2 / 3${rerollText}`, 160, 57);
+    ctx.fillText(`1 / 2 / 3 OR ${cyclePrompt} CYCLE + ${confirmPrompt} SELECT${rerollText}`, 160, 57);
 
     const cardWidth = 92;
     const cardHeight = 118;
@@ -31,10 +38,15 @@ export class BuffSelectionRenderer {
       const color = RARITY_COLORS[buff.rarity];
       ctx.fillStyle = "rgba(12, 18, 30, 0.96)";
       ctx.fillRect(x, y, cardWidth, cardHeight);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      const selected = index === selectedIndex;
+      ctx.strokeStyle = selected ? "#FFFFFF" : color;
+      ctx.lineWidth = selected ? 3 : 2;
       ctx.strokeRect(x, y, cardWidth, cardHeight);
 
+      if (selected) {
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fillRect(x + 3, y + 3, cardWidth - 6, cardHeight - 6);
+      }
       ctx.fillStyle = color;
       ctx.font = "bold 11px monospace";
       ctx.fillText(String(index + 1), x + cardWidth / 2, y + 18);

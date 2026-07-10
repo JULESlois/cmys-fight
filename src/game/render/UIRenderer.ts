@@ -90,7 +90,7 @@ export class UIRenderer {
     ctx.strokeRect(132, 5, 92, 31);
     ctx.fillStyle = skillReady ? "#2ECC71" : "#00F2FE";
     ctx.font = "bold 7px monospace";
-    ctx.fillText(`E ${skill.name}`, 137, 15);
+    ctx.fillText(`${engine.input.getPrompt("skill")} ${skill.name}`, 137, 15);
     ctx.fillStyle = "#1a1c2c";
     ctx.fillRect(137, 20, 81, 5);
     const effectiveSkillCooldown = skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
@@ -125,7 +125,13 @@ export class UIRenderer {
     });
 
     if (player.statusEffects.length > 0) {
-      const statusColors: Record<string, string> = {
+      const accessible = engine.data.settings.colorblindMode !== "off";
+      const statusColors: Record<string, string> = accessible ? {
+        poison: "#F1C40F",
+        burn: "#FFFFFF",
+        slow: "#00F2FE",
+        root: "#D980FA",
+      } : {
         poison: "#8BC34A",
         burn: "#FF7043",
         slow: "#81D4FA",
@@ -195,7 +201,7 @@ export class UIRenderer {
     drawWeaponSlot(1, 101);
     ctx.fillStyle = "#F1C40F";
     ctx.font = "6px monospace";
-    ctx.fillText("Q", 95, 219);
+    ctx.fillText(engine.input.getPrompt("swapWeapon"), 95, 219);
 
     // Bottom Right: Room State
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);

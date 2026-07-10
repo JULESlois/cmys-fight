@@ -57,10 +57,16 @@ import {
   type ChallengeId,
 } from "./ChallengeSystem";
 import { ENEMIES, isEnemyId } from "./data/enemies";
+import {
+  SETTINGS_SAVE_KEY,
+  createDefaultSettings,
+  normalizeSettings,
+  type GameSettings,
+} from "./Settings";
 
 export const RUN_SAVE_KEY = "retro_rpg_save";
 export const META_SAVE_KEY = "retro_rpg_meta";
-const CURRENT_SAVE_VERSION = 14;
+const CURRENT_SAVE_VERSION = 15;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -95,11 +101,8 @@ export interface GameSave {
     shopDiscount: number;
     supplyDropBonus: number;
   };
-  settings: {
-    masterVolume: number;
-    screenShake: boolean;
-    crtFilter: boolean;
-  };
+  /** @deprecated Preferences are stored separately in retro_rpg_settings. */
+  settings?: Partial<GameSettings>;
   recentEvents: string[];
   run: RunProgress;
   runStats: RunStats;
@@ -151,11 +154,6 @@ export const defaultSave: GameSave = {
     shopDiscount: 0,
     supplyDropBonus: 0,
   },
-  settings: {
-    masterVolume: 100,
-    screenShake: true,
-    crtFilter: true,
-  },
   recentEvents: ["Started the journey"],
   run: INITIAL_RUN,
   runStats: createRunStats(INITIAL_RUN),
@@ -178,12 +176,14 @@ export const defaultSave: GameSave = {
 export class GameData {
   public data: GameSave;
   public meta: MetaProgress;
+  public settings: GameSettings;
 
   constructor() {
     this.data = JSON.parse(JSON.stringify(defaultSave));
     this.data.run = createInitialRunProgress();
     this.data.runStats = createRunStats(this.data.run);
     this.meta = createDefaultMetaProgress();
+    this.settings = createDefaultSettings();
   }
 
   save() {
@@ -199,16 +199,23 @@ export class GameData {
       normalizeRoomState(room);
     }
     this.data.saveVersion = CURRENT_SAVE_VERSION;
-    localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(this.data));
+    const payload = { ...this.data } as GameSave & { settings?: Partial<GameSettings> };
+    delete payload.settings;
+    localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(payload));
   }
 
   load() {
     this.loadMeta();
+    this.loadSettings();
     const saved = localStorage.getItem(RUN_SAVE_KEY);
     if (!saved) return;
 
     try {
       const parsed = JSON.parse(saved);
+      if (!localStorage.getItem(SETTINGS_SAVE_KEY) && parsed.settings) {
+        this.settings = normalizeSettings(parsed.settings);
+        this.saveSettings();
+      }
       const loadedVersion = Number(parsed.saveVersion || 0);
       const needsMigration = loadedVersion < CURRENT_SAVE_VERSION;
 
@@ -229,7 +236,6 @@ export class GameData {
       this.normalizePlayerBuffs();
       this.normalizePlayerStatuses();
       this.normalizeRunBonuses();
-      this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
       this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
       this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
 
@@ -607,6 +613,31 @@ export class GameData {
       newUnlocks,
       alreadyClaimed,
     };
+  }
+
+  public saveSettings(): void {
+    this.settings = normalizeSettings(this.settings);
+    localStorage.setItem(SETTINGS_SAVE_KEY, JSON.stringify(this.settings));
+  }
+
+  public loadSettings(): void {
+    const saved = localStorage.getItem(SETTINGS_SAVE_KEY);
+    if (!saved) {
+      this.settings = createDefaultSettings();
+      return;
+    }
+    try {
+      this.settings = normalizeSettings(JSON.parse(saved));
+      this.saveSettings();
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+      this.settings = createDefaultSettings();
+    }
+  }
+
+  public resetSettings(): void {
+    this.settings = createDefaultSettings();
+    this.saveSettings();
   }
 
   public saveMeta(): void {

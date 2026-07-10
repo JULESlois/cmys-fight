@@ -94,7 +94,7 @@ export class EntityRenderer {
     const flipX = player.facing === "left";
     
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, { 
-      hitFlash: player.hitFlash > 0,
+      hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX,
       paletteOverride: PLAYER_PALETTE
     });
@@ -132,7 +132,7 @@ export class EntityRenderer {
     ctx.restore();
   }
 
-  public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string) {
+  public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string, reducedFlashing = false) {
     ctx.save();
     ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
 
@@ -239,7 +239,7 @@ export class EntityRenderer {
     ctx.fill();
 
     const animOffset = Math.round(Math.sin(time * 5 + enemy.x) * 2); // Simple bobbing
-    const isHit = enemy.hitFlash > 0;
+    const isHit = enemy.hitFlash > 0 && !reducedFlashing;
     
     ctx.translate(0, animOffset);
     let scale = enemy.isElite ? 2.35 : 2;

@@ -1,6 +1,7 @@
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private enabled = true;
+  private masterVolume = 1;
 
   constructor() {
     try {
@@ -18,7 +19,7 @@ export class AudioManager {
        osc.type = type;
        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
        
-       gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+       gain.gain.setValueAtTime(vol * this.masterVolume, this.ctx.currentTime);
        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
        
        osc.connect(gain);
@@ -27,6 +28,10 @@ export class AudioManager {
        osc.start();
        osc.stop(this.ctx.currentTime + duration);
     } catch (e) {}
+  }
+
+  setMasterVolume(value: number) {
+    this.masterVolume = Math.max(0, Math.min(1, Number(value) || 0));
   }
 
   playShoot() {

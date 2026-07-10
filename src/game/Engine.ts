@@ -14,6 +14,7 @@ import { RunResultState } from "./states/RunResultState";
 import { HubState } from "./states/HubState";
 import { RecordsState } from "./states/RecordsState";
 import { events } from "./EventBus";
+import { audio } from "./audio/AudioManager";
 
 export class Engine {
   public input: Input;
@@ -29,11 +30,15 @@ export class Engine {
   private eventUnsubscribers: Array<() => void> = [];
   private cleanedUp: boolean = false;
   private overlayState: string | null = null;
+  private shakeTimer = 0;
+  private shakeIntensity = 0;
 
   constructor() {
     this.input = new Input();
     this.data = new GameData();
     this.data.load();
+    this.input.setBindings(this.data.settings.keyBindings);
+    audio.setMasterVolume(this.data.settings.masterVolume / 100);
 
     this.states = {
       title: new TitleState(this),
@@ -123,6 +128,17 @@ export class Engine {
     this.input.clear();
   }
 
+  public applySettings() {
+    this.input.setBindings(this.data.settings.keyBindings);
+    audio.setMasterVolume(this.data.settings.masterVolume / 100);
+  }
+
+  public triggerScreenShake(intensity = 2, duration = 0.12) {
+    if (!this.data.settings.screenShake) return;
+    this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+    this.shakeTimer = Math.max(this.shakeTimer, duration);
+  }
+
   public saveFromMenu() {
     this.states[this.currentState].prepareForSave();
     this.data.save();
@@ -170,6 +186,8 @@ export class Engine {
 
   private update(dt: number) {
     const cappedDt = Math.min(dt, 0.1);
+    this.input.beginFrame();
+    this.shakeTimer = Math.max(0, this.shakeTimer - cappedDt);
 
     if (this.overlayState) {
       this.states[this.overlayState].update(cappedDt);
@@ -178,14 +196,14 @@ export class Engine {
     }
 
     const canPause = ["dungeon", "legacy_rpg", "legacy_tactics"].includes(this.currentState);
-    if (canPause && this.input.wasPressed("p")) {
+    if (canPause && this.input.wasActionPressed("pause")) {
       this.isPaused = !this.isPaused;
     }
     if (!canPause) {
       this.isPaused = false;
     }
 
-    if (canPause && this.isPaused && this.input.wasPressed("enter")) {
+    if (canPause && this.isPaused && (this.input.wasPressed("enter") || this.input.wasActionPressed("interact"))) {
       this.isPaused = false;
       this.openMenu();
       this.input.update();
@@ -206,17 +224,28 @@ export class Engine {
     this.ctx.fillStyle = "black";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Save and scale ctx to virtual resolution 320x240
+    const settings = this.data.settings;
+    this.canvas.style.filter = settings.colorblindMode === "deuteranopia"
+      ? "saturate(0.82) hue-rotate(-18deg)"
+      : settings.colorblindMode === "tritanopia"
+        ? "saturate(0.82) hue-rotate(34deg)"
+        : "none";
+
+    // Save and scale ctx to virtual resolution 320x240. UI scale intentionally zooms the whole pixel surface.
     this.ctx.save();
     const scaleX = this.canvas.width / 320;
     const scaleY = this.canvas.height / 240;
-    const scale = Math.min(scaleX, scaleY);
+    const scale = Math.min(scaleX, scaleY) * settings.uiScale;
     
     const offsetX = (this.canvas.width - 320 * scale) / 2;
     const offsetY = (this.canvas.height - 240 * scale) / 2;
     
     this.ctx.translate(offsetX, offsetY);
     this.ctx.scale(scale, scale);
+    if (this.shakeTimer > 0 && settings.screenShake) {
+      const phase = performance.now() * 0.04;
+      this.ctx.translate(Math.sin(phase) * this.shakeIntensity, Math.cos(phase * 1.31) * this.shakeIntensity);
+    }
 
     // Dialog is transparent, so draw the owning Legacy RPG state underneath it.
     if (this.currentState === "legacy_dialog") {
@@ -231,7 +260,12 @@ export class Engine {
     }
 
     if (this.isPaused) {
-      PauseOverlayRenderer.draw(this.ctx);
+      PauseOverlayRenderer.draw(this.ctx, this.input);
+    }
+
+    if (settings.crtFilter) {
+      this.ctx.fillStyle = settings.reducedFlashing ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.13)";
+      for (let y = 0; y < 240; y += 4) this.ctx.fillRect(0, y, 320, 1);
     }
 
     this.ctx.restore();

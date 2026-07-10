@@ -33,6 +33,7 @@ import {
 } from "../environment/EnvironmentSystem";
 import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
+import { TutorialSystem } from "../TutorialSystem";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -60,11 +61,14 @@ export class DungeonState extends GameState {
   private encounterCtrl = new EncounterController();
   private lightningArcs: LightningArc[] = [];
   private buffSelection: BuffId[] | null = null;
+  private buffSelectionIndex = 0;
   private shopOpen: boolean = false;
+  private shopSelectionIndex = 0;
   private shopFailure?: ShopPurchaseFailure;
   private shopFailureTimer: number = 0;
   private environmentHazards: EnvironmentHazard[] = [];
   private environmentTime: number = 0;
+  private tutorial = new TutorialSystem();
 
   constructor(engine: Engine) {
     super(engine);
@@ -104,6 +108,7 @@ export class DungeonState extends GameState {
     this.transitionAlpha = 1.0;
     
     this.player = this.createPlayerFromSave();
+    this.tutorial.reset(this.engine.data.settings.tutorialCompleted);
     
     if (!this.engine.data.data.floor || this.engine.data.data.floor.depth === 0) {
       this.engine.data.data.floor = generateStage(this.engine.data.data.run);
@@ -431,6 +436,7 @@ export class DungeonState extends GameState {
     floor.buffChoiceCompleted = false;
     floor.buffChoiceRerollCount = floor.buffChoiceRerollCount ?? 0;
     this.buffSelection = [...options];
+    this.buffSelectionIndex = 0;
     for (const buffId of options) this.engine.data.discoverBuff(buffId);
   }
 
@@ -448,6 +454,7 @@ export class DungeonState extends GameState {
         floor.buffChoiceRerollCount = rerollCount;
         floor.buffChoiceOptions = options;
         this.buffSelection = [...options];
+        this.buffSelectionIndex = 0;
         for (const buffId of options) this.engine.data.discoverBuff(buffId);
         this.syncPlayerState();
         this.engine.data.save();
@@ -456,8 +463,23 @@ export class DungeonState extends GameState {
       }
       return;
     }
+    const movePrevious = this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("arrowup");
+    const moveNext = this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("arrowdown") || this.engine.input.wasActionPressed("swapWeapon");
+    if (movePrevious) {
+      this.buffSelectionIndex = (this.buffSelectionIndex - 1 + this.buffSelection.length) % this.buffSelection.length;
+      audio.playShoot();
+    }
+    if (moveNext) {
+      this.buffSelectionIndex = (this.buffSelectionIndex + 1) % this.buffSelection.length;
+      audio.playShoot();
+    }
     const keys = ["1", "2", "3"];
-    const selectedIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
+    const directIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
+    const selectedIndex = directIndex >= 0
+      ? directIndex
+      : this.engine.input.wasActionPressed("interact")
+        ? this.buffSelectionIndex
+        : -1;
     if (selectedIndex < 0 || selectedIndex >= this.buffSelection.length) return;
     const selected = this.buffSelection[selectedIndex];
     if (!BuffSystem.acquire(this.player, selected)) return;
@@ -479,7 +501,7 @@ export class DungeonState extends GameState {
     this.shopFailureTimer = Math.max(0, this.shopFailureTimer - dt);
     if (this.shopFailureTimer <= 0) this.shopFailure = undefined;
 
-    if (this.engine.input.wasPressed("escape") || this.engine.input.wasPressed(" ")) {
+    if (this.engine.input.wasPressed("escape") || this.engine.input.wasActionPressed("pause")) {
       this.shopOpen = false;
       this.shopFailure = undefined;
       this.engine.input.clear();
@@ -496,8 +518,23 @@ export class DungeonState extends GameState {
     }
 
     room.shopStock = ShopSystem.reconcileStock(floor, room, this.player);
+    const movePrevious = this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("arrowup");
+    const moveNext = this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("arrowdown") || this.engine.input.wasActionPressed("swapWeapon");
+    if (movePrevious) {
+      this.shopSelectionIndex = (this.shopSelectionIndex - 1 + room.shopStock.length) % room.shopStock.length;
+      audio.playShoot();
+    }
+    if (moveNext) {
+      this.shopSelectionIndex = (this.shopSelectionIndex + 1) % room.shopStock.length;
+      audio.playShoot();
+    }
     const keys = ["1", "2", "3", "4"];
-    const selectedIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
+    const directIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
+    const selectedIndex = directIndex >= 0
+      ? directIndex
+      : this.engine.input.wasActionPressed("interact")
+        ? this.shopSelectionIndex
+        : -1;
     if (selectedIndex < 0 || selectedIndex >= room.shopStock.length) return;
 
     const item = room.shopStock[selectedIndex];
@@ -604,6 +641,11 @@ export class DungeonState extends GameState {
       return;
     }
 
+    if (this.tutorial.update(this.engine.input)) {
+      this.engine.data.settings.tutorialCompleted = true;
+      this.engine.data.saveSettings();
+    }
+
     this.engine.data.recordRunTime(dt);
     DamageSystem.updatePlayer(this.player, dt);
     StatusEffectSystem.updatePlayer(this.player, dt);
@@ -650,14 +692,14 @@ export class DungeonState extends GameState {
     if (
       canUseSkill &&
       this.transitionState === "none" &&
-      this.engine.input.wasPressed("e")
+      this.engine.input.wasActionPressed("skill")
     ) {
       this.activateCharacterSkill();
     }
 
     if (
       this.player.hp > 0 &&
-      (this.engine.input.wasPressed("q") || this.engine.input.wasPressed("tab"))
+      (this.engine.input.wasActionPressed("swapWeapon") || this.engine.input.wasPressed("tab"))
     ) {
       if (WeaponController.switchWeapon(this.player)) {
         this.player.muzzleFlash = 0;
@@ -675,15 +717,15 @@ export class DungeonState extends GameState {
        }
     }
 
-    // 4. Handle Fire input
-    if (this.engine.input.isDown(" ") && this.player.fireCooldown <= 0) {
-      if (interactTarget) {
-         if (this.engine.input.wasPressed(" ")) {
-             this.handleInteract(interactTarget);
-         }
-      } else if (this.roomPhase === "combat" || this.roomPhase === "cleared" || this.roomPhase === "exiting" || this.roomPhase === "reward" || this.roomPhase === "exploration") {
-         this.fireWeapon();
-      }
+    // 4. Interact and fire are separate actions across keyboard, gamepad, and touch.
+    if (interactTarget && this.engine.input.wasActionPressed("interact")) {
+      this.handleInteract(interactTarget);
+    } else if (
+      this.engine.input.isActionDown("fire") &&
+      this.player.fireCooldown <= 0 &&
+      (this.roomPhase === "combat" || this.roomPhase === "cleared" || this.roomPhase === "exiting" || this.roomPhase === "reward" || this.roomPhase === "exploration")
+    ) {
+      this.fireWeapon();
     }
     // ==========================================
 
@@ -903,6 +945,7 @@ export class DungeonState extends GameState {
         const result = DamageSystem.damagePlayer(this.player, 1, 0.35);
         if (result.applied) {
           this.engine.data.recordPlayerDamage(result.armorDamage + result.hpDamage, false);
+          this.engine.triggerScreenShake(2.2, 0.12);
           audio.playHurt();
         }
         hazard.triggerCooldown = 0.72;
@@ -1005,6 +1048,7 @@ export class DungeonState extends GameState {
        this.engine.data.discoverWeapon(this.chest.weaponId);
     } else if (target.type === "shop") {
        this.shopOpen = true;
+       this.shopSelectionIndex = 0;
        this.shopFailure = undefined;
        this.shopFailureTimer = 0;
        audio.playPickup();
@@ -1304,6 +1348,7 @@ export class DungeonState extends GameState {
             result.armorDamage + result.hpDamage,
             enemy.type === "boss",
           );
+          this.engine.triggerScreenShake(2.2, 0.12);
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1337,6 +1382,7 @@ export class DungeonState extends GameState {
             result.armorDamage + result.hpDamage,
             enemy.type === "boss",
           );
+          this.engine.triggerScreenShake(2.2, 0.12);
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1403,6 +1449,7 @@ export class DungeonState extends GameState {
           result.armorDamage + result.hpDamage,
           enemy.type === "boss",
         );
+        this.engine.triggerScreenShake(2.2, 0.12);
         this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
         audio.playHurt();
       }
@@ -1521,6 +1568,7 @@ export class DungeonState extends GameState {
               result.armorDamage + result.hpDamage,
               p.sourceBoss,
             );
+            this.engine.triggerScreenShake(2.2, 0.12);
             if (
               result.armorDamage + result.hpDamage > 0 &&
               p.statusEffect &&
@@ -1696,7 +1744,7 @@ export class DungeonState extends GameState {
     }
     
     for (const e of this.enemies) {
-       EntityRenderer.drawEnemy(ctx, e, time, floor.theme || 'forest');
+       EntityRenderer.drawEnemy(ctx, e, time, floor.theme || 'forest', this.engine.data.settings.reducedFlashing);
     }
     
     if (this.portal) {
@@ -1712,6 +1760,7 @@ export class DungeonState extends GameState {
     }
     
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
+    this.tutorial.draw(ctx, this.engine.input);
     
     if (this.roomPhase === "cleared" && this.phaseTimer > 0) {
       ctx.save();
@@ -1736,10 +1785,17 @@ export class DungeonState extends GameState {
     }
     
     MinimapRenderer.draw(ctx, floor);
-    PromptRenderer.draw(ctx, this.getInteractTarget(), time);
+    PromptRenderer.draw(ctx, this.getInteractTarget(), time, this.engine.input.getPrompt("interact"));
 
     if (this.buffSelection) {
-      BuffSelectionRenderer.draw(ctx, this.buffSelection, this.player.buffRerollsRemaining);
+      BuffSelectionRenderer.draw(
+        ctx,
+        this.buffSelection,
+        this.player.buffRerollsRemaining,
+        this.buffSelectionIndex,
+        this.engine.input.getPrompt("interact"),
+        this.engine.input.getPrompt("swapWeapon"),
+      );
     }
 
     if (this.shopOpen && currentRoom?.type === "shop") {
@@ -1748,6 +1804,10 @@ export class DungeonState extends GameState {
         currentRoom.shopStock ?? [],
         this.engine.data.data.player.coins,
         this.shopFailure,
+        this.shopSelectionIndex,
+        this.engine.input.getPrompt("interact"),
+        this.engine.input.getPrompt("swapWeapon"),
+        this.engine.input.getPrompt("pause"),
       );
     }
     

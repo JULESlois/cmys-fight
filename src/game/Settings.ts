@@ -1,0 +1,129 @@
+export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
+export const SETTINGS_VERSION = 1;
+
+export type InputAction =
+  | "moveUp"
+  | "moveDown"
+  | "moveLeft"
+  | "moveRight"
+  | "fire"
+  | "skill"
+  | "interact"
+  | "swapWeapon"
+  | "pause";
+
+export const INPUT_ACTIONS: InputAction[] = [
+  "moveUp",
+  "moveDown",
+  "moveLeft",
+  "moveRight",
+  "fire",
+  "skill",
+  "interact",
+  "swapWeapon",
+  "pause",
+];
+
+export const ACTION_LABELS: Record<InputAction, string> = {
+  moveUp: "MOVE UP",
+  moveDown: "MOVE DOWN",
+  moveLeft: "MOVE LEFT",
+  moveRight: "MOVE RIGHT",
+  fire: "FIRE",
+  skill: "SKILL",
+  interact: "INTERACT",
+  swapWeapon: "SWAP WEAPON",
+  pause: "PAUSE",
+};
+
+export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
+  moveUp: "w",
+  moveDown: "s",
+  moveLeft: "a",
+  moveRight: "d",
+  fire: "f",
+  skill: "e",
+  interact: " ",
+  swapWeapon: "q",
+  pause: "p",
+};
+
+export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
+
+export interface GameSettings {
+  version: number;
+  masterVolume: number;
+  screenShake: boolean;
+  crtFilter: boolean;
+  uiScale: number;
+  colorblindMode: ColorblindMode;
+  reducedFlashing: boolean;
+  dynamicBackground: boolean;
+  touchControls: boolean;
+  tutorialCompleted: boolean;
+  keyBindings: Record<InputAction, string>;
+}
+
+export function createDefaultSettings(): GameSettings {
+  return {
+    version: SETTINGS_VERSION,
+    masterVolume: 100,
+    screenShake: true,
+    crtFilter: true,
+    uiScale: 1,
+    colorblindMode: "off",
+    reducedFlashing: false,
+    dynamicBackground: true,
+    touchControls: true,
+    tutorialCompleted: false,
+    keyBindings: { ...DEFAULT_KEY_BINDINGS },
+  };
+}
+
+function normalizeBinding(value: unknown, fallback: string): string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 24) return fallback;
+  if (value === "Spacebar") return " ";
+  return value === " " ? " " : value.toLowerCase();
+}
+
+export function normalizeSettings(value: unknown): GameSettings {
+  const fallback = createDefaultSettings();
+  if (!value || typeof value !== "object") return fallback;
+  const raw = value as Partial<GameSettings>;
+  const rawBindings = raw.keyBindings && typeof raw.keyBindings === "object"
+    ? raw.keyBindings as Partial<Record<InputAction, string>>
+    : {};
+  const keyBindings = { ...DEFAULT_KEY_BINDINGS };
+  for (const action of INPUT_ACTIONS) {
+    keyBindings[action] = normalizeBinding(rawBindings[action], DEFAULT_KEY_BINDINGS[action]);
+  }
+  const uiScale = Number(raw.uiScale);
+  const masterVolume = Number(raw.masterVolume);
+  const colorblindMode: ColorblindMode = raw.colorblindMode === "deuteranopia" || raw.colorblindMode === "tritanopia"
+    ? raw.colorblindMode
+    : "off";
+  return {
+    version: SETTINGS_VERSION,
+    masterVolume: Number.isFinite(masterVolume) ? Math.max(0, Math.min(100, Math.round(masterVolume))) : fallback.masterVolume,
+    screenShake: raw.screenShake !== false,
+    crtFilter: raw.crtFilter !== false,
+    uiScale: Number.isFinite(uiScale) ? Math.max(0.85, Math.min(1.25, Math.round(uiScale * 20) / 20)) : 1,
+    colorblindMode,
+    reducedFlashing: raw.reducedFlashing === true,
+    dynamicBackground: raw.dynamicBackground !== false,
+    touchControls: raw.touchControls !== false,
+    tutorialCompleted: raw.tutorialCompleted === true,
+    keyBindings,
+  };
+}
+
+export function formatBinding(key: string): string {
+  if (key === " ") return "SPACE";
+  if (key === "arrowup") return "UP";
+  if (key === "arrowdown") return "DOWN";
+  if (key === "arrowleft") return "LEFT";
+  if (key === "arrowright") return "RIGHT";
+  if (key === "escape") return "ESC";
+  if (key === "tab") return "TAB";
+  return key.toUpperCase();
+}
