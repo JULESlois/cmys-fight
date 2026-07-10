@@ -12,7 +12,7 @@ export class EntityRenderer {
     if (player.hp <= 0) return;
 
     ctx.save();
-    ctx.translate(player.x, player.y);
+    ctx.translate(Math.round(player.x), Math.round(player.y));
 
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.3)";
@@ -77,7 +77,7 @@ export class EntityRenderer {
 
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string) {
     ctx.save();
-    ctx.translate(enemy.x, enemy.y);
+    ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
 
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.3)";
@@ -111,7 +111,7 @@ export class EntityRenderer {
   }
 public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(Math.round(p.x), Math.round(p.y));
     
     // Rotate towards direction
     const angle = Math.atan2(p.vy, p.vx);
@@ -139,7 +139,7 @@ public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
 
   public static drawPickup(ctx: CanvasRenderingContext2D, p: Pickup, time: number) {
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(Math.round(p.x), Math.round(p.y));
     
     // Shadow
     ctx.fillStyle = "rgba(0,0,0,0.3)";

@@ -17,7 +17,7 @@ import { Pickup } from "../entities/Pickup";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController, EncounterDef, EnemySpawn } from "../EncounterController";
 
-type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting";
+type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
 import { GameState } from "./GameState";
 export class DungeonState extends GameState {
@@ -141,9 +141,9 @@ export class DungeonState extends GameState {
     if (currentRoom) {
       currentRoom.visited = true;
       if (currentRoom.type === "start") {
-         this.setPhase("cleared");
+         this.setPhase("exploration");
       } else if (currentRoom.cleared) {
-         this.setPhase("cleared");
+         this.setPhase("exploration");
          currentRoom.enemies = []; // Clear any enemies from old saves
          
          if (currentRoom.type === "treasure" && !currentRoom.pickups) {
@@ -164,7 +164,7 @@ export class DungeonState extends GameState {
                  if (e.hp !== undefined) enemy.hp = e.hp;
                  this.enemies.push(enemy);
              }
-             this.setPhase("combat"); // Skip intro if we're resuming combat
+             this.setPhase("combat", { startEncounter: false }); // Skip intro if we're resuming combat
          } else {
              this.setPhase("entering");
          }
@@ -172,7 +172,7 @@ export class DungeonState extends GameState {
     }
   }
 
-  private setPhase(phase: RoomPhase) {
+  private setPhase(phase: RoomPhase, options?: { startEncounter?: boolean }) {
     this.roomPhase = phase;
     this.phaseTimer = 0;
     
@@ -214,7 +214,9 @@ export class DungeonState extends GameState {
         });
       }
       
-      this.encounterCtrl.start(encounterDef);
+      if (options?.startEncounter !== false) {
+         this.encounterCtrl.start(encounterDef);
+      }
     } else if (phase === "cleared") {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
@@ -289,14 +291,19 @@ export class DungeonState extends GameState {
       this.loadRoom();
     }
 
+    const previousX = this.player.x;
+    const previousY = this.player.y;
+
     this.updateRoomPhase(dt);
     
+    const moved = Math.hypot(this.player.x - previousX, this.player.y - previousY) > 0.01;
+
     // ==========================================
     // PLAYER UPDATE SEQUENCE (TODO: Move to PlayerController)
     // 1. Update aim angle based on input/closest enemy
     this.player.aimAngle = this.getPlayerAimAngle();
     // 2. Update player facing and animation
-    this.updatePlayerFacingAndAnimation(dt);
+    this.updatePlayerFacingAndAnimation(dt, moved);
     
     // 3. Firing logic
     if (this.player.fireCooldown > 0) {
@@ -305,6 +312,9 @@ export class DungeonState extends GameState {
     if (this.player.muzzleFlash > 0) {
       this.player.muzzleFlash -= dt * 10;
       if (this.player.muzzleFlash < 0) this.player.muzzleFlash = 0;
+    }
+    if (this.player.hitFlash > 0) {
+      this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
 
     // Interactive objects
@@ -323,7 +333,7 @@ export class DungeonState extends GameState {
          if (this.engine.input.justPressed[" "]) {
              this.handleInteract(interactTarget);
          }
-      } else if (this.roomPhase === "combat" || this.roomPhase === "cleared" || this.roomPhase === "exiting" || this.roomPhase === "reward") {
+      } else if (this.roomPhase === "combat" || this.roomPhase === "cleared" || this.roomPhase === "exiting" || this.roomPhase === "reward" || this.roomPhase === "exploration") {
          this.fireWeapon();
       }
     }
@@ -390,7 +400,7 @@ export class DungeonState extends GameState {
       if (this.phaseTimer <= 0) this.setPhase("reward");
     } else if (this.roomPhase === "reward") {
       this.phaseTimer -= dt;
-      if (this.phaseTimer <= 0) this.setPhase("exiting");
+      if (this.phaseTimer <= 0) this.setPhase("exploration");
     }
   }
 
@@ -531,14 +541,11 @@ export class DungeonState extends GameState {
   }
 
   // TODO: Move to PlayerController
-  private updatePlayerFacingAndAnimation(dt: number) {
-    const axis = this.engine.input.getAxis();
-    const isMoving = axis.x !== 0 || axis.y !== 0;
-
+  private updatePlayerFacingAndAnimation(dt: number, moved: boolean) {
     this.player.facing = Math.cos(this.player.aimAngle) >= 0 ? "right" : "left";
     this.player.facingLeft = this.player.facing === "left";
 
-    if (isMoving) {
+    if (moved) {
       this.player.animState = "walk";
       this.player.animTimer += dt;
       this.player.animFrame = Math.floor(this.player.animTimer * 8) % 2;
@@ -727,9 +734,11 @@ export class DungeonState extends GameState {
           audio.playHurt();
           if (this.player.armor > 0) {
             this.player.armor -= p.damage;
+            this.player.hitFlash = 0.08;
             if (this.player.armor < 0) {
               this.player.hp += this.player.armor;
               this.player.armor = 0;
+              this.player.hitFlash = 0.2;
             }
           } else {
              this.player.hp -= p.damage;
