@@ -96,7 +96,8 @@ export class EntityRenderer {
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, { 
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX,
-      paletteOverride: PLAYER_PALETTE
+      paletteOverride: PLAYER_PALETTE,
+      outlineColor: "#09101A"
     });
     ctx.restore();
 
@@ -117,7 +118,7 @@ export class EntityRenderer {
     
     // Shift weapon forward
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1, {
-      
+      outlineColor: "#09101A",
     });
 
     if (player.muzzleFlash > 0) {
@@ -245,7 +246,10 @@ export class EntityRenderer {
     let scale = enemy.isElite ? 2.35 : 2;
     if (enemy.type === "boss") scale = 3;
     
-    SpriteRenderer.drawPixelSprite(ctx, `enemy_${enemy.type}_idle`, 0, -8, scale, { hitFlash: isHit });
+    SpriteRenderer.drawPixelSprite(ctx, `enemy_${enemy.type}_idle`, 0, -8, scale, {
+      hitFlash: isHit,
+      outlineColor: enemy.isElite ? "#6B4E00" : enemy.type === "boss" ? "#26070D" : "#130B18",
+    });
     ctx.fillStyle = enemy.displayColor;
     ctx.globalAlpha = enemy.isElite ? 0.9 : 0.65;
     ctx.fillRect(-2, -enemy.radius - 8, 4, 3);

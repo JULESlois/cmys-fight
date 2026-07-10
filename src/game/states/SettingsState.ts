@@ -9,10 +9,13 @@ import {
   formatBinding,
   type ColorblindMode,
   type InputAction,
+  type MusicMode,
 } from "../Settings";
 
 const OPTIONS = [
   "MASTER VOLUME",
+  "MUSIC VOLUME",
+  "MUSIC SOURCE",
   "UI SCALE",
   "SCREEN SHAKE",
   "CRT FILTER",
@@ -159,6 +162,12 @@ export class SettingsState extends GameState {
     const settings = this.engine.data.settings;
     if (option === "MASTER VOLUME") {
       settings.masterVolume = Math.max(0, Math.min(100, settings.masterVolume + direction * 10));
+    } else if (option === "MUSIC VOLUME") {
+      settings.musicVolume = Math.max(0, Math.min(100, settings.musicVolume + direction * 10));
+    } else if (option === "MUSIC SOURCE") {
+      const modes: MusicMode[] = ["adaptive", "external", "off"];
+      const index = modes.indexOf(settings.musicMode);
+      settings.musicMode = modes[(index + direction + modes.length) % modes.length];
     } else if (option === "UI SCALE") {
       settings.uiScale = Math.max(0.85, Math.min(1.25, Math.round((settings.uiScale + direction * 0.1) * 20) / 20));
     } else if (option === "SCREEN SHAKE") {
@@ -201,18 +210,20 @@ export class SettingsState extends GameState {
 
     const settings = this.engine.data.settings;
     OPTIONS.forEach((option, index) => {
-      const y = 42 + index * 12;
+      const y = 39 + index * 10;
       const selected = index === this.selectedIndex;
       ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
-      if (selected) ctx.fillRect(32, y - 9, 256, 12);
+      if (selected) ctx.fillRect(32, y - 8, 256, 10);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
-      ctx.font = "bold 7px monospace";
+      ctx.font = "bold 6px monospace";
       ctx.fillText(`${selected ? ">" : " "} ${option}`, 36, y);
       ctx.textAlign = "right";
       ctx.fillStyle = "#00F2FE";
       const value = option === "MASTER VOLUME" ? `${settings.masterVolume}%`
-        : option === "UI SCALE" ? `${Math.round(settings.uiScale * 100)}%`
+        : option === "MUSIC VOLUME" ? `${settings.musicVolume}%`
+          : option === "MUSIC SOURCE" ? settings.musicMode.toUpperCase()
+            : option === "UI SCALE" ? `${Math.round(settings.uiScale * 100)}%`
           : option === "SCREEN SHAKE" ? (settings.screenShake ? "ON" : "OFF")
             : option === "CRT FILTER" ? (settings.crtFilter ? "ON" : "OFF")
               : option === "REDUCED FLASH" ? (settings.reducedFlashing ? "ON" : "OFF")

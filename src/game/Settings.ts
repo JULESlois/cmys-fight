@@ -1,5 +1,5 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 1;
+export const SETTINGS_VERSION = 2;
 
 export type InputAction =
   | "moveUp"
@@ -49,10 +49,13 @@ export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
 };
 
 export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
+export type MusicMode = "adaptive" | "external" | "off";
 
 export interface GameSettings {
   version: number;
   masterVolume: number;
+  musicVolume: number;
+  musicMode: MusicMode;
   screenShake: boolean;
   crtFilter: boolean;
   uiScale: number;
@@ -68,6 +71,8 @@ export function createDefaultSettings(): GameSettings {
   return {
     version: SETTINGS_VERSION,
     masterVolume: 100,
+    musicVolume: 55,
+    musicMode: "adaptive",
     screenShake: true,
     crtFilter: true,
     uiScale: 1,
@@ -99,12 +104,16 @@ export function normalizeSettings(value: unknown): GameSettings {
   }
   const uiScale = Number(raw.uiScale);
   const masterVolume = Number(raw.masterVolume);
+  const musicVolume = Number(raw.musicVolume);
+  const musicMode: MusicMode = raw.musicMode === "external" || raw.musicMode === "off" ? raw.musicMode : "adaptive";
   const colorblindMode: ColorblindMode = raw.colorblindMode === "deuteranopia" || raw.colorblindMode === "tritanopia"
     ? raw.colorblindMode
     : "off";
   return {
     version: SETTINGS_VERSION,
     masterVolume: Number.isFinite(masterVolume) ? Math.max(0, Math.min(100, Math.round(masterVolume))) : fallback.masterVolume,
+    musicVolume: Number.isFinite(musicVolume) ? Math.max(0, Math.min(100, Math.round(musicVolume))) : fallback.musicVolume,
+    musicMode,
     screenShake: raw.screenShake !== false,
     crtFilter: raw.crtFilter !== false,
     uiScale: Number.isFinite(uiScale) ? Math.max(0.85, Math.min(1.25, Math.round(uiScale * 20) / 20)) : 1,

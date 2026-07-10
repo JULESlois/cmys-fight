@@ -80,11 +80,52 @@ export class RoomRenderer {
              ctx.fillRect(tx + 2, ty + 10, 2, 4);
           }
           
-          // Theme specific floor details
-          if (theme === "dungeon" && hash % 10 > 8) {
-              ctx.fillStyle = "rgba(0,0,0,0.2)";
-              ctx.fillRect(tx + 4, ty + 4, 8, 1);
-              ctx.fillRect(tx + 4, ty + 12, 8, 1);
+          // Theme-specific material details. These remain deterministic per tile.
+          if (theme === "forest") {
+            ctx.fillStyle = hash % 11 > 6 ? "rgba(89, 154, 82, 0.55)" : "rgba(225, 245, 190, 0.22)";
+            if (hash % 9 > 5) {
+              ctx.fillRect(tx + 5, ty + 8, 1, 4);
+              ctx.fillRect(tx + 7, ty + 9, 1, 3);
+              ctx.fillRect(tx + 10, ty + 6, 1, 5);
+            }
+            if (hash % 23 > 21) {
+              ctx.fillStyle = "rgba(255, 210, 228, 0.85)";
+              ctx.fillRect(tx + 3, ty + 5, 2, 2);
+              ctx.fillStyle = "rgba(255, 239, 115, 0.9)";
+              ctx.fillRect(tx + 4, ty + 6, 1, 1);
+            }
+          } else if (theme === "dungeon") {
+            ctx.fillStyle = "rgba(16, 22, 35, 0.28)";
+            ctx.fillRect(tx + 2, ty + 7, 12, 1);
+            if (hash % 10 > 6) {
+              ctx.fillRect(tx + 7, ty + 1, 1, 6);
+              ctx.fillRect(tx + 4, ty + 8, 1, 7);
+            }
+            if (hash % 17 > 14) {
+              ctx.fillStyle = "rgba(170, 120, 220, 0.16)";
+              ctx.fillRect(tx + 11, ty + 3, 2, 2);
+            }
+          } else if (theme === "snow") {
+            ctx.fillStyle = "rgba(255,255,255,0.55)";
+            if (hash % 10 > 5) {
+              ctx.fillRect(tx + 2, ty + 3, 5, 1);
+              ctx.fillRect(tx + 11, ty + 10, 2, 2);
+            }
+            ctx.fillStyle = "rgba(89, 170, 220, 0.18)";
+            if (hash % 13 > 9) {
+              ctx.fillRect(tx + 7, ty + 5, 1, 7);
+              ctx.fillRect(tx + 4, ty + 8, 7, 1);
+            }
+          } else if (theme === "lava") {
+            ctx.fillStyle = "rgba(12, 8, 20, 0.42)";
+            ctx.fillRect(tx + 2, ty + 7, 5, 1);
+            ctx.fillRect(tx + 6, ty + 7, 1, 5);
+            ctx.fillRect(tx + 6, ty + 11, 6, 1);
+            if (hash % 12 > 8) {
+              ctx.fillStyle = "rgba(255, 105, 36, 0.46)";
+              ctx.fillRect(tx + 6, ty + 8, 1, 3);
+              ctx.fillRect(tx + 8, ty + 11, 3, 1);
+            }
           }
           
           // Edge line
@@ -113,6 +154,45 @@ export class RoomRenderer {
           }
         }
       }
+    }
+
+    // Room identity decals make special rooms readable without relying on the HUD.
+    if (currentRoom?.type === "shop") {
+      ctx.fillStyle = theme === "lava" ? "rgba(122, 45, 26, 0.65)" : "rgba(56, 41, 78, 0.58)";
+      ctx.fillRect(112, 84, 96, 72);
+      ctx.strokeStyle = "rgba(241, 196, 15, 0.68)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(116, 88, 88, 64);
+      ctx.fillStyle = "rgba(241, 196, 15, 0.22)";
+      for (let x = 124; x < 204; x += 16) ctx.fillRect(x, 92, 4, 56);
+    } else if (currentRoom?.type === "boss") {
+      const accent = theme === "snow" ? "rgba(95, 190, 255, 0.22)"
+        : theme === "lava" ? "rgba(255, 84, 36, 0.25)"
+          : theme === "dungeon" ? "rgba(174, 96, 255, 0.22)"
+            : "rgba(114, 224, 145, 0.2)";
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(160, 120, 42, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(160, 120, 28, 0, Math.PI * 2);
+      ctx.stroke();
+      for (let i = 0; i < 8; i++) {
+        const angle = i / 8 * Math.PI * 2;
+        ctx.fillStyle = accent;
+        ctx.fillRect(Math.round(160 + Math.cos(angle) * 36) - 2, Math.round(120 + Math.sin(angle) * 36) - 2, 4, 4);
+      }
+    } else if (currentRoom?.type === "treasure") {
+      ctx.strokeStyle = "rgba(241, 196, 15, 0.3)";
+      ctx.strokeRect(136, 96, 48, 48);
+      ctx.strokeRect(142, 102, 36, 36);
+    } else if (currentRoom?.type === "start") {
+      ctx.strokeStyle = "rgba(0, 242, 254, 0.22)";
+      ctx.beginPath();
+      ctx.moveTo(160, 101); ctx.lineTo(178, 120); ctx.lineTo(160, 139); ctx.lineTo(142, 120); ctx.closePath();
+      ctx.stroke();
     }
 
     // Draw the wooden bridge crossing the stream
@@ -308,7 +388,7 @@ export class RoomRenderer {
       }
     }
 
-    if (theme === "forest" || theme === "snow" || theme === "lava") {
+    if (theme === "forest" || theme === "snow" || theme === "lava" || theme === "dungeon") {
       for (const p of this.particles) {
         ctx.save();
         ctx.translate(p.x, p.y);

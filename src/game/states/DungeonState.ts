@@ -8,6 +8,8 @@ import { EntityRenderer } from "../render/EntityRenderer";
 import { Enemy } from "../entities/Enemy";
 import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
 import { UIRenderer } from "../render/UIRenderer";
+import { PixelFxSystem } from "../render/PixelFxSystem";
+import { ArtDirectionRenderer } from "../render/ArtDirectionRenderer";
 import { audio } from "../audio/AudioManager";
 import { PortalRenderer, PortalState } from "../render/PortalRenderer";
 import { MinimapRenderer } from "../render/MinimapRenderer";
@@ -44,6 +46,7 @@ export class DungeonState extends GameState {
   private player: Player;
   private projectiles: Projectile[] = [];
   private roomRenderer = new RoomRenderer();
+  private fx = new PixelFxSystem();
   private enemies: Enemy[] = [];
   private pickups: Pickup[] = [];
   
@@ -123,6 +126,7 @@ export class DungeonState extends GameState {
        if (sourceRoom && !sourceRoom.interactionCompleted) {
           sourceRoom.interactionCompleted = true;
           audio.playClearRoom();
+          this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
           const template = getRoomTemplate(sourceRoom);
           const pts = template.pickupSpawnPoints;
           const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 8.5 };
@@ -403,6 +407,7 @@ export class DungeonState extends GameState {
     } else if (phase === "cleared") {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
+      this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
       if (this.player.characterId === "mage") {
         this.player.mana = Math.min(this.player.maxMana, this.player.mana + 15);
       }
@@ -605,8 +610,25 @@ export class DungeonState extends GameState {
     currentRoom.rewardGenerated = true;
   }
 
+  private syncMusicScene() {
+    const floor = this.engine.data.data.floor;
+    const room = floor.rooms.find(candidate => candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY);
+    const theme = floor.theme === "dungeon" || floor.theme === "snow" || floor.theme === "lava" ? floor.theme : "forest";
+    if (this.shopOpen || room?.type === "shop") {
+      audio.setMusicScene("shop");
+    } else if (room?.type === "boss" && this.roomPhase === "combat") {
+      audio.setMusicScene("boss");
+    } else if (this.roomPhase === "combat") {
+      audio.setMusicScene(`combat_${theme}` as const);
+    } else {
+      audio.setMusicScene(theme);
+    }
+  }
+
   update(dt: number) {
+    this.syncMusicScene();
     this.roomRenderer.update(dt);
+    this.fx.update(dt);
 
     if (this.transitionState === "fade_in") {
       this.transitionAlpha -= dt * 2;
@@ -793,11 +815,12 @@ export class DungeonState extends GameState {
     );
     if (!result.activated) return;
 
+    audio.playSkill();
     if (result.lightningArcs.length > 0) {
       this.lightningArcs.push(...result.lightningArcs);
-      audio.playHit();
-    } else {
-      audio.playPickup();
+      for (const arc of result.lightningArcs) {
+        this.fx.emitImpact(arc.x2, arc.y2, "#8DF6FF", false, this.engine.isPerformanceDegraded());
+      }
     }
 
     if (result.killedEnemyIds.length > 0) {
@@ -952,6 +975,7 @@ export class DungeonState extends GameState {
         if (result.applied) {
           this.engine.data.recordPlayerDamage(result.armorDamage + result.hpDamage, false);
           this.engine.triggerScreenShake(2.2, 0.12);
+          this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
           audio.playHurt();
         }
         hazard.triggerCooldown = 0.72;
@@ -1037,7 +1061,7 @@ export class DungeonState extends GameState {
     if (target.type === "portal" && this.portal) {
        this.portal.state = "activating";
        this.portal.timer = 0.4;
-       audio.playPickup();
+       audio.playPortal();
     } else if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
        this.engine.input.clear();
        this.engine.switchState(target.type, { sourceRoomId: target.roomId });
@@ -1143,6 +1167,7 @@ export class DungeonState extends GameState {
     const result = WeaponController.fire(this.player, baseAngle);
     if (result.fired) {
       this.projectiles.push(...result.projectiles);
+      if (result.projectiles[0]) this.fx.emitMuzzle(result.projectiles[0], this.engine.isPerformanceDegraded());
       this.engine.data.recordWeaponUsed(this.player.currentWeaponId);
       audio.playShoot();
     }
@@ -1355,6 +1380,7 @@ export class DungeonState extends GameState {
             enemy.type === "boss",
           );
           this.engine.triggerScreenShake(2.2, 0.12);
+          this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1389,6 +1415,7 @@ export class DungeonState extends GameState {
             enemy.type === "boss",
           );
           this.engine.triggerScreenShake(2.2, 0.12);
+          this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1456,6 +1483,7 @@ export class DungeonState extends GameState {
           enemy.type === "boss",
         );
         this.engine.triggerScreenShake(2.2, 0.12);
+        this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
         this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
         audio.playHurt();
       }
@@ -1549,6 +1577,7 @@ export class DungeonState extends GameState {
               StatusEffectSystem.applyEnemy(e, p.statusEffect, p.statusDuration);
             }
             audio.playHit();
+            this.fx.emitImpact(e.x, e.y, p.color, p.critical, this.engine.isPerformanceDegraded());
           }
           if (result.killed) {
             this.handleEnemyKilled(e);
@@ -1576,6 +1605,7 @@ export class DungeonState extends GameState {
               p.sourceBoss,
             );
             this.engine.triggerScreenShake(2.2, 0.12);
+            this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
             if (
               result.armorDamage + result.hpDamage > 0 &&
               p.statusEffect &&
@@ -1683,6 +1713,7 @@ export class DungeonState extends GameState {
               this.engine.data.data.player.coins += p.value;
            }
            audio.playPickup();
+           this.fx.emitPickup(p, this.engine.isPerformanceDegraded());
            this.pickups.splice(i, 1);
            releasePickup(p);
            if (droppedWeapon) this.pickups.push(droppedWeapon);
@@ -1767,6 +1798,16 @@ export class DungeonState extends GameState {
     for (const p of this.projectiles) {
        EntityRenderer.drawProjectile(ctx, p);
     }
+    this.fx.draw(ctx, this.engine.data.settings.reducedFlashing);
+    ArtDirectionRenderer.drawWorldGrade(
+      ctx,
+      floor.theme || "forest",
+      currentRoom,
+      time,
+      this.roomPhase === "combat",
+      this.engine.isPerformanceDegraded(),
+      this.engine.data.settings.reducedFlashing,
+    );
     
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
     this.tutorial.draw(ctx, this.engine.input);

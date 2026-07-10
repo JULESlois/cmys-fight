@@ -4,6 +4,7 @@ import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
+import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 
 export class TitleState extends GameState {
     protected options = ["NEW RUN", "CONTINUE", "HUB", "SETTINGS"];
@@ -46,12 +47,10 @@ export class TitleState extends GameState {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    // BG
-    ctx.fillStyle = "#0A0F19";
-    ctx.fillRect(0, 0, 320, 240);
+    const t = this.engine.data.settings.dynamicBackground && !this.engine.isPerformanceDegraded() ? Date.now() / 1000 : 0;
+    MenuBackdropRenderer.draw(ctx, "title", t, this.engine.isPerformanceDegraded());
 
     // Grid drifting
-    const t = this.engine.data.settings.dynamicBackground && !this.engine.isPerformanceDegraded() ? Date.now() / 1000 : 0;
     const driftX = (t * 10) % 20;
     const driftY = (t * 10) % 20;
 
@@ -69,6 +68,22 @@ export class TitleState extends GameState {
     for(let i=0; i<240; i+=4) {
       ctx.fillRect(0, i, 320, 1);
     }
+
+    // A compact pixel diorama establishes the player-versus-depth composition.
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    SpriteRenderer.drawPixelSprite(ctx, "player_main_side_idle", 78, 91, 2, {
+      outlineColor: "#071018",
+      paletteOverride: { "1": "#F05D5E", "2": "#F7D794", "3": "#EAF2F8", "4": "#1B263B", "5": "#55B8FF" },
+    });
+    SpriteRenderer.drawPixelSprite(ctx, "weapon_pistol", 91, 92, 1, { outlineColor: "#071018" });
+    SpriteRenderer.drawPixelSprite(ctx, "enemy_boss_idle", 242, 91, 3, { outlineColor: "#24070D" });
+    const shotX = 106 + Math.floor((t * 28) % 94);
+    ctx.fillStyle = "rgba(0,242,254,0.35)";
+    ctx.fillRect(shotX - 8, 88, 12, 2);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(shotX, 88, 3, 2);
+    ctx.restore();
 
     // Pixel shadow/outline for Title
     ctx.textAlign = "center";
@@ -115,7 +130,7 @@ export class TitleState extends GameState {
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
     ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
-    ctx.fillText("v0.7.0 - RELEASE CANDIDATE", 160, 230);
+    ctx.fillText("v0.8.0 - AUDIOVISUAL PASS", 160, 230);
     ctx.textAlign = "left";
   }
 }

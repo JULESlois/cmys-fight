@@ -9,6 +9,7 @@ import {
 import { audio } from "../audio/AudioManager";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { GameState } from "./GameState";
+import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 import { CHALLENGES, getDailyChallengeId } from "../ChallengeSystem";
 
 export class HubState extends GameState {
@@ -110,8 +111,8 @@ export class HubState extends GameState {
 
   draw(ctx: CanvasRenderingContext2D) {
     const meta = this.engine.data.meta;
-    ctx.fillStyle = "#080D16";
-    ctx.fillRect(0, 0, 320, 240);
+    const backdropTime = this.engine.data.settings.dynamicBackground && !this.engine.isPerformanceDegraded() ? Date.now() / 1000 : 0;
+    MenuBackdropRenderer.draw(ctx, "hub", backdropTime, this.engine.isPerformanceDegraded());
 
     ctx.strokeStyle = "rgba(0, 242, 254, 0.08)";
     for (let x = 0; x <= 320; x += 16) {

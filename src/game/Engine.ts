@@ -15,6 +15,7 @@ import { HubState } from "./states/HubState";
 import { RecordsState } from "./states/RecordsState";
 import { events } from "./EventBus";
 import { audio } from "./audio/AudioManager";
+import type { MusicScene } from "./audio/MusicLibrary";
 import { PerformanceMonitor } from "./PerformanceMonitor";
 import { grantDebugLoadout, isDebugMode, jumpToStage } from "./DebugTools";
 import { FINAL_GLOBAL_STAGE } from "./RunProgress";
@@ -45,6 +46,8 @@ export class Engine {
     this.data.load();
     this.input.setBindings(this.data.settings.keyBindings);
     audio.setMasterVolume(this.data.settings.masterVolume / 100);
+    audio.setMusicVolume(this.data.settings.musicVolume / 100);
+    audio.setMusicMode(this.data.settings.musicMode);
 
     this.states = {
       title: new TitleState(this),
@@ -85,6 +88,7 @@ export class Engine {
     
     this.lastTime = performance.now();
     this.states[this.currentState].enter();
+    this.syncStateMusic();
     this.loop(this.lastTime);
   }
 
@@ -116,6 +120,7 @@ export class Engine {
        this.isPaused = false;
     }
     this.states[this.currentState].enter(params);
+    this.syncStateMusic(params);
   }
 
   public openMenu() {
@@ -137,6 +142,29 @@ export class Engine {
   public applySettings() {
     this.input.setBindings(this.data.settings.keyBindings);
     audio.setMasterVolume(this.data.settings.masterVolume / 100);
+    audio.setMusicVolume(this.data.settings.musicVolume / 100);
+    audio.setMusicMode(this.data.settings.musicMode);
+  }
+
+  private syncStateMusic(params?: any) {
+    if (this.currentState === "dungeon") return;
+    const stateScenes: Record<string, MusicScene> = {
+      title: "title",
+      character_select: "hub",
+      hub: "hub",
+      records: "hub",
+      settings: "settings",
+      legacy_rpg: "legacy",
+      legacy_tactics: "legacy",
+      legacy_dialog: "legacy",
+      menu: "settings",
+    };
+    if (this.currentState === "run_result") {
+      const outcome = params?.summary?.outcome ?? this.data.data.runStats.outcome;
+      audio.setMusicScene(outcome === "victory" ? "victory" : "defeat");
+      return;
+    }
+    audio.setMusicScene(stateScenes[this.currentState] ?? "title");
   }
 
   public triggerScreenShake(intensity = 2, duration = 0.12) {
@@ -172,6 +200,7 @@ export class Engine {
     this.isPaused = false;
     this.currentState = newState;
     this.states[this.currentState].enter();
+    this.syncStateMusic();
   }
 
   private loop(time: number) {

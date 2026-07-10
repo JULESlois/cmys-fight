@@ -1,0 +1,8 @@
+{
+  "attribution": "No third-party music is bundled by default. Use only tracks you are licensed to stream.",
+  "tracks": {
+    "title": "", "hub": "", "settings": "", "forest": "", "dungeon": "", "snow": "", "lava": "",
+    "combat_forest": "", "combat_dungeon": "", "combat_snow": "", "combat_lava": "",
+    "boss": "", "shop": "", "victory": "", "defeat": "", "legacy": ""
+  }
+}

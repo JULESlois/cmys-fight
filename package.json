@@ -1,7 +1,7 @@
 {
   "name": "cmys-fight",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -11,9 +11,10 @@
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
-    "verify": "npm run lint && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
+    "verify": "npm run lint && npm run test:art && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
     "test:http": "node scripts/http-smoke.mjs",
-    "test:input": "node --import tsx scripts/input-smoke.ts"
+    "test:input": "node --import tsx scripts/input-smoke.ts",
+    "test:art": "node --import tsx scripts/art-audio-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

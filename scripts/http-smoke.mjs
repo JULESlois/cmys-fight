@@ -35,12 +35,15 @@ try {
   await waitForServer();
   const health = await (await verify("/api/health", /json/)).json();
   assert.equal(health.ok, true);
+  assert.equal(health.version, "0.8.0");
   const html = await (await verify("/", /html/)).text();
   assert.match(html, /manifest\.webmanifest/);
   const manifest = await (await verify("/manifest.webmanifest", /manifest|json/)).json();
   assert.equal(manifest.short_name, "CMYS Fight");
   const sw = await (await verify("/sw.js", /javascript/)).text();
   assert.match(sw, /CACHE_NAME/);
+  const musicConfig = await (await verify("/music-tracks.json", /json/)).json();
+  assert.equal(typeof musicConfig.attribution, "string");
   const icon192 = await verify("/icon-192.png", /image\/png/);
   const icon512 = await verify("/icon-512.png", /image\/png/);
   assert.ok((await icon192.arrayBuffer()).byteLength > 100);

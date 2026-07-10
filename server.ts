@@ -13,7 +13,7 @@ async function startServer() {
   app.use(express.json());
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, service: "cmys-fight", version: "0.7.0" });
+    res.json({ ok: true, service: "cmys-fight", version: "0.8.0" });
   });
 
   // AI Dialog Endpoint

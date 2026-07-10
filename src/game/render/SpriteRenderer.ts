@@ -4,6 +4,7 @@ export interface SpriteOptions {
   flipX?: boolean;
   hitFlash?: boolean;
   paletteOverride?: Record<string, string>;
+  outlineColor?: string;
 }
 
 export class SpriteRenderer {
@@ -54,6 +55,22 @@ export class SpriteRenderer {
     // Draw centered
     const startX = Math.round(-w / 2);
     const startY = Math.round(-h / 2);
+
+    if (options.outlineColor) {
+      ctx.fillStyle = options.outlineColor;
+      const neighbors = [[-1, 0], [1, 0], [0, -1], [0, 1]] as const;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          if (spriteData[row][col] === '.') continue;
+          for (const [dx, dy] of neighbors) {
+            const nr = row + dy;
+            const nc = col + dx;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && spriteData[nr][nc] !== '.') continue;
+            ctx.fillRect(startX + nc * scale, startY + nr * scale, scale, scale);
+          }
+        }
+      }
+    }
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
