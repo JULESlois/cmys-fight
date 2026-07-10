@@ -1,6 +1,7 @@
 import { WEAPONS, isWeaponId } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
+import { acquireProjectile } from "../EntityPools";
 import { SkillController } from "./SkillController";
 import { BuffSystem } from "./BuffSystem";
 
@@ -105,7 +106,7 @@ export class WeaponController {
         const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus + modifiers.critChanceBonus);
         const baseDamage = Math.max(1, Math.round(weapon.damage * modifiers.damageMultiplier));
         const damage = critical ? baseDamage * 2 : baseDamage;
-        projectiles.push(new Projectile(
+        projectiles.push(acquireProjectile(
           muzzle.x,
           muzzle.y,
           Math.cos(angle) * weapon.bulletSpeed,

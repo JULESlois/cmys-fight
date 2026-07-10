@@ -21,6 +21,9 @@ const OPTIONS = [
   "COLOR MODE",
   "TOUCH CONTROLS",
   "CONTROLS",
+  "FULLSCREEN",
+  "EXPORT DATA",
+  "IMPORT DATA",
   "RESET TUTORIAL",
   "BACK",
 ] as const;
@@ -83,6 +86,15 @@ export class SettingsState extends GameState {
         this.controlsOpen = true;
         this.message = "ENTER: REBIND // R: RESET KEYS";
         this.engine.input.clearJustPressed();
+      } else if (option === "FULLSCREEN") {
+        document.dispatchEvent(new CustomEvent("game:fullscreen"));
+        this.message = "FULLSCREEN TOGGLED";
+      } else if (option === "EXPORT DATA") {
+        document.dispatchEvent(new CustomEvent("game:export-data"));
+        this.message = "EXPORT REQUESTED";
+      } else if (option === "IMPORT DATA") {
+        document.dispatchEvent(new CustomEvent("game:import-data"));
+        this.message = "SELECT A SAVE FILE";
       } else if (option === "RESET TUTORIAL") {
         this.engine.data.settings.tutorialCompleted = false;
         this.saveSettings("TUTORIAL WILL START ON NEXT RUN");
@@ -179,8 +191,8 @@ export class SettingsState extends GameState {
   draw(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#0A0F19";
     ctx.fillRect(0, 0, 320, 240);
-    MenuRenderer.drawTitle(ctx, this.controlsOpen ? "CONTROL BINDINGS" : "SYSTEM SETTINGS", 160, 24);
-    MenuRenderer.drawPanel(ctx, 24, 34, 272, 184);
+    MenuRenderer.drawTitle(ctx, this.controlsOpen ? "CONTROL BINDINGS" : "SYSTEM SETTINGS", 160, 20);
+    MenuRenderer.drawPanel(ctx, 24, 27, 272, 197);
 
     if (this.controlsOpen) {
       this.drawControls(ctx);
@@ -189,7 +201,7 @@ export class SettingsState extends GameState {
 
     const settings = this.engine.data.settings;
     OPTIONS.forEach((option, index) => {
-      const y = 50 + index * 14;
+      const y = 42 + index * 12;
       const selected = index === this.selectedIndex;
       ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
       if (selected) ctx.fillRect(32, y - 9, 256, 12);
@@ -208,15 +220,18 @@ export class SettingsState extends GameState {
                   : option === "COLOR MODE" ? settings.colorblindMode.toUpperCase().slice(0, 8)
                     : option === "TOUCH CONTROLS" ? (settings.touchControls ? "AUTO" : "OFF")
                       : option === "CONTROLS" ? "ENTER"
-                        : option === "RESET TUTORIAL" ? (settings.tutorialCompleted ? "RESET" : "READY")
-                          : "ENTER";
+                        : option === "FULLSCREEN" ? "TOGGLE"
+                          : option === "EXPORT DATA" ? "DOWNLOAD"
+                            : option === "IMPORT DATA" ? "SELECT"
+                              : option === "RESET TUTORIAL" ? (settings.tutorialCompleted ? "RESET" : "READY")
+                                : "ENTER";
       ctx.fillText(value, 282, y);
     });
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
     ctx.font = "6px monospace";
-    ctx.fillText(this.message, 160, 207);
+    ctx.fillText(this.message, 160, 211);
     ctx.fillStyle = "#7F8C8D";
     ctx.fillText("ARROWS ADJUST // ENTER SELECT // ESC BACK", 160, 228);
     ctx.textAlign = "left";

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Engine } from "../game/Engine";
 import type { InputAction } from "../game/Settings";
 
@@ -7,8 +7,16 @@ export function GameCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const joystickRef = useRef<HTMLDivElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const [touchEnabled, setTouchEnabled] = useState(true);
   const [stick, setStick] = useState({ x: 0, y: 0 });
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    if (!status) return;
+    const timer = window.setTimeout(() => setStatus(""), 2600);
+    return () => window.clearTimeout(timer);
+  }, [status]);
 
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
@@ -33,12 +41,64 @@ export function GameCanvas() {
       setTouchEnabled(engineRef.current?.data.settings.touchControls !== false);
     }, 300);
 
+    if (engineRef.current.data.lastRecoveryMessage) {
+      setStatus(engineRef.current.data.lastRecoveryMessage);
+    }
+
+    const exportData = () => {
+      const json = engineRef.current?.data.exportBundle();
+      if (!json) return;
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `cmys-fight-save-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      setStatus("SAVE DATA EXPORTED");
+    };
+    const importData = () => importRef.current?.click();
+    const toggleFullscreen = async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await containerRef.current?.requestFullscreen();
+        setStatus(document.fullscreenElement ? "FULLSCREEN ENABLED" : "FULLSCREEN DISABLED");
+      } catch {
+        setStatus("FULLSCREEN UNAVAILABLE");
+      }
+    };
+    document.addEventListener("game:export-data", exportData);
+    document.addEventListener("game:import-data", importData);
+    document.addEventListener("game:fullscreen", toggleFullscreen);
+
     return () => {
+      document.removeEventListener("game:export-data", exportData);
+      document.removeEventListener("game:import-data", importData);
+      document.removeEventListener("game:fullscreen", toggleFullscreen);
       window.clearInterval(settingsTimer);
       engineRef.current?.cleanup();
       resizeObserver.disconnect();
     };
   }, []);
+
+
+  const importSave = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !engineRef.current) return;
+    try {
+      const result = engineRef.current.data.importBundle(await file.text());
+      setStatus(result.message);
+      if (result.success) {
+        engineRef.current.applySettings();
+        engineRef.current.switchState("title");
+      }
+    } catch {
+      setStatus("SAVE IMPORT FAILED");
+    }
+  };
 
   const updateJoystick = (clientX: number, clientY: number) => {
     const bounds = joystickRef.current?.getBoundingClientRect();
@@ -77,8 +137,15 @@ export function GameCanvas() {
   });
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden focus:outline-none" tabIndex={0}>
+    <div ref={containerRef} className="game-shell relative w-full h-full bg-black flex items-center justify-center overflow-hidden focus:outline-none" tabIndex={0}>
+      <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={importSave} />
       <canvas ref={canvasRef} className="block w-full h-full" style={{ imageRendering: "pixelated", touchAction: "none" }} />
+
+      {status && (
+        <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] left-1/2 z-30 -translate-x-1/2 rounded border border-cyan-300/50 bg-slate-950/90 px-3 py-1 font-mono text-[10px] text-cyan-100">
+          {status}
+        </div>
+      )}
 
       {touchEnabled && (
         <div className="touch-controls absolute inset-0 pointer-events-none select-none">

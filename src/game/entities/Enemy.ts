@@ -42,13 +42,44 @@ export class Enemy {
   private static nextId = 0;
 
   constructor(x: number, y: number, type: EnemyRole) {
+    this.reset(x, y, type);
+  }
+
+  reset(x: number, y: number, type: EnemyRole): this {
     this.id = Enemy.nextId++;
     this.x = x;
     this.y = y;
+    this.radius = 8;
     this.type = type;
     this.enemyId = type;
+    this.name = "Enemy";
     this.behavior = type === "melee" ? "melee" : type === "ranged" ? "shoot" : "boss";
-    
+    this.displayColor = "#FFFFFF";
+    this.isElite = false;
+    this.eliteCoinReward = 0;
+    this.state = "chase";
+    this.hitFlash = 0;
+    this.attackState = "idle";
+    this.attackCooldown = 0;
+    this.attackTimer = 0;
+    this.attackAngle = 0;
+    this.attackDamage = 2;
+    this.projectileSpeed = 90;
+    this.projectileCount = 1;
+    this.projectileSpread = 0.28;
+    this.attackInterval = 1;
+    this.attackWindup = 0.4;
+    this.attackTargetX = 0;
+    this.attackTargetY = 0;
+    this.chargeDistance = 48;
+    this.areaRadius = 30;
+    this.summonEnemyId = undefined;
+    this.bossPhase = 1;
+    this.attackSequence = 0;
+    this.statusEffect = undefined;
+    this.statusDuration = 0;
+    this.statusEffects = [];
+
     if (type === "melee") {
       this.maxHp = 10;
       this.speed = 40;
@@ -75,5 +106,7 @@ export class Enemy {
       this.attackWindup = 0.65;
     }
     this.hp = this.maxHp;
+    return this;
   }
+
 }

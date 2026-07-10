@@ -51,7 +51,7 @@ export class TitleState extends GameState {
     ctx.fillRect(0, 0, 320, 240);
 
     // Grid drifting
-    const t = this.engine.data.settings.dynamicBackground ? Date.now() / 1000 : 0;
+    const t = this.engine.data.settings.dynamicBackground && !this.engine.isPerformanceDegraded() ? Date.now() / 1000 : 0;
     const driftX = (t * 10) % 20;
     const driftY = (t * 10) % 20;
 
@@ -115,7 +115,7 @@ export class TitleState extends GameState {
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
     ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
-    ctx.fillText("v0.6.0 - ACCESS LAYER", 160, 230);
+    ctx.fillText("v0.7.0 - RELEASE CANDIDATE", 160, 230);
     ctx.textAlign = "left";
   }
 }

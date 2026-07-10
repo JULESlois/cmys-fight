@@ -13,6 +13,7 @@ import { PortalRenderer, PortalState } from "../render/PortalRenderer";
 import { MinimapRenderer } from "../render/MinimapRenderer";
 
 import { Pickup } from "../entities/Pickup";
+import { acquirePickup, acquireProjectile, releaseEnemy, releasePickup, releaseProjectile } from "../EntityPools";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController } from "../EncounterController";
 import { EncounterFactory } from "../EncounterFactory";
@@ -127,12 +128,12 @@ export class DungeonState extends GameState {
           const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 8.5 };
           const p2 = pts.length > 1 ? pts[1] : { x: 8.5, y: 7.5 };
           if (params.legacyType === "legacy_rpg") {
-             this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "mana", 50));
-             this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
+             this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "mana", 50));
+             this.pickups.push(acquirePickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
           } else if (params.legacyType === "legacy_tactics") {
-             this.pickups.push(new Pickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
+             this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
              this.engine.data.discoverWeapon("laser");
-             this.pickups.push(new Pickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 100));
+             this.pickups.push(acquirePickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 100));
           }
        }
     }
@@ -224,6 +225,9 @@ export class DungeonState extends GameState {
   }
 
   private loadRoom() {
+    for (const projectile of this.projectiles) releaseProjectile(projectile);
+    for (const pickup of this.pickups) releasePickup(pickup);
+    for (const enemy of this.enemies) releaseEnemy(enemy);
     this.projectiles = [];
     this.pickups = [];
     this.enemies = [];
@@ -258,7 +262,7 @@ export class DungeonState extends GameState {
 
     if (currentRoom && currentRoom.pickups) {
       this.pickups = currentRoom.pickups.map((p: any) => {
-        const pickup = new Pickup(p.x, p.y, p.type, p.value, p.weaponId);
+        const pickup = acquirePickup(p.x, p.y, p.type, p.value, p.weaponId);
         pickup.blockedUntilPlayerLeaves = p.blockedUntilPlayerLeaves === true;
         if (p.weaponId) this.engine.data.discoverWeapon(p.weaponId);
         return pickup;
@@ -549,7 +553,7 @@ export class DungeonState extends GameState {
 
     this.engine.data.data.player.coins = result.coinsAfter;
     if (result.droppedWeaponId) {
-      const dropped = new Pickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
+      const dropped = acquirePickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
       dropped.blockedUntilPlayerLeaves = true;
       (dropped as any).bounceTimer = 0.2;
       (dropped as any).baseY = dropped.y;
@@ -575,16 +579,16 @@ export class DungeonState extends GameState {
        if (template.portalSpawnPoint) {
          this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8, state: "spawning", timer: 0.6 };
        }
-       this.pickups.push(new Pickup(160, 120, "hp", Math.round(20 * difficulty.rewardMultiplier)));
-       this.pickups.push(new Pickup(140, 120, "coin", Math.round(50 * difficulty.rewardMultiplier)));
+       this.pickups.push(acquirePickup(160, 120, "hp", Math.round(20 * difficulty.rewardMultiplier)));
+       this.pickups.push(acquirePickup(140, 120, "coin", Math.round(50 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "combat") {
-       this.pickups.push(new Pickup(
+       this.pickups.push(acquirePickup(
          160,
          120,
          Math.random() > 0.5 ? "hp" : "mana",
          Math.round(15 * difficulty.rewardMultiplier),
        ));
-       this.pickups.push(new Pickup(150, 110, "coin", Math.round(20 * difficulty.rewardMultiplier)));
+       this.pickups.push(acquirePickup(150, 110, "coin", Math.round(20 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "treasure") {
        const pts = template.pickupSpawnPoints;
        const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
@@ -803,6 +807,7 @@ export class DungeonState extends GameState {
         if (!killed.has(enemy.id)) continue;
         this.handleEnemyKilled(enemy);
         this.enemies.splice(i, 1);
+        releaseEnemy(enemy);
       }
     }
   }
@@ -819,13 +824,13 @@ export class DungeonState extends GameState {
   private spawnEnemyDeathDrop(enemy: Enemy) {
     if (enemy.isElite) {
       const difficulty = getStageDifficulty(this.engine.data.data.floor);
-      this.pickups.push(new Pickup(
+      this.pickups.push(acquirePickup(
         enemy.x,
         enemy.y,
         "coin",
         Math.max(1, Math.round(enemy.eliteCoinReward * difficulty.rewardMultiplier)),
       ));
-      this.pickups.push(new Pickup(
+      this.pickups.push(acquirePickup(
         enemy.x + 8,
         enemy.y,
         Math.random() < 0.5 ? "mana" : "hp",
@@ -835,7 +840,7 @@ export class DungeonState extends GameState {
     }
 
     if (Math.random() < Math.min(0.8, 0.3 + this.player.supplyDropBonus)) {
-      this.pickups.push(new Pickup(
+      this.pickups.push(acquirePickup(
         enemy.x,
         enemy.y,
         Math.random() < 0.5 ? "mana" : "hp",
@@ -921,6 +926,7 @@ export class DungeonState extends GameState {
       if (!StatusEffectSystem.updateEnemy(enemy, dt)) continue;
       this.handleEnemyKilled(enemy);
       this.enemies.splice(index, 1);
+      releaseEnemy(enemy);
     }
   }
 
@@ -1044,7 +1050,7 @@ export class DungeonState extends GameState {
           currentRoom.interactionCompleted = true;
           currentRoom.rewardGenerated = true;
        }
-       this.pickups.push(new Pickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
+       this.pickups.push(acquirePickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
        this.engine.data.discoverWeapon(this.chest.weaponId);
     } else if (target.type === "shop") {
        this.shopOpen = true;
@@ -1400,7 +1406,7 @@ export class DungeonState extends GameState {
   }
 
   private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3) {
-    this.projectiles.push(new Projectile(
+    this.projectiles.push(acquireProjectile(
       enemy.x,
       enemy.y,
       Math.cos(angle) * enemy.projectileSpeed,
@@ -1547,6 +1553,7 @@ export class DungeonState extends GameState {
           if (result.killed) {
             this.handleEnemyKilled(e);
             this.enemies.splice(closestEnemyIndex, 1);
+            releaseEnemy(e);
           }
           if (p.pierceRemaining > 0) {
             p.pierceRemaining--;
@@ -1597,6 +1604,7 @@ export class DungeonState extends GameState {
 
       if (entityHit || environmentHitT !== null || p.life <= 0) {
         this.projectiles.splice(i, 1);
+        releaseProjectile(p);
       }
     }
   }
@@ -1666,7 +1674,7 @@ export class DungeonState extends GameState {
               const result = WeaponController.equipWeapon(this.player, p.weaponId);
               if (!result.consumed) continue;
               if (result.droppedWeaponId) {
-                 droppedWeapon = new Pickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
+                 droppedWeapon = acquirePickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
                  droppedWeapon.blockedUntilPlayerLeaves = true;
                  (droppedWeapon as any).bounceTimer = 0.2;
                  (droppedWeapon as any).baseY = droppedWeapon.y;
@@ -1676,6 +1684,7 @@ export class DungeonState extends GameState {
            }
            audio.playPickup();
            this.pickups.splice(i, 1);
+           releasePickup(p);
            if (droppedWeapon) this.pickups.push(droppedWeapon);
         }
      }

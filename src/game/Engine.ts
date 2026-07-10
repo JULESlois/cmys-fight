@@ -15,6 +15,10 @@ import { HubState } from "./states/HubState";
 import { RecordsState } from "./states/RecordsState";
 import { events } from "./EventBus";
 import { audio } from "./audio/AudioManager";
+import { PerformanceMonitor } from "./PerformanceMonitor";
+import { grantDebugLoadout, isDebugMode, jumpToStage } from "./DebugTools";
+import { FINAL_GLOBAL_STAGE } from "./RunProgress";
+import { getEntityPoolStats } from "./EntityPools";
 
 export class Engine {
   public input: Input;
@@ -22,6 +26,8 @@ export class Engine {
   public states: { [key: string]: GameState } = {};
   public currentState: string = "title";
   public isPaused: boolean = false;
+  public readonly performanceMonitor = new PerformanceMonitor();
+  public readonly debugMode = isDebugMode();
   
   private lastTime = 0;
   private canvas: HTMLCanvasElement | null = null;
@@ -186,6 +192,7 @@ export class Engine {
 
   private update(dt: number) {
     const cappedDt = Math.min(dt, 0.1);
+    this.performanceMonitor.update(dt);
     this.input.beginFrame();
     this.shakeTimer = Math.max(0, this.shakeTimer - cappedDt);
 
@@ -193,6 +200,25 @@ export class Engine {
       this.states[this.overlayState].update(cappedDt);
       this.input.update();
       return;
+    }
+
+    if (this.debugMode && this.currentState === "dungeon") {
+      if (this.input.wasPressed("f7")) {
+        this.rebuildStateAfterDataChange("dungeon", () => jumpToStage(this.data, this.data.data.run.globalStageIndex - 1));
+        return;
+      }
+      if (this.input.wasPressed("f8")) {
+        this.rebuildStateAfterDataChange("dungeon", () => jumpToStage(this.data, this.data.data.run.globalStageIndex + 1));
+        return;
+      }
+      if (this.input.wasPressed("f9")) {
+        this.rebuildStateAfterDataChange("dungeon", () => grantDebugLoadout(this.data));
+        return;
+      }
+      if (this.input.wasPressed("f10")) {
+        this.rebuildStateAfterDataChange("dungeon", () => jumpToStage(this.data, FINAL_GLOBAL_STAGE));
+        return;
+      }
     }
 
     const canPause = ["dungeon", "legacy_rpg", "legacy_tactics"].includes(this.currentState);
@@ -242,7 +268,8 @@ export class Engine {
     
     this.ctx.translate(offsetX, offsetY);
     this.ctx.scale(scale, scale);
-    if (this.shakeTimer > 0 && settings.screenShake) {
+    const degraded = this.performanceMonitor.isDegraded();
+    if (this.shakeTimer > 0 && settings.screenShake && !degraded) {
       const phase = performance.now() * 0.04;
       this.ctx.translate(Math.sin(phase) * this.shakeIntensity, Math.cos(phase * 1.31) * this.shakeIntensity);
     }
@@ -263,10 +290,12 @@ export class Engine {
       PauseOverlayRenderer.draw(this.ctx, this.input);
     }
 
-    if (settings.crtFilter) {
+    if (settings.crtFilter && !degraded) {
       this.ctx.fillStyle = settings.reducedFlashing ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.13)";
       for (let y = 0; y < 240; y += 4) this.ctx.fillRect(0, y, 320, 1);
     }
+
+    if (this.debugMode) this.drawDebugOverlay(this.ctx);
 
     this.ctx.restore();
     
@@ -282,4 +311,28 @@ export class Engine {
       this.ctx.fillRect(0, this.canvas.height - offsetY, this.canvas.width, offsetY);
     }
   }
+  public isPerformanceDegraded(): boolean {
+    return this.performanceMonitor.isDegraded();
+  }
+
+  private drawDebugOverlay(ctx: CanvasRenderingContext2D): void {
+    const perf = this.performanceMonitor.getSnapshot();
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillRect(218, 54, 98, 52);
+    ctx.strokeStyle = perf.degraded ? "#E74C3C" : "#2ECC71";
+    ctx.strokeRect(218, 54, 98, 52);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "6px monospace";
+    ctx.textAlign = "left";
+    const pools = getEntityPoolStats();
+    ctx.fillText(`FPS ${perf.fps} // ${perf.frameTimeMs}MS`, 222, 65);
+    ctx.fillText(`STATE ${this.currentState.toUpperCase()}`, 222, 75);
+    ctx.fillText(`STAGE ${this.data.data.run.chapterIndex}-${this.data.data.run.stageIndex}`, 222, 85);
+    ctx.fillText(`POOL P${pools.projectiles.available} E${pools.enemies.available} D${pools.pickups.available}`, 222, 95);
+    ctx.fillStyle = perf.degraded ? "#E74C3C" : "#7F8C8D";
+    ctx.fillText(perf.degraded ? "AUTO LOW-FX" : "F7/F8 STAGE F9 KIT", 222, 103);
+    ctx.restore();
+  }
+
 }

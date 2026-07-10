@@ -63,9 +63,13 @@ import {
   normalizeSettings,
   type GameSettings,
 } from "./Settings";
+import { createSaveBundle, isJsonObject, parseSaveBundle } from "./SaveTransfer";
 
 export const RUN_SAVE_KEY = "retro_rpg_save";
 export const META_SAVE_KEY = "retro_rpg_meta";
+export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
+export const META_BACKUP_KEY = "retro_rpg_meta_backup";
+export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
 const CURRENT_SAVE_VERSION = 15;
 const INITIAL_RUN = createInitialRunProgress();
 
@@ -177,6 +181,7 @@ export class GameData {
   public data: GameSave;
   public meta: MetaProgress;
   public settings: GameSettings;
+  public lastRecoveryMessage: string | null = null;
 
   constructor() {
     this.data = JSON.parse(JSON.stringify(defaultSave));
@@ -201,17 +206,21 @@ export class GameData {
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     const payload = { ...this.data } as GameSave & { settings?: Partial<GameSettings> };
     delete payload.settings;
-    localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(payload));
+    this.writeWithBackup(RUN_SAVE_KEY, RUN_BACKUP_KEY, JSON.stringify(payload));
   }
 
-  load() {
+  load(allowBackup = true): boolean {
+    if (allowBackup) this.lastRecoveryMessage = null;
     this.loadMeta();
     this.loadSettings();
     const saved = localStorage.getItem(RUN_SAVE_KEY);
-    if (!saved) return;
+    if (!saved) return false;
 
     try {
       const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !parsed.player || !parsed.floor) {
+        throw new Error("Run save envelope is invalid.");
+      }
       if (!localStorage.getItem(SETTINGS_SAVE_KEY) && parsed.settings) {
         this.settings = normalizeSettings(parsed.settings);
         this.saveSettings();
@@ -265,8 +274,14 @@ export class GameData {
 
       this.data.saveVersion = CURRENT_SAVE_VERSION;
       if (needsMigration || !stageCompatible) this.save();
+      return true;
     } catch (error) {
+      if (allowBackup && this.restoreBackup(RUN_SAVE_KEY, RUN_BACKUP_KEY, "RUN")) {
+        console.warn("[SaveRecovery] Run data restored from backup.");
+        return this.load(false);
+      }
       console.error("Failed to load save:", error);
+      return false;
     }
   }
 
@@ -382,6 +397,8 @@ export class GameData {
   resetAll() {
     localStorage.removeItem(RUN_SAVE_KEY);
     localStorage.removeItem(META_SAVE_KEY);
+    localStorage.removeItem(RUN_BACKUP_KEY);
+    localStorage.removeItem(META_BACKUP_KEY);
     this.meta = createDefaultMetaProgress();
     this.data = JSON.parse(JSON.stringify(defaultSave));
     this.data.run = createInitialRunProgress();
@@ -617,21 +634,29 @@ export class GameData {
 
   public saveSettings(): void {
     this.settings = normalizeSettings(this.settings);
-    localStorage.setItem(SETTINGS_SAVE_KEY, JSON.stringify(this.settings));
+    this.writeWithBackup(SETTINGS_SAVE_KEY, SETTINGS_BACKUP_KEY, JSON.stringify(this.settings));
   }
 
-  public loadSettings(): void {
+  public loadSettings(allowBackup = true): boolean {
     const saved = localStorage.getItem(SETTINGS_SAVE_KEY);
     if (!saved) {
       this.settings = createDefaultSettings();
-      return;
+      return false;
     }
     try {
-      this.settings = normalizeSettings(JSON.parse(saved));
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Settings envelope is invalid.");
+      this.settings = normalizeSettings(parsed);
       this.saveSettings();
+      return true;
     } catch (error) {
+      if (allowBackup && this.restoreBackup(SETTINGS_SAVE_KEY, SETTINGS_BACKUP_KEY, "SETTINGS")) {
+        console.warn("[SaveRecovery] Settings restored from backup.");
+        return this.loadSettings(false);
+      }
       console.error("Failed to load settings:", error);
       this.settings = createDefaultSettings();
+      return false;
     }
   }
 
@@ -642,24 +667,107 @@ export class GameData {
 
   public saveMeta(): void {
     this.meta = normalizeMetaProgress(this.meta);
-    localStorage.setItem(META_SAVE_KEY, JSON.stringify(this.meta));
+    this.writeWithBackup(META_SAVE_KEY, META_BACKUP_KEY, JSON.stringify(this.meta));
   }
 
-  public loadMeta(): void {
+  public loadMeta(allowBackup = true): boolean {
     const saved = localStorage.getItem(META_SAVE_KEY);
     if (!saved) {
       this.meta = createDefaultMetaProgress();
-      return;
+      return false;
     }
     try {
       const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Meta envelope is invalid.");
       const migrated = Number(parsed?.version || 0) < 3;
       this.meta = normalizeMetaProgress(parsed);
       if (migrated) this.saveMeta();
+      return true;
     } catch (error) {
+      if (allowBackup && this.restoreBackup(META_SAVE_KEY, META_BACKUP_KEY, "META")) {
+        console.warn("[SaveRecovery] Meta progress restored from backup.");
+        return this.loadMeta(false);
+      }
       console.error("Failed to load meta progress:", error);
       this.meta = createDefaultMetaProgress();
+      return false;
     }
+  }
+
+  public exportBundle(): string {
+    this.save();
+    this.saveMeta();
+    this.saveSettings();
+    const bundle = createSaveBundle({
+      run: this.data,
+      meta: this.meta,
+      settings: this.settings,
+    });
+    return JSON.stringify(bundle, null, 2);
+  }
+
+  public importBundle(raw: string): { success: boolean; message: string } {
+    const originals = {
+      run: localStorage.getItem(RUN_SAVE_KEY),
+      meta: localStorage.getItem(META_SAVE_KEY),
+      settings: localStorage.getItem(SETTINGS_SAVE_KEY),
+    };
+    try {
+      const payload = parseSaveBundle(raw);
+      this.backupCurrentStorage();
+      localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(payload.run));
+      localStorage.setItem(META_SAVE_KEY, JSON.stringify(payload.meta));
+      localStorage.setItem(SETTINGS_SAVE_KEY, JSON.stringify(payload.settings));
+      this.lastRecoveryMessage = null;
+      if (!this.load(false)) throw new Error("Imported Run data could not be loaded.");
+      if (!this.loadMeta(false)) throw new Error("Imported Meta data could not be loaded.");
+      if (!this.loadSettings(false)) throw new Error("Imported Settings could not be loaded.");
+      this.save();
+      this.saveMeta();
+      this.saveSettings();
+      if (isJsonObject(originals.run)) localStorage.setItem(RUN_BACKUP_KEY, originals.run!);
+      if (isJsonObject(originals.meta)) localStorage.setItem(META_BACKUP_KEY, originals.meta!);
+      if (isJsonObject(originals.settings)) localStorage.setItem(SETTINGS_BACKUP_KEY, originals.settings!);
+      return { success: true, message: "SAVE DATA IMPORTED" };
+    } catch (error) {
+      this.restoreOriginalStorage(RUN_SAVE_KEY, originals.run);
+      this.restoreOriginalStorage(META_SAVE_KEY, originals.meta);
+      this.restoreOriginalStorage(SETTINGS_SAVE_KEY, originals.settings);
+      this.load(false);
+      const message = error instanceof Error ? error.message : "Import failed.";
+      return { success: false, message: message.toUpperCase() };
+    }
+  }
+
+  private writeWithBackup(primaryKey: string, backupKey: string, value: string): void {
+    const current = localStorage.getItem(primaryKey);
+    if (isJsonObject(current) && current !== value) localStorage.setItem(backupKey, current);
+    localStorage.setItem(primaryKey, value);
+  }
+
+  private backupCurrentStorage(): void {
+    const pairs = [
+      [RUN_SAVE_KEY, RUN_BACKUP_KEY],
+      [META_SAVE_KEY, META_BACKUP_KEY],
+      [SETTINGS_SAVE_KEY, SETTINGS_BACKUP_KEY],
+    ] as const;
+    for (const [primary, backup] of pairs) {
+      const current = localStorage.getItem(primary);
+      if (isJsonObject(current)) localStorage.setItem(backup, current);
+    }
+  }
+
+  private restoreBackup(primaryKey: string, backupKey: string, label: string): boolean {
+    const backup = localStorage.getItem(backupKey);
+    if (!isJsonObject(backup)) return false;
+    localStorage.setItem(primaryKey, backup!);
+    this.lastRecoveryMessage = `${label} DATA RESTORED FROM BACKUP`;
+    return true;
+  }
+
+  private restoreOriginalStorage(key: string, value: string | null): void {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
   }
 
   private normalizePlayerWeapons() {

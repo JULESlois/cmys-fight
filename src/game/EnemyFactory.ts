@@ -1,6 +1,7 @@
 import type { EnemySpawn } from "./EncounterController";
 import type { StageData } from "./FloorGenerator";
 import { Enemy } from "./entities/Enemy";
+import { acquireEnemy } from "./EntityPools";
 import {
   getBossDefinition,
   getEnemyDefinition,
@@ -23,7 +24,7 @@ export class EnemyFactory {
     const definition = isEnemyId(spawn.enemyId)
       ? getEnemyDefinition(spawn.enemyId)
       : fallbackDefinition(stage, spawn.type);
-    const enemy = new Enemy(spawn.x, spawn.y, definition.role);
+    const enemy = acquireEnemy(spawn.x, spawn.y, definition.role);
     EnemyFactory.applyDefinition(enemy, definition);
     applyStageDifficulty(enemy, getStageDifficulty(stage));
     if (spawn.isElite && enemy.type !== "boss") EnemyFactory.applyElite(enemy);
