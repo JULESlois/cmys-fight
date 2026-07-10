@@ -86,7 +86,7 @@ export class EntityRenderer {
     ctx.ellipse(0, enemy.radius - 2, shadowRad, shadowRad * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const animOffset = Math.sin(time * 5 + enemy.x) * 2; // Simple bobbing
+    const animOffset = Math.round(Math.sin(time * 5 + enemy.x) * 2); // Simple bobbing
     const isHit = enemy.hitFlash > 0;
     
     ctx.translate(0, animOffset);
@@ -99,15 +99,15 @@ export class EntityRenderer {
     // Pixel HP bar
     const barW = enemy.type === "boss" ? 40 : 16;
     const barH = 2;
-    const barX = enemy.x - barW / 2;
-    const barY = enemy.y - enemy.radius - (enemy.type === "boss" ? 16 : 10);
+    const barX = Math.round(enemy.x) - barW / 2;
+    const barY = Math.round(enemy.y) - enemy.radius - (enemy.type === "boss" ? 16 : 10);
     
     ctx.fillStyle = "#1a1c2c";
     ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
     ctx.fillStyle = "#e43b44";
     ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = "#2ECC71";
-    ctx.fillRect(barX, barY, barW * (enemy.hp / enemy.maxHp), barH);
+    ctx.fillRect(barX, barY, Math.round(barW * (enemy.hp / enemy.maxHp)), barH);
   }
 public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
     ctx.save();
@@ -147,7 +147,7 @@ public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
     ctx.ellipse(0, 6, 6, 3, 0, 0, Math.PI * 2);
     ctx.fill();
     
-    const floatOffset = Math.sin(time * 4) * 2;
+    const floatOffset = Math.round(Math.sin(time * 4) * 2);
     ctx.translate(0, floatOffset);
 
     let spriteName = `pickup_${p.type}`;

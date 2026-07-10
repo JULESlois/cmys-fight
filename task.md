@@ -1,123 +1,159 @@
-继续修复 cmys-fight。本轮不新增玩法，重点修复房间流程重复触发和玩家视觉更新
+继续修复 cmys-fight。本轮不新增玩法，处理死亡重开、门锁时序、房间状态语义和剩余像素抖动。
 
-1. 新增 exploration 房间阶段。
+1. 修复死亡重开。
 
-RoomPhase 增加：
-"exploration"
+当前死亡后按 Enter 只修改 GameData.player.hp/mana，然后 loadRoom，
+但当前 this.player 实例仍然死亡。
 
-流程应为：
-新战斗房：
-entering -> intro -> locking -> combat -> cleared -> reward -> exploration
+新增统一函数：
+createPlayerFromSave(savedPlayer)
+或 resetPlayerFromSave()
 
-已清理房间重新进入：
-直接 exploration
+死亡重开时必须：
+- resetRun 或重新生成 floor
+- 重建 this.player
+- 恢复 hp/maxHp
+- 恢复 armor/maxArmor
+- 恢复 mana/maxMana
+- 恢复 speed
+- 恢复 characterId
+- 恢复 currentWeaponId
+- 重置 x/y 到 160/120
+- fireCooldown = 0
+- muzzleFlash = 0
+- hitFlash = 0
+- animState = idle
+- animFrame = 0
+- transitionState = fade_in
+- transitionAlpha = 1
+- loadRoom()
 
-start 房：
-直接 exploration
+2. 修复清房后提前开门。
 
-不要让已清理房间重新进入 cleared/reward。
-不要重复播放 ROOM CLEAR。
-不要重复生成奖励。
-不要重复播放清房音效。
+不要再只使用：
+const isLocked = !currentRoom.cleared
 
-2. 修复恢复战斗时重复出怪。
+改为根据 roomPhase 判断。
 
-当前恢复 currentRoom.enemies 后调用 setPhase("combat")，
-但 setPhase("combat") 会重新 encounterCtrl.start()。
+以下阶段门必须锁定：
+- entering
+- intro
+- locking
+- combat
+- cleared
+- reward
 
-修改 setPhase：
-setPhase(phase, options?: { startEncounter?: boolean })
+只有以下阶段允许切房：
+- exploration
 
-新房间进入 combat：
-setPhase("combat", { startEncounter: true })
+流程保持：
+combat -> cleared -> reward -> exploration
 
-恢复未完成战斗：
-setPhase("combat", { startEncounter: false })
+必须保证奖励生成前玩家无法离开房间。
 
-startEncounter=false 时：
-- 不创建新的 encounterDefinition
-- 不重新生成第一波
-- encounterCtrl 必须处于 inactive/finished
-- 恢复敌人死亡后正常进入 cleared
+3. 修复向下边界钳制。
 
-3. 修复玩家 hitFlash。
-
-每帧增加：
-
-if (this.player.hitFlash > 0) {
-  this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
-}
-
-装甲受到攻击时也设置短暂 hitFlash：
-player.hitFlash = 0.08
-
-生命值受到攻击时：
-player.hitFlash = 0.2
-
-4. 玩家动画使用实际位移判断。
-
-不要只根据 input axis 判断 walk。
-
-在移动前记录：
-const previousX = player.x;
-const previousY = player.y;
-
-移动和碰撞完成后计算：
-const moved = Math.hypot(
-  player.x - previousX,
-  player.y - previousY
-) > 0.01;
+当前错误：
+this.player.y = Math.max(maxY, this.player.y)
 
 改为：
-updatePlayerFacingAndAnimation(dt, moved)
+this.player.y = maxY
 
-moved=false：
-animState = "idle"
-animFrame = 0
+同时检查上下左右四个边界的 clamp 逻辑是否一致。
 
-moved=true：
-animState = "walk"
-更新 animTimer/animFrame
+4. 拆分房间状态语义。
 
-身体方向继续跟随 aimAngle，不能跟随移动方向。
+扩展 Room：
+- combatCleared?: boolean
+- rewardGenerated?: boolean
+- interactionCompleted?: boolean
 
-5. 所有像素实体进行渲染坐标取整。
+兼容旧 cleared 字段，但明确职责：
 
-Player：
-ctx.translate(Math.round(player.x), Math.round(player.y))
+combatCleared：
+- 战斗是否已经完成
 
-Enemy：
-ctx.translate(Math.round(enemy.x), Math.round(enemy.y))
+rewardGenerated：
+- 清房奖励是否已经生成
+- 防止重复生成或因重入丢失
 
-Pickup：
-ctx.translate(Math.round(p.x), Math.round(p.y))
+interactionCompleted：
+- treasure / legacy / npc 等特殊内容是否完成
 
-Projectile 可以根据表现选择取整，但至少玩家主体和武器必须共用同一个取整后的世界坐标。
+不要再用 cleared 同时表示战斗、奖励和 Legacy 完成。
 
-只取整渲染坐标，不修改物理 x/y。
+5. 修复 Legacy 奖励条件。
 
-6. 保持现有修复不回退：
+当前 FloorGenerator 会把 legacy 房设置为 cleared=true，
+但返回 DungeonState 时又要求 !sourceRoom.cleared 才发奖励。
 
-- Engine.loop try/catch/finally
-- fade_out 无 callback 也能恢复
+改为使用：
+!sourceRoom.interactionCompleted
+
+Legacy 成功完成后：
+- interactionCompleted = true
+- 奖励仅生成一次
+- legacyRewardsClaimed 继续作为兼容保护
+- 房间门是否通行不依赖 interactionCompleted
+
+6. 增加 rewardGenerated 保护。
+
+spawnRoomRewards() 开头：
+
+if (currentRoom.rewardGenerated) return;
+
+生成完成后：
+currentRoom.rewardGenerated = true;
+
+注意：
+- 普通 combat 奖励只生成一次
+- boss 奖励和 portal 只生成一次
+- treasure chest 不重复生成
+- 重新进入 exploration 房间不重复奖励
+
+7. 完成像素 snapping。
+
+EntityRenderer：
+- enemy animOffset 使用 Math.round
+- pickup floatOffset 使用 Math.round
+- enemy HP bar 使用 renderX/renderY
+- player/body/weapon 继续共享同一个已取整坐标
+- 只取整渲染，不修改物理坐标
+
+8. 清理恢复战斗分支。
+
+setPhase("combat", { startEncounter: false }) 时，
+不要继续构建 encounterDef 或消耗 Math.random。
+
+尽早跳过 encounter 创建，只保留：
+roomPhase = combat
+phaseTimer = 0
+encounterCtrl inactive/finished
+
+9. 保持不回退：
+
+- exploration 阶段
+- 恢复战斗不重复出怪
+- hitFlash 递减
+- 实际位移判断 walk
 - weaponBehindBody
-- weapon 不使用 PLAYER_PALETTE
-- cleared 房间清空旧敌人
+- 像素世界坐标取整
+- Engine.loop try/catch/finally
+- fade_out 边界恢复
 - currentMapData 一维索引
 - aimAngle 每帧更新
-- 身体方向跟随 aimAngle
 - 左向 flipX
-- side idle/walk sprite
 - 子弹从 muzzle position 发射
 - Room.pickups 持久化
 - debug overlay
 
 完成后输出：
-- exploration 阶段说明
-- 防止重复奖励的说明
-- 恢复战斗不重复出怪的说明
-- hitFlash 更新说明
-- 实际位移动画判断说明
-- 像素坐标 snapping 说明
+- 死亡重开流程
+- 门锁阶段说明
+- Room 新状态字段说明
+- Legacy 结算修复说明
+- rewardGenerated 防重说明
+- 下边界修复说明
+- 像素 snapping 说明
 - npm run lint 结果
 - npm run build 结果

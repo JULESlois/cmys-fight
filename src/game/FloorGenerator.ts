@@ -6,6 +6,9 @@ export interface Room {
   y: number;
   type: "start" | "combat" | "treasure" | "boss" | "npc" | "legacy_rpg" | "legacy_tactics";
   cleared: boolean;
+  combatCleared?: boolean;
+  rewardGenerated?: boolean;
+  interactionCompleted?: boolean;
   templateId?: string;
   visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };

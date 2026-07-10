@@ -73,8 +73,8 @@ export class DungeonState extends GameState {
     if (params && params.fromLegacy && params.result !== "loss") {
        const floor = this.engine.data.data.floor;
        const sourceRoom = floor.rooms.find((r: Room) => r.id === params.sourceRoomId);
-       if (sourceRoom && !sourceRoom.cleared) {
-          sourceRoom.cleared = true;
+       if (sourceRoom && !sourceRoom.interactionCompleted) {
+          sourceRoom.interactionCompleted = true;
           audio.playClearRoom();
           if (!this.engine.data.data.legacyData.legacyRewardsClaimed.includes(sourceRoom.id)) {
              this.engine.data.data.legacyData.legacyRewardsClaimed.push(sourceRoom.id);
@@ -183,6 +183,10 @@ export class DungeonState extends GameState {
     } else if (phase === "locking") {
       this.phaseTimer = 0.5;
     } else if (phase === "combat") {
+      if (options?.startEncounter === false) {
+         return;
+      }
+      
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       const template = getRoomTemplate(currentRoom);
@@ -214,9 +218,7 @@ export class DungeonState extends GameState {
         });
       }
       
-      if (options?.startEncounter !== false) {
-         this.encounterCtrl.start(encounterDef);
-      }
+      this.encounterCtrl.start(encounterDef);
     } else if (phase === "cleared") {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
@@ -235,6 +237,7 @@ export class DungeonState extends GameState {
   private spawnRoomRewards() {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    if (!currentRoom || currentRoom.rewardGenerated) return;
     const template = getRoomTemplate(currentRoom);
     
     if (currentRoom.type === "boss") {
@@ -259,6 +262,7 @@ export class DungeonState extends GameState {
           (p as any).baseY = p.y;
       }
     }
+    currentRoom.rewardGenerated = true;
   }
 
   update(dt: number) {
@@ -286,8 +290,30 @@ export class DungeonState extends GameState {
 
     if (this.engine.input.justPressed["Enter"] && this.player.hp <= 0) {
       this.engine.data.data.floor = generateFloor(1);
-      this.engine.data.data.player.hp = this.engine.data.data.player.maxHp;
-      this.engine.data.data.player.mana = this.engine.data.data.player.maxMana;
+      const savedP = this.engine.data.data.player;
+      savedP.hp = savedP.maxHp;
+      savedP.mana = savedP.maxMana;
+      savedP.armor = 0;
+      
+      this.player = new Player(160, 120);
+      this.player.characterId = savedP.characterId;
+      this.player.hp = savedP.hp;
+      this.player.maxHp = savedP.maxHp;
+      this.player.armor = savedP.armor ?? 0;
+      this.player.maxArmor = savedP.maxArmor ?? 0;
+      this.player.mana = savedP.mana;
+      this.player.maxMana = savedP.maxMana;
+      if (savedP.speed) this.player.speed = savedP.speed;
+      this.player.currentWeaponId = savedP.currentWeaponId;
+      
+      this.player.fireCooldown = 0;
+      this.player.muzzleFlash = 0;
+      this.player.hitFlash = 0;
+      this.player.animState = "idle";
+      this.player.animFrame = 0;
+      
+      this.transitionState = "fade_in";
+      this.transitionAlpha = 1;
       this.loadRoom();
     }
 
@@ -417,7 +443,7 @@ export class DungeonState extends GameState {
     const leftDoorYMin = 100, leftDoorYMax = 140;
     const rightDoorYMin = 100, rightDoorYMax = 140;
     
-    const isLocked = !currentRoom?.cleared;
+    const isLocked = this.roomPhase !== "exploration";
 
     if (this.player.x < minX) {
       if (!isLocked && currentRoom?.doors.left && this.player.y > leftDoorYMin && this.player.y < leftDoorYMax) {
@@ -467,7 +493,7 @@ export class DungeonState extends GameState {
            this.loadRoom();
          };
       } else {
-         this.player.y = Math.max(maxY, this.player.y);
+         this.player.y = maxY;
       }
     }
   }

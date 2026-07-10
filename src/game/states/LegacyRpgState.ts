@@ -281,7 +281,7 @@ export class LegacyRpgState extends GameState {
 
       if (!npcBlock) {
         let enemyHit = false;
-        if (currentRoom && !currentRoom.cleared && currentRoom.enemies) {
+        if (currentRoom && !currentRoom.interactionCompleted && currentRoom.enemies) {
           const enemyIndex = currentRoom.enemies.findIndex(e => e.x === newX && e.y === newY);
           if (enemyIndex !== -1) {
             enemyHit = true;
@@ -597,7 +597,7 @@ export class LegacyRpgState extends GameState {
     }
 
     // Draw Map Enemies
-    if (currentRoom && !currentRoom.cleared && currentRoom.enemies) {
+    if (currentRoom && !currentRoom.interactionCompleted && currentRoom.enemies) {
       for (const e of currentRoom.enemies) {
         const ex = e.x * TILE_SIZE;
         const ey = e.y * TILE_SIZE;
