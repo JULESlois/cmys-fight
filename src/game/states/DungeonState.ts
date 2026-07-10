@@ -144,14 +144,7 @@ export class DungeonState extends GameState {
          this.setPhase("cleared");
       } else if (currentRoom.cleared) {
          this.setPhase("cleared");
-         // Restore enemies if we left them alive (e.g. from an unfinished combat or if it was marked cleared but had remnants)
-         if (currentRoom.enemies) {
-            for (const e of currentRoom.enemies) {
-               const enemy = new Enemy(e.x, e.y, e.type);
-               if (e.hp !== undefined) enemy.hp = e.hp;
-               this.enemies.push(enemy);
-            }
-         }
+         currentRoom.enemies = []; // Clear any enemies from old saves
          
          if (currentRoom.type === "treasure" && !currentRoom.pickups) {
              const pts = template.pickupSpawnPoints;
@@ -164,7 +157,17 @@ export class DungeonState extends GameState {
              }
          }
       } else {
-         this.setPhase("entering");
+         if (currentRoom.enemies && currentRoom.enemies.length > 0 && (currentRoom.type === "combat" || currentRoom.type === "boss")) {
+             // Restore enemies for an ongoing combat from a saved state
+             for (const e of currentRoom.enemies) {
+                 const enemy = new Enemy(e.x, e.y, e.type);
+                 if (e.hp !== undefined) enemy.hp = e.hp;
+                 this.enemies.push(enemy);
+             }
+             this.setPhase("combat"); // Skip intro if we're resuming combat
+         } else {
+             this.setPhase("entering");
+         }
       }
     }
   }
@@ -270,12 +273,11 @@ export class DungeonState extends GameState {
       this.transitionAlpha += dt * 2;
       if (this.transitionAlpha >= 1) {
         this.transitionAlpha = 1;
-        if (this.pendingTransition) {
-           const cb = this.pendingTransition;
-           this.pendingTransition = null;
-           cb();
-           this.transitionState = "fade_in";
-        }
+        const cb = this.pendingTransition;
+        this.pendingTransition = null;
+        if (cb) cb();
+        else console.warn("[DungeonState] fade_out finished without pendingTransition");
+        this.transitionState = "fade_in";
       }
       return; 
     }
@@ -289,11 +291,14 @@ export class DungeonState extends GameState {
 
     this.updateRoomPhase(dt);
     
-    // Always update animation/facing
+    // ==========================================
+    // PLAYER UPDATE SEQUENCE (TODO: Move to PlayerController)
+    // 1. Update aim angle based on input/closest enemy
     this.player.aimAngle = this.getPlayerAimAngle();
+    // 2. Update player facing and animation
     this.updatePlayerFacingAndAnimation(dt);
     
-    // Firing logic
+    // 3. Firing logic
     if (this.player.fireCooldown > 0) {
       this.player.fireCooldown -= dt;
     }
@@ -312,6 +317,7 @@ export class DungeonState extends GameState {
        }
     }
 
+    // 4. Handle Fire input
     if (this.engine.input.isDown(" ") && this.player.fireCooldown <= 0) {
       if (interactTarget) {
          if (this.engine.input.justPressed[" "]) {
@@ -321,7 +327,9 @@ export class DungeonState extends GameState {
          this.fireWeapon();
       }
     }
+    // ==========================================
 
+    // WORLD UPDATE SEQUENCE
     if (this.roomPhase === "combat") {
        this.updateEnemies(dt);
        this.checkCollisions();
@@ -522,6 +530,7 @@ export class DungeonState extends GameState {
     return false;
   }
 
+  // TODO: Move to PlayerController
   private updatePlayerFacingAndAnimation(dt: number) {
     const axis = this.engine.input.getAxis();
     const isMoving = axis.x !== 0 || axis.y !== 0;
@@ -539,6 +548,7 @@ export class DungeonState extends GameState {
     }
   }
 
+  // TODO: Move to PlayerController
   private fireWeapon() {
     const weapon = WEAPONS[this.player.currentWeaponId];
     if (this.player.mana < weapon.manaCost) return;
@@ -568,6 +578,7 @@ export class DungeonState extends GameState {
     }
   }
 
+  // TODO: Move to PlayerController
   private getPlayerAimAngle(): number {
     const target = this.getClosestEnemy();
     if (target) {
@@ -825,6 +836,23 @@ export class DungeonState extends GameState {
     if (this.transitionAlpha > 0) {
       ctx.fillStyle = `rgba(0, 0, 0, ${this.transitionAlpha})`;
       ctx.fillRect(0, 0, 320, 240);
+    }
+    
+    // Debug info overlay
+    // @ts-ignore
+    if (import.meta.env?.DEV) {
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, 0, 150, 60);
+      ctx.fillStyle = "#FFF";
+      ctx.font = "8px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText(`Phase: ${this.roomPhase} | Trans: ${this.transitionState}`, 5, 10);
+      ctx.fillText(`Enemies: ${this.enemies.length} | Enc: ${this.encounterCtrl.state}`, 5, 20);
+      ctx.fillText(`Facing: ${this.player.facing} | Anim: ${this.player.animState}`, 5, 30);
+      ctx.fillText(`Aim: ${(this.player.aimAngle * 180 / Math.PI).toFixed(1)}°`, 5, 40);
+      ctx.fillText(`Pos: ${Math.round(this.player.x)}, ${Math.round(this.player.y)}`, 5, 50);
+      ctx.restore();
     }
   }
 }

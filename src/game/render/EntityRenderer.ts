@@ -20,6 +20,12 @@ export class EntityRenderer {
     ctx.ellipse(0, 8, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    const weaponBehindBody = Math.sin(player.aimAngle) < -0.35;
+
+    if (weaponBehindBody) {
+       EntityRenderer.drawPlayerWeapon(ctx, player);
+    }
+
     // Body
     ctx.save();
     let spriteName = "player_main_side_idle";
@@ -37,8 +43,9 @@ export class EntityRenderer {
     });
     ctx.restore();
 
-    // Weapon always on top
-    EntityRenderer.drawPlayerWeapon(ctx, player);
+    if (!weaponBehindBody) {
+       EntityRenderer.drawPlayerWeapon(ctx, player);
+    }
 
     ctx.restore();
   }
