@@ -1,4 +1,6 @@
 import { ROOM_TEMPLATES } from "./data/roomTemplates";
+import type { SerializedEncounterState } from "./EncounterController";
+import { normalizeRoomState } from "./RoomState";
 
 export interface Room {
   id: string;
@@ -14,6 +16,7 @@ export interface Room {
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
   // Encounter logic instead of direct enemies
   encounterId?: string;
+  encounterState?: SerializedEncounterState;
   // Fallback for remaining enemies if player leaves and comes back
   enemies?: { x: number, y: number, type: "melee" | "ranged" | "boss", hp?: number }[];
   pickups?: { x: number, y: number, type: "hp" | "mana" | "coin" | "weapon", value: number, weaponId?: string }[];
@@ -196,6 +199,7 @@ export function generateFloor(depth: number): FloorData {
      
      r.templateId = selected.id;
      r.encounterId = `enc_${r.type}_${depth}`; // Basic encounter ID based on type and depth
+     normalizeRoomState(r);
   }
 
   console.log(`[MapGen] Generated ${rooms.length} rooms. Boss Dist: ${maxDist}`);

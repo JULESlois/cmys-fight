@@ -35,6 +35,8 @@ export class LegacyTacticsState extends GameState {
   private battleResult: "win" | "loss" | null = null;
 
   enter(params?: any) {
+    if (params?.resume) return;
+
     this.params = params;
     this.battleResult = null;
     this.px = 2;

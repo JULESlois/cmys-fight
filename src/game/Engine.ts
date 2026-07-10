@@ -23,6 +23,8 @@ export class Engine {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private reqId: number = 0;
+  private eventUnsubscribers: Array<() => void> = [];
+  private cleanedUp: boolean = false;
 
   constructor() {
     this.input = new Input();
@@ -41,17 +43,22 @@ export class Engine {
     };
     
     // Event Driven System hookup
-    events.on("state:change", (newState: string, params?: any) => {
-      this.switchState(newState, params);
-    });
-    
-    events.on("dialog:start", (payload: any) => {
-      this.switchState("legacy_dialog", payload);
-    });
+    this.eventUnsubscribers.push(
+      events.on("state:change", (newState: string, params?: any) => {
+        this.switchState(newState, params);
+      })
+    );
+
+    this.eventUnsubscribers.push(
+      events.on("dialog:start", (payload: any) => {
+        this.switchState("legacy_dialog", payload);
+      })
+    );
     
   }
 
   public init(canvas: HTMLCanvasElement) {
+    this.cleanedUp = false;
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     if (this.ctx) {
@@ -64,8 +71,17 @@ export class Engine {
   }
 
   public cleanup() {
+    if (this.cleanedUp) return;
+    this.cleanedUp = true;
+
     this.input.cleanup();
     cancelAnimationFrame(this.reqId);
+    for (const unsubscribe of this.eventUnsubscribers) {
+      unsubscribe();
+    }
+    this.eventUnsubscribers = [];
+    this.canvas = null;
+    this.ctx = null;
   }
 
   public switchState(newState: string, params?: any) {
@@ -88,7 +104,9 @@ export class Engine {
     } catch (e) {
       console.error("[Engine.loop] frame crashed:", e);
     } finally {
-      this.reqId = requestAnimationFrame(this.loop.bind(this));
+      if (!this.cleanedUp) {
+        this.reqId = requestAnimationFrame(this.loop.bind(this));
+      }
     }
   }
 
@@ -99,6 +117,14 @@ export class Engine {
     }
     if (!canPause) {
       this.isPaused = false;
+    }
+
+    if (canPause && this.isPaused && this.input.wasPressed("enter")) {
+      const returnState = this.currentState;
+      this.isPaused = false;
+      this.switchState("menu", { returnState });
+      this.input.update();
+      return;
     }
 
     // Cap dt to prevent huge jumps

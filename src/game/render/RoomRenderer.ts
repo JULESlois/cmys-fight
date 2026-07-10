@@ -1,5 +1,4 @@
 import { Room } from "../FloorGenerator";
-import { Player } from "../entities/Player";
 import { getMapData, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, DOOR_ZONES } from "../MapData";
 import { PALETTES } from "../data/palettes";
 
@@ -133,7 +132,7 @@ export class RoomRenderer {
     }
   }
 
-  public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, player: Player, isLocked: boolean = false) {
+  public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, isLocked: boolean = false) {
     const mapData = getMapData(currentRoom, theme);
     const p = PALETTES[theme] || PALETTES["forest"];
 
@@ -155,11 +154,6 @@ export class RoomRenderer {
         }
       }
     }
-
-    // Player Shadow
-    ctx.beginPath();
-    ctx.ellipse(player.x, player.y + 6, 6, 3, 0, 0, Math.PI * 2);
-    ctx.fill();
 
     // 3. DRAW ENVIRONMENT & OBJECTS
     for (let y = 0; y < MAP_HEIGHT; y++) {

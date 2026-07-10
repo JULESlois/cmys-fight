@@ -1,5 +1,8 @@
 import { FloorData, generateFloor } from "./FloorGenerator";
 import { CHARACTERS } from "./data/characters";
+import { normalizeRoomState } from "./RoomState";
+
+const CURRENT_SAVE_VERSION = 3;
 
 export interface GameSave {
   player: {
@@ -37,7 +40,7 @@ export interface GameSave {
     clearedRooms: string[];
     legacyRewardsClaimed: string[];
   };
-  saveVersion?: number;
+  saveVersion: number;
 }
 
 export const defaultSave: GameSave = {
@@ -76,7 +79,7 @@ export const defaultSave: GameSave = {
     clearedRooms: [],
     legacyRewardsClaimed: [],
   },
-  saveVersion: 2
+  saveVersion: CURRENT_SAVE_VERSION
 };
 
 export class GameData {
@@ -87,6 +90,12 @@ export class GameData {
   }
 
   save() {
+    if (this.data.floor && Array.isArray(this.data.floor.rooms)) {
+      for (const room of this.data.floor.rooms) {
+        normalizeRoomState(room);
+      }
+    }
+    this.data.saveVersion = CURRENT_SAVE_VERSION;
     localStorage.setItem("retro_rpg_save", JSON.stringify(this.data));
   }
 
@@ -101,22 +110,23 @@ export class GameData {
         this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
         this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
         
-        // Save migration
-        if ((this.data.saveVersion || 0) < 2) {
-           console.warn("Migrating save to version 2");
-           if (this.data.floor && this.data.floor.rooms) {
-              for (const r of this.data.floor.rooms) {
-                 r.combatCleared = r.combatCleared ?? r.cleared;
-                 r.rewardGenerated = r.rewardGenerated ?? false;
-                 r.interactionCompleted = r.interactionCompleted ?? false;
-                 if (r.type === "combat" || r.type === "boss") {
-                    r.enemies = r.enemies ?? [];
-                 }
-              }
-           }
-           this.data.saveVersion = 2;
-           this.save();
+        const loadedVersion = Number(parsed.saveVersion || 0);
+        const needsMigration = loadedVersion < CURRENT_SAVE_VERSION;
+
+        if (needsMigration) {
+          console.warn(`Migrating save from version ${loadedVersion} to ${CURRENT_SAVE_VERSION}`);
         }
+
+        if (!this.data.floor || !Array.isArray(this.data.floor.rooms)) {
+          this.data.floor = generateFloor(1);
+        } else {
+          for (const room of this.data.floor.rooms) {
+            normalizeRoomState(room);
+          }
+        }
+
+        this.data.saveVersion = CURRENT_SAVE_VERSION;
+        if (needsMigration) this.save();
       } catch (e) {
         console.error("Failed to load save:", e);
       }
@@ -144,6 +154,7 @@ export class GameData {
     this.data.player.currentWeaponId = char.starterWeapon;
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
+    this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
   }
 
@@ -161,6 +172,7 @@ export class GameData {
     this.data.player.currentWeaponId = char.starterWeapon;
     this.data.player.coins = 0;
     this.data.floor = generateFloor(1);
+    this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
   }
   

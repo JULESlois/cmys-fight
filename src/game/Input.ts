@@ -4,16 +4,21 @@ export class Input {
 
   private handleKeyDown: (e: KeyboardEvent) => void;
   private handleKeyUp: (e: KeyboardEvent) => void;
+  private handleBlur: () => void;
+  private handleVisibilityChange: () => void;
 
   constructor() {
     this.handleKeyDown = this.onKeyDown.bind(this);
     this.handleKeyUp = this.onKeyUp.bind(this);
+    this.handleBlur = () => this.clear();
+    this.handleVisibilityChange = () => {
+      if (document.hidden) this.clear();
+    };
+
     window.addEventListener("keydown", this.handleKeyDown);
     window.addEventListener("keyup", this.handleKeyUp);
-    window.addEventListener("blur", () => this.clear());
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) this.clear();
-    });
+    window.addEventListener("blur", this.handleBlur);
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
   }
 
   private normalizeKey(key: string): string {
@@ -57,6 +62,9 @@ export class Input {
   public cleanup() {
     window.removeEventListener("keydown", this.handleKeyDown);
     window.removeEventListener("keyup", this.handleKeyUp);
+    window.removeEventListener("blur", this.handleBlur);
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+    this.clear();
   }
 
   public isDown(key: string): boolean {

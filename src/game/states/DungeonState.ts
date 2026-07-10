@@ -1,11 +1,11 @@
 import { Engine } from "../Engine";
 import { generateFloor, Room } from "../FloorGenerator";
+import { isCombatCleared, isCombatRoom, markCombatCleared, normalizeRoomState } from "../RoomState";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
 import { RoomRenderer } from "../render/RoomRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
 import { Enemy } from "../entities/Enemy";
-import { RoomTemplate } from "../data/roomTemplates";
 import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
 import { UIRenderer } from "../render/UIRenderer";
 import { audio } from "../audio/AudioManager";
@@ -15,7 +15,7 @@ import { WEAPONS } from "../data/weapons";
 
 import { Pickup } from "../entities/Pickup";
 import { PromptRenderer } from "../render/PromptRenderer";
-import { EncounterController, EncounterDef, EnemySpawn } from "../EncounterController";
+import { EncounterController, EncounterDef } from "../EncounterController";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -47,22 +47,26 @@ export class DungeonState extends GameState {
     this.player = new Player(160, 120);
   }
 
+  private createPlayerFromSave(): Player {
+    const savedP = this.engine.data.data.player;
+    const player = new Player(savedP.x ?? 160, savedP.y ?? 120);
+    player.characterId = savedP.characterId;
+    player.hp = savedP.hp;
+    player.maxHp = savedP.maxHp;
+    player.armor = savedP.armor ?? 0;
+    player.maxArmor = savedP.maxArmor ?? 0;
+    player.mana = savedP.mana;
+    player.maxMana = savedP.maxMana;
+    player.speed = savedP.speed;
+    player.currentWeaponId = savedP.currentWeaponId;
+    return player;
+  }
+
   enter(params?: any) {
     this.transitionState = "fade_in";
     this.transitionAlpha = 1.0;
     
-    const savedP = this.engine.data.data.player;
-    this.player = new Player(savedP.x ?? 160, savedP.y ?? 120);
-    this.player.characterId = savedP.characterId;
-    
-    this.player.hp = savedP.hp;
-    this.player.maxHp = savedP.maxHp;
-    this.player.armor = savedP.armor ?? 0;
-    this.player.maxArmor = savedP.maxArmor ?? 0;
-    this.player.mana = savedP.mana;
-    this.player.maxMana = savedP.maxMana;
-    if (savedP.speed) this.player.speed = savedP.speed;
-    this.player.currentWeaponId = savedP.currentWeaponId;
+    this.player = this.createPlayerFromSave();
     
     if (!this.engine.data.data.floor || this.engine.data.data.floor.depth === 0) {
       this.engine.data.data.floor = generateFloor(1);
@@ -113,9 +117,16 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const r = floor.rooms.find((rm: Room) => rm.x === floor.currentRoomX && rm.y === floor.currentRoomY);
     if (r) {
+      normalizeRoomState(r);
       r.pickups = this.pickups.map(p => ({ x: p.x, y: p.y, type: p.type, value: p.value, weaponId: p.weaponId }));
-      if (!r.cleared && (r.type === 'combat' || r.type === 'boss')) {
-          r.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+      if (isCombatRoom(r) && !isCombatCleared(r)) {
+        r.enemies = this.enemies.map(e => ({ x: e.x, y: e.y, type: e.type, hp: e.hp }));
+        r.encounterState = this.roomPhase === "combat" && this.encounterCtrl.active
+          ? this.encounterCtrl.serialize()
+          : undefined;
+      } else {
+        r.enemies = [];
+        r.encounterState = undefined;
       }
     }
   }
@@ -129,8 +140,16 @@ export class DungeonState extends GameState {
     this.encounterCtrl = new EncounterController();
     
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-    
+    const currentRoom = floor.rooms.find((r: Room) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+
+    if (!currentRoom) {
+      console.error(`[DungeonState] Missing room at ${floor.currentRoomX},${floor.currentRoomY}`);
+      this.currentMapData = getMapData(undefined, floor.theme || "forest");
+      this.setPhase("exploration");
+      return;
+    }
+
+    normalizeRoomState(currentRoom);
     this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
     const template = getRoomTemplate(currentRoom);
 
@@ -138,36 +157,73 @@ export class DungeonState extends GameState {
       this.pickups = currentRoom.pickups.map((p: any) => new Pickup(p.x, p.y, p.type, p.value, p.weaponId));
     }
 
-    if (currentRoom) {
-      currentRoom.visited = true;
-      if (currentRoom.type === "start" || currentRoom.type === "npc") {
-         this.setPhase("exploration");
-      } else if (currentRoom.combatCleared) {
-         this.setPhase("exploration");
-         currentRoom.enemies = []; // Clear any enemies from old saves
-         
-         if (currentRoom.type === "treasure" && !currentRoom.interactionCompleted) {
-             const pts = template.pickupSpawnPoints;
-             const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-             this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: "shotgun", opened: false };
-         }
-         if (currentRoom.type === "boss") {
-             if (template.portalSpawnPoint) {
-                 this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8, state: "idle", timer: 0 };
-             }
-         }
+    currentRoom.visited = true;
+
+    if (currentRoom.type === "start" || currentRoom.type === "npc") {
+      this.setPhase("exploration");
+      return;
+    }
+
+    if (currentRoom.type === "treasure") {
+      if (!currentRoom.interactionCompleted) {
+        const pts = template.pickupSpawnPoints;
+        const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
+        this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: "shotgun", opened: false };
+      }
+      this.setPhase("exploration");
+      return;
+    }
+
+    if (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") {
+      this.setPhase("exploration");
+      return;
+    }
+
+    if (isCombatRoom(currentRoom)) {
+      if (isCombatCleared(currentRoom)) {
+        currentRoom.enemies = [];
+        currentRoom.encounterState = undefined;
+
+        if (currentRoom.rewardGenerated !== true) {
+          this.setPhase("reward");
+          return;
+        }
+
+        if (currentRoom.type === "boss" && template.portalSpawnPoint) {
+          this.portal = {
+            x: template.portalSpawnPoint.x * 16 + 8,
+            y: template.portalSpawnPoint.y * 16 + 8,
+            state: "idle",
+            timer: 0
+          };
+        }
+
+        this.setPhase("exploration");
+        return;
+      }
+
+      for (const savedEnemy of currentRoom.enemies) {
+        const enemy = new Enemy(savedEnemy.x, savedEnemy.y, savedEnemy.type);
+        if (savedEnemy.hp !== undefined) enemy.hp = savedEnemy.hp;
+        this.enemies.push(enemy);
+      }
+
+      if (currentRoom.encounterState) {
+        try {
+          this.encounterCtrl.restore(currentRoom.encounterState);
+          this.setPhase("combat", { startEncounter: false });
+          return;
+        } catch (error) {
+          console.warn(`[DungeonState] Invalid encounter state in room ${currentRoom.id}; using enemy fallback.`, error);
+          currentRoom.encounterState = undefined;
+          this.encounterCtrl = new EncounterController();
+        }
+      }
+
+      if (this.enemies.length > 0) {
+        this.setPhase("combat", { startEncounter: false });
       } else {
-         if (currentRoom.enemies && currentRoom.enemies.length > 0 && (currentRoom.type === "combat" || currentRoom.type === "boss")) {
-             // Restore enemies for an ongoing combat from a saved state
-             for (const e of currentRoom.enemies) {
-                 const enemy = new Enemy(e.x, e.y, e.type);
-                 if (e.hp !== undefined) enemy.hp = e.hp;
-                 this.enemies.push(enemy);
-             }
-             this.setPhase("combat", { startEncounter: false }); // Skip intro if we're resuming combat
-         } else {
-             this.setPhase("entering");
-         }
+        this.setPhase("entering");
       }
     }
   }
@@ -225,8 +281,9 @@ export class DungeonState extends GameState {
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       if (currentRoom) {
-         currentRoom.cleared = true; // legacy compatibility
-         currentRoom.combatCleared = true;
+         markCombatCleared(currentRoom);
+         currentRoom.enemies = [];
+         currentRoom.encounterState = undefined;
       }
     } else if (phase === "reward") {
       // Spawn rewards
@@ -269,6 +326,8 @@ export class DungeonState extends GameState {
   }
 
   update(dt: number) {
+    this.roomRenderer.update(dt);
+
     if (this.transitionState === "fade_in") {
       this.transitionAlpha -= dt * 2;
       if (this.transitionAlpha <= 0) {
@@ -293,18 +352,7 @@ export class DungeonState extends GameState {
 
     if (this.engine.input.wasPressed("enter") && this.player.hp <= 0) {
       this.engine.data.restartCurrentRun();
-      const savedP = this.engine.data.data.player;
-      
-      this.player = new Player(savedP.x, savedP.y);
-      this.player.characterId = savedP.characterId;
-      this.player.hp = savedP.hp;
-      this.player.maxHp = savedP.maxHp;
-      this.player.armor = savedP.armor ?? 0;
-      this.player.maxArmor = savedP.maxArmor ?? 0;
-      this.player.mana = savedP.mana;
-      this.player.maxMana = savedP.maxMana;
-      if (savedP.speed) this.player.speed = savedP.speed;
-      this.player.currentWeaponId = savedP.currentWeaponId;
+      this.player = this.createPlayerFromSave();
       
       this.player.fireCooldown = 0;
       this.player.muzzleFlash = 0;
@@ -802,7 +850,7 @@ export class DungeonState extends GameState {
     
     this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
     const doorLocked = this.roomPhase !== "exploration";
-    this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", this.player, doorLocked);
+    this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", doorLocked);
 
     const time = Date.now() / 1000;
     

@@ -105,7 +105,10 @@ export class LegacyRpgState extends GameState {
   private params: any;
 
   enter(params?: any) {
+    if (params?.resume) return;
+
     this.params = params;
+    this.particles = [];
     this.spawnParticles(15);
     this.transitionState = "none";
     this.transitionAlpha = 0;
@@ -164,7 +167,7 @@ export class LegacyRpgState extends GameState {
 
     // Handle menu state change
     if (this.engine.input.wasPressed("enter")) {
-      events.emit("state:change", "menu");
+      events.emit("state:change", "menu", { returnState: "legacy_rpg" });
       return;
     }
 

@@ -17,6 +17,15 @@ export interface EncounterDef {
   waves: Wave[];
 }
 
+export interface SerializedEncounterState {
+  active: boolean;
+  state: "waiting_delay" | "telegraphing" | "spawning" | "combat" | "finished";
+  waves: Wave[];
+  currentWaveIndex: number;
+  timer: number;
+  telegraphs: { x: number, y: number, timeLeft: number, type: "melee"|"ranged"|"boss" }[];
+}
+
 export class EncounterController {
   public active: boolean = false;
   private waves: Wave[] = [];
@@ -35,6 +44,32 @@ export class EncounterController {
     this.active = true;
     this.telegraphs = [];
     this.setupNextWave();
+  }
+
+  public serialize(): SerializedEncounterState {
+    return {
+      active: this.active,
+      state: this.state,
+      waves: this.waves.map(wave => ({
+        ...wave,
+        spawns: wave.spawns.map(spawn => ({ ...spawn }))
+      })),
+      currentWaveIndex: this.currentWaveIndex,
+      timer: this.timer,
+      telegraphs: this.telegraphs.map(telegraph => ({ ...telegraph }))
+    };
+  }
+
+  public restore(saved: SerializedEncounterState): void {
+    this.active = saved.active;
+    this.state = saved.state;
+    this.waves = saved.waves.map(wave => ({
+      ...wave,
+      spawns: wave.spawns.map(spawn => ({ ...spawn }))
+    }));
+    this.currentWaveIndex = saved.currentWaveIndex;
+    this.timer = saved.timer;
+    this.telegraphs = saved.telegraphs.map(telegraph => ({ ...telegraph }));
   }
   
   private setupNextWave() {
