@@ -49,9 +49,10 @@ const BUFF_PRICE: Record<BuffRarity, number> = {
   rare: 78,
 };
 
-function stagePrice(base: number, stage: StageData): number {
+function stagePrice(base: number, stage: StageData, discount = 0): number {
   const multiplier = 1 + Math.max(0, stage.globalStageIndex - 1) * 0.07;
-  return Math.max(1, Math.round(base * multiplier));
+  const safeDiscount = Math.max(0, Math.min(0.5, discount));
+  return Math.max(1, Math.round(base * multiplier * (1 - safeDiscount)));
 }
 
 function choose<T>(values: T[], random: () => number): T | undefined {
@@ -64,7 +65,7 @@ export class ShopSystem {
     return normalizeSeed(room.shopSeed ?? hashSeed(stage.seed, `shop:${room.id}`));
   }
 
-  static generateStock(stage: StageData, room: Room, player: Pick<Player, "buffs" | "weaponSlots">): ShopItem[] {
+  static generateStock(stage: StageData, room: Room, player: Pick<Player, "buffs" | "weaponSlots" | "shopDiscount">): ShopItem[] {
     const seed = ShopSystem.getSeed(stage, room);
     room.shopSeed = seed;
     const random = createSeededRandom(seed);
@@ -83,7 +84,7 @@ export class ShopSystem {
         kind: "heal",
         name: "FIELD MEDKIT",
         description: `Restore ${2 + supplyScale} HP.`,
-        price: stagePrice(14, stage),
+        price: stagePrice(14, stage, player.shopDiscount),
         amount: 2 + supplyScale,
         purchased: false,
       },
@@ -92,7 +93,7 @@ export class ShopSystem {
         kind: "armor",
         name: "ARMOR PATCH",
         description: `Restore ${2 + supplyScale} Armor.`,
-        price: stagePrice(16, stage),
+        price: stagePrice(16, stage, player.shopDiscount),
         amount: 2 + supplyScale,
         purchased: false,
       },
@@ -101,7 +102,7 @@ export class ShopSystem {
         kind: "weapon",
         name: weapon.name.toUpperCase(),
         description: `${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}.`,
-        price: stagePrice(WEAPON_PRICE[weapon.rarity], stage),
+        price: stagePrice(WEAPON_PRICE[weapon.rarity], stage, player.shopDiscount),
         weaponId: weapon.id,
         rarity: weapon.rarity,
         purchased: false,
@@ -115,7 +116,7 @@ export class ShopSystem {
         kind: "buff",
         name: buff.name,
         description: buff.description,
-        price: stagePrice(BUFF_PRICE[buff.rarity], stage),
+        price: stagePrice(BUFF_PRICE[buff.rarity], stage, player.shopDiscount),
         buffId,
         rarity: buff.rarity,
         purchased: false,
@@ -128,7 +129,7 @@ export class ShopSystem {
   static reconcileStock(
     stage: StageData,
     room: Room,
-    player: Pick<Player, "buffs" | "weaponSlots">,
+    player: Pick<Player, "buffs" | "weaponSlots" | "shopDiscount">,
   ): ShopItem[] {
     const existing = ShopSystem.normalizeStock(room.shopStock);
     if (!existing) return ShopSystem.generateStock(stage, room, player);

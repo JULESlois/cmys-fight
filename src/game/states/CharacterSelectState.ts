@@ -26,7 +26,7 @@ export class CharacterSelectState extends GameState {
 
   update(dt: number) {
     if (this.engine.input.wasPressed("escape")) {
-       this.engine.switchState("title");
+       this.engine.switchState("hub");
        return;
     }
     
@@ -72,6 +72,10 @@ export class CharacterSelectState extends GameState {
     ctx.fillRect(0, 0, 320, 240);
 
     MenuRenderer.drawTitle(ctx, "SELECT CHARACTER", 160, 30);
+    ctx.fillStyle = this.engine.data.meta.preferredHardMode ? "#E74C3C" : "#7F8C8D";
+    ctx.textAlign = "center";
+    ctx.font = "bold 6px monospace";
+    ctx.fillText(`RUN MODE: ${this.engine.data.meta.preferredHardMode ? "HARD" : "NORMAL"}`, 160, 40);
     ctx.fillStyle = "#7F8C8D";
     ctx.textAlign = "center";
     ctx.font = "6px monospace";

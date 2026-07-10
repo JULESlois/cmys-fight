@@ -36,10 +36,18 @@ import {
   type MetaProgress,
 } from "./MetaProgress";
 import type { Enemy } from "./entities/Enemy";
+import {
+  createDefaultMetaUpgrades,
+  getMetaBonuses,
+  getUpgradeCost,
+  getUpgradeInvestment,
+  META_UPGRADES,
+  type MetaUpgradeId,
+} from "./MetaUpgrades";
 
 export const RUN_SAVE_KEY = "retro_rpg_save";
 export const META_SAVE_KEY = "retro_rpg_meta";
-const CURRENT_SAVE_VERSION = 12;
+const CURRENT_SAVE_VERSION = 13;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -70,6 +78,9 @@ export interface GameSave {
     buffs: BuffId[];
     emergencyBarrierReady: boolean;
     statusEffects: ActiveStatusEffect[];
+    buffRerollsRemaining: number;
+    shopDiscount: number;
+    supplyDropBonus: number;
   };
   settings: {
     masterVolume: number;
@@ -123,6 +134,9 @@ export const defaultSave: GameSave = {
     buffs: [],
     emergencyBarrierReady: false,
     statusEffects: [],
+    buffRerollsRemaining: 0,
+    shopDiscount: 0,
+    supplyDropBonus: 0,
   },
   settings: {
     masterVolume: 100,
@@ -164,6 +178,7 @@ export class GameData {
     this.normalizePlayerSkills();
     this.normalizePlayerBuffs();
     this.normalizePlayerStatuses();
+    this.normalizeRunBonuses();
     this.data.run = normalizeRunProgress(this.data.run);
     this.data.runStats = normalizeRunStats(this.data.runStats, this.data.run);
     this.normalizeStageMetadata();
@@ -200,6 +215,7 @@ export class GameData {
       this.normalizePlayerSkills();
       this.normalizePlayerBuffs();
       this.normalizePlayerStatuses();
+      this.normalizeRunBonuses();
       this.data.settings = { ...defaultSave.settings, ...(parsed.settings || {}) };
       this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
       this.data.legacyData.player = { ...defaultSave.legacyData.player, ...(parsed.legacyData?.player || {}) };
@@ -242,18 +258,19 @@ export class GameData {
     return true;
   }
 
-  startNewRun(characterId: string, starterWeaponId?: string) {
+  startNewRun(characterId: string, starterWeaponId?: string, hardMode = this.meta.preferredHardMode) {
     const requested = CHARACTERS[characterId];
     const char = requested && this.isCharacterUnlocked(requested.id)
       ? requested
       : CHARACTERS.knight;
+    const bonuses = getMetaBonuses(this.meta.upgrades);
     this.data.player.characterId = char.id;
     this.data.player.x = 160;
     this.data.player.y = 120;
-    this.data.player.maxHp = char.maxHp;
-    this.data.player.hp = char.maxHp;
-    this.data.player.maxArmor = char.maxArmor;
-    this.data.player.armor = char.maxArmor;
+    this.data.player.maxHp = char.maxHp + bonuses.maxHp;
+    this.data.player.hp = this.data.player.maxHp;
+    this.data.player.maxArmor = char.maxArmor + bonuses.maxArmor;
+    this.data.player.armor = this.data.player.maxArmor;
     this.data.player.maxMana = char.maxMana;
     this.data.player.mana = char.maxMana;
     this.data.player.speed = char.speed;
@@ -264,8 +281,11 @@ export class GameData {
     this.resetSkillState(char.id);
     this.resetBuffState();
     this.data.player.statusEffects = [];
-    this.data.player.coins = 0;
-    this.data.run = createInitialRunProgress();
+    this.data.player.coins = bonuses.startingCoins;
+    this.data.player.buffRerollsRemaining = bonuses.buffRerolls;
+    this.data.player.shopDiscount = bonuses.shopDiscount;
+    this.data.player.supplyDropBonus = bonuses.supplyDropBonus;
+    this.data.run = createInitialRunProgress(this.meta.hardModeUnlocked && hardMode);
     this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.legacyData.clearedRooms = [];
@@ -276,12 +296,13 @@ export class GameData {
 
   restartCurrentRun() {
     const char = CHARACTERS[this.data.player.characterId] || CHARACTERS.knight;
+    const bonuses = getMetaBonuses(this.meta.upgrades);
     this.data.player.x = 160;
     this.data.player.y = 120;
-    this.data.player.hp = char.maxHp;
-    this.data.player.maxHp = char.maxHp;
-    this.data.player.armor = char.maxArmor;
-    this.data.player.maxArmor = char.maxArmor;
+    this.data.player.maxHp = char.maxHp + bonuses.maxHp;
+    this.data.player.hp = this.data.player.maxHp;
+    this.data.player.maxArmor = char.maxArmor + bonuses.maxArmor;
+    this.data.player.armor = this.data.player.maxArmor;
     this.data.player.mana = char.maxMana;
     this.data.player.maxMana = char.maxMana;
     this.data.player.speed = char.speed;
@@ -289,8 +310,11 @@ export class GameData {
     this.resetSkillState(this.data.player.characterId);
     this.resetBuffState();
     this.data.player.statusEffects = [];
-    this.data.player.coins = 0;
-    this.data.run = createInitialRunProgress();
+    this.data.player.coins = bonuses.startingCoins;
+    this.data.player.buffRerollsRemaining = bonuses.buffRerolls;
+    this.data.player.shopDiscount = bonuses.shopDiscount;
+    this.data.player.supplyDropBonus = bonuses.supplyDropBonus;
+    this.data.run = createInitialRunProgress(this.meta.hardModeUnlocked && this.meta.preferredHardMode);
     this.data.runStats = createRunStats(this.data.run);
     this.data.floor = generateStage(this.data.run);
     this.data.legacyData.clearedRooms = [];
@@ -354,6 +378,41 @@ export class GameData {
       : "pistol";
   }
 
+  public purchaseMetaUpgrade(id: MetaUpgradeId): { success: boolean; cost: number; reason?: "max" | "currency" } {
+    const definition = META_UPGRADES[id];
+    const level = this.meta.upgrades[id];
+    const cost = getUpgradeCost(id, level);
+    if (cost === null || level >= definition.maxLevel) {
+      return { success: false, cost: 0, reason: "max" };
+    }
+    if (this.meta.currency < cost) {
+      return { success: false, cost, reason: "currency" };
+    }
+    this.meta.currency -= cost;
+    this.meta.upgrades[id]++;
+    this.saveMeta();
+    return { success: true, cost };
+  }
+
+  public refundMetaUpgrades(): number {
+    const refunded = getUpgradeInvestment(this.meta.upgrades);
+    if (refunded <= 0) return 0;
+    this.meta.currency += refunded;
+    this.meta.upgrades = createDefaultMetaUpgrades();
+    this.saveMeta();
+    return refunded;
+  }
+
+  public setPreferredHardMode(enabled: boolean): boolean {
+    if (!this.meta.hardModeUnlocked) {
+      this.meta.preferredHardMode = false;
+      return false;
+    }
+    this.meta.preferredHardMode = enabled;
+    this.saveMeta();
+    return true;
+  }
+
   public recordRunTime(dt: number): void {
     if (this.data.runStats.settled || this.data.runStats.outcome !== "active") return;
     if (!Number.isFinite(dt) || dt <= 0) return;
@@ -386,7 +445,9 @@ export class GameData {
     let rewardEarned = 0;
     let newUnlocks: string[] = [];
     if (!alreadyClaimed) {
-      rewardEarned = calculateRunReward(stats, resolvedOutcome);
+      rewardEarned = Math.round(
+        calculateRunReward(stats, resolvedOutcome) * (this.data.run.hardMode ? 1.5 : 1),
+      );
       this.meta.currency += rewardEarned;
       this.meta.highestStage = Math.max(this.meta.highestStage, stats.highestStage);
       this.meta.totalRuns++;
@@ -425,7 +486,10 @@ export class GameData {
       return;
     }
     try {
-      this.meta = normalizeMetaProgress(JSON.parse(saved));
+      const parsed = JSON.parse(saved);
+      const migrated = Number(parsed?.version || 0) < 2;
+      this.meta = normalizeMetaProgress(parsed);
+      if (migrated) this.saveMeta();
     } catch (error) {
       console.error("Failed to load meta progress:", error);
       this.meta = createDefaultMetaProgress();
@@ -480,6 +544,13 @@ export class GameData {
     this.data.player.statusEffects = StatusEffectSystem.normalize(this.data.player.statusEffects);
   }
 
+  private normalizeRunBonuses() {
+    const player = this.data.player;
+    player.buffRerollsRemaining = Math.max(0, Math.floor(Number(player.buffRerollsRemaining) || 0));
+    player.shopDiscount = Math.max(0, Math.min(0.5, Number(player.shopDiscount) || 0));
+    player.supplyDropBonus = Math.max(0, Math.min(0.5, Number(player.supplyDropBonus) || 0));
+  }
+
   private normalizeStageMetadata() {
     const run = normalizeRunProgress(this.data.run);
     this.data.run = run;
@@ -493,6 +564,8 @@ export class GameData {
     stage.stageIndex = run.stageIndex;
     stage.globalStageIndex = run.globalStageIndex;
     stage.isBossStage = isBossStage(run);
+    stage.hardMode = run.hardMode;
+    stage.buffChoiceRerollCount = Math.max(0, Math.floor(Number(stage.buffChoiceRerollCount) || 0));
     const roomSignature = stage.rooms
       .map(room => `${room.id}:${room.type}`)
       .sort()
@@ -531,6 +604,7 @@ export class GameData {
     if (!stage || !Array.isArray(stage.rooms) || stage.rooms.length === 0) return false;
     if (stage.chapterIndex !== run.chapterIndex || stage.stageIndex !== run.stageIndex) return false;
     if (stage.globalStageIndex !== run.globalStageIndex) return false;
+    if ((stage.hardMode === true) !== run.hardMode) return false;
 
     const bossRooms = stage.rooms.filter((room: any) => room.type === "boss").length;
     const exitRooms = stage.rooms.filter((room: any) => room.type === "exit").length;

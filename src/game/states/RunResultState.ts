@@ -36,7 +36,7 @@ export class RunResultState extends GameState {
     if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       this.engine.switchState("title");
     } else if (this.engine.input.wasPressed("r")) {
-      this.engine.switchState("character_select");
+      this.engine.switchState("hub");
     }
   }
 
@@ -61,6 +61,11 @@ export class RunResultState extends GameState {
     ctx.fillStyle = victory ? "#F1C40F" : "#E74C3C";
     ctx.font = "bold 12px monospace";
     ctx.fillText(victory ? "THE CORE HAS FALLEN" : "THE DELVE CLAIMED YOU", 160, 50);
+    if (this.engine.data.data.run.hardMode) {
+      ctx.fillStyle = "#E74C3C";
+      ctx.font = "bold 6px monospace";
+      ctx.fillText("HARD MODE // SOUL SHARDS x1.5", 160, 59);
+    }
 
     ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
     ctx.strokeStyle = victory ? "#F1C40F" : "#E74C3C";

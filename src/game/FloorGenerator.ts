@@ -66,10 +66,12 @@ export interface StageData {
   stageIndex: number;
   globalStageIndex: number;
   isBossStage: boolean;
+  hardMode: boolean;
   seed: number;
   buffChoiceOptions?: BuffId[];
   buffChoiceRoomId?: string;
   buffChoiceCompleted?: boolean;
+  buffChoiceRerollCount?: number;
   theme: ThemeId;
   rooms: Room[];
   currentRoomX: number;
@@ -204,6 +206,7 @@ function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, ra
     stageIndex: progress.stageIndex,
     globalStageIndex: progress.globalStageIndex,
     isBossStage: true,
+    hardMode: progress.hardMode,
     seed,
     theme,
     rooms,
@@ -286,6 +289,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
     stageIndex: progress.stageIndex,
     globalStageIndex: progress.globalStageIndex,
     isBossStage: false,
+    hardMode: progress.hardMode,
     seed,
     theme,
     rooms,

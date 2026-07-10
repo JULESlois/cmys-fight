@@ -6,7 +6,7 @@ import { SpriteRenderer } from "../render/SpriteRenderer";
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
 
 export class TitleState extends GameState {
-    protected options = ["NEW RUN", "CONTINUE", "CHARACTER", "SETTINGS"];
+    protected options = ["NEW RUN", "CONTINUE", "HUB", "SETTINGS"];
   protected selectedIndex = 0;
 
   constructor(engine: Engine) {
@@ -32,11 +32,11 @@ export class TitleState extends GameState {
 
   private handleSelect() {
     const opt = this.options[this.selectedIndex];
-    if (opt === "NEW RUN" || opt === "CHARACTER") {
-      this.engine.switchState("character_select");
+    if (opt === "NEW RUN" || opt === "HUB") {
+      this.engine.switchState("hub");
     } else if (opt === "CONTINUE") {
       if (!this.engine.data.hasValidSave()) {
-        this.engine.switchState("character_select");
+        this.engine.switchState("hub");
         return;
       }
       this.engine.switchState("dungeon");
@@ -115,7 +115,7 @@ export class TitleState extends GameState {
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
     ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
-    ctx.fillText("v0.3.0 - DEEP DELVE", 160, 230);
+    ctx.fillText("v0.4.0 - DEEP HUB", 160, 230);
     ctx.textAlign = "left";
   }
 }

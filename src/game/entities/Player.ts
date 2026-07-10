@@ -50,6 +50,9 @@ export class Player {
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;
   public statusEffects: ActiveStatusEffect[] = [];
+  public buffRerollsRemaining: number = 0;
+  public shopDiscount: number = 0;
+  public supplyDropBonus: number = 0;
 
   constructor(x: number, y: number) {
     this.x = x;

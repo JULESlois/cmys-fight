@@ -1,3 +1,5 @@
+import { createDefaultMetaUpgrades, normalizeMetaUpgrades, type MetaUpgradeLevels } from "./MetaUpgrades";
+
 export interface MetaProgress {
   version: number;
   currency: number;
@@ -8,9 +10,12 @@ export interface MetaProgress {
   unlockedCharacters: string[];
   unlockedStarterWeapons: string[];
   claimedRunIds: string[];
+  upgrades: MetaUpgradeLevels;
+  hardModeUnlocked: boolean;
+  preferredHardMode: boolean;
 }
 
-export const META_SAVE_VERSION = 1;
+export const META_SAVE_VERSION = 2;
 
 export function createDefaultMetaProgress(): MetaProgress {
   return {
@@ -23,6 +28,9 @@ export function createDefaultMetaProgress(): MetaProgress {
     unlockedCharacters: ["knight"],
     unlockedStarterWeapons: ["pistol"],
     claimedRunIds: [],
+    upgrades: createDefaultMetaUpgrades(),
+    hardModeUnlocked: false,
+    preferredHardMode: false,
   };
 }
 
@@ -49,10 +57,14 @@ export function normalizeMetaProgress(value: unknown): MetaProgress {
     unlockedCharacters: uniqueStrings(raw.unlockedCharacters).filter(id => CHARACTER_IDS.has(id)),
     unlockedStarterWeapons: uniqueStrings(raw.unlockedStarterWeapons).filter(id => STARTER_WEAPON_IDS.has(id)),
     claimedRunIds: uniqueStrings(raw.claimedRunIds).slice(-100),
+    upgrades: normalizeMetaUpgrades(raw.upgrades),
+    hardModeUnlocked: raw.hardModeUnlocked === true || Math.max(0, Math.floor(Number(raw.victories) || 0)) > 0,
+    preferredHardMode: raw.preferredHardMode === true,
   };
   if (!meta.unlockedCharacters.includes("knight")) meta.unlockedCharacters.unshift("knight");
   if (!meta.unlockedStarterWeapons.includes("pistol")) meta.unlockedStarterWeapons.unshift("pistol");
   applyMetaUnlocks(meta);
+  meta.preferredHardMode = meta.hardModeUnlocked && meta.preferredHardMode;
   return meta;
 }
 
@@ -71,6 +83,10 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
     unlock(meta.unlockedCharacters, "mage", "Mage");
   }
   if (meta.victories >= 1) {
+    if (!meta.hardModeUnlocked) {
+      meta.hardModeUnlocked = true;
+      unlocks.push("Hard Mode");
+    }
     unlock(meta.unlockedStarterWeapons, "laser", "Energy Blaster");
     unlock(meta.unlockedCharacters, "rogue", "Rogue");
   } else if (meta.currency >= 120) {

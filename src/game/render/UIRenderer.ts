@@ -214,7 +214,8 @@ export class UIRenderer {
     ctx.textAlign = "right";
     ctx.fillStyle = "#FFF";
     ctx.font = "bold 9px monospace";
-    ctx.fillText(`${floor.chapterIndex}-${floor.stageIndex} ${floor.theme.toUpperCase()}`, 310, 222);
+    const modeLabel = floor.hardMode ? " HARD" : "";
+    ctx.fillText(`${floor.chapterIndex}-${floor.stageIndex} ${floor.theme.toUpperCase()}${modeLabel}`, 310, 222);
     
     if (currentRoom) {
       let statusColor = "#C0392B";

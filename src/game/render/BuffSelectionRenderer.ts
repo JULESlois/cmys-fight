@@ -7,7 +7,7 @@ const RARITY_COLORS: Record<BuffRarity, string> = {
 };
 
 export class BuffSelectionRenderer {
-  static draw(ctx: CanvasRenderingContext2D, options: BuffId[]) {
+  static draw(ctx: CanvasRenderingContext2D, options: BuffId[], rerollsRemaining = 0) {
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.84)";
     ctx.fillRect(0, 0, 320, 240);
@@ -17,7 +17,8 @@ export class BuffSelectionRenderer {
     ctx.fillText("SELECT A BUFF", 160, 44);
     ctx.fillStyle = "#8E9EAB";
     ctx.font = "7px monospace";
-    ctx.fillText("PRESS 1 / 2 / 3", 160, 57);
+    const rerollText = rerollsRemaining > 0 ? ` | R REROLL x${rerollsRemaining}` : "";
+    ctx.fillText(`PRESS 1 / 2 / 3${rerollText}`, 160, 57);
 
     const cardWidth = 92;
     const cardHeight = 118;

@@ -7,22 +7,24 @@ export interface RunProgress {
   stageIndex: number;
   globalStageIndex: number;
   stagesCleared: number;
+  hardMode: boolean;
 }
 
 export function getGlobalStageIndex(chapterIndex: number, stageIndex: number): number {
   return (chapterIndex - 1) * STAGES_PER_CHAPTER + stageIndex;
 }
 
-export function createInitialRunProgress(): RunProgress {
+export function createInitialRunProgress(hardMode = false): RunProgress {
   return {
     chapterIndex: 1,
     stageIndex: 1,
     globalStageIndex: 1,
     stagesCleared: 0,
+    hardMode,
   };
 }
 
-export function createRunProgressFromGlobalStage(globalStageIndex: number): RunProgress {
+export function createRunProgressFromGlobalStage(globalStageIndex: number, hardMode = false): RunProgress {
   const safeGlobal = Math.max(1, Math.floor(Number(globalStageIndex) || 1));
   const chapterIndex = Math.floor((safeGlobal - 1) / STAGES_PER_CHAPTER) + 1;
   const stageIndex = ((safeGlobal - 1) % STAGES_PER_CHAPTER) + 1;
@@ -31,6 +33,7 @@ export function createRunProgressFromGlobalStage(globalStageIndex: number): RunP
     stageIndex,
     globalStageIndex: safeGlobal,
     stagesCleared: safeGlobal - 1,
+    hardMode,
   };
 }
 
@@ -46,18 +49,20 @@ export function normalizeRunProgress(value: Partial<RunProgress> | undefined): R
     globalStageIndex - 1,
     Math.floor(Number(value.stagesCleared) || 0),
   );
+  const hardMode = value.hardMode === true;
 
   return {
     chapterIndex: normalizedChapter,
     stageIndex,
     globalStageIndex,
     stagesCleared,
+    hardMode,
   };
 }
 
 export function advanceRunProgress(progress: RunProgress): RunProgress {
   const normalized = normalizeRunProgress(progress);
-  const next = createRunProgressFromGlobalStage(normalized.globalStageIndex + 1);
+  const next = createRunProgressFromGlobalStage(normalized.globalStageIndex + 1, normalized.hardMode);
   next.stagesCleared = normalized.stagesCleared + 1;
   return next;
 }

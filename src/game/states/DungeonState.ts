@@ -92,6 +92,9 @@ export class DungeonState extends GameState {
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
     player.statusEffects = StatusEffectSystem.normalize(savedP.statusEffects);
+    player.buffRerollsRemaining = savedP.buffRerollsRemaining ?? 0;
+    player.shopDiscount = savedP.shopDiscount ?? 0;
+    player.supplyDropBonus = savedP.supplyDropBonus ?? 0;
     BuffSystem.applyRuntimeStats(player);
     return player;
   }
@@ -162,6 +165,9 @@ export class DungeonState extends GameState {
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
     savedP.statusEffects = StatusEffectSystem.normalize(this.player.statusEffects);
+    savedP.buffRerollsRemaining = this.player.buffRerollsRemaining;
+    savedP.shopDiscount = this.player.shopDiscount;
+    savedP.supplyDropBonus = this.player.supplyDropBonus;
   }
 
   private syncRoomState() {
@@ -405,11 +411,31 @@ export class DungeonState extends GameState {
     floor.buffChoiceOptions = options;
     floor.buffChoiceRoomId = currentRoom.id;
     floor.buffChoiceCompleted = false;
+    floor.buffChoiceRerollCount = floor.buffChoiceRerollCount ?? 0;
     this.buffSelection = [...options];
   }
 
   private updateBuffSelection() {
     if (!this.buffSelection) return;
+    if (this.engine.input.wasPressed("r") && this.player.buffRerollsRemaining > 0) {
+      const floor = this.engine.data.data.floor;
+      const rerollCount = (floor.buffChoiceRerollCount ?? 0) + 1;
+      const roomId = floor.buffChoiceRoomId ?? "unknown";
+      const excluded = [...this.player.buffs, ...this.buffSelection];
+      const seed = hashSeed(floor.seed, `buff-reroll:${roomId}:${rerollCount}:${this.player.buffs.join(",")}`);
+      const options = BuffSystem.rollChoices(seed, excluded, 3);
+      if (options.length > 0) {
+        this.player.buffRerollsRemaining--;
+        floor.buffChoiceRerollCount = rerollCount;
+        floor.buffChoiceOptions = options;
+        this.buffSelection = [...options];
+        this.syncPlayerState();
+        this.engine.data.save();
+        audio.playShoot();
+        this.engine.input.clearJustPressed();
+      }
+      return;
+    }
     const keys = ["1", "2", "3"];
     const selectedIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
     if (selectedIndex < 0 || selectedIndex >= this.buffSelection.length) return;
@@ -420,6 +446,7 @@ export class DungeonState extends GameState {
     floor.buffChoiceCompleted = true;
     floor.buffChoiceOptions = undefined;
     floor.buffChoiceRoomId = undefined;
+    floor.buffChoiceRerollCount = undefined;
     this.buffSelection = null;
     this.syncPlayerState();
     this.syncRoomState();
@@ -745,7 +772,7 @@ export class DungeonState extends GameState {
       return;
     }
 
-    if (Math.random() < 0.3) {
+    if (Math.random() < Math.min(0.8, 0.3 + this.player.supplyDropBonus)) {
       this.pickups.push(new Pickup(
         enemy.x,
         enemy.y,
@@ -1670,7 +1697,7 @@ export class DungeonState extends GameState {
     PromptRenderer.draw(ctx, this.getInteractTarget(), time);
 
     if (this.buffSelection) {
-      BuffSelectionRenderer.draw(ctx, this.buffSelection);
+      BuffSelectionRenderer.draw(ctx, this.buffSelection, this.player.buffRerollsRemaining);
     }
 
     if (this.shopOpen && currentRoom?.type === "shop") {
