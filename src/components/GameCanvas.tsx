@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { Engine } from "../game/Engine";
-import type { InputAction } from "../game/Settings";
+import type { InputAction, TouchHandedness } from "../game/Settings";
 import { QaPanel } from "./QaPanel";
 import { installQaBridge, isQaMode } from "../game/qa/BrowserQa";
+import { calculateTouchViewportOffsets } from "../game/TouchLayout";
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,6 +12,8 @@ export function GameCanvas() {
   const joystickRef = useRef<HTMLDivElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const [touchEnabled, setTouchEnabled] = useState(true);
+  const [touchHandedness, setTouchHandedness] = useState<TouchHandedness>("right");
+  const [touchScale, setTouchScale] = useState(1);
   const [stick, setStick] = useState({ x: 0, y: 0 });
   const [status, setStatus] = useState("");
   const [qaReady, setQaReady] = useState(false);
@@ -23,6 +26,16 @@ export function GameCanvas() {
   }, [status]);
 
   useEffect(() => {
+    if (touchEnabled) return;
+    setStick({ x: 0, y: 0 });
+    const input = engineRef.current?.input;
+    input?.setTouchAxis(0, 0);
+    for (const action of ["fire", "skill", "interact", "swapWeapon", "pause"] as InputAction[]) {
+      input?.setTouchAction(action, false);
+    }
+  }, [touchEnabled]);
+
+  useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
     engineRef.current = new Engine();
@@ -32,6 +45,12 @@ export function GameCanvas() {
         if (canvasRef.current) {
           canvasRef.current.width = width;
           canvasRef.current.height = height;
+        }
+        if (containerRef.current) {
+          const offsets = calculateTouchViewportOffsets(width, height);
+          containerRef.current.style.setProperty("--touch-vertical-gutter", `${offsets.verticalGutter}px`);
+          containerRef.current.style.setProperty("--touch-bottom-offset", `${offsets.bottomOffset}px`);
+          containerRef.current.style.setProperty("--touch-top-offset", `${offsets.topOffset}px`);
         }
       }
     });
@@ -46,7 +65,10 @@ export function GameCanvas() {
     if (qaEnabled) setQaReady(true);
 
     const settingsTimer = window.setInterval(() => {
-      setTouchEnabled(engineRef.current?.data.settings.touchControls !== false);
+      const settings = engineRef.current?.data.settings;
+      setTouchEnabled(settings?.touchControls !== false);
+      setTouchHandedness(settings?.touchHandedness === "left" ? "left" : "right");
+      setTouchScale(settings?.touchScale ?? 1);
     }, 300);
 
     if (engineRef.current.data.lastRecoveryMessage) {
@@ -124,7 +146,9 @@ export function GameCanvas() {
   };
 
   const releaseJoystick = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
     setStick({ x: 0, y: 0 });
     engineRef.current?.input.setTouchAxis(0, 0);
   };
@@ -164,14 +188,24 @@ export function GameCanvas() {
 
       {touchEnabled && (
         <div
-          className="touch-controls absolute inset-0 pointer-events-none select-none"
+          className={`touch-controls touch-layout-${touchHandedness} absolute inset-0 pointer-events-none select-none`}
+          style={{ "--touch-scale": touchScale } as CSSProperties}
           onContextMenu={event => event.preventDefault()}
           onDragStart={event => event.preventDefault()}
           onSelect={event => event.preventDefault()}
         >
+          <button
+            type="button"
+            aria-label="Pause menu"
+            className="touch-button touch-menu-button"
+            {...actionHandlers("pause")}
+          >
+            MENU
+          </button>
+
           <div
             ref={joystickRef}
-            className="pointer-events-auto absolute left-4 bottom-4 w-28 h-28 rounded-full border border-cyan-300/40 bg-slate-950/45 backdrop-blur-sm"
+            className="touch-joystick"
             style={{ touchAction: "none" }}
             onPointerDown={event => {
               event.preventDefault();
@@ -183,9 +217,10 @@ export function GameCanvas() {
             }}
             onPointerUp={releaseJoystick}
             onPointerCancel={releaseJoystick}
+            onLostPointerCapture={releaseJoystick}
           >
             <div
-              className="absolute w-12 h-12 rounded-full border border-cyan-200/70 bg-cyan-300/20"
+              className="touch-stick-knob"
               style={{
                 left: `calc(50% - 24px + ${stick.x * 34}px)`,
                 top: `calc(50% - 24px + ${stick.y * 34}px)`,
@@ -193,12 +228,11 @@ export function GameCanvas() {
             />
           </div>
 
-          <div className="absolute right-3 bottom-3 w-44 h-40 pointer-events-none">
-            <button className="touch-button absolute right-0 bottom-10 w-16 h-16" {...actionHandlers("fire")}>FIRE</button>
-            <button className="touch-button absolute right-16 bottom-0 w-14 h-14" {...actionHandlers("interact")}>USE</button>
-            <button className="touch-button absolute right-20 bottom-16 w-14 h-14" {...actionHandlers("skill")}>SKILL</button>
-            <button className="touch-button absolute right-2 bottom-28 w-12 h-10" {...actionHandlers("swapWeapon")}>SWAP</button>
-            <button className="touch-button absolute right-24 bottom-28 w-12 h-10" {...actionHandlers("pause")}>MENU</button>
+          <div className="touch-action-cluster">
+            <button type="button" aria-label="Fire" className="touch-button touch-fire-button" {...actionHandlers("fire")}>FIRE</button>
+            <button type="button" aria-label="Interact" className="touch-button touch-use-button" {...actionHandlers("interact")}>USE</button>
+            <button type="button" aria-label="Use skill" className="touch-button touch-skill-button" {...actionHandlers("skill")}>SKILL</button>
+            <button type="button" aria-label="Swap weapon" className="touch-button touch-swap-button" {...actionHandlers("swapWeapon")}>SWAP</button>
           </div>
         </div>
       )}

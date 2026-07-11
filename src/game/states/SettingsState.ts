@@ -10,6 +10,7 @@ import {
   type ColorblindMode,
   type InputAction,
   type MusicMode,
+  type TouchHandedness,
 } from "../Settings";
 
 const OPTIONS = [
@@ -23,6 +24,8 @@ const OPTIONS = [
   "DYNAMIC BG",
   "COLOR MODE",
   "TOUCH CONTROLS",
+  "TOUCH LAYOUT",
+  "TOUCH SIZE",
   "CONTROLS",
   "FULLSCREEN",
   "EXPORT DATA",
@@ -180,6 +183,12 @@ export class SettingsState extends GameState {
       settings.dynamicBackground = !settings.dynamicBackground;
     } else if (option === "TOUCH CONTROLS") {
       settings.touchControls = !settings.touchControls;
+    } else if (option === "TOUCH LAYOUT") {
+      const layouts: TouchHandedness[] = ["right", "left"];
+      const index = layouts.indexOf(settings.touchHandedness);
+      settings.touchHandedness = layouts[(index + direction + layouts.length) % layouts.length];
+    } else if (option === "TOUCH SIZE") {
+      settings.touchScale = Math.max(0.85, Math.min(1.15, Math.round((settings.touchScale + direction * 0.1) * 20) / 20));
     } else if (option === "COLOR MODE") {
       const modes: ColorblindMode[] = ["off", "deuteranopia", "tritanopia"];
       const index = modes.indexOf(settings.colorblindMode);
@@ -210,10 +219,10 @@ export class SettingsState extends GameState {
 
     const settings = this.engine.data.settings;
     OPTIONS.forEach((option, index) => {
-      const y = 39 + index * 10;
+      const y = 37 + index * 9;
       const selected = index === this.selectedIndex;
       ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
-      if (selected) ctx.fillRect(32, y - 8, 256, 10);
+      if (selected) ctx.fillRect(32, y - 7, 256, 9);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = "bold 6px monospace";
@@ -230,7 +239,9 @@ export class SettingsState extends GameState {
                 : option === "DYNAMIC BG" ? (settings.dynamicBackground ? "ON" : "OFF")
                   : option === "COLOR MODE" ? settings.colorblindMode.toUpperCase().slice(0, 8)
                     : option === "TOUCH CONTROLS" ? (settings.touchControls ? "AUTO" : "OFF")
-                      : option === "CONTROLS" ? "ENTER"
+                      : option === "TOUCH LAYOUT" ? settings.touchHandedness.toUpperCase()
+                        : option === "TOUCH SIZE" ? `${Math.round(settings.touchScale * 100)}%`
+                          : option === "CONTROLS" ? "ENTER"
                         : option === "FULLSCREEN" ? "TOGGLE"
                           : option === "EXPORT DATA" ? "DOWNLOAD"
                             : option === "IMPORT DATA" ? "SELECT"
@@ -242,7 +253,7 @@ export class SettingsState extends GameState {
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
     ctx.font = "6px monospace";
-    ctx.fillText(this.message, 160, 211);
+    ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = "#7F8C8D";
     ctx.fillText("ARROWS ADJUST // ENTER SELECT // ESC BACK", 160, 228);
     ctx.textAlign = "left";

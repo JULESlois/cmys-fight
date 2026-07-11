@@ -1,5 +1,5 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 
 export type InputAction =
   | "moveUp"
@@ -50,6 +50,7 @@ export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
 
 export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
 export type MusicMode = "adaptive" | "external" | "off";
+export type TouchHandedness = "right" | "left";
 
 export interface GameSettings {
   version: number;
@@ -63,6 +64,8 @@ export interface GameSettings {
   reducedFlashing: boolean;
   dynamicBackground: boolean;
   touchControls: boolean;
+  touchHandedness: TouchHandedness;
+  touchScale: number;
   tutorialCompleted: boolean;
   keyBindings: Record<InputAction, string>;
 }
@@ -80,6 +83,8 @@ export function createDefaultSettings(): GameSettings {
     reducedFlashing: false,
     dynamicBackground: true,
     touchControls: true,
+    touchHandedness: "right",
+    touchScale: 1,
     tutorialCompleted: false,
     keyBindings: { ...DEFAULT_KEY_BINDINGS },
   };
@@ -105,10 +110,12 @@ export function normalizeSettings(value: unknown): GameSettings {
   const uiScale = Number(raw.uiScale);
   const masterVolume = Number(raw.masterVolume);
   const musicVolume = Number(raw.musicVolume);
+  const touchScale = Number(raw.touchScale);
   const musicMode: MusicMode = raw.musicMode === "external" || raw.musicMode === "off" ? raw.musicMode : "adaptive";
   const colorblindMode: ColorblindMode = raw.colorblindMode === "deuteranopia" || raw.colorblindMode === "tritanopia"
     ? raw.colorblindMode
     : "off";
+  const touchHandedness: TouchHandedness = raw.touchHandedness === "left" ? "left" : "right";
   return {
     version: SETTINGS_VERSION,
     masterVolume: Number.isFinite(masterVolume) ? Math.max(0, Math.min(100, Math.round(masterVolume))) : fallback.masterVolume,
@@ -121,6 +128,8 @@ export function normalizeSettings(value: unknown): GameSettings {
     reducedFlashing: raw.reducedFlashing === true,
     dynamicBackground: raw.dynamicBackground !== false,
     touchControls: raw.touchControls !== false,
+    touchHandedness,
+    touchScale: Number.isFinite(touchScale) ? Math.max(0.85, Math.min(1.15, Math.round(touchScale * 20) / 20)) : 1,
     tutorialCompleted: raw.tutorialCompleted === true,
     keyBindings,
   };
