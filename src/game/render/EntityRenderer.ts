@@ -3,8 +3,8 @@ import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
 import { PLAYER_PALETTE } from "../data/sprites";
-import { getEnemyDefinition, type EnemyVisual } from "../data/enemies";
 import { SpriteRenderer } from "./SpriteRenderer";
+import { MonsterModelRenderer } from "./MonsterModelRenderer";
 
 export class EntityRenderer {
   private static adjustHex(color: string, amount: number): string {
@@ -46,44 +46,6 @@ export class EntityRenderer {
     });
   }
 
-  private static drawEnemyAccent(ctx: CanvasRenderingContext2D, visual: EnemyVisual, color: string): void {
-    const light = EntityRenderer.adjustHex(color, 55);
-    const dark = EntityRenderer.adjustHex(color, -70);
-    ctx.fillStyle = dark;
-    if (visual === "bird") {
-      ctx.fillRect(-13, -7, 5, 7); ctx.fillRect(8, -7, 5, 7);
-      ctx.fillStyle = "#F4D03F"; ctx.fillRect(7, -12, 6, 3);
-    } else if (visual === "beast" || visual === "hound") {
-      ctx.fillRect(-9, -19, 5, 6); ctx.fillRect(4, -19, 5, 6);
-      ctx.fillRect(9, -5, 7, 4);
-    } else if (visual === "mushroom") {
-      ctx.fillStyle = light; ctx.fillRect(-12, -19, 24, 6); ctx.fillRect(-8, -22, 16, 3);
-      ctx.fillStyle = "#F5F5DC"; ctx.fillRect(-2, -15, 4, 10);
-    } else if (visual === "hazmat") {
-      ctx.fillStyle = "#ECF0F1"; ctx.fillRect(-10, -20, 20, 7); ctx.fillRect(-12, -13, 24, 4);
-      ctx.fillStyle = "#2ECC71"; ctx.fillRect(-4, -18, 8, 3);
-      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(10, -12, 2, 17); ctx.fillRect(8, 4, 6, 2);
-    } else if (visual === "horse") {
-      ctx.fillRect(-8, -21, 5, 7); ctx.fillRect(3, -21, 5, 7);
-      ctx.fillRect(7, -13, 10, 6);
-      ctx.fillStyle = "#2ECC71"; ctx.fillRect(-4, -10, 8, 8); ctx.fillStyle = "#09101A";
-      ctx.fillRect(-2, -8, 2, 2); ctx.fillRect(1, -5, 2, 2);
-    } else if (visual === "turret" || visual === "beetle") {
-      ctx.fillRect(-13, 4, 26, 5); ctx.fillRect(-9, -17, 18, 4);
-      ctx.fillStyle = light; ctx.fillRect(7, -12, 9, 3);
-    } else if (visual === "wisp") {
-      ctx.fillStyle = light; ctx.fillRect(-11, 6, 4, 4); ctx.fillRect(7, 3, 3, 3); ctx.fillRect(-3, 10, 3, 3);
-    } else if (visual === "jailer") {
-      ctx.fillStyle = light;
-      for (let index = 0; index < 4; index++) ctx.fillRect(9 + index * 3, -8 + index * 2, 3, 3);
-    } else if (visual === "archer" || visual === "spitter") {
-      ctx.fillStyle = light; ctx.fillRect(8, -10, 11, 3); ctx.fillRect(14, -13, 3, 9);
-    } else if (visual === "summoner" || visual === "shaman" || visual === "oracle" || visual === "cultist") {
-      ctx.fillStyle = light; ctx.fillRect(-8, -21, 16, 4); ctx.fillRect(-11, -17, 22, 3);
-    } else if (visual === "guard" || visual === "knight") {
-      ctx.fillStyle = light; ctx.fillRect(-13, -11, 5, 14); ctx.fillRect(8, -11, 5, 14);
-    }
-  }
 
   public static drawTargetMarker(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
     const pulse = Math.floor(time * 8) % 2;
@@ -170,7 +132,6 @@ export class EntityRenderer {
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string, reducedFlashing = false) {
     ctx.save();
     ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
-    const definition = getEnemyDefinition(enemy.enemyId);
     if (enemy.statusEffects.length > 0) EntityRenderer.drawStatusChips(ctx, enemy.statusEffects, -enemy.radius - 13);
 
     if (enemy.attackState === "windup") {
@@ -208,17 +169,7 @@ export class EntityRenderer {
     ctx.translate(0, animOffset);
     let scale = enemy.isElite ? 2.35 : 2;
     if (enemy.type === "boss") scale = 3;
-    const palette = {
-      "8": enemy.displayColor,
-      "5": EntityRenderer.adjustHex(enemy.displayColor, 45),
-      "2": EntityRenderer.adjustHex(enemy.displayColor, -35),
-    };
-    SpriteRenderer.drawPixelSprite(ctx, `enemy_${enemy.type}_idle`, 0, -8, scale, {
-      hitFlash: enemy.hitFlash > 0 && !reducedFlashing,
-      paletteOverride: palette,
-      outlineColor: enemy.isElite ? "#6B4E00" : enemy.type === "boss" ? "#26070D" : "#130B18",
-    });
-    EntityRenderer.drawEnemyAccent(ctx, definition.visual, enemy.displayColor);
+    MonsterModelRenderer.draw(ctx, enemy, time, reducedFlashing, scale);
     ctx.restore();
 
     const barW = enemy.type === "boss" ? 40 : 16;

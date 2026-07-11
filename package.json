@@ -1,7 +1,7 @@
 {
   "name": "cmys-fight",
   "private": true,
-  "version": "0.9.1",
+  "version": "0.10.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -11,14 +11,15 @@
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
-    "verify": "npm run lint && npm run test:art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:content && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
+    "verify": "npm run lint && npm run test:art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:content && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
     "test:http": "node scripts/http-smoke.mjs",
     "test:input": "node --import tsx scripts/input-smoke.ts",
     "test:art": "node --import tsx scripts/art-audio-smoke.ts",
     "test:qa": "node --import tsx scripts/browser-qa-smoke.ts",
     "test:feedback": "node --import tsx scripts/feedback-fixes-smoke.ts",
     "test:content": "node --import tsx scripts/content-variety-smoke.ts",
-    "test:mobile": "node --import tsx scripts/mobile-layout-smoke.ts"
+    "test:mobile": "node --import tsx scripts/mobile-layout-smoke.ts",
+    "test:monsters": "node --import tsx scripts/monster-model-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

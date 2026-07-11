@@ -3,6 +3,7 @@ import { BUFFS } from "../combat/BuffSystem";
 import { ENEMIES } from "../data/enemies";
 import { WEAPONS } from "../data/weapons";
 import { MenuRenderer } from "../render/MenuRenderer";
+import { MonsterModelRenderer } from "../render/MonsterModelRenderer";
 import { GameState } from "./GameState";
 
 type RecordsPage = "achievements" | "enemies" | "bosses" | "weapons" | "buffs";
@@ -121,14 +122,37 @@ export class RecordsState extends GameState {
       ctx.fillText(row.unlocked ? "FOUND" : "HIDDEN", 280, y);
     });
 
+    const isMonsterPage = page === "enemies" || page === "bosses";
+    if (isMonsterPage && selected?.unlocked) {
+      const definition = ENEMIES[selected.id];
+      ctx.fillStyle = "rgba(9, 16, 26, 0.92)";
+      ctx.fillRect(34, 183, 62, 43);
+      ctx.strokeStyle = definition.color;
+      ctx.strokeRect(34, 183, 62, 43);
+      ctx.save();
+      ctx.translate(65, 220);
+      MonsterModelRenderer.drawPreview(ctx, definition.id, definition.color, definition.role, performance.now() / 1000, definition.role === "boss" ? 1.55 : 1.35);
+      ctx.restore();
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#ECF0F1";
+      ctx.font = "bold 7px monospace";
+      ctx.fillText(selected.name, 104, 194);
+      ctx.fillStyle = "#BDC3C7";
+      ctx.font = "6px monospace";
+      ctx.fillText(selected.description, 104, 207);
+      ctx.fillStyle = definition.color;
+      ctx.fillText(`${definition.role.toUpperCase()} // HP ${definition.maxHp}`, 104, 219);
+    } else {
+      ctx.textAlign = "center";
+      ctx.fillStyle = selected?.unlocked ? "#BDC3C7" : "#4B5563";
+      ctx.font = "7px monospace";
+      ctx.fillText(selected?.unlocked ? selected.description : "Encounter this record to reveal its details.", 160, 205);
+    }
     ctx.textAlign = "center";
-    ctx.fillStyle = selected?.unlocked ? "#BDC3C7" : "#4B5563";
-    ctx.font = "7px monospace";
-    ctx.fillText(selected?.unlocked ? selected.description : "Encounter this record to reveal its details.", 160, 205);
     ctx.fillStyle = "#7F8C8D";
     ctx.font = "6px monospace";
-    ctx.fillText(`${page.toUpperCase()} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 218);
-    ctx.fillText("Q/E OR LEFT/RIGHT PAGE | W/S SELECT | A/ESC HUB", 160, 234);
+    ctx.fillText(`${page.toUpperCase()} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
+    ctx.fillText("Q/E PAGE | W/S SELECT | A/ESC HUB", 160, 238);
     ctx.textAlign = "left";
   }
 }
