@@ -1,5 +1,5 @@
 import { BUFFS, BuffSystem, type BuffId, type BuffRarity } from "../combat/BuffSystem";
-import { WEAPONS, type WeaponRarity } from "../data/weapons";
+import { WEAPONS, getAvailableWeapons, type WeaponRarity } from "../data/weapons";
 import type { Player } from "../entities/Player";
 import type { Room, StageData } from "../FloorGenerator";
 import { createSeededRandom, hashSeed, normalizeSeed } from "../Random";
@@ -41,12 +41,14 @@ const WEAPON_PRICE: Record<WeaponRarity, number> = {
   common: 28,
   uncommon: 46,
   rare: 72,
+  legendary: 118,
 };
 
 const BUFF_PRICE: Record<BuffRarity, number> = {
   common: 34,
   uncommon: 52,
   rare: 78,
+  legendary: 116,
 };
 
 function stagePrice(base: number, stage: StageData, discount = 0): number {
@@ -72,10 +74,13 @@ export class ShopSystem {
     const supplyScale = 1 + Math.floor((stage.globalStageIndex - 1) / 5);
 
     const ownedWeapons = new Set(player.weaponSlots.filter(Boolean));
-    const weaponPool = Object.values(WEAPONS).filter(weapon => !ownedWeapons.has(weapon.id));
-    const weapon = choose(weaponPool.length > 0 ? weaponPool : Object.values(WEAPONS), random)!;
+    const availableWeapons = getAvailableWeapons(stage.globalStageIndex);
+    const weaponPool = availableWeapons.filter(weapon => !ownedWeapons.has(weapon.id));
+    const weapon = choose(weaponPool.length > 0 ? weaponPool : availableWeapons, random)!;
 
-    const buffPool = (Object.keys(BUFFS) as BuffId[]).filter(id => !player.buffs.includes(id));
+    const buffPool = (Object.keys(BUFFS) as BuffId[]).filter(id =>
+      !player.buffs.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= stage.globalStageIndex
+    );
     const buffId = choose(buffPool, random);
 
     const stock: ShopItem[] = [
@@ -101,7 +106,7 @@ export class ShopSystem {
         id: `${seed}:weapon:${weapon.id}`,
         kind: "weapon",
         name: weapon.name.toUpperCase(),
-        description: `${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}.`,
+        description: `${weapon.series ? `${weapon.series.toUpperCase()} ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}.`,
         price: stagePrice(WEAPON_PRICE[weapon.rarity], stage, player.shopDiscount),
         weaponId: weapon.id,
         rarity: weapon.rarity,

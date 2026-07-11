@@ -118,7 +118,7 @@ jumpToStage(imported, 7);
 assert.equal(imported.data.run.globalStageIndex, 7);
 grantDebugLoadout(imported);
 assert.equal(imported.data.player.coins, 999);
-assert.deepEqual(imported.data.player.weaponSlots, ["laser", "shotgun"]);
+assert.deepEqual(imported.data.player.weaponSlots, ["void_rail", "dragon_breath"]);
 
 // Entity pools must reuse released instances and fully reset runtime identity/state.
 const projectileA = acquireProjectile(1, 2, 3, 4, 2, 5, "player");

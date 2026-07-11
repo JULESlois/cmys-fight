@@ -4,6 +4,7 @@ const RARITY_COLORS: Record<BuffRarity, string> = {
   common: "#BDC3C7",
   uncommon: "#2ECC71",
   rare: "#00F2FE",
+  legendary: "#FFB347",
 };
 
 export class BuffSelectionRenderer {
@@ -21,7 +22,7 @@ export class BuffSelectionRenderer {
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
     ctx.font = "bold 14px monospace";
-    ctx.fillText("BUFF", 160, 44);
+    ctx.fillText("TALENT", 160, 44);
     ctx.fillStyle = "#8E9EAB";
     ctx.font = "7px monospace";
     const rerollText = rerollsRemaining > 0 ? `   R ×${rerollsRemaining}` : "";
@@ -54,7 +55,7 @@ export class BuffSelectionRenderer {
       ctx.fillText(buff.name, x + cardWidth / 2, y + 38);
       ctx.font = "6px monospace";
       ctx.fillStyle = "#8E9EAB";
-      ctx.fillText(buff.category.toUpperCase(), x + cardWidth / 2, y + 50);
+      ctx.fillText((buff.series ?? buff.category).toUpperCase(), x + cardWidth / 2, y + 50);
 
       const words = buff.description.split(" ");
       const lines: string[] = [];

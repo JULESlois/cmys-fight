@@ -70,7 +70,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 15;
+const CURRENT_SAVE_VERSION = 16;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -83,6 +83,9 @@ export interface GameSave {
     maxArmor: number;
     mana: number;
     maxMana: number;
+    manaRechargeTimer: number;
+    manaRechargeDelay: number;
+    manaRechargeRate: number;
     weaponSlots: WeaponSlots;
     activeWeaponSlot: 0 | 1;
     /** Compatibility mirror for saves created before dual weapon slots. */
@@ -100,6 +103,7 @@ export interface GameSave {
     knightGuardReady: boolean;
     buffs: BuffId[];
     emergencyBarrierReady: boolean;
+    phoenixProtocolReady: boolean;
     statusEffects: ActiveStatusEffect[];
     buffRerollsRemaining: number;
     shopDiscount: number;
@@ -137,6 +141,9 @@ export const defaultSave: GameSave = {
     maxArmor: 5,
     mana: 100,
     maxMana: 100,
+    manaRechargeTimer: 0,
+    manaRechargeDelay: 1.25,
+    manaRechargeRate: 12,
     weaponSlots: ["pistol"],
     activeWeaponSlot: 0,
     currentWeaponId: "pistol",
@@ -153,6 +160,7 @@ export const defaultSave: GameSave = {
     knightGuardReady: true,
     buffs: [],
     emergencyBarrierReady: false,
+    phoenixProtocolReady: false,
     statusEffects: [],
     buffRerollsRemaining: 0,
     shopDiscount: 0,
@@ -786,6 +794,9 @@ export class GameData {
     player.skillDirectionY = 0;
     player.rogueCritTimer = 0;
     player.knightGuardReady = characterId === "knight";
+    player.manaRechargeTimer = 0;
+    player.manaRechargeDelay = 1.25;
+    player.manaRechargeRate = 12;
   }
 
   private normalizePlayerSkills() {
@@ -799,12 +810,16 @@ export class GameData {
     player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
+    player.manaRechargeTimer = finiteNonNegative(player.manaRechargeTimer);
+    player.manaRechargeDelay = Math.max(0.2, Number(player.manaRechargeDelay) || 1.25);
+    player.manaRechargeRate = Math.max(0, Number(player.manaRechargeRate) || 12);
     player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
   }
 
   private resetBuffState() {
     this.data.player.buffs = [];
     this.data.player.emergencyBarrierReady = false;
+    this.data.player.phoenixProtocolReady = false;
   }
 
   private normalizePlayerBuffs() {
@@ -812,6 +827,8 @@ export class GameData {
     player.buffs = BuffSystem.normalizeBuffs(player.buffs);
     player.emergencyBarrierReady =
       player.buffs.includes("emergency_barrier") && player.emergencyBarrierReady === true;
+    player.phoenixProtocolReady =
+      player.buffs.includes("phoenix_protocol") && player.phoenixProtocolReady === true;
   }
 
   private normalizePlayerStatuses() {

@@ -82,13 +82,13 @@ export class UIRenderer {
     // Compact buff strip. Detailed skill and swap information lives on the pause screen.
     if (player.buffs.length > 0) {
       ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
-      ctx.fillRect(132, 5, 92, 12);
+      ctx.fillRect(120, 5, 112, 12);
       ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
-      ctx.strokeRect(132, 5, 92, 12);
+      ctx.strokeRect(120, 5, 112, 12);
       player.buffs.forEach((id, index) => {
         const buff = BUFFS[id];
-        const x = 135 + index * 17;
-        ctx.fillStyle = buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
+        const x = 123 + index * 17;
+        ctx.fillStyle = buff.rarity === "legendary" ? "#FFB347" : buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
         ctx.font = "bold 5px monospace";
         ctx.fillText(buff.shortCode, x, 13);
       });
@@ -132,6 +132,7 @@ export class UIRenderer {
     ctx.strokeRect(5, 202, 190, 33);
 
     const rarityColor = (rarity: string) => {
+      if (rarity === "legendary") return "#FFB347";
       if (rarity === "rare") return "#00F2FE";
       if (rarity === "uncommon") return "#2ECC71";
       return "#8E9EAB";

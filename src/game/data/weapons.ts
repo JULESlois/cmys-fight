@@ -1,7 +1,8 @@
 import type { StatusEffectId } from "../combat/StatusEffectSystem";
+import type { PowerSeries } from "../PowerSeries";
 
 export type WeaponCategory = "sidearm" | "shotgun" | "energy" | "rifle" | "launcher";
-export type WeaponRarity = "common" | "uncommon" | "rare";
+export type WeaponRarity = "common" | "uncommon" | "rare" | "legendary";
 export type WeaponSlots = [string, string?];
 
 export interface WeaponData {
@@ -24,6 +25,8 @@ export interface WeaponData {
   wallBounces?: number;
   statusEffect?: StatusEffectId;
   statusDuration?: number;
+  series?: PowerSeries;
+  minGlobalStage?: number;
 }
 
 export const WEAPONS: Record<string, WeaponData> = {
@@ -73,7 +76,51 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileRadius: 4, projectileLife: 2.6, wallBounces: 1,
     statusEffect: "burn", statusDuration: 2.1,
   },
+
+  kingmaker: {
+    id: "kingmaker", name: "Kingmaker", category: "sidearm", rarity: "legendary",
+    damage: 8, fireRate: 4.2, bulletSpeed: 225, manaCost: 2, spread: 0.04,
+    pelletCount: 1, knockback: 7, critChance: 0.3, color: "#F9E79F",
+    pierce: 1, projectileLife: 2.2, series: "vanguard", minGlobalStage: 7,
+  },
+  storm_repeater: {
+    id: "storm_repeater", name: "Storm Repeater", category: "rifle", rarity: "legendary",
+    damage: 4, fireRate: 8.5, bulletSpeed: 230, manaCost: 2, spread: 0.18,
+    pelletCount: 2, knockback: 4, critChance: 0.14, color: "#F4D03F",
+    wallBounces: 1, projectileLife: 1.9, series: "vanguard", minGlobalStage: 9,
+  },
+  starfall_array: {
+    id: "starfall_array", name: "Starfall Array", category: "energy", rarity: "legendary",
+    damage: 5, fireRate: 3.2, bulletSpeed: 245, manaCost: 4, spread: 0.48,
+    pelletCount: 5, knockback: 4, critChance: 0.15, color: "#AF7AC5",
+    pierce: 1, projectileLife: 2.15, series: "aether", minGlobalStage: 10,
+  },
+  void_rail: {
+    id: "void_rail", name: "Void Rail", category: "energy", rarity: "legendary",
+    damage: 16, fireRate: 0.9, bulletSpeed: 360, manaCost: 7, spread: 0,
+    pelletCount: 1, knockback: 16, critChance: 0.25, color: "#BB8FCE",
+    projectileRadius: 3, pierce: 5, projectileLife: 2.8, series: "aether", minGlobalStage: 12,
+  },
+  dragon_breath: {
+    id: "dragon_breath", name: "Dragon Breath", category: "shotgun", rarity: "legendary",
+    damage: 3, fireRate: 1.35, bulletSpeed: 138, manaCost: 5, spread: 0.86,
+    pelletCount: 12, knockback: 7, critChance: 0.08, color: "#FF7043",
+    projectileLife: 1.15, statusEffect: "burn", statusDuration: 2.8,
+    series: "phoenix", minGlobalStage: 14,
+  },
+  siege_breaker: {
+    id: "siege_breaker", name: "Siege Breaker", category: "launcher", rarity: "legendary",
+    damage: 20, fireRate: 0.65, bulletSpeed: 112, manaCost: 8, spread: 0.02,
+    pelletCount: 1, knockback: 20, critChance: 0.18, color: "#FF8C69",
+    projectileRadius: 5, projectileLife: 3, pierce: 2, wallBounces: 1,
+    statusEffect: "burn", statusDuration: 3, series: "phoenix", minGlobalStage: 16,
+  },
 };
+
+export function getAvailableWeapons(globalStageIndex: number): WeaponData[] {
+  const stage = Math.max(1, Math.floor(globalStageIndex || 1));
+  return Object.values(WEAPONS).filter(weapon => (weapon.minGlobalStage ?? 1) <= stage);
+}
 
 export function isWeaponId(value: unknown): value is string {
   return typeof value === "string" && value in WEAPONS;

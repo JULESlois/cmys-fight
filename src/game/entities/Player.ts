@@ -21,6 +21,9 @@ export class Player {
   public maxArmor: number = 5;
   public mana: number;
   public maxMana: number;
+  public manaRechargeTimer: number = 0;
+  public manaRechargeDelay: number = 1.25;
+  public manaRechargeRate: number = 12;
   
   public speed: number = 80;
   public characterId: string = "knight";
@@ -49,6 +52,7 @@ export class Player {
   public knightGuardReady: boolean = false;
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;
+  public phoenixProtocolReady: boolean = false;
   public statusEffects: ActiveStatusEffect[] = [];
   public buffRerollsRemaining: number = 0;
   public shopDiscount: number = 0;

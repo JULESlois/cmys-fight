@@ -109,7 +109,7 @@ assert.equal(promptInput.getPrompt("pause"), "P");
 promptInput.setTouchAction("fire", false);
 promptInput.cleanup();
 
-runContract("keyboard", input => keyboardPulse(input, " "));
+runContract("keyboard", input => keyboardPulse(input, "l"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 

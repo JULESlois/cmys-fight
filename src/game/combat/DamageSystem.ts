@@ -19,21 +19,26 @@ const NO_DAMAGE: DamageResult = {
 export class DamageSystem {
   static updatePlayer(player: Player, dt: number): void {
     player.invulnerabilityTimer = Math.max(0, player.invulnerabilityTimer - dt);
-    if (player.hp <= 0 || player.maxArmor <= 0) {
-      return;
+    if (player.hp <= 0) return;
+
+    if (player.maxArmor > 0) {
+      player.armorRechargeTimer = Math.max(0, player.armorRechargeTimer - dt);
+      if (player.armor < player.maxArmor && player.armorRechargeTimer <= 0) {
+        player.armor = Math.min(player.maxArmor, player.armor + player.armorRechargeRate * dt);
+      }
+
+      if (
+        player.characterId === "knight" &&
+        player.armor >= player.maxArmor &&
+        player.armorRechargeTimer <= 0
+      ) {
+        player.knightGuardReady = true;
+      }
     }
 
-    player.armorRechargeTimer = Math.max(0, player.armorRechargeTimer - dt);
-    if (player.armor < player.maxArmor && player.armorRechargeTimer <= 0) {
-      player.armor = Math.min(player.maxArmor, player.armor + player.armorRechargeRate * dt);
-    }
-
-    if (
-      player.characterId === "knight" &&
-      player.armor >= player.maxArmor &&
-      player.armorRechargeTimer <= 0
-    ) {
-      player.knightGuardReady = true;
+    player.manaRechargeTimer = Math.max(0, player.manaRechargeTimer - dt);
+    if (player.mana < player.maxMana && player.manaRechargeTimer <= 0) {
+      player.mana = Math.min(player.maxMana, player.mana + player.manaRechargeRate * dt);
     }
   }
 
@@ -55,7 +60,12 @@ export class DamageSystem {
     const hpBefore = player.hp;
     player.hp = Math.max(0, player.hp - hpDamage);
     let actualHpDamage = hpBefore - player.hp;
-    if (player.hp <= 0 && player.emergencyBarrierReady && BuffSystem.has(player, "emergency_barrier")) {
+    if (player.hp <= 0 && player.phoenixProtocolReady && BuffSystem.has(player, "phoenix_protocol")) {
+      player.hp = Math.min(player.maxHp, 2);
+      player.armor = Math.min(player.maxArmor, player.armor + 3);
+      actualHpDamage = Math.max(0, hpBefore - player.hp);
+      player.phoenixProtocolReady = false;
+    } else if (player.hp <= 0 && player.emergencyBarrierReady && BuffSystem.has(player, "emergency_barrier")) {
       player.hp = 1;
       actualHpDamage = Math.max(0, hpBefore - 1);
       player.emergencyBarrierReady = false;

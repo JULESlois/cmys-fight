@@ -75,14 +75,14 @@ export class RecordsState extends GameState {
       return Object.values(WEAPONS).map(weapon => ({
         id: weapon.id,
         name: weapon.name.toUpperCase(),
-        description: `${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()} // DMG ${weapon.damage}`,
+        description: `${weapon.series ? `${weapon.series.toUpperCase()} // ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()} // DMG ${weapon.damage}`,
         unlocked: meta.codex.weapons.includes(weapon.id),
       }));
     }
     return Object.values(BUFFS).map(buff => ({
       id: buff.id,
       name: buff.name,
-      description: buff.description,
+      description: `${buff.series ? `${buff.series.toUpperCase()} // ` : ""}${buff.description}`,
       unlocked: meta.codex.buffs.includes(buff.id),
     }));
   }
@@ -102,7 +102,7 @@ export class RecordsState extends GameState {
     ctx.font = "bold 7px monospace";
     PAGES.forEach((entry, index) => {
       ctx.fillStyle = index === this.pageIndex ? "#00F2FE" : "#4B5563";
-      ctx.fillText(entry.toUpperCase(), 38 + index * 61, 40);
+      ctx.fillText(entry === "buffs" ? "TALENTS" : entry.toUpperCase(), 38 + index * 61, 40);
     });
 
     rows.slice(start, start + pageSize).forEach((row, localIndex) => {
@@ -151,7 +151,7 @@ export class RecordsState extends GameState {
     ctx.textAlign = "center";
     ctx.fillStyle = "#7F8C8D";
     ctx.font = "6px monospace";
-    ctx.fillText(`${page.toUpperCase()} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
+    ctx.fillText(`${page === "buffs" ? "TALENTS" : page.toUpperCase()} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
     ctx.fillText("Q/E PAGE   W/S SELECT   ESC", 160, 238);
     ctx.textAlign = "left";
   }

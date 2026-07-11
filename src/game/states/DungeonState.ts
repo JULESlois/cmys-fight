@@ -27,7 +27,7 @@ import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
 import { createSeededRandom, hashSeed } from "../Random";
-import { WEAPONS } from "../data/weapons";
+import { WEAPONS, getAvailableWeapons } from "../data/weapons";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
@@ -92,6 +92,9 @@ export class DungeonState extends GameState {
     player.maxArmor = savedP.maxArmor ?? 0;
     player.mana = savedP.mana;
     player.maxMana = savedP.maxMana;
+    player.manaRechargeTimer = savedP.manaRechargeTimer ?? 0;
+    player.manaRechargeDelay = savedP.manaRechargeDelay ?? 1.25;
+    player.manaRechargeRate = savedP.manaRechargeRate ?? 12;
     player.speed = savedP.speed;
     player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
     player.skillCooldown = savedP.skillCooldown ?? 0;
@@ -102,6 +105,7 @@ export class DungeonState extends GameState {
     player.knightGuardReady = savedP.knightGuardReady ?? player.characterId === "knight";
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
+    player.phoenixProtocolReady = savedP.phoenixProtocolReady === true;
     player.statusEffects = StatusEffectSystem.normalize(savedP.statusEffects);
     player.buffRerollsRemaining = savedP.buffRerollsRemaining ?? 0;
     player.shopDiscount = savedP.shopDiscount ?? 0;
@@ -165,6 +169,9 @@ export class DungeonState extends GameState {
     savedP.maxArmor = this.player.maxArmor;
     savedP.mana = this.player.mana;
     savedP.maxMana = this.player.maxMana;
+    savedP.manaRechargeTimer = this.player.manaRechargeTimer;
+    savedP.manaRechargeDelay = this.player.manaRechargeDelay;
+    savedP.manaRechargeRate = this.player.manaRechargeRate;
     savedP.weaponSlots = this.player.weaponSlots[1]
       ? [this.player.weaponSlots[0], this.player.weaponSlots[1]]
       : [this.player.weaponSlots[0]];
@@ -178,6 +185,7 @@ export class DungeonState extends GameState {
     savedP.knightGuardReady = this.player.knightGuardReady;
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
+    savedP.phoenixProtocolReady = this.player.phoenixProtocolReady;
     savedP.statusEffects = StatusEffectSystem.normalize(this.player.statusEffects);
     savedP.buffRerollsRemaining = this.player.buffRerollsRemaining;
     savedP.shopDiscount = this.player.shopDiscount;
@@ -446,7 +454,7 @@ export class DungeonState extends GameState {
       return;
     }
     const seed = hashSeed(floor.seed, `buff:${currentRoom.id}:${this.player.buffs.join(",")}`);
-    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3);
+    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3, floor.globalStageIndex);
     if (options.length === 0) {
       floor.buffChoiceCompleted = true;
       return;
@@ -468,7 +476,7 @@ export class DungeonState extends GameState {
       const roomId = floor.buffChoiceRoomId ?? "unknown";
       const excluded = [...this.player.buffs, ...this.buffSelection];
       const seed = hashSeed(floor.seed, `buff-reroll:${roomId}:${rerollCount}:${this.player.buffs.join(",")}`);
-      const options = BuffSystem.rollChoices(seed, excluded, 3);
+      const options = BuffSystem.rollChoices(seed, excluded, 3, floor.globalStageIndex);
       if (options.length > 0) {
         this.player.buffRerollsRemaining--;
         floor.buffChoiceRerollCount = rerollCount;
@@ -608,7 +616,10 @@ export class DungeonState extends GameState {
     } else if (currentRoom.type === "treasure") {
        const pts = template.pickupSpawnPoints;
        const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-       this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: "shotgun", opened: false };
+       const weaponPool = getAvailableWeapons(floor.globalStageIndex).filter(weapon => weapon.id !== "pistol");
+       const random = createSeededRandom(hashSeed(currentRoom.encounterSeed ?? floor.seed, "treasure-weapon"));
+       const weapon = weaponPool[Math.min(weaponPool.length - 1, Math.floor(random() * weaponPool.length))] ?? WEAPONS.shotgun;
+       this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: weapon.id, opened: false };
     }
     
     // Animate pickups (pop out)
@@ -885,6 +896,10 @@ export class DungeonState extends GameState {
 
   private handleEnemyKilled(enemy: Enemy) {
     this.engine.data.recordEnemyKill(enemy);
+    const energyRestore = BuffSystem.getKillEnergyRestore(this.player);
+    if (energyRestore > 0) {
+      this.player.mana = Math.min(this.player.maxMana, this.player.mana + energyRestore);
+    }
     this.spawnEnemyDeathDrop(enemy);
   }
 
@@ -996,6 +1011,10 @@ export class DungeonState extends GameState {
 
   public getPlayer(): Player {
     return this.player;
+  }
+
+  public capturesPauseInput(): boolean {
+    return this.shopOpen;
   }
 
   private handleDoorTransitions() {

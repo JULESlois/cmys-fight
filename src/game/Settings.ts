@@ -1,5 +1,5 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 4;
+export const SETTINGS_VERSION = 5;
 
 export type InputAction =
   | "moveUp"
@@ -36,7 +36,7 @@ export const ACTION_LABELS: Record<InputAction, string> = {
   pause: "PAUSE",
 };
 
-export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
+const LEGACY_V4_KEY_BINDINGS: Record<InputAction, string> = {
   moveUp: "w",
   moveDown: "s",
   moveLeft: "a",
@@ -46,6 +46,18 @@ export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
   interact: " ",
   swapWeapon: "q",
   pause: "p",
+};
+
+export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
+  moveUp: "w",
+  moveDown: "s",
+  moveLeft: "a",
+  moveRight: "d",
+  fire: "j",
+  skill: "k",
+  interact: "l",
+  swapWeapon: "i",
+  pause: "escape",
 };
 
 export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
@@ -106,9 +118,18 @@ export function normalizeSettings(value: unknown): GameSettings {
   const rawBindings = raw.keyBindings && typeof raw.keyBindings === "object"
     ? raw.keyBindings as Partial<Record<InputAction, string>>
     : {};
+  const loadedVersion = Math.max(0, Math.floor(Number(raw.version) || 0));
+  const legacyFallback = loadedVersion > 0 && loadedVersion < 5
+    ? LEGACY_V4_KEY_BINDINGS
+    : DEFAULT_KEY_BINDINGS;
+  const usesExactLegacyDefaults = loadedVersion > 0 && loadedVersion < 5 && INPUT_ACTIONS.every(
+    action => normalizeBinding(rawBindings[action], LEGACY_V4_KEY_BINDINGS[action]) === LEGACY_V4_KEY_BINDINGS[action],
+  );
   const keyBindings = { ...DEFAULT_KEY_BINDINGS };
   for (const action of INPUT_ACTIONS) {
-    keyBindings[action] = normalizeBinding(rawBindings[action], DEFAULT_KEY_BINDINGS[action]);
+    keyBindings[action] = usesExactLegacyDefaults
+      ? DEFAULT_KEY_BINDINGS[action]
+      : normalizeBinding(rawBindings[action], legacyFallback[action]);
   }
   const uiScale = Number(raw.uiScale);
   const masterVolume = Number(raw.masterVolume);

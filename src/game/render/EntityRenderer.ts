@@ -162,20 +162,20 @@ export class EntityRenderer {
 
     if (enemy.isElite) EntityRenderer.drawCornerFrame(ctx, enemy.radius + 6, "rgba(241,196,15,0.9)", 6);
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    const shadowWidth = enemy.type === "boss" ? 32 : 18;
+    const shadowWidth = enemy.type === "boss" ? 27 : 15;
     ctx.fillRect(-shadowWidth / 2, enemy.radius - 4, shadowWidth, 5);
 
     const animOffset = Math.round(Math.sin(time * 5 + enemy.x) * 2);
     ctx.translate(0, animOffset);
-    let scale = enemy.isElite ? 2.35 : 2;
-    if (enemy.type === "boss") scale = 3;
+    let scale = enemy.isElite ? 1.85 : 1.62;
+    if (enemy.type === "boss") scale = 2.45;
     MonsterModelRenderer.draw(ctx, enemy, time, reducedFlashing, scale);
     ctx.restore();
 
     const barW = enemy.type === "boss" ? 40 : 16;
     const barH = 2;
     const barX = Math.round(enemy.x) - barW / 2;
-    const barY = Math.round(enemy.y) - enemy.radius - (enemy.type === "boss" ? 16 : 10);
+    const barY = Math.round(enemy.y) - enemy.radius - (enemy.type === "boss" ? 14 : 9);
     ctx.fillStyle = "#1a1c2c"; ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
     ctx.fillStyle = "#e43b44"; ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = enemy.isElite ? "#F1C40F" : "#2ECC71";

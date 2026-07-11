@@ -77,16 +77,18 @@ export class WeaponController {
     if (player.fireCooldown > 0) {
       return { fired: false, projectiles: [], reason: "cooldown" };
     }
-    if (player.mana < weapon.manaCost) {
+    const modifiers = BuffSystem.getWeaponModifiers(player);
+    const energyCost = Math.max(0, Math.ceil(weapon.manaCost * modifiers.energyCostMultiplier));
+    if (player.mana < energyCost) {
       return { fired: false, projectiles: [], reason: "energy" };
     }
 
-    const modifiers = BuffSystem.getWeaponModifiers(player);
     const buffProjectileStatus = BuffSystem.getProjectileStatus(player);
     const projectileStatus = weapon.statusEffect
       ? { id: weapon.statusEffect, duration: weapon.statusDuration ?? 0 }
       : buffProjectileStatus;
-    player.mana -= weapon.manaCost;
+    player.mana -= energyCost;
+    if (energyCost > 0) player.manaRechargeTimer = player.manaRechargeDelay;
     player.fireCooldown = 1 / (weapon.fireRate * modifiers.fireRateMultiplier);
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;

@@ -4,6 +4,7 @@ const RARITY_COLORS: Record<string, string> = {
   common: "#BDC3C7",
   uncommon: "#2ECC71",
   rare: "#00F2FE",
+  legendary: "#FFB347",
 };
 
 const FAILURE_TEXT: Record<ShopPurchaseFailure, string> = {
@@ -12,8 +13,8 @@ const FAILURE_TEXT: Record<ShopPurchaseFailure, string> = {
   full_hp: "HP ALREADY FULL",
   full_armor: "ARMOR ALREADY FULL",
   owned_weapon: "WEAPON ALREADY OWNED",
-  owned_buff: "BUFF ALREADY OWNED",
-  buff_limit: "BUFF LIMIT REACHED",
+  owned_buff: "TALENT ALREADY OWNED",
+  buff_limit: "TALENT LIMIT REACHED",
   invalid: "ITEM UNAVAILABLE",
 };
 
@@ -102,7 +103,7 @@ export class ShopRenderer {
       });
       ctx.fillStyle = "#8E9EAB";
       ctx.font = "6px monospace";
-      ctx.fillText(item.kind.toUpperCase(), x + width / 2, y + 57);
+      ctx.fillText(item.kind === "buff" ? "TALENT" : item.kind.toUpperCase(), x + width / 2, y + 57);
       ctx.fillStyle = "#ECF0F1";
       wrap(item.description, 16).slice(0, 4).forEach((line, lineIndex) => {
         ctx.fillText(line, x + width / 2, y + 75 + lineIndex * 9);

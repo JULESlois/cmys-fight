@@ -26,11 +26,14 @@ export function grantDebugLoadout(data: GameData): void {
   player.armor = player.maxArmor;
   player.mana = player.maxMana;
   player.coins = 999;
-  player.weaponSlots = ["laser", "shotgun"];
+  player.weaponSlots = ["void_rail", "dragon_breath"];
   player.activeWeaponSlot = 0;
-  player.currentWeaponId = "laser";
-  const buffIds = Object.keys(BUFFS) as BuffId[];
-  player.buffs = BuffSystem.normalizeBuffs(buffIds.slice(0, BuffSystem.MAX_BUFFS));
+  player.currentWeaponId = "void_rail";
+  const buffIds: BuffId[] = [
+    "overclock_core", "execution_matrix", "mana_well",
+    "skill_loop", "aegis_foundry", "phoenix_protocol",
+  ];
+  player.buffs = BuffSystem.normalizeBuffs(buffIds);
   player.buffRerollsRemaining = Math.max(player.buffRerollsRemaining, 5);
   data.discoverPlayerBuild();
   data.save();
