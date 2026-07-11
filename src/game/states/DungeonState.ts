@@ -6,6 +6,7 @@ import { Projectile } from "../entities/Projectile";
 import { RoomRenderer } from "../render/RoomRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
 import { Enemy } from "../entities/Enemy";
+import { updateEnemyAnimation } from "../EnemyAnimation";
 import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT, DOOR_ENTRY_POINTS } from "../MapData";
 import { UIRenderer } from "../render/UIRenderer";
 import { PixelFxSystem } from "../render/PixelFxSystem";
@@ -1284,6 +1285,8 @@ export class DungeonState extends GameState {
     if (this.player.hp <= 0) return;
     
     for (const e of this.enemies) {
+      const previousX = e.x;
+      const previousY = e.y;
       const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
       if (e.type === "boss") this.updateBossPhase(e);
       
@@ -1304,6 +1307,7 @@ export class DungeonState extends GameState {
         if (e.attackTimer <= 0) {
           this.resolveEnemyAttack(e);
         }
+        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
         continue;
       }
 
@@ -1313,12 +1317,14 @@ export class DungeonState extends GameState {
           e.attackState = "idle";
           e.attackTimer = 0;
         }
+        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
         continue;
       }
 
       if (e.type === "melee" && e.behavior === "charge") {
         if (dist <= 110 && e.attackCooldown <= 0) {
           this.beginEnemyAttack(e, e.attackWindup);
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
           continue;
         }
 
@@ -1331,6 +1337,7 @@ export class DungeonState extends GameState {
         const attackRange = e.radius + this.player.radius + 8;
         if (dist <= attackRange && e.attackCooldown <= 0) {
           this.beginEnemyAttack(e, e.attackWindup);
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
           continue;
         }
 
@@ -1343,6 +1350,7 @@ export class DungeonState extends GameState {
         const canAttack = e.behavior !== "summon" || this.enemies.length < 7;
         if (canAttack && e.attackCooldown <= 0 && dist <= 190) {
           this.beginEnemyAttack(e, e.attackWindup);
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
           continue;
         }
 
@@ -1359,6 +1367,7 @@ export class DungeonState extends GameState {
         if (e.attackCooldown <= 0) {
           const phaseWindup = e.attackWindup * (e.bossPhase === 1 ? 1 : e.bossPhase === 2 ? 0.88 : 0.76);
           this.beginEnemyAttack(e, phaseWindup);
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
           continue;
         }
 
@@ -1374,6 +1383,7 @@ export class DungeonState extends GameState {
       
       e.x = Math.max(16, Math.min(320 - 16, e.x));
       e.y = Math.max(16, Math.min(240 - 16, e.y));
+      updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
     }
 
     this.separateEnemies();
@@ -1437,6 +1447,7 @@ export class DungeonState extends GameState {
   private beginEnemyAttack(enemy: Enemy, windup: number) {
     enemy.attackState = "windup";
     enemy.attackTimer = windup;
+    enemy.attackAnimationDuration = windup;
     enemy.attackAngle = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
     enemy.attackTargetX = this.player.x;
     enemy.attackTargetY = this.player.y;

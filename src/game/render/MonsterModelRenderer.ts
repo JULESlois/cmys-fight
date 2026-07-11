@@ -1,4 +1,5 @@
-import type { Enemy } from "../entities/Enemy";
+import type { Enemy, EnemyAnimationState, EnemyFacing } from "../entities/Enemy";
+import { getEnemyDefinition, type EnemyBehavior } from "../data/enemies";
 
 interface Palette {
   base: string;
@@ -10,6 +11,35 @@ interface Palette {
 }
 
 type ModelDraw = (ctx: CanvasRenderingContext2D, palette: Palette, frame: number) => void;
+
+export const MONSTER_ANIMATION_FRAMES: Readonly<Record<EnemyAnimationState, number>> = Object.freeze({
+  idle: 2,
+  walk: 4,
+  attack: 4,
+  hurt: 2,
+});
+
+export interface MonsterAnimationPose {
+  x: number;
+  y: number;
+  limbFrame: number;
+}
+
+export function getMonsterAnimationPose(state: EnemyAnimationState, frame: number): MonsterAnimationPose {
+  const normalized = ((frame % MONSTER_ANIMATION_FRAMES[state]) + MONSTER_ANIMATION_FRAMES[state]) % MONSTER_ANIMATION_FRAMES[state];
+  if (state === "walk") {
+    const x = [0, 1, 0, -1][normalized];
+    const y = [0, -1, 0, 1][normalized];
+    return { x, y, limbFrame: normalized === 1 || normalized === 2 ? 1 : 0 };
+  }
+  if (state === "attack") {
+    return { x: [0, 1, 3, 1][normalized], y: [0, -1, -1, 0][normalized], limbFrame: normalized & 1 };
+  }
+  if (state === "hurt") {
+    return { x: normalized === 0 ? -2 : 1, y: normalized, limbFrame: normalized };
+  }
+  return { x: 0, y: normalized === 1 ? -1 : 0, limbFrame: normalized };
+}
 
 function adjustHex(color: string, amount: number): string {
   const value = color.replace("#", "");
@@ -266,6 +296,63 @@ export function hasMonsterModel(enemyId: string): boolean {
   return enemyId in models;
 }
 
+function drawAttackFrame(
+  ctx: CanvasRenderingContext2D,
+  palette: Palette,
+  behavior: EnemyBehavior,
+  frame: number,
+): void {
+  if (frame === 0) return;
+  const pulse = frame === 2 ? 2 : 1;
+  if (behavior === "melee" || behavior === "charge") {
+    rect(ctx, palette.accent, 10 + pulse * 2, -9, 3, 3);
+    rect(ctx, palette.light, 14 + pulse * 2, -7, 3, 2);
+  } else if (behavior === "shoot" || behavior === "scatter") {
+    rect(ctx, "#FFF3B0", 13 + pulse * 2, -11, 3, 3);
+    if (frame >= 2) rect(ctx, palette.accent, 17 + pulse * 2, -10, 3, 2);
+  } else if (behavior === "summon" || behavior === "area") {
+    rect(ctx, palette.accent, -10, -18 - pulse, 3, 3);
+    rect(ctx, palette.light, 8, -20 + pulse, 3, 3);
+  } else if (behavior === "boss") {
+    rect(ctx, palette.accent, -15 - pulse, -10, 3, 3);
+    rect(ctx, palette.accent, 13 + pulse, -10, 3, 3);
+  }
+}
+
+function drawBossPhaseFrame(ctx: CanvasRenderingContext2D, palette: Palette, phase: 1 | 2 | 3, frame: number): void {
+  if (phase >= 2) {
+    rect(ctx, palette.accent, -12, -23, 3, 3);
+    rect(ctx, palette.accent, 9, -23, 3, 3);
+  }
+  if (phase >= 3) {
+    const offset = frame & 1;
+    rect(ctx, "#FFFFFF", -2, -27 - offset, 4, 3);
+    rect(ctx, palette.light, -16, -4 + offset, 3, 3);
+    rect(ctx, palette.light, 13, -4 - offset, 3, 3);
+  }
+}
+
+function drawModelWithPose(
+  ctx: CanvasRenderingContext2D,
+  model: ModelDraw,
+  palette: Palette,
+  state: EnemyAnimationState,
+  frame: number,
+  facing: EnemyFacing,
+  scale: number,
+  behavior: EnemyBehavior,
+  bossPhase?: 1 | 2 | 3,
+): void {
+  const pose = getMonsterAnimationPose(state, frame);
+  ctx.save();
+  ctx.scale(facing === "left" ? -scale : scale, scale);
+  ctx.translate(pose.x, pose.y - 1);
+  model(ctx, palette, pose.limbFrame);
+  if (state === "attack") drawAttackFrame(ctx, palette, behavior, frame);
+  if (bossPhase) drawBossPhaseFrame(ctx, palette, bossPhase, frame);
+  ctx.restore();
+}
+
 export class MonsterModelRenderer {
   static draw(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, reducedFlashing: boolean, scale: number): void {
     const model = models[enemy.enemyId] ?? models.moss_brute;
@@ -279,12 +366,17 @@ export class MonsterModelRenderer {
       white: "#FFFFFF",
       accent: hitFlash ? "#FFFFFF" : adjustHex(enemy.displayColor, 90),
     };
-    const frame = Math.floor(time * 7 + enemy.id * 0.37) & 1;
-    ctx.save();
-    ctx.scale(scale, scale);
-    ctx.translate(0, -1);
-    model(ctx, palette, frame);
-    ctx.restore();
+    drawModelWithPose(
+      ctx,
+      model,
+      palette,
+      enemy.animState,
+      enemy.animFrame,
+      enemy.facing,
+      scale,
+      enemy.behavior,
+      enemy.type === "boss" ? enemy.bossPhase : undefined,
+    );
   }
 
   static drawPreview(
@@ -296,6 +388,7 @@ export class MonsterModelRenderer {
     scale = 2,
   ): void {
     const model = models[enemyId] ?? models.moss_brute;
+    const definition = getEnemyDefinition(enemyId);
     const palette: Palette = {
       base: color,
       light: adjustHex(color, 55),
@@ -304,10 +397,21 @@ export class MonsterModelRenderer {
       white: "#FFFFFF",
       accent: adjustHex(color, 90),
     };
-    const frame = Math.floor(time * 7) & 1;
-    ctx.save();
-    ctx.scale(scale, scale);
-    model(ctx, palette, frame);
-    ctx.restore();
+    const previewStates: EnemyAnimationState[] = ["idle", "walk", "attack"];
+    const state = previewStates[Math.floor(time / 1.6) % previewStates.length];
+    const rate = state === "walk" ? 10 : state === "attack" ? 8 : 2.5;
+    const frame = Math.floor(time * rate) % MONSTER_ANIMATION_FRAMES[state];
+    const facing: EnemyFacing = Math.floor(time / 4.8) % 2 === 0 ? "right" : "left";
+    drawModelWithPose(
+      ctx,
+      model,
+      palette,
+      state,
+      frame,
+      facing,
+      scale,
+      definition.behavior,
+      role === "boss" ? ((Math.floor(time / 3.2) % 3) + 1) as 1 | 2 | 3 : undefined,
+    );
   }
 }

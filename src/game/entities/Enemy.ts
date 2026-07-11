@@ -1,6 +1,9 @@
 import type { EnemyBehavior, EnemyRole } from "../data/enemies";
 import type { ActiveStatusEffect, StatusEffectId } from "../combat/StatusEffectSystem";
 
+export type EnemyFacing = "left" | "right";
+export type EnemyAnimationState = "idle" | "walk" | "attack" | "hurt";
+
 export class Enemy {
   public id: number;
   public x: number;
@@ -18,6 +21,10 @@ export class Enemy {
   public eliteCoinReward: number = 0;
   public state: "idle" | "chase" | "flee" = "chase";
   public hitFlash: number = 0;
+  public facing: EnemyFacing = "right";
+  public animState: EnemyAnimationState = "idle";
+  public animFrame: number = 0;
+  public animTimer: number = 0;
   public attackState: "idle" | "windup" | "recover" = "idle";
   public attackCooldown: number = 0;
   public attackTimer: number = 0;
@@ -28,6 +35,7 @@ export class Enemy {
   public projectileSpread: number = 0.28;
   public attackInterval: number = 1;
   public attackWindup: number = 0.4;
+  public attackAnimationDuration: number = 0.4;
   public attackTargetX: number = 0;
   public attackTargetY: number = 0;
   public chargeDistance: number = 48;
@@ -59,6 +67,10 @@ export class Enemy {
     this.eliteCoinReward = 0;
     this.state = "chase";
     this.hitFlash = 0;
+    this.facing = "right";
+    this.animState = "idle";
+    this.animFrame = 0;
+    this.animTimer = 0;
     this.attackState = "idle";
     this.attackCooldown = 0;
     this.attackTimer = 0;
@@ -69,6 +81,7 @@ export class Enemy {
     this.projectileSpread = 0.28;
     this.attackInterval = 1;
     this.attackWindup = 0.4;
+    this.attackAnimationDuration = 0.4;
     this.attackTargetX = 0;
     this.attackTargetY = 0;
     this.chargeDistance = 48;
