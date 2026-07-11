@@ -1,4 +1,4 @@
-import { WEAPONS, isWeaponId } from "../data/weapons";
+import { WEAPONS, getProjectileProfile, isWeaponId } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
 import { acquireProjectile } from "../EntityPools";
@@ -15,6 +15,7 @@ export interface EquipWeaponResult {
 export interface FireWeaponResult {
   fired: boolean;
   projectiles: Projectile[];
+  recoil: number;
   reason?: "cooldown" | "energy" | "invalid_weapon";
 }
 
@@ -72,15 +73,15 @@ export class WeaponController {
   ): FireWeaponResult {
     const weapon = WEAPONS[player.currentWeaponId];
     if (!weapon) {
-      return { fired: false, projectiles: [], reason: "invalid_weapon" };
+      return { fired: false, projectiles: [], recoil: 0, reason: "invalid_weapon" };
     }
     if (player.fireCooldown > 0) {
-      return { fired: false, projectiles: [], reason: "cooldown" };
+      return { fired: false, projectiles: [], recoil: 0, reason: "cooldown" };
     }
     const modifiers = BuffSystem.getWeaponModifiers(player);
     const energyCost = Math.max(0, Math.ceil(weapon.manaCost * modifiers.energyCostMultiplier));
     if (player.mana < energyCost) {
-      return { fired: false, projectiles: [], reason: "energy" };
+      return { fired: false, projectiles: [], recoil: 0, reason: "energy" };
     }
 
     const buffProjectileStatus = BuffSystem.getProjectileStatus(player);
@@ -97,6 +98,7 @@ export class WeaponController {
 
     const muzzle = player.getPlayerMuzzlePosition(aimAngle);
     const projectiles: Projectile[] = [];
+    const projectileProfile = getProjectileProfile(weapon);
 
     const dualFireActive = player.characterId === "knight" && player.skillActiveTimer > 0;
     const volleyCount = dualFireActive ? 2 : 1;
@@ -127,10 +129,12 @@ export class WeaponController {
           modifiers.wallBounces + (weapon.wallBounces ?? 0),
           projectileStatus?.id,
           projectileStatus?.duration ?? 0,
+          false,
+          projectileProfile,
         ));
       }
     }
 
-    return { fired: true, projectiles };
+    return { fired: true, projectiles, recoil: Math.max(0, weapon.recoil ?? 0.35) };
   }
 }

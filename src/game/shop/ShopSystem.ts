@@ -1,5 +1,5 @@
 import { BUFFS, BuffSystem, type BuffId, type BuffRarity } from "../combat/BuffSystem";
-import { WEAPONS, getAvailableWeapons, type WeaponRarity } from "../data/weapons";
+import { WEAPONS, rollAvailableWeapon, type WeaponRarity } from "../data/weapons";
 import type { Player } from "../entities/Player";
 import type { Room, StageData } from "../FloorGenerator";
 import { createSeededRandom, hashSeed, normalizeSeed } from "../Random";
@@ -74,9 +74,7 @@ export class ShopSystem {
     const supplyScale = 1 + Math.floor((stage.globalStageIndex - 1) / 5);
 
     const ownedWeapons = new Set(player.weaponSlots.filter(Boolean));
-    const availableWeapons = getAvailableWeapons(stage.globalStageIndex);
-    const weaponPool = availableWeapons.filter(weapon => !ownedWeapons.has(weapon.id));
-    const weapon = choose(weaponPool.length > 0 ? weaponPool : availableWeapons, random)!;
+    const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", ownedWeapons);
 
     const buffPool = (Object.keys(BUFFS) as BuffId[]).filter(id =>
       !player.buffs.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= stage.globalStageIndex
@@ -106,7 +104,7 @@ export class ShopSystem {
         id: `${seed}:weapon:${weapon.id}`,
         kind: "weapon",
         name: weapon.name.toUpperCase(),
-        description: `${weapon.series ? `${weapon.series.toUpperCase()} ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}.`,
+        description: `${weapon.series ? `${weapon.series.toUpperCase()} ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}. ${weapon.mechanic}`,
         price: stagePrice(WEAPON_PRICE[weapon.rarity], stage, player.shopDiscount),
         weaponId: weapon.id,
         rarity: weapon.rarity,

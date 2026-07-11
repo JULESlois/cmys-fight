@@ -4,6 +4,7 @@ import { Pickup, type PickupType } from "./entities/Pickup";
 import { Projectile } from "./entities/Projectile";
 import type { EnemyRole } from "./data/enemies";
 import type { StatusEffectId } from "./combat/StatusEffectSystem";
+import type { ProjectileProfile } from "./data/weapons";
 
 const projectilePool = new ObjectPool(
   () => new Projectile(0, 0, 0, 0, 1, 0, "player", 0),
@@ -43,10 +44,11 @@ export function acquireProjectile(
   statusEffect?: StatusEffectId,
   statusDuration = 0,
   sourceBoss = false,
+  profile?: ProjectileProfile,
 ): Projectile {
   return projectilePool.acquire().reset(
     x, y, vx, vy, radius, damage, faction, life, color, knockback, critical,
-    pierceRemaining, wallBouncesRemaining, statusEffect, statusDuration, sourceBoss,
+    pierceRemaining, wallBouncesRemaining, statusEffect, statusDuration, sourceBoss, profile,
   );
 }
 

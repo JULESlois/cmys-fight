@@ -71,12 +71,65 @@ export class PixelFxSystem {
 
   emitMuzzle(projectile: Projectile, lowFx = false) {
     const direction = Math.atan2(projectile.vy, projectile.vx);
-    this.emit(projectile.x, projectile.y, lowFx ? 3 : 6, projectile.color, 44, 0.18, {
+    const count = projectile.muzzleEffect === "flame" ? (lowFx ? 4 : 9)
+      : projectile.muzzleEffect === "rocket" ? (lowFx ? 4 : 8)
+        : projectile.muzzleEffect === "electric" || projectile.muzzleEffect === "beam" ? (lowFx ? 3 : 7)
+          : lowFx ? 3 : 6;
+    const speed = projectile.muzzleEffect === "rocket" ? 28
+      : projectile.muzzleEffect === "flame" ? 52
+        : projectile.muzzleEffect === "electric" ? 70
+          : 44;
+    const color = projectile.muzzleEffect === "rocket" ? "#B8C2CC"
+      : projectile.muzzleEffect === "flame" ? "#FFB347"
+        : projectile.color;
+    this.emit(projectile.x, projectile.y, count, color, speed, projectile.muzzleEffect === "rocket" ? 0.3 : 0.18, {
       direction: direction + Math.PI,
-      spread: 0.9,
-      glow: true,
-      size: projectile.critical ? 3 : 2,
+      spread: projectile.muzzleEffect === "flame" ? 1.2 : 0.9,
+      gravity: projectile.muzzleEffect === "rocket" ? -8 : 0,
+      glow: projectile.muzzleEffect !== "rocket",
+      size: projectile.muzzleEffect === "rocket" ? 3 : projectile.critical ? 3 : 2,
     });
+  }
+
+  emitProjectileImpact(projectile: Projectile, critical = false, lowFx = false) {
+    const style = projectile.impactEffect;
+    const count = lowFx ? 4
+      : style === "explosion" ? 20
+        : style === "electric" ? 13
+          : style === "flame" ? 12
+            : style === "slash" ? 10
+              : critical ? 14 : 8;
+    const speed = style === "explosion" ? 96
+      : style === "electric" ? 78
+        : style === "slash" ? 88
+          : 62;
+    const color = style === "explosion" ? "#FFB347"
+      : style === "flame" ? "#FF7043"
+        : style === "electric" ? "#8DF6FF"
+          : style === "plasma" ? projectile.color
+            : critical ? "#FFF3B0" : projectile.color;
+    this.emit(projectile.x, projectile.y, count, color, speed, style === "explosion" ? 0.42 : 0.28, {
+      gravity: style === "electric" ? 0 : 35,
+      glow: style !== "slash" && style !== "spark",
+      size: style === "explosion" ? 3 : critical ? 3 : 2,
+    });
+  }
+
+  emitExplosion(x: number, y: number, radius: number, color: string, lowFx = false) {
+    const rings = lowFx ? 1 : 2;
+    for (let ring = 0; ring < rings; ring++) {
+      const count = lowFx ? 8 : 14;
+      for (let i = 0; i < count; i++) {
+        const angle = i / count * Math.PI * 2 + ring * 0.17;
+        this.emit(x, y, 1, ring === 0 ? color : "#FFE0A3", radius * (1.7 + ring * 0.45), 0.35, {
+          direction: angle,
+          spread: 0.04,
+          gravity: 20,
+          glow: true,
+          size: ring === 0 ? 3 : 2,
+        });
+      }
+    }
   }
 
   emitImpact(x: number, y: number, color: string, critical = false, lowFx = false) {

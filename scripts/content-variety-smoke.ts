@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { ENEMIES, getBossPool, getEnemyPool, type EnemyTheme } from "../src/game/data/enemies";
-import { WEAPONS } from "../src/game/data/weapons";
+import { WEAPONS, getAvailableWeapons } from "../src/game/data/weapons";
+import { SPRITES } from "../src/game/data/sprites";
 import { Player } from "../src/game/entities/Player";
 import { WeaponController } from "../src/game/combat/WeaponController";
 import { EnvironmentSystem } from "../src/game/environment/EnvironmentSystem";
@@ -23,13 +24,34 @@ for (const theme of themes) {
 assert.equal(new Set(themes.flatMap(theme => getBossPool(theme).map(boss => boss.bossPattern))).size, 8);
 for (const id of ["dingdong_fowl", "bark_hound", "white_sampler", "code_horse"]) assert.ok(ENEMIES[id]);
 
-assert.equal(Object.keys(WEAPONS).length, 14);
+assert.equal(Object.keys(WEAPONS).length, 22);
 assert.equal(WEAPONS.code_scanner.pierce, 2);
 assert.equal(WEAPONS.vat_horse_cannon.wallBounces, 1);
 assert.equal(WEAPONS.vat_horse_cannon.statusEffect, "burn");
 assert.equal(WEAPONS.mask_sprayer.statusEffect, "slow");
 assert.equal(WEAPONS.swab_lance.projectileRadius, 4);
 assert.ok(WEAPONS.bell_repeater.fireRate > 7);
+assert.equal(WEAPONS.vector_9.manaCost, 0);
+assert.ok(WEAPONS.vector_9.fireRate >= 14);
+assert.equal(WEAPONS.vector_9.damage, 1);
+assert.equal(WEAPONS.vector_9.projectileStyle, "tracer");
+assert.equal(WEAPONS.liberator.manaCost, 0);
+assert.ok(WEAPONS.liberator.damage >= 14);
+assert.ok(WEAPONS.liberator.fireRate < 1);
+assert.equal(WEAPONS.tesla_carbine.projectileStyle, "lightning");
+assert.equal(WEAPONS.tesla_carbine.chainCount, 2);
+assert.equal(WEAPONS.micro_rocket.projectileStyle, "rocket");
+assert.equal(WEAPONS.micro_rocket.explosionRadius, 30);
+assert.ok((WEAPONS.plasma_caster.homingStrength ?? 0) > 0);
+assert.equal(WEAPONS.ripper_disc.wallBounces, 3);
+assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "vector_9"), false);
+assert.equal(getAvailableWeapons(5).some(weapon => weapon.id === "vector_9"), true);
+assert.equal(getAvailableWeapons(9).some(weapon => weapon.id === "micro_rocket"), false);
+assert.equal(getAvailableWeapons(10).some(weapon => weapon.id === "micro_rocket"), true);
+for (const weapon of Object.values(WEAPONS)) {
+  assert.ok(weapon.mechanic.length >= 12, `${weapon.id} mechanic copy`);
+  assert.ok(SPRITES[`weapon_${weapon.id}`], `${weapon.id} dedicated sprite`);
+}
 
 const player = new Player(160, 120);
 player.mana = 100;
@@ -43,6 +65,30 @@ fired = WeaponController.fire(player, 0, () => 0.99);
 assert.equal(fired.projectiles.length, 3);
 assert.equal(fired.projectiles[0].wallBouncesRemaining, 1);
 assert.equal(fired.projectiles[0].statusEffect, "burn");
+
+player.fireCooldown = 0;
+player.mana = 0;
+player.setWeaponLoadout(["vector_9"], 0);
+fired = WeaponController.fire(player, 0, () => 0.99);
+assert.equal(fired.fired, true);
+assert.equal(player.mana, 0);
+assert.equal(fired.projectiles[0].style, "tracer");
+assert.equal(fired.projectiles[0].trailLength, 17);
+
+player.fireCooldown = 0;
+player.mana = 100;
+player.setWeaponLoadout(["tesla_carbine"], 0);
+fired = WeaponController.fire(player, 0, () => 0.99);
+assert.equal(fired.projectiles[0].style, "lightning");
+assert.equal(fired.projectiles[0].chainCount, 2);
+assert.equal(fired.projectiles[0].chainRange, 58);
+
+player.fireCooldown = 0;
+player.setWeaponLoadout(["micro_rocket"], 0);
+fired = WeaponController.fire(player, 0, () => 0.99);
+assert.equal(fired.projectiles[0].style, "rocket");
+assert.equal(fired.projectiles[0].explosionRadius, 30);
+assert.ok(fired.projectiles[0].acceleration > 0);
 
 function seeded(seed: number) {
   let state = seed >>> 0;

@@ -73,6 +73,29 @@ export class PauseOverlayRenderer {
         ctx.font = active ? "bold 7px monospace" : "7px monospace";
         ctx.fillText(`${active ? ">" : " "}${index + 1} ${weapon?.name?.toUpperCase() ?? weaponId.toUpperCase()}`, 163, 127 + index * 13);
       });
+
+      const activeWeapon = WEAPONS[player.currentWeaponId];
+      if (activeWeapon) {
+        ctx.fillStyle = "#F1C40F";
+        ctx.font = "bold 6px monospace";
+        ctx.fillText(`${(activeWeapon.projectileStyle ?? "bullet").toUpperCase()} // DMG ${activeWeapon.damage} // EN ${activeWeapon.manaCost}`, 163, 160);
+        ctx.fillStyle = "#9AA7B2";
+        ctx.font = "5px monospace";
+        const words = activeWeapon.mechanic.toUpperCase().split(" ");
+        const lines: string[] = [];
+        let line = "";
+        for (const word of words) {
+          const next = line ? `${line} ${word}` : word;
+          if (next.length > 30 && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = next;
+          }
+        }
+        if (line) lines.push(line);
+        lines.slice(0, 2).forEach((text, index) => ctx.fillText(text, 163, 171 + index * 9));
+      }
     }
 
     ctx.textAlign = "center";

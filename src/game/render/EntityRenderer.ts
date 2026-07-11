@@ -5,6 +5,7 @@ import { Pickup } from "../entities/Pickup";
 import { PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer } from "./MonsterModelRenderer";
+import { WEAPONS } from "../data/weapons";
 
 export class EntityRenderer {
   private static adjustHex(color: string, amount: number): string {
@@ -103,10 +104,38 @@ export class EntityRenderer {
     if (Math.abs(player.aimAngle) > Math.PI / 2) ctx.scale(1, -1);
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1, { outlineColor: "#09101A" });
     if (player.muzzleFlash > 0) {
-      ctx.fillStyle = `rgba(241, 196, 15, ${player.muzzleFlash})`;
       const mx = PLAYER_MUZZLE_OFFSET_X;
       const my = PLAYER_MUZZLE_OFFSET_Y;
-      ctx.fillRect(mx, my - 2, 4, 4); ctx.fillRect(mx + 4, my - 4, 2, 8); ctx.fillRect(mx + 6, my, 2, 4);
+      const weapon = WEAPONS[player.currentWeaponId];
+      const effect = weapon?.muzzleEffect ?? "flash";
+      ctx.globalAlpha = Math.min(1, player.muzzleFlash);
+      if (effect === "beam") {
+        ctx.fillStyle = weapon?.color ?? "#8DF6FF";
+        ctx.fillRect(mx, my - 1, 12, 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(mx + 2, my, 8, 1);
+      } else if (effect === "electric") {
+        ctx.fillStyle = weapon?.color ?? "#8DF6FF";
+        ctx.fillRect(mx, my - 3, 3, 2);
+        ctx.fillRect(mx + 3, my - 1, 4, 2);
+        ctx.fillRect(mx + 7, my - 4, 2, 4);
+      } else if (effect === "flame") {
+        ctx.fillStyle = "#FFF0A6";
+        ctx.fillRect(mx, my - 2, 4, 4);
+        ctx.fillStyle = "#FFB347";
+        ctx.fillRect(mx + 4, my - 3, 5, 6);
+        ctx.fillStyle = "#FF7043";
+        ctx.fillRect(mx + 9, my - 1, 4, 3);
+      } else if (effect === "rocket" || effect === "smoke") {
+        ctx.fillStyle = effect === "rocket" ? "#FFB347" : "#E6E6E6";
+        ctx.fillRect(mx, my - 2, 4, 4);
+        ctx.fillStyle = effect === "rocket" ? "#FF7043" : "#8E9EAB";
+        ctx.fillRect(mx + 4, my - 3, 3, 3);
+        ctx.fillRect(mx + 6, my + 1, 3, 3);
+      } else {
+        ctx.fillStyle = "#F1C40F";
+        ctx.fillRect(mx, my - 2, 4, 4); ctx.fillRect(mx + 4, my - 4, 2, 8); ctx.fillRect(mx + 6, my, 2, 4);
+      }
     }
     ctx.restore();
   }
@@ -188,15 +217,94 @@ export class EntityRenderer {
     }
   }
 
-  public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile) {
+  public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile, reducedFlashing = false) {
+    if (p.faction === "player" && (p.style === "beam" || p.style === "lightning")) {
+      const speed = Math.hypot(p.vx, p.vy) || 1;
+      const ux = p.vx / speed;
+      const uy = p.vy / speed;
+      const startX = p.x - ux * p.trailLength;
+      const startY = p.y - uy * p.trailLength;
+      ctx.save();
+      ctx.globalAlpha = reducedFlashing ? 0.46 : p.style === "beam" ? 0.78 : 0.9;
+      if (p.style === "beam") {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = Math.max(1, p.beamWidth + 1);
+        ctx.beginPath();
+        ctx.moveTo(Math.round(startX), Math.round(startY));
+        ctx.lineTo(Math.round(p.x), Math.round(p.y));
+        ctx.stroke();
+        if (!reducedFlashing) {
+          ctx.strokeStyle = "#FFFFFF";
+          ctx.lineWidth = Math.max(1, p.beamWidth - 1);
+          ctx.beginPath();
+          ctx.moveTo(Math.round(startX + ux * 4), Math.round(startY + uy * 4));
+          ctx.lineTo(Math.round(p.x), Math.round(p.y));
+          ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = p.color;
+        const segments = 6;
+        for (let i = 0; i < segments; i++) {
+          const t = i / (segments - 1);
+          const jitter = Math.sin((p.id + i * 3 + p.age * 34) * 2.1) * 3;
+          const x = startX + (p.x - startX) * t - uy * jitter;
+          const y = startY + (p.y - startY) * t + ux * jitter;
+          ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
+        }
+      }
+      ctx.restore();
+      return;
+    }
+
     ctx.save();
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(Math.atan2(p.vy, p.vx));
     if (p.faction === "player") {
-      ctx.fillStyle = p.critical ? "rgba(255,215,0,0.55)" : "rgba(52,152,219,0.4)";
-      ctx.fillRect(p.critical ? -8 : -6, -p.radius, p.critical ? 16 : 12, p.radius * 2);
-      ctx.fillStyle = p.color; ctx.fillRect(-2, -p.radius / 2, 4, p.radius);
-      if (p.critical) { ctx.fillStyle = "#FFF"; ctx.fillRect(0, -1, 3, 2); }
+      if (p.style === "tracer") {
+        ctx.fillStyle = reducedFlashing
+          ? "rgba(255,255,255,0.18)"
+          : p.critical ? "rgba(255,240,160,0.65)" : "rgba(255,255,255,0.35)";
+        ctx.fillRect(-p.trailLength, -1, p.trailLength, 2);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-3, -p.radius / 2, 6, Math.max(2, p.radius));
+      } else if (p.style === "plasma") {
+        const pulse = 1 + Math.floor((Math.sin(p.age * 16) + 1) * 0.5);
+        ctx.fillStyle = reducedFlashing ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.35)";
+        ctx.fillRect(-p.radius - pulse, -p.radius - pulse, (p.radius + pulse) * 2, (p.radius + pulse) * 2);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(-1, -1, 2, 2);
+      } else if (p.style === "flame") {
+        ctx.fillStyle = "rgba(255,112,67,0.35)";
+        ctx.fillRect(-8, -3, 8, 6);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-3, -p.radius, 6, p.radius * 2);
+        ctx.fillStyle = "#FFF0A6";
+        ctx.fillRect(0, -1, 3, 2);
+      } else if (p.style === "rocket") {
+        ctx.fillStyle = "#8E9EAB";
+        ctx.fillRect(-8, -p.radius, 5, p.radius * 2);
+        ctx.fillStyle = "#FF7043";
+        ctx.fillRect(-11, -2, 4, 4);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-3, -p.radius, 7, p.radius * 2);
+        ctx.fillStyle = "#F7F9F9";
+        ctx.fillRect(3, -1, 3, 2);
+      } else if (p.style === "disc") {
+        ctx.rotate(p.spinAngle);
+        ctx.fillStyle = "rgba(255,255,255,0.28)";
+        ctx.fillRect(-p.radius - 2, -1, (p.radius + 2) * 2, 3);
+        ctx.fillRect(-1, -p.radius - 2, 3, (p.radius + 2) * 2);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.radius, -2, p.radius * 2, 4);
+        ctx.fillRect(-2, -p.radius, 4, p.radius * 2);
+      } else {
+        ctx.fillStyle = p.critical ? "rgba(255,215,0,0.55)" : "rgba(52,152,219,0.4)";
+        ctx.fillRect(p.critical ? -8 : -6, -p.radius, p.critical ? 16 : 12, p.radius * 2);
+        ctx.fillStyle = p.color; ctx.fillRect(-2, -p.radius / 2, 4, p.radius);
+        if (p.critical) { ctx.fillStyle = "#FFF"; ctx.fillRect(0, -1, 3, 2); }
+      }
     } else if (p.damage >= 3) {
       ctx.fillStyle = "rgba(241,196,15,0.6)"; ctx.fillRect(-p.radius * 1.5, -p.radius * 1.5, p.radius * 3, p.radius * 3);
       ctx.fillStyle = p.color; ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);

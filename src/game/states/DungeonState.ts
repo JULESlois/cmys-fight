@@ -23,11 +23,17 @@ import { EncounterFactory } from "../EncounterFactory";
 import { DamageSystem } from "../combat/DamageSystem";
 import { WeaponController } from "../combat/WeaponController";
 import { segmentCircleHit } from "../combat/Collision";
+import {
+  calculateChainDamage,
+  calculateExplosionDamage,
+  calculateExplosionFalloff,
+  rotateVelocityToward,
+} from "../combat/ProjectileEffects";
 import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
 import { createSeededRandom, hashSeed } from "../Random";
-import { WEAPONS, getAvailableWeapons } from "../data/weapons";
+import { WEAPONS, rollAvailableWeapon } from "../data/weapons";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
@@ -311,10 +317,7 @@ export class DungeonState extends GameState {
         const pts = template.pickupSpawnPoints;
         const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
         const random = createSeededRandom(hashSeed(currentRoom.encounterSeed ?? floor.seed, "treasure-weapon"));
-        const weaponPool = Object.values(WEAPONS).filter(weapon =>
-          weapon.id !== "pistol" && (floor.globalStageIndex >= 6 || weapon.rarity !== "rare")
-        );
-        const weapon = weaponPool[Math.floor(random() * weaponPool.length)] ?? WEAPONS.shotgun;
+        const weapon = rollAvailableWeapon(floor.globalStageIndex, random, "treasure", ["pistol"]);
         this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: weapon.id, opened: false };
       }
       this.setPhase("exploration");
@@ -616,9 +619,8 @@ export class DungeonState extends GameState {
     } else if (currentRoom.type === "treasure") {
        const pts = template.pickupSpawnPoints;
        const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-       const weaponPool = getAvailableWeapons(floor.globalStageIndex).filter(weapon => weapon.id !== "pistol");
        const random = createSeededRandom(hashSeed(currentRoom.encounterSeed ?? floor.seed, "treasure-weapon"));
-       const weapon = weaponPool[Math.min(weaponPool.length - 1, Math.floor(random() * weaponPool.length))] ?? WEAPONS.shotgun;
+       const weapon = rollAvailableWeapon(floor.globalStageIndex, random, "treasure", ["pistol"]);
        this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: weapon.id, opened: false };
     }
     
@@ -1269,8 +1271,11 @@ export class DungeonState extends GameState {
     if (result.fired) {
       this.projectiles.push(...result.projectiles);
       if (result.projectiles[0]) this.fx.emitMuzzle(result.projectiles[0], this.engine.isPerformanceDegraded());
+      if (result.recoil >= 0.7) {
+        this.engine.triggerScreenShake(Math.min(1.8, result.recoil), 0.055 + result.recoil * 0.015);
+      }
       this.engine.data.recordWeaponUsed(this.player.currentWeaponId);
-      audio.playShoot();
+      audio.playWeaponShot(result.projectiles[0]?.style ?? "bullet", result.recoil);
     }
   }
 
@@ -1775,9 +1780,11 @@ export class DungeonState extends GameState {
   private updateProjectiles(dt: number) {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
+      this.updateProjectileHoming(p, dt);
       p.update(dt);
       let environmentHitT = this.getProjectileEnvironmentHitT(p);
       let entityHit = false;
+      let directEnemyId: number | undefined;
 
       if (p.faction === "player") {
         let closestEnemyIndex = -1;
@@ -1797,24 +1804,32 @@ export class DungeonState extends GameState {
 
         if (closestEnemyIndex >= 0 && (environmentHitT === null || closestHitT <= environmentHitT)) {
           const e = this.enemies[closestEnemyIndex];
+          const hitX = e.x;
+          const hitY = e.y;
           p.x = p.previousX + (p.x - p.previousX) * closestHitT;
           p.y = p.previousY + (p.y - p.previousY) * closestHitT;
           const result = DamageSystem.damageEnemy(e, p.damage);
           p.hitEnemyIds.add(e.id);
+          directEnemyId = e.id;
           if (result.applied) {
             this.applyProjectileKnockback(e, p);
             if (p.statusEffect && p.statusDuration > 0) {
               StatusEffectSystem.applyEnemy(e, p.statusEffect, p.statusDuration);
             }
             audio.playHit();
-            this.fx.emitImpact(e.x, e.y, p.color, p.critical, this.engine.isPerformanceDegraded());
+            this.fx.emitProjectileImpact(p, p.critical, this.engine.isPerformanceDegraded());
           }
           if (result.killed) {
             this.handleEnemyKilled(e);
             this.enemies.splice(closestEnemyIndex, 1);
             releaseEnemy(e);
           }
-          if (p.pierceRemaining > 0) {
+          if (result.applied && p.chainCount > 0 && p.chainRange > 0) {
+            this.applyProjectileChain(p, hitX, hitY);
+          }
+          if (p.explosionRadius > 0) {
+            entityHit = true;
+          } else if (p.pierceRemaining > 0) {
             p.pierceRemaining--;
           } else {
             entityHit = true;
@@ -1849,22 +1864,153 @@ export class DungeonState extends GameState {
         }
       }
 
-      if (!entityHit && environmentHitT !== null && p.wallBouncesRemaining > 0) {
+      if (!entityHit && environmentHitT !== null) {
         const proposedX = p.x;
         const proposedY = p.y;
-        const blockedX = proposedX < 0 || proposedX > 320 || this.isCollidingWithMap(proposedX, p.previousY, p.radius);
-        const blockedY = proposedY < 0 || proposedY > 240 || this.isCollidingWithMap(p.previousX, proposedY, p.radius);
-        if (blockedX || (!blockedX && !blockedY)) p.vx *= -1;
-        if (blockedY || (!blockedX && !blockedY)) p.vy *= -1;
-        p.x = p.previousX;
-        p.y = p.previousY;
-        p.wallBouncesRemaining--;
-        environmentHitT = null;
+        const impactX = p.previousX + (proposedX - p.previousX) * environmentHitT;
+        const impactY = p.previousY + (proposedY - p.previousY) * environmentHitT;
+        p.x = impactX;
+        p.y = impactY;
+        this.fx.emitProjectileImpact(p, p.critical, this.engine.isPerformanceDegraded());
+
+        if (p.wallBouncesRemaining > 0) {
+          const blockedX = proposedX < 0 || proposedX > 320 || this.isCollidingWithMap(proposedX, p.previousY, p.radius);
+          const blockedY = proposedY < 0 || proposedY > 240 || this.isCollidingWithMap(p.previousX, proposedY, p.radius);
+          if (blockedX || (!blockedX && !blockedY)) p.vx *= -1;
+          if (blockedY || (!blockedX && !blockedY)) p.vy *= -1;
+          p.x = p.previousX;
+          p.y = p.previousY;
+          p.wallBouncesRemaining--;
+          environmentHitT = null;
+        }
       }
 
       if (entityHit || environmentHitT !== null || p.life <= 0) {
+        if (p.explosionRadius > 0 && !p.detonated) {
+          this.detonateProjectile(p, directEnemyId);
+        }
         this.projectiles.splice(i, 1);
         releaseProjectile(p);
+      }
+    }
+  }
+
+  private updateProjectileHoming(projectile: Projectile, dt: number) {
+    if (projectile.faction !== "player" || projectile.homingStrength <= 0 || this.enemies.length === 0) return;
+    let target: Enemy | null = null;
+    let closestDistance = 150;
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0 || projectile.hitEnemyIds.has(enemy.id)) continue;
+      const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+      if (distance < closestDistance) {
+        target = enemy;
+        closestDistance = distance;
+      }
+    }
+    if (!target) return;
+
+    const targetAngle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
+    const velocity = rotateVelocityToward(
+      projectile.vx,
+      projectile.vy,
+      targetAngle,
+      projectile.homingStrength * dt,
+    );
+    projectile.vx = velocity.vx;
+    projectile.vy = velocity.vy;
+  }
+
+  private applyProjectileChain(projectile: Projectile, sourceX: number, sourceY: number) {
+    const visited = new Set(projectile.hitEnemyIds);
+    let fromX = sourceX;
+    let fromY = sourceY;
+
+    for (let chainIndex = 0; chainIndex < projectile.chainCount; chainIndex++) {
+      let target: Enemy | null = null;
+      let closestDistance = projectile.chainRange;
+      for (const enemy of this.enemies) {
+        if (enemy.hp <= 0 || visited.has(enemy.id)) continue;
+        const distance = Math.hypot(enemy.x - fromX, enemy.y - fromY);
+        if (distance < closestDistance) {
+          target = enemy;
+          closestDistance = distance;
+        }
+      }
+      if (!target) break;
+
+      visited.add(target.id);
+      projectile.hitEnemyIds.add(target.id);
+      const targetX = target.x;
+      const targetY = target.y;
+      const damage = calculateChainDamage(
+        projectile.damage,
+        projectile.chainDamageMultiplier,
+        chainIndex,
+      );
+      this.lightningArcs.push({
+        x1: fromX,
+        y1: fromY,
+        x2: targetX,
+        y2: targetY,
+        life: 0.18,
+        maxLife: 0.18,
+      });
+      const result = DamageSystem.damageEnemy(target, damage);
+      if (result.applied) {
+        if (projectile.statusEffect && projectile.statusDuration > 0) {
+          StatusEffectSystem.applyEnemy(target, projectile.statusEffect, projectile.statusDuration);
+        }
+        this.fx.emitImpact(targetX, targetY, "#8DF6FF", false, this.engine.isPerformanceDegraded());
+      }
+      if (result.killed) {
+        const targetIndex = this.enemies.indexOf(target);
+        this.handleEnemyKilled(target);
+        if (targetIndex >= 0) this.enemies.splice(targetIndex, 1);
+        releaseEnemy(target);
+      }
+      fromX = targetX;
+      fromY = targetY;
+    }
+  }
+
+  private detonateProjectile(projectile: Projectile, directEnemyId?: number) {
+    if (projectile.detonated || projectile.explosionRadius <= 0) return;
+    projectile.detonated = true;
+    const radius = projectile.explosionRadius;
+    this.fx.emitExplosion(projectile.x, projectile.y, radius, projectile.color, this.engine.isPerformanceDegraded());
+    this.engine.triggerScreenShake(Math.min(2.4, 0.8 + radius / 24), 0.12);
+
+    for (let index = this.enemies.length - 1; index >= 0; index--) {
+      const enemy = this.enemies[index];
+      if (enemy.id === directEnemyId || enemy.hp <= 0) continue;
+      const dx = enemy.x - projectile.x;
+      const dy = enemy.y - projectile.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > radius + enemy.radius) continue;
+      const falloff = calculateExplosionFalloff(distance, radius);
+      const damage = calculateExplosionDamage(
+        projectile.damage,
+        projectile.explosionDamageMultiplier,
+        distance,
+        radius,
+      );
+      const result = DamageSystem.damageEnemy(enemy, damage);
+      if (result.applied) {
+        if (projectile.statusEffect && projectile.statusDuration > 0) {
+          StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration);
+        }
+        if (enemy.type !== "boss" && distance > 0) {
+          const push = projectile.knockback * falloff;
+          const nextX = enemy.x + dx / distance * push;
+          const nextY = enemy.y + dy / distance * push;
+          if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
+          if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
+        }
+      }
+      if (result.killed) {
+        this.handleEnemyKilled(enemy);
+        this.enemies.splice(index, 1);
+        releaseEnemy(enemy);
       }
     }
   }
@@ -2064,7 +2210,7 @@ export class DungeonState extends GameState {
     }
     
     for (const p of this.projectiles) {
-       EntityRenderer.drawProjectile(ctx, p);
+       EntityRenderer.drawProjectile(ctx, p, this.engine.data.settings.reducedFlashing);
     }
     this.fx.draw(ctx, this.engine.data.settings.reducedFlashing);
     ArtDirectionRenderer.drawWorldGrade(

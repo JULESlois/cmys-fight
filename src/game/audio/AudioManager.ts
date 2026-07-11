@@ -6,6 +6,7 @@ import {
   type MusicScene,
   type ProceduralTrack,
 } from "./MusicLibrary";
+import type { ProjectileStyle } from "../data/weapons";
 
 function midiToFrequency(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
@@ -344,6 +345,28 @@ export class AudioManager {
 
   playShoot() {
     this.playBeep(520, "square", 0.075, 0.045, 260);
+  }
+
+  playWeaponShot(style: ProjectileStyle, recoil = 0.35) {
+    const volume = Math.min(0.11, 0.035 + Math.max(0, recoil) * 0.018);
+    if (style === "tracer") {
+      this.playBeep(760, "square", 0.045, volume, 360);
+    } else if (style === "beam") {
+      this.playBeep(980, "sawtooth", 0.09, volume * 0.9, 310);
+    } else if (style === "lightning") {
+      this.playBeep(1240, "square", 0.045, volume * 0.72, 620);
+      setTimeout(() => this.playBeep(430, "sawtooth", 0.065, volume * 0.62, 190), 12);
+    } else if (style === "plasma") {
+      this.playBeep(280, "sine", 0.12, volume, 720);
+    } else if (style === "flame") {
+      this.playBeep(210, "sawtooth", 0.085, volume * 0.9, 72);
+    } else if (style === "rocket") {
+      this.playBeep(118, "sawtooth", 0.17, volume, 44);
+    } else if (style === "disc") {
+      this.playBeep(680, "triangle", 0.11, volume * 0.85, 210);
+    } else {
+      this.playBeep(520, "square", 0.075, volume, 260);
+    }
   }
 
   playHit() {

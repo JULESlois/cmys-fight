@@ -84,7 +84,7 @@ const boss = EnemyFactory.create(stage, { x: 80, y: 80, type: "boss", enemyId: b
 assert.ok(boss.radius < bossDef.radius);
 
 const legendaryWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "legendary");
-assert.equal(Object.keys(WEAPONS).length, 14);
+assert.equal(Object.keys(WEAPONS).length, 22);
 assert.equal(legendaryWeapons.length, 6);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
@@ -127,7 +127,7 @@ const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf
 const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput/);
 assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
-assert.match(dungeonSource, /getAvailableWeapons\(floor\.globalStageIndex\)/);
+assert.match(dungeonSource, /rollAvailableWeapon\(floor\.globalStageIndex, random, "treasure"/);
 assert.match(rendererSource, /enemy\.isElite \? 1\.85 : 1\.62/);
 assert.match(rendererSource, /enemy\.type === "boss"\) scale = 2\.45/);
 for (const weapon of legendaryWeapons) {

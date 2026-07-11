@@ -75,7 +75,7 @@ export class RecordsState extends GameState {
       return Object.values(WEAPONS).map(weapon => ({
         id: weapon.id,
         name: weapon.name.toUpperCase(),
-        description: `${weapon.series ? `${weapon.series.toUpperCase()} // ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()} // DMG ${weapon.damage}`,
+        description: `${weapon.series ? `${weapon.series.toUpperCase()} // ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()} // ${(weapon.projectileStyle ?? "bullet").toUpperCase()} // ${weapon.mechanic}`,
         unlocked: meta.codex.weapons.includes(weapon.id),
       }));
     }
@@ -146,7 +146,21 @@ export class RecordsState extends GameState {
       ctx.textAlign = "center";
       ctx.fillStyle = selected?.unlocked ? "#BDC3C7" : "#4B5563";
       ctx.font = "7px monospace";
-      ctx.fillText(selected?.unlocked ? selected.description : "HIDDEN", 160, 205);
+      const detail = selected?.unlocked ? selected.description : "HIDDEN";
+      const words = detail.split(" ");
+      const lines: string[] = [];
+      let line = "";
+      for (const word of words) {
+        const next = line ? `${line} ${word}` : word;
+        if (next.length > 48 && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = next;
+        }
+      }
+      if (line) lines.push(line);
+      lines.slice(0, 2).forEach((text, index) => ctx.fillText(text, 160, 200 + index * 10));
     }
     ctx.textAlign = "center";
     ctx.fillStyle = "#7F8C8D";
