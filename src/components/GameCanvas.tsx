@@ -283,16 +283,16 @@ export function GameCanvas() {
 
           <div className="touch-action-cluster touch-face-cluster" aria-label="Virtual action buttons">
             <button type="button" aria-label={`${touchLabels.fire} button, fire`} data-gamepad-button="x" className="touch-button touch-face-button touch-face-x touch-fire-button" {...actionHandlers("fire")}>
-              <span className={`touch-face-letter ${touchLabels.fire.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.fire}</span><span className="touch-face-caption">FIRE</span>
+              <span className={`touch-face-letter ${touchLabels.fire.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.fire}</span>
             </button>
             <button type="button" aria-label={`${touchLabels.interact} button, interact`} data-gamepad-button="a" className="touch-button touch-face-button touch-face-a touch-use-button" {...actionHandlers("interact")}>
-              <span className={`touch-face-letter ${touchLabels.interact.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.interact}</span><span className="touch-face-caption">USE</span>
+              <span className={`touch-face-letter ${touchLabels.interact.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.interact}</span>
             </button>
             <button type="button" aria-label={`${touchLabels.skill} button, use skill`} data-gamepad-button="b" className="touch-button touch-face-button touch-face-b touch-skill-button" {...actionHandlers("skill")}>
-              <span className={`touch-face-letter ${touchLabels.skill.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.skill}</span><span className="touch-face-caption">SKILL</span>
+              <span className={`touch-face-letter ${touchLabels.skill.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.skill}</span>
             </button>
             <button type="button" aria-label={`${touchLabels.swapWeapon} button, swap weapon`} data-gamepad-button="y" className="touch-button touch-face-button touch-face-y touch-swap-button" {...actionHandlers("swapWeapon")}>
-              <span className={`touch-face-letter ${touchLabels.swapWeapon.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.swapWeapon}</span><span className="touch-face-caption">SWAP</span>
+              <span className={`touch-face-letter ${touchLabels.swapWeapon.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.swapWeapon}</span>
             </button>
           </div>
         </div>

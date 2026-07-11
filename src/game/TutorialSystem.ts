@@ -2,12 +2,12 @@ import type { Input } from "./Input";
 
 export type TutorialStepId = "move" | "fire" | "skill" | "interact" | "swap";
 
-const STEPS: Array<{ id: TutorialStepId; text: string }> = [
-  { id: "move", text: "MOVE TO TEST YOUR CONTROLS" },
-  { id: "fire", text: "FIRE YOUR CURRENT WEAPON" },
-  { id: "skill", text: "ACTIVATE YOUR CHARACTER SKILL" },
-  { id: "interact", text: "USE THE INTERACT CONTROL" },
-  { id: "swap", text: "SWAP YOUR WEAPON SLOT" },
+const STEPS: Array<{ id: TutorialStepId; label: string }> = [
+  { id: "move", label: "MOVE" },
+  { id: "fire", label: "FIRE" },
+  { id: "skill", label: "SKILL" },
+  { id: "interact", label: "INTERACT" },
+  { id: "swap", label: "SWAP" },
 ];
 
 export class TutorialSystem {
@@ -53,15 +53,12 @@ export class TutorialSystem {
     ctx.save();
     ctx.fillStyle = "rgba(7, 13, 24, 0.92)";
     ctx.strokeStyle = "#00F2FE";
-    ctx.fillRect(48, 172, 224, 26);
-    ctx.strokeRect(48, 172, 224, 26);
+    ctx.fillRect(62, 176, 196, 18);
+    ctx.strokeRect(62, 176, 196, 18);
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
     ctx.font = "bold 7px monospace";
-    ctx.fillText(`TRAINING ${this.stepIndex + 1}/${STEPS.length} // ${prompt}`, 160, 182);
-    ctx.fillStyle = "#ECF0F1";
-    ctx.font = "6px monospace";
-    ctx.fillText(step.text, 160, 192);
+    ctx.fillText(`${this.stepIndex + 1}/${STEPS.length}  [${prompt}] ${step.label}`, 160, 188);
     ctx.restore();
   }
 }

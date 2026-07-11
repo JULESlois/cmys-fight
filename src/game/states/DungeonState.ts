@@ -2119,7 +2119,7 @@ export class DungeonState extends GameState {
       ctx.fillText("YOU DIED", 160, 120);
       ctx.fillStyle = "#FFF";
       ctx.font = "10px monospace";
-      ctx.fillText("Press ENTER to restart", 160, 150);
+      ctx.fillText(`[${this.engine.input.getPrompt("interact")}] RETRY`, 160, 150);
       ctx.textAlign = "left";
     }
 

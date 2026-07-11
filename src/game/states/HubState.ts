@@ -1,6 +1,5 @@
 import { Engine } from "../Engine";
 import {
-  getMetaBonuses,
   getUpgradeCost,
   META_UPGRADES,
   META_UPGRADE_IDS,
@@ -53,7 +52,7 @@ export class HubState extends GameState {
       this.purchaseSelected();
     }
     if (this.engine.input.wasPressed(" ")) {
-      this.engine.switchState("character_select");
+      this.engine.switchState("character_select", { backState: "hub" });
       return;
     }
     if (this.engine.input.wasPressed("h")) {
@@ -155,7 +154,6 @@ export class HubState extends GameState {
     });
 
     const selectedId = META_UPGRADE_IDS[this.selectedIndex];
-    const bonuses = getMetaBonuses(meta.upgrades);
     ctx.textAlign = "center";
     ctx.fillStyle = "#8E9EAB";
     ctx.font = "7px monospace";
@@ -166,8 +164,8 @@ export class HubState extends GameState {
     ctx.font = "bold 8px monospace";
     ctx.fillText(
       meta.hardModeUnlocked
-        ? `H HARD MODE: ${meta.preferredHardMode ? "ON" : "OFF"}  (+50% SHARDS)`
-        : "H HARD MODE: LOCKED (WIN A RUN)",
+        ? `H HARD ${meta.preferredHardMode ? "ON" : "OFF"}  +50% SHARDS`
+        : "H HARD LOCKED",
       160,
       205,
     );
@@ -176,23 +174,16 @@ export class HubState extends GameState {
     ctx.fillStyle = challengeEnabled ? "#F1C40F" : "#5D6D7E";
     ctx.font = "bold 6px monospace";
     ctx.fillText(
-      `C ${CHALLENGES[dailyChallenge].name}: ${CHALLENGES[dailyChallenge].shortObjective} ${challengeEnabled ? "ON" : "OFF"} +${CHALLENGES[dailyChallenge].reward}`,
+      `C ${CHALLENGES[dailyChallenge].name}  ${challengeEnabled ? "ON" : "OFF"}  +${CHALLENGES[dailyChallenge].reward}`,
       160,
       213,
     );
-    ctx.fillStyle = "#7F8C8D";
-    ctx.font = "6px monospace";
-    ctx.fillText(
-      `RUN BONUS HP+${bonuses.maxHp} AR+${bonuses.maxArmor} COIN+${bonuses.startingCoins} REROLL ${bonuses.buffRerolls}`,
-      160,
-      221,
-    );
     ctx.fillStyle = this.refundArmed ? "#E74C3C" : "#00F2FE";
     ctx.font = "bold 7px monospace";
-    ctx.fillText(this.message, 160, 230);
+    ctx.fillText(this.message, 160, 226);
     ctx.fillStyle = "#BDC3C7";
     ctx.font = "6px monospace";
-    ctx.fillText("ENTER BUY | SPACE START | A RECORDS | H/C MODE | ESC", 160, 239);
+    ctx.fillText("ENTER BUY   SPACE RUN   A ARCHIVE   H/C MODE", 160, 238);
     ctx.textAlign = "left";
   }
 }

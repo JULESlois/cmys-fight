@@ -34,7 +34,9 @@ export class TitleState extends GameState {
 
   private handleSelect() {
     const opt = this.options[this.selectedIndex];
-    if (opt === "NEW RUN" || opt === "HUB") {
+    if (opt === "NEW RUN") {
+      this.engine.switchState("character_select", { backState: "title" });
+    } else if (opt === "HUB") {
       this.engine.switchState("hub");
     } else if (opt === "CONTINUE") {
       if (!this.engine.data.hasValidSave()) {
@@ -131,7 +133,7 @@ export class TitleState extends GameState {
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
     ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
-    ctx.fillText(`v${APP_VERSION} - BROWSER QA`, 160, 230);
+    ctx.fillText(`v${APP_VERSION}`, 160, 230);
     ctx.textAlign = "left";
   }
 }

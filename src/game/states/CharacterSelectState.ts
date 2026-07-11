@@ -11,12 +11,14 @@ export class CharacterSelectState extends GameState {
     protected characters = Object.values(CHARACTERS);
   protected selectedIndex = 0;
   protected selectedWeaponIndex = 0;
+  private backState: "title" | "hub" = "hub";
 
   constructor(engine: Engine) {
     super(engine);
   }
 
-  enter() {
+  enter(params?: { backState?: "title" | "hub" }) {
+    this.backState = params?.backState === "title" ? "title" : "hub";
     const unlockedWeapons = this.getUnlockedWeapons();
     const character = this.characters[this.selectedIndex];
     const preferred = this.engine.data.getStarterWeaponForCharacter(character.id);
@@ -26,7 +28,7 @@ export class CharacterSelectState extends GameState {
 
   update(dt: number) {
     if (this.engine.input.wasPressed("escape")) {
-       this.engine.switchState("hub");
+       this.engine.switchState(this.backState);
        return;
     }
     
@@ -76,17 +78,13 @@ export class CharacterSelectState extends GameState {
     ctx.textAlign = "center";
     ctx.font = "bold 6px monospace";
     ctx.fillText(`RUN MODE: ${this.engine.data.meta.preferredHardMode ? "HARD" : "NORMAL"}`, 160, 40);
-    ctx.fillStyle = "#7F8C8D";
-    ctx.textAlign = "center";
-    ctx.font = "6px monospace";
-    ctx.fillText("ARMORY: SHOTGUN 1-5/30 SHARDS | LASER WIN RUN", 160, 48);
 
     const cardW = 85;
     const cardH = 130;
     const spacing = 15;
     const totalW = this.characters.length * cardW + (this.characters.length - 1) * spacing;
     const startX = 160 - totalW / 2;
-    const startY = 60;
+    const startY = 54;
 
     for (let i = 0; i < this.characters.length; i++) {
       const char = this.characters[i];
@@ -152,7 +150,7 @@ export class CharacterSelectState extends GameState {
     ctx.fillStyle = selectedUnlocked ? "#F1C40F" : "#E74C3C";
     ctx.font = "9px monospace";
     const detail = selectedUnlocked
-      ? `[PASSIVE] ${selectedChar.passive}`
+      ? selectedChar.passive
       : selectedChar.id === "mage"
         ? "UNLOCK: REACH 2-1 OR EARN 50 SHARDS"
         : "UNLOCK: WIN A RUN OR EARN 120 SHARDS";
@@ -161,10 +159,10 @@ export class CharacterSelectState extends GameState {
     const selectedWeapon = this.getUnlockedWeapons()[this.selectedWeaponIndex] ?? WEAPONS.pistol;
     ctx.fillStyle = "#00F2FE";
     ctx.font = "bold 8px monospace";
-    ctx.fillText(`STARTER: ${selectedWeapon.name.toUpperCase()}  [UP/DOWN]`, 160, 225);
+    ctx.fillText(`↑↓  ${selectedWeapon.name.toUpperCase()}`, 160, 225);
     ctx.fillStyle = selectedUnlocked ? "#BDC3C7" : "#E74C3C";
     ctx.font = "7px monospace";
-    ctx.fillText(selectedUnlocked ? "ENTER START | LEFT/RIGHT CHARACTER | ESC BACK" : "CHARACTER LOCKED", 160, 236);
+    ctx.fillText(selectedUnlocked ? "←→ CHARACTER   ENTER START   ESC" : "LOCKED", 160, 236);
     ctx.textAlign = "left";
   }
 }

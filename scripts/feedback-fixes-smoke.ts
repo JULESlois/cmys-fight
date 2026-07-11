@@ -80,7 +80,7 @@ assert.match(dungeon, /isDebugOverlayVisible\(\)/);
 assert.doesNotMatch(dungeon, /import\.meta\.env\?\.DEV/);
 assert.match(pause, /SKILL/);
 assert.match(pause, /LOADOUT/);
-assert.match(pause, /TO SWAP/);
+assert.doesNotMatch(pause, /TO SWAP/);
 assert.doesNotMatch(hud, /Top center: character skill/);
 assert.doesNotMatch(hud, /getPrompt\("swapWeapon"\)/);
 assert.match(css, /-webkit-touch-callout:\s*none/);

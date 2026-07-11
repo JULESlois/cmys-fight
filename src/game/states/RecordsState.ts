@@ -146,13 +146,13 @@ export class RecordsState extends GameState {
       ctx.textAlign = "center";
       ctx.fillStyle = selected?.unlocked ? "#BDC3C7" : "#4B5563";
       ctx.font = "7px monospace";
-      ctx.fillText(selected?.unlocked ? selected.description : "Encounter this record to reveal its details.", 160, 205);
+      ctx.fillText(selected?.unlocked ? selected.description : "HIDDEN", 160, 205);
     }
     ctx.textAlign = "center";
     ctx.fillStyle = "#7F8C8D";
     ctx.font = "6px monospace";
     ctx.fillText(`${page.toUpperCase()} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
-    ctx.fillText("Q/E PAGE | W/S SELECT | A/ESC HUB", 160, 238);
+    ctx.fillText("Q/E PAGE   W/S SELECT   ESC", 160, 238);
     ctx.textAlign = "left";
   }
 }

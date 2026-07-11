@@ -70,10 +70,10 @@ export class ShopRenderer {
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
     ctx.font = "bold 14px monospace";
-    ctx.fillText("FIELD SHOP", 160, 30);
+    ctx.fillText("SHOP", 160, 30);
     ctx.fillStyle = "#ECF0F1";
     ctx.font = "8px monospace";
-    ctx.fillText(`COINS ${coins} | 1-4 OR ${cyclePrompt}+${confirmPrompt} | ${closePrompt} CLOSE`, 160, 44);
+    ctx.fillText(`COINS ${coins}`, 160, 44);
 
     const width = 70;
     const gap = 6;
@@ -119,7 +119,7 @@ export class ShopRenderer {
     } else {
       ctx.fillStyle = "#8E9EAB";
       ctx.font = "7px monospace";
-      ctx.fillText("PURCHASES ARE SAVED IMMEDIATELY", 160, 211);
+      ctx.fillText(`[${cyclePrompt}] MOVE   [${confirmPrompt}] BUY   [${closePrompt}] EXIT`, 160, 211);
     }
     ctx.restore();
   }

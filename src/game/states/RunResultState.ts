@@ -140,10 +140,10 @@ export class RunResultState extends GameState {
 
     ctx.fillStyle = "#00F2FE";
     ctx.font = "bold 8px monospace";
-    ctx.fillText("ENTER: TITLE", 160, 220);
+    ctx.fillText("ENTER TITLE", 160, 220);
     ctx.fillStyle = "#7F8C8D";
     ctx.font = "7px monospace";
-    ctx.fillText("R: NEW RUN", 160, 233);
+    ctx.fillText("R HUB", 160, 233);
     ctx.textAlign = "left";
   }
 }

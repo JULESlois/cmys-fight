@@ -262,7 +262,7 @@ export class SettingsState extends GameState {
     ctx.font = "6px monospace";
     ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = "#7F8C8D";
-    ctx.fillText("ARROWS ADJUST // ENTER SELECT // ESC BACK", 160, 228);
+    ctx.fillText("↑↓ MOVE   ←→ CHANGE   ENTER   ESC", 160, 228);
     ctx.textAlign = "left";
   }
 
@@ -285,7 +285,7 @@ export class SettingsState extends GameState {
     ctx.fillStyle = this.captureAction ? "#F1C40F" : "#7F8C8D";
     ctx.font = "6px monospace";
     ctx.fillText(this.message, 160, 204);
-    ctx.fillText("ENTER REBIND // R DEFAULTS // ESC BACK", 160, 228);
+    ctx.fillText("ENTER BIND   R RESET   ESC", 160, 228);
     ctx.textAlign = "left";
   }
 }

@@ -21,11 +21,11 @@ export class BuffSelectionRenderer {
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
     ctx.font = "bold 14px monospace";
-    ctx.fillText("SELECT A BUFF", 160, 44);
+    ctx.fillText("BUFF", 160, 44);
     ctx.fillStyle = "#8E9EAB";
     ctx.font = "7px monospace";
-    const rerollText = rerollsRemaining > 0 ? ` | R REROLL x${rerollsRemaining}` : "";
-    ctx.fillText(`1 / 2 / 3 OR ${cyclePrompt} CYCLE + ${confirmPrompt} SELECT${rerollText}`, 160, 57);
+    const rerollText = rerollsRemaining > 0 ? `   R ×${rerollsRemaining}` : "";
+    ctx.fillText(`[${cyclePrompt}] CYCLE   [${confirmPrompt}] TAKE${rerollText}`, 160, 57);
 
     const cardWidth = 92;
     const cardHeight = 118;
