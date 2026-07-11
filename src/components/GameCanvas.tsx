@@ -153,11 +153,18 @@ export function GameCanvas() {
     engineRef.current?.input.setTouchAxis(0, 0);
   };
 
+  const pulseHaptics = (duration = 8) => {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(duration);
+    }
+  };
+
   const actionHandlers = (action: InputAction) => ({
     draggable: false,
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
       event.preventDefault();
       event.currentTarget.setPointerCapture?.(event.pointerId);
+      pulseHaptics(action === "pause" ? 12 : 7);
       engineRef.current?.input.setTouchAction(action, true);
     },
     onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -196,20 +203,24 @@ export function GameCanvas() {
         >
           <button
             type="button"
-            aria-label="Pause menu"
-            className="touch-button touch-menu-button"
+            aria-label="Start and pause menu"
+            data-gamepad-button="start"
+            className="touch-button touch-start-button touch-menu-button"
             {...actionHandlers("pause")}
           >
-            MENU
+            <span className="touch-start-icon" aria-hidden="true"><i /><i /></span>
+            <span>START</span>
           </button>
 
           <div
             ref={joystickRef}
-            className="touch-joystick"
+            className="touch-joystick touch-dpad"
+            aria-label="Virtual directional pad"
             style={{ touchAction: "none" }}
             onPointerDown={event => {
               event.preventDefault();
               event.currentTarget.setPointerCapture?.(event.pointerId);
+              pulseHaptics(5);
               updateJoystick(event.clientX, event.clientY);
             }}
             onPointerMove={event => {
@@ -219,20 +230,32 @@ export function GameCanvas() {
             onPointerCancel={releaseJoystick}
             onLostPointerCapture={releaseJoystick}
           >
+            <span className="touch-dpad-notch touch-dpad-notch-up" aria-hidden="true" />
+            <span className="touch-dpad-notch touch-dpad-notch-right" aria-hidden="true" />
+            <span className="touch-dpad-notch touch-dpad-notch-down" aria-hidden="true" />
+            <span className="touch-dpad-notch touch-dpad-notch-left" aria-hidden="true" />
             <div
               className="touch-stick-knob"
               style={{
-                left: `calc(50% - 24px + ${stick.x * 34}px)`,
-                top: `calc(50% - 24px + ${stick.y * 34}px)`,
+                left: `calc(50% - 24px + ${stick.x * 30}px)`,
+                top: `calc(50% - 24px + ${stick.y * 30}px)`,
               }}
             />
           </div>
 
-          <div className="touch-action-cluster">
-            <button type="button" aria-label="Fire" className="touch-button touch-fire-button" {...actionHandlers("fire")}>FIRE</button>
-            <button type="button" aria-label="Interact" className="touch-button touch-use-button" {...actionHandlers("interact")}>USE</button>
-            <button type="button" aria-label="Use skill" className="touch-button touch-skill-button" {...actionHandlers("skill")}>SKILL</button>
-            <button type="button" aria-label="Swap weapon" className="touch-button touch-swap-button" {...actionHandlers("swapWeapon")}>SWAP</button>
+          <div className="touch-action-cluster touch-face-cluster" aria-label="Virtual gamepad face buttons">
+            <button type="button" aria-label="X button, fire" data-gamepad-button="x" className="touch-button touch-face-button touch-face-x touch-fire-button" {...actionHandlers("fire")}>
+              <span className="touch-face-letter">X</span><span className="touch-face-caption">FIRE</span>
+            </button>
+            <button type="button" aria-label="A button, interact" data-gamepad-button="a" className="touch-button touch-face-button touch-face-a touch-use-button" {...actionHandlers("interact")}>
+              <span className="touch-face-letter">A</span><span className="touch-face-caption">USE</span>
+            </button>
+            <button type="button" aria-label="B button, use skill" data-gamepad-button="b" className="touch-button touch-face-button touch-face-b touch-skill-button" {...actionHandlers("skill")}>
+              <span className="touch-face-letter">B</span><span className="touch-face-caption">SKILL</span>
+            </button>
+            <button type="button" aria-label="Y button, swap weapon" data-gamepad-button="y" className="touch-button touch-face-button touch-face-y touch-swap-button" {...actionHandlers("swapWeapon")}>
+              <span className="touch-face-letter">Y</span><span className="touch-face-caption">SWAP</span>
+            </button>
           </div>
         </div>
       )}
