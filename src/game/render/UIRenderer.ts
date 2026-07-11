@@ -2,8 +2,7 @@ import { Player } from "../entities/Player";
 import { WEAPONS } from "../data/weapons";
 import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
-import { SkillController } from "../combat/SkillController";
-import { BUFFS, BuffSystem } from "../combat/BuffSystem";
+import { BUFFS } from "../combat/BuffSystem";
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
@@ -80,49 +79,20 @@ export class UIRenderer {
     ctx.font = "9px monospace";
     ctx.fillText(`x ${engine.data.data.player.coins}`, 22, 42);
 
-    // Top center: character skill
-    const skill = SkillController.getConfig(player.characterId);
-    const skillReady = player.skillCooldown <= 0;
-    const skillActive = player.skillActiveTimer > 0;
-    ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
-    ctx.strokeStyle = skillReady ? "#2ECC71" : "rgba(0, 242, 254, 0.5)";
-    ctx.fillRect(132, 5, 92, 31);
-    ctx.strokeRect(132, 5, 92, 31);
-    ctx.fillStyle = skillReady ? "#2ECC71" : "#00F2FE";
-    ctx.font = "bold 7px monospace";
-    ctx.fillText(`${engine.input.getPrompt("skill")} ${skill.name}`, 137, 15);
-    ctx.fillStyle = "#1a1c2c";
-    ctx.fillRect(137, 20, 81, 5);
-    const effectiveSkillCooldown = skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
-    const skillProgress = skillReady
-      ? 1
-      : Math.max(0, 1 - player.skillCooldown / effectiveSkillCooldown);
-    ctx.fillStyle = skillActive ? "#F1C40F" : skillReady ? "#2ECC71" : "#3498DB";
-    ctx.fillRect(138, 21, Math.round(79 * skillProgress), 3);
-    ctx.fillStyle = "#BDC3C7";
-    ctx.font = "6px monospace";
-    const skillStatus = skillActive
-      ? "ACTIVE"
-      : skillReady
-        ? "READY"
-        : `CD ${player.skillCooldown.toFixed(1)}S`;
-    ctx.fillText(skillStatus, 137, 32);
-    if (player.rogueCritTimer > 0) {
-      ctx.fillStyle = "#F1C40F";
-      ctx.fillText(`CRIT+ ${player.rogueCritTimer.toFixed(1)}S`, 178, 32);
+    // Compact buff strip. Detailed skill and swap information lives on the pause screen.
+    if (player.buffs.length > 0) {
+      ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
+      ctx.fillRect(132, 5, 92, 12);
+      ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
+      ctx.strokeRect(132, 5, 92, 12);
+      player.buffs.forEach((id, index) => {
+        const buff = BUFFS[id];
+        const x = 135 + index * 17;
+        ctx.fillStyle = buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
+        ctx.font = "bold 5px monospace";
+        ctx.fillText(buff.shortCode, x, 13);
+      });
     }
-
-    ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
-    ctx.fillRect(132, 39, 92, 12);
-    ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
-    ctx.strokeRect(132, 39, 92, 12);
-    player.buffs.forEach((id, index) => {
-      const buff = BUFFS[id];
-      const x = 135 + index * 17;
-      ctx.fillStyle = buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
-      ctx.font = "bold 5px monospace";
-      ctx.fillText(buff.shortCode, x, 47);
-    });
 
     if (player.statusEffects.length > 0) {
       const accessible = engine.data.settings.colorblindMode !== "off";
@@ -199,10 +169,6 @@ export class UIRenderer {
 
     drawWeaponSlot(0, 8);
     drawWeaponSlot(1, 101);
-    ctx.fillStyle = "#F1C40F";
-    ctx.font = "6px monospace";
-    ctx.fillText(engine.input.getPrompt("swapWeapon"), 95, 219);
-
     // Bottom Right: Room State
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";

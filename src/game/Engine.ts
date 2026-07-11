@@ -39,6 +39,7 @@ export class Engine {
   private overlayState: string | null = null;
   private shakeTimer = 0;
   private shakeIntensity = 0;
+  private showDebugOverlay = false;
 
   constructor() {
     this.input = new Input();
@@ -150,6 +151,16 @@ export class Engine {
     return this.overlayState;
   }
 
+  public isDebugOverlayVisible(): boolean {
+    return this.debugMode && this.showDebugOverlay;
+  }
+
+  public toggleDebugOverlay(): boolean {
+    if (!this.debugMode) return false;
+    this.showDebugOverlay = !this.showDebugOverlay;
+    return this.showDebugOverlay;
+  }
+
   public qaJumpToStage(globalStageIndex: number): boolean {
     if (!this.debugMode) return false;
     this.rebuildStateAfterDataChange("dungeon", () => jumpToStage(this.data, globalStageIndex));
@@ -247,6 +258,10 @@ export class Engine {
       return;
     }
 
+    if (this.debugMode && this.input.wasPressed("f6")) {
+      this.toggleDebugOverlay();
+    }
+
     if (this.debugMode && this.currentState === "dungeon") {
       if (this.input.wasPressed("f7")) {
         this.rebuildStateAfterDataChange("dungeon", () => jumpToStage(this.data, this.data.data.run.globalStageIndex - 1));
@@ -332,7 +347,10 @@ export class Engine {
     }
 
     if (this.isPaused) {
-      PauseOverlayRenderer.draw(this.ctx, this.input);
+      const dungeonPlayer = this.currentState === "dungeon"
+        ? (this.states.dungeon as DungeonState).getPlayer()
+        : undefined;
+      PauseOverlayRenderer.draw(this.ctx, this.input, dungeonPlayer);
     }
 
     if (settings.crtFilter && !degraded) {
@@ -340,7 +358,7 @@ export class Engine {
       for (let y = 0; y < 240; y += 4) this.ctx.fillRect(0, y, 320, 1);
     }
 
-    if (this.debugMode) this.drawDebugOverlay(this.ctx);
+    if (this.isDebugOverlayVisible()) this.drawDebugOverlay(this.ctx);
 
     this.ctx.restore();
     
@@ -376,7 +394,7 @@ export class Engine {
     ctx.fillText(`STAGE ${this.data.data.run.chapterIndex}-${this.data.data.run.stageIndex}`, 222, 85);
     ctx.fillText(`POOL P${pools.projectiles.available} E${pools.enemies.available} D${pools.pickups.available}`, 222, 95);
     ctx.fillStyle = perf.degraded ? "#E74C3C" : "#7F8C8D";
-    ctx.fillText(perf.degraded ? "AUTO LOW-FX" : "F7/F8 STAGE F9 KIT", 222, 103);
+    ctx.fillText(perf.degraded ? "AUTO LOW-FX" : "F6 HIDE · F7/F8 STAGE", 222, 103);
     ctx.restore();
   }
 

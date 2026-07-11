@@ -40,3 +40,19 @@ html, body, #root {
 .touch-controls {
   inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
+
+.touch-controls,
+.touch-controls *,
+.touch-button {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+.touch-controls img,
+.touch-controls button {
+  -webkit-user-drag: none;
+  user-drag: none;
+}

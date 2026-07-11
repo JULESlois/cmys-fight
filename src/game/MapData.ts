@@ -12,6 +12,23 @@ export const DOOR_ZONES = {
   down: { xMin: 8, xMax: 11, yMin: 13, yMax: 14 }
 };
 
+// Door openings from different templates used to stop after two edge tiles.
+// These corridors meet at the room center, so a minimap connection always has a
+// collision-free route even when the selected template contains interior walls.
+export const DOOR_CORRIDORS = {
+  left: { xMin: 0, xMax: 10, yMin: 6, yMax: 8 },
+  right: { xMin: 9, xMax: 19, yMin: 6, yMax: 8 },
+  up: { xMin: 8, xMax: 11, yMin: 0, yMax: 7 },
+  down: { xMin: 8, xMax: 11, yMin: 7, yMax: 14 },
+};
+
+export const DOOR_ENTRY_POINTS = {
+  fromLeft: { x: 17, y: 120 },
+  fromRight: { x: 303, y: 120 },
+  fromUp: { x: 160, y: 17 },
+  fromDown: { x: 160, y: 223 },
+};
+
 
 
 export function getRoomTemplate(currentRoom: Room | undefined): RoomTemplate {
@@ -61,10 +78,10 @@ export function getMapData(currentRoom: Room | undefined, theme: string): number
       }
     };
     
-    if (currentRoom.doors.up) applyDoor(DOOR_ZONES.up);
-    if (currentRoom.doors.down) applyDoor(DOOR_ZONES.down);
-    if (currentRoom.doors.left) applyDoor(DOOR_ZONES.left);
-    if (currentRoom.doors.right) applyDoor(DOOR_ZONES.right);
+    if (currentRoom.doors.up) applyDoor(DOOR_CORRIDORS.up);
+    if (currentRoom.doors.down) applyDoor(DOOR_CORRIDORS.down);
+    if (currentRoom.doors.left) applyDoor(DOOR_CORRIDORS.left);
+    if (currentRoom.doors.right) applyDoor(DOOR_CORRIDORS.right);
   }
   
   return data;

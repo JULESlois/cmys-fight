@@ -26,6 +26,7 @@ export interface QaSnapshot {
   fps: number;
   frameTimeMs: number;
   degraded: boolean;
+  debugOverlay: boolean;
   canvas: { width: number; height: number };
   audio: AudioDiagnostics;
 }
@@ -82,6 +83,7 @@ export function createQaSnapshot(engine: Engine, canvas: HTMLCanvasElement): QaS
     fps: perf.fps,
     frameTimeMs: perf.frameTimeMs,
     degraded: perf.degraded,
+    debugOverlay: engine.isDebugOverlayVisible(),
     canvas: { width: canvas.width, height: canvas.height },
     audio: audio.getDiagnostics(),
   };
@@ -211,6 +213,7 @@ export interface QaBridge {
   switchState: (state: string) => boolean;
   jumpToStage: (stage: number) => boolean;
   grantLoadout: () => boolean;
+  toggleDebugOverlay: () => boolean;
   setMusicScene: (scene: MusicScene) => void;
   setMusicMode: (mode: MusicMode) => void;
   probeExternalFallback: () => Promise<{ passed: boolean; source: string }>;
@@ -229,6 +232,7 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     },
     jumpToStage: stage => engine.qaJumpToStage(stage),
     grantLoadout: () => engine.qaGrantDebugLoadout(),
+    toggleDebugOverlay: () => engine.toggleDebugOverlay(),
     setMusicScene: scene => audio.setMusicScene(scene),
     setMusicMode: mode => {
       engine.data.settings.musicMode = mode;

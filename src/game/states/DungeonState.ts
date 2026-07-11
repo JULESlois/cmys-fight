@@ -6,7 +6,7 @@ import { Projectile } from "../entities/Projectile";
 import { RoomRenderer } from "../render/RoomRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
 import { Enemy } from "../entities/Enemy";
-import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT } from "../MapData";
+import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT, DOOR_ENTRY_POINTS } from "../MapData";
 import { UIRenderer } from "../render/UIRenderer";
 import { PixelFxSystem } from "../render/PixelFxSystem";
 import { ArtDirectionRenderer } from "../render/ArtDirectionRenderer";
@@ -983,6 +983,10 @@ export class DungeonState extends GameState {
     }
   }
 
+  public getPlayer(): Player {
+    return this.player;
+  }
+
   private handleDoorTransitions() {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -1004,7 +1008,8 @@ export class DungeonState extends GameState {
          this.pendingTransition = () => {
            this.syncRoomState();
            floor.currentRoomX -= 1;
-           this.player.x = maxX - 1;
+           this.player.x = DOOR_ENTRY_POINTS.fromRight.x;
+           this.player.y = DOOR_ENTRY_POINTS.fromRight.y;
            this.loadRoom();
          };
       } else {
@@ -1016,7 +1021,8 @@ export class DungeonState extends GameState {
          this.pendingTransition = () => {
            this.syncRoomState();
            floor.currentRoomX += 1;
-           this.player.x = minX + 1;
+           this.player.x = DOOR_ENTRY_POINTS.fromLeft.x;
+           this.player.y = DOOR_ENTRY_POINTS.fromLeft.y;
            this.loadRoom();
          };
       } else {
@@ -1030,7 +1036,8 @@ export class DungeonState extends GameState {
          this.pendingTransition = () => {
            this.syncRoomState();
            floor.currentRoomY -= 1;
-           this.player.y = maxY - 1;
+           this.player.x = DOOR_ENTRY_POINTS.fromDown.x;
+           this.player.y = DOOR_ENTRY_POINTS.fromDown.y;
            this.loadRoom();
          };
       } else {
@@ -1042,7 +1049,8 @@ export class DungeonState extends GameState {
          this.pendingTransition = () => {
            this.syncRoomState();
            floor.currentRoomY += 1;
-           this.player.y = minY + 1;
+           this.player.x = DOOR_ENTRY_POINTS.fromUp.x;
+           this.player.y = DOOR_ENTRY_POINTS.fromUp.y;
            this.loadRoom();
          };
       } else {
@@ -1879,9 +1887,8 @@ export class DungeonState extends GameState {
       ctx.fillRect(0, 0, 320, 240);
     }
     
-    // Debug info overlay
-    // @ts-ignore
-    if (import.meta.env?.DEV) {
+    // Optional debug info overlay. Hidden by default; toggle with F6.
+    if (this.engine.isDebugOverlayVisible()) {
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(0, 0, 150, 60);

@@ -130,6 +130,7 @@ export function GameCanvas() {
   };
 
   const actionHandlers = (action: InputAction) => ({
+    draggable: false,
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
       event.preventDefault();
       event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -140,6 +141,7 @@ export function GameCanvas() {
       engineRef.current?.input.setTouchAction(action, false);
     },
     onPointerCancel: () => engineRef.current?.input.setTouchAction(action, false),
+    onLostPointerCapture: () => engineRef.current?.input.setTouchAction(action, false),
     onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
       if (event.buttons === 0) engineRef.current?.input.setTouchAction(action, false);
     },
@@ -161,7 +163,12 @@ export function GameCanvas() {
       )}
 
       {touchEnabled && (
-        <div className="touch-controls absolute inset-0 pointer-events-none select-none">
+        <div
+          className="touch-controls absolute inset-0 pointer-events-none select-none"
+          onContextMenu={event => event.preventDefault()}
+          onDragStart={event => event.preventDefault()}
+          onSelect={event => event.preventDefault()}
+        >
           <div
             ref={joystickRef}
             className="pointer-events-auto absolute left-4 bottom-4 w-28 h-28 rounded-full border border-cyan-300/40 bg-slate-950/45 backdrop-blur-sm"

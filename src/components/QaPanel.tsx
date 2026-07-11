@@ -140,6 +140,7 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
             <button key={preset.stage} className={buttonClass} onClick={() => engine.qaJumpToStage(preset.stage)}>{preset.label}</button>
           ))}
           <button className={buttonClass} onClick={() => engine.qaGrantDebugLoadout()}>LOADOUT</button>
+          <button className={buttonClass} onClick={() => engine.toggleDebugOverlay()}>DEBUG HUD {engine.isDebugOverlayVisible() ? "ON" : "OFF"}</button>
         </div>
       </section>
 
