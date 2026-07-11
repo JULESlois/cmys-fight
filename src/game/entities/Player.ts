@@ -1,4 +1,4 @@
-import type { WeaponSlots } from "../data/weapons";
+import { WEAPONS, type WeaponSlots } from "../data/weapons";
 import type { BuffId } from "../combat/BuffSystem";
 import type { ActiveStatusEffect } from "../combat/StatusEffectSystem";
 
@@ -7,6 +7,9 @@ export const PLAYER_WEAPON_OFFSET_Y = -2;
 export const PLAYER_HAND_OFFSET_Y = -2;
 export const PLAYER_MUZZLE_OFFSET_X = 18;
 export const PLAYER_MUZZLE_OFFSET_Y = -4;
+export const MAX_PLAYER_MANA = 120;
+export const DEFAULT_MANA_RECHARGE_DELAY = 1.35;
+export const DEFAULT_MANA_RECHARGE_RATE = 9;
 
 export class Player {
   public x: number;
@@ -22,8 +25,8 @@ export class Player {
   public mana: number;
   public maxMana: number;
   public manaRechargeTimer: number = 0;
-  public manaRechargeDelay: number = 1.25;
-  public manaRechargeRate: number = 12;
+  public manaRechargeDelay: number = DEFAULT_MANA_RECHARGE_DELAY;
+  public manaRechargeRate: number = DEFAULT_MANA_RECHARGE_RATE;
   
   public speed: number = 80;
   public characterId: string = "knight";
@@ -84,8 +87,9 @@ export class Player {
   public getPlayerMuzzlePosition(angle: number) {
     const handX = this.x;
     const handY = this.y + PLAYER_HAND_OFFSET_Y;
-    const localMuzzleX = PLAYER_MUZZLE_OFFSET_X;
-    const localMuzzleY = PLAYER_MUZZLE_OFFSET_Y;
+    const weapon = WEAPONS[this.currentWeaponId];
+    const localMuzzleX = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
+    const localMuzzleY = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
     
     let my = localMuzzleY;
     if (Math.abs(angle) > Math.PI / 2) {

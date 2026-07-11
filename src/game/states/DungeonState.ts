@@ -1,7 +1,7 @@
 import { Engine } from "../Engine";
 import { generateStage, Room } from "../FloorGenerator";
 import { isCombatCleared, isCombatRoom, markCombatCleared, normalizeRoomState } from "../RoomState";
-import { Player } from "../entities/Player";
+import { Player, MAX_PLAYER_MANA } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
 import { RoomRenderer } from "../render/RoomRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
@@ -97,11 +97,11 @@ export class DungeonState extends GameState {
     player.maxHp = savedP.maxHp;
     player.armor = savedP.armor ?? 0;
     player.maxArmor = savedP.maxArmor ?? 0;
-    player.mana = savedP.mana;
-    player.maxMana = savedP.maxMana;
+    player.maxMana = Math.max(1, Math.min(MAX_PLAYER_MANA, savedP.maxMana));
+    player.mana = Math.max(0, Math.min(player.maxMana, savedP.mana));
     player.manaRechargeTimer = savedP.manaRechargeTimer ?? 0;
-    player.manaRechargeDelay = savedP.manaRechargeDelay ?? 1.25;
-    player.manaRechargeRate = savedP.manaRechargeRate ?? 12;
+    player.manaRechargeDelay = savedP.manaRechargeDelay ?? 1.35;
+    player.manaRechargeRate = savedP.manaRechargeRate ?? 9;
     player.speed = savedP.speed;
     player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
     player.skillCooldown = savedP.skillCooldown ?? 0;
@@ -2273,7 +2273,7 @@ export class DungeonState extends GameState {
         this.shopSelectionIndex,
         this.engine.input.getPrompt("interact"),
         this.engine.input.getPrompt("swapWeapon"),
-        this.engine.input.getPrompt("pause"),
+        this.engine.input.getCancelPrompt(),
         this.engine.data.settings.language,
       );
     }

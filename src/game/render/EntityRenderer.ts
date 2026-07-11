@@ -102,11 +102,13 @@ export class EntityRenderer {
     ctx.translate(0, PLAYER_HAND_OFFSET_Y);
     ctx.rotate(player.aimAngle);
     if (Math.abs(player.aimAngle) > Math.PI / 2) ctx.scale(1, -1);
-    SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, 1, { outlineColor: "#09101A" });
+    const weapon = WEAPONS[player.currentWeaponId];
+    const renderX = weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X;
+    const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
+    SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1, { outlineColor: "#02060A" });
     if (player.muzzleFlash > 0) {
-      const mx = PLAYER_MUZZLE_OFFSET_X;
-      const my = PLAYER_MUZZLE_OFFSET_Y;
-      const weapon = WEAPONS[player.currentWeaponId];
+      const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
+      const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
       const effect = weapon?.muzzleEffect ?? "flash";
       ctx.globalAlpha = Math.min(1, player.muzzleFlash);
       if (effect === "beam") {
@@ -191,13 +193,13 @@ export class EntityRenderer {
 
     if (enemy.isElite) EntityRenderer.drawCornerFrame(ctx, enemy.radius + 6, "rgba(241,196,15,0.9)", 6);
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    const shadowWidth = enemy.type === "boss" ? 27 : 15;
+    const shadowWidth = enemy.type === "boss" ? 23 : 13;
     ctx.fillRect(-shadowWidth / 2, enemy.radius - 4, shadowWidth, 5);
 
     const animOffset = Math.round(Math.sin(time * 5 + enemy.x) * 2);
     ctx.translate(0, animOffset);
-    let scale = enemy.isElite ? 1.85 : 1.62;
-    if (enemy.type === "boss") scale = 2.45;
+    let scale = enemy.isElite ? 1.62 : 1.42;
+    if (enemy.type === "boss") scale = 2.15;
     MonsterModelRenderer.draw(ctx, enemy, time, reducedFlashing, scale);
     ctx.restore();
 

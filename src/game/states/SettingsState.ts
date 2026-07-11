@@ -310,7 +310,7 @@ export class SettingsState extends GameState {
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = "#7F8C8D";
-    ctx.fillText(t(language, "settings.footer"), 160, 228);
+    ctx.fillText(t(language, "settings.footer", { cancel: this.engine.input.getCancelPrompt() }), 160, 228);
     ctx.textAlign = "left";
   }
 
@@ -334,7 +334,7 @@ export class SettingsState extends GameState {
     ctx.fillStyle = this.captureAction ? "#F1C40F" : "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 204);
-    ctx.fillText(t(language, "settings.controlsFooter"), 160, 228);
+    ctx.fillText(t(language, "settings.controlsFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 228);
     ctx.textAlign = "left";
   }
 }

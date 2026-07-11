@@ -55,11 +55,14 @@ function touchPulse(input: InstanceType<typeof Input>) {
   input.setTouchAction("interact", false);
 }
 
-function createPad(aPressed: boolean) {
+function createPad(aPressed: boolean, bPressed = false) {
   return {
     connected: true,
     axes: [0, 0, 0, 0],
-    buttons: Array.from({ length: 16 }, (_, index) => ({ pressed: index === 0 && aPressed, value: index === 0 && aPressed ? 1 : 0 })),
+    buttons: Array.from({ length: 16 }, (_, index) => {
+      const active = (index === 0 && aPressed) || (index === 1 && bPressed);
+      return { pressed: active, value: active ? 1 : 0 };
+    }),
   };
 }
 
@@ -107,9 +110,19 @@ assert.equal(promptInput.getPrompt("interact"), "SPACE");
 assert.equal(promptInput.getPrompt("swapWeapon"), "Q");
 assert.equal(promptInput.getPrompt("pause"), "P");
 promptInput.setTouchAction("fire", false);
+gamepads = [createPad(false, true)];
+promptInput.beginFrame();
+assert.equal(promptInput.wasActionPressed("skill"), true);
+assert.equal(promptInput.wasPressed("escape"), true);
+assert.equal(promptInput.getPrompt("skill"), "B");
+assert.equal(promptInput.getCancelPrompt(), "B");
+promptInput.update();
+gamepads = [createPad(false, false)];
+promptInput.beginFrame();
+promptInput.update();
 promptInput.cleanup();
 
-runContract("keyboard", input => keyboardPulse(input, "l"));
+runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 

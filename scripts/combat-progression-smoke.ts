@@ -19,10 +19,10 @@ const oldDefaults = {
   fire: "f", skill: "e", interact: " ", swapWeapon: "q", pause: "p",
 } as const;
 
-assert.equal(SETTINGS_VERSION, 6);
+assert.equal(SETTINGS_VERSION, 7);
 assert.deepEqual(DEFAULT_KEY_BINDINGS, {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
-  fire: "j", skill: "k", interact: "l", swapWeapon: "i", pause: "escape",
+  fire: "j", skill: "l", interact: "k", swapWeapon: "i", pause: "escape",
 });
 const migratedDefaults = normalizeSettings({ version: 4, keyBindings: oldDefaults });
 assert.deepEqual(migratedDefaults.keyBindings, DEFAULT_KEY_BINDINGS);
@@ -52,9 +52,9 @@ assert.equal(player.manaRechargeTimer, player.manaRechargeDelay);
 const wellPlayer = new Player(0, 0);
 wellPlayer.mana = 0;
 assert.equal(BuffSystem.acquire(wellPlayer, "mana_well"), true);
-assert.equal(wellPlayer.maxMana, 140);
-assert.equal(wellPlayer.manaRechargeRate, 20);
-assert.equal(wellPlayer.manaRechargeDelay, 0.8);
+assert.equal(wellPlayer.maxMana, 120);
+assert.equal(wellPlayer.manaRechargeRate, 15);
+assert.equal(wellPlayer.manaRechargeDelay, 0.9);
 wellPlayer.setWeaponLoadout(["void_rail"], 0);
 wellPlayer.mana = 20;
 const voidShot = WeaponController.fire(wellPlayer, 0, () => 0.5);
@@ -128,8 +128,8 @@ const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput/);
 assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
 assert.match(dungeonSource, /rollAvailableWeapon\(floor\.globalStageIndex, random, "treasure"/);
-assert.match(rendererSource, /enemy\.isElite \? 1\.85 : 1\.62/);
-assert.match(rendererSource, /enemy\.type === "boss"\) scale = 2\.45/);
+assert.match(rendererSource, /enemy\.isElite \? 1\.62 : 1\.42/);
+assert.match(rendererSource, /enemy\.type === "boss"\) scale = 2\.15/);
 for (const weapon of legendaryWeapons) {
   assert.match(spriteSource, new RegExp(`weapon_${weapon.id}:`));
 }

@@ -288,9 +288,17 @@ export class Engine {
       (this.states.dungeon as DungeonState).capturesPauseInput();
     if (canPause && !stateCapturesPause && this.input.wasActionPressed("pause")) {
       this.isPaused = !this.isPaused;
+      this.input.clearJustPressed();
+      return;
     }
     if (!canPause) {
       this.isPaused = false;
+    }
+
+    if (canPause && this.isPaused && this.input.wasPressed("escape")) {
+      this.isPaused = false;
+      this.input.clearJustPressed();
+      return;
     }
 
     if (canPause && this.isPaused && (this.input.wasPressed("enter") || this.input.wasActionPressed("interact"))) {

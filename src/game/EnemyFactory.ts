@@ -41,8 +41,8 @@ export class EnemyFactory {
     enemy.hp = enemy.maxHp;
     enemy.speed = definition.speed;
     enemy.radius = Math.max(
-      definition.role === "boss" ? 8 : 4,
-      Math.round(definition.radius * (definition.role === "boss" ? 0.84 : 0.76)),
+      definition.role === "boss" ? 7 : 4,
+      Math.round(definition.radius * (definition.role === "boss" ? 0.72 : 0.66)),
     );
     enemy.attackDamage = definition.attackDamage;
     enemy.attackInterval = definition.attackInterval;

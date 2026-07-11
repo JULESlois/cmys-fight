@@ -96,6 +96,7 @@ export class PauseOverlayRenderer {
     ctx.fillStyle = "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "pause.footer", {
+      cancel: input.getCancelPrompt(),
       menu: input.getPrompt("interact"),
       pause: input.getPrompt("pause"),
     }), 160, 197);

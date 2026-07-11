@@ -49,6 +49,7 @@ export interface WeaponData {
   pelletCount: number;
   knockback: number;
   critChance: number;
+  critMultiplier?: number;
   color: string;
   projectileRadius?: number;
   projectileLife?: number;
@@ -74,39 +75,45 @@ export interface WeaponData {
   muzzleEffect?: MuzzleEffect;
   impactEffect?: ImpactEffect;
   recoil?: number;
+  renderOffsetX?: number;
+  renderOffsetY?: number;
+  muzzleOffsetX?: number;
+  muzzleOffsetY?: number;
 }
 
 export const WEAPONS: Record<string, WeaponData> = {
   pistol: {
     id: "pistol", name: "Old Pistol", category: "sidearm", rarity: "common",
-    damage: 3, fireRate: 3, bulletSpeed: 150, manaCost: 0, spread: 0.1,
+    damage: 3, fireRate: 2.8, bulletSpeed: 150, manaCost: 0, spread: 0.1,
     pelletCount: 1, knockback: 5, critChance: 0.08, color: "#F39C12",
     mechanic: "Reliable zero-energy ballistic sidearm.", projectileStyle: "bullet",
+    renderOffsetX: 11, renderOffsetY: -2, muzzleOffsetX: 19, muzzleOffsetY: -4,
   },
   shotgun: {
     id: "shotgun", name: "Rusty Shotgun", category: "shotgun", rarity: "uncommon",
-    damage: 2, fireRate: 1, bulletSpeed: 120, manaCost: 2, spread: 0.4,
+    damage: 2, fireRate: 1.25, bulletSpeed: 120, manaCost: 2, spread: 0.4,
     pelletCount: 5, knockback: 7, critChance: 0.05, color: "#E74C3C",
     mechanic: "Wide five-pellet close-range blast.", projectileStyle: "bullet",
     muzzleEffect: "smoke", recoil: 1.15,
+    renderOffsetX: 14, renderOffsetY: -2, muzzleOffsetX: 25, muzzleOffsetY: -4,
   },
   laser: {
     id: "laser", name: "Energy Blaster", category: "energy", rarity: "rare",
-    damage: 5, fireRate: 5, bulletSpeed: 300, manaCost: 1, spread: 0,
+    damage: 5, fireRate: 4.2, bulletSpeed: 300, manaCost: 1, spread: 0,
     pelletCount: 1, knockback: 3, critChance: 0.12, color: "#00F2FE",
     mechanic: "Fast coherent beam with a long luminous trace.", projectileStyle: "beam", minGlobalStage: 5,
     trailLength: 34, beamWidth: 2, muzzleEffect: "beam", impactEffect: "plasma",
   },
   bell_repeater: {
     id: "bell_repeater", name: "Ding-Dong Repeater", category: "rifle", rarity: "common",
-    damage: 2, fireRate: 7.2, bulletSpeed: 185, manaCost: 1, spread: 0.14,
+    damage: 2, fireRate: 6.2, bulletSpeed: 185, manaCost: 1, spread: 0.14,
     pelletCount: 1, knockback: 2, critChance: 0.07, color: "#F1C40F",
     projectileLife: 1.45, minGlobalStage: 2,
     mechanic: "Rapid ringing tracer rounds.", projectileStyle: "tracer", trailLength: 15,
   },
   mask_sprayer: {
     id: "mask_sprayer", name: "Mask Sprayer", category: "shotgun", rarity: "uncommon",
-    damage: 1, fireRate: 2.1, bulletSpeed: 110, manaCost: 2, spread: 0.72,
+    damage: 1, fireRate: 2, bulletSpeed: 110, manaCost: 2, spread: 0.72,
     pelletCount: 8, knockback: 4, critChance: 0.03, color: "#ECF0F1",
     projectileLife: 1.05, statusEffect: "slow", statusDuration: 1.2, minGlobalStage: 3,
     mechanic: "Short-lived freezing particulate spray.", projectileStyle: "flame",
@@ -114,7 +121,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   code_scanner: {
     id: "code_scanner", name: "Code Scanner", category: "energy", rarity: "rare",
-    damage: 4, fireRate: 3.4, bulletSpeed: 275, manaCost: 2, spread: 0.02,
+    damage: 5, fireRate: 2.8, bulletSpeed: 275, manaCost: 2, spread: 0.02,
     pelletCount: 1, knockback: 3, critChance: 0.14, color: "#2ECC71",
     pierce: 2, projectileLife: 2.3, minGlobalStage: 6,
     mechanic: "Scanning beam penetrates multiple targets.", projectileStyle: "beam",
@@ -122,7 +129,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   swab_lance: {
     id: "swab_lance", name: "Swab Lance", category: "launcher", rarity: "uncommon",
-    damage: 8, fireRate: 0.82, bulletSpeed: 128, manaCost: 3, spread: 0.04,
+    damage: 12, fireRate: 0.95, bulletSpeed: 128, manaCost: 3, spread: 0.04,
     pelletCount: 1, knockback: 13, critChance: 0.1, color: "#D6EAF8",
     projectileRadius: 4, projectileLife: 2.8, pierce: 1, minGlobalStage: 4,
     mechanic: "Heavy lance accelerates after leaving the barrel.", projectileStyle: "tracer",
@@ -130,7 +137,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   vat_horse_cannon: {
     id: "vat_horse_cannon", name: "Vat-Horse Cannon", category: "launcher", rarity: "rare",
-    damage: 5, fireRate: 1.15, bulletSpeed: 145, manaCost: 4, spread: 0.24,
+    damage: 5, fireRate: 1.2, bulletSpeed: 145, manaCost: 4, spread: 0.24,
     pelletCount: 3, knockback: 10, critChance: 0.08, color: "#FF8A65",
     projectileRadius: 4, projectileLife: 2.6, wallBounces: 1,
     statusEffect: "burn", statusDuration: 2.1, minGlobalStage: 7,
@@ -140,38 +147,42 @@ export const WEAPONS: Record<string, WeaponData> = {
 
   service_revolver: {
     id: "service_revolver", name: "Service Revolver", category: "sidearm", rarity: "uncommon",
-    damage: 7, fireRate: 1.8, bulletSpeed: 205, manaCost: 0, spread: 0.035,
-    pelletCount: 1, knockback: 8, critChance: 0.2, color: "#F5C16C",
+    damage: 6, fireRate: 1.55, bulletSpeed: 205, manaCost: 0, spread: 0.035,
+    pelletCount: 1, knockback: 8, critChance: 0.18, critMultiplier: 2.25, color: "#F5C16C",
     projectileLife: 2.1, minGlobalStage: 2,
     mechanic: "Zero-energy heavy round with strong critical hits.", projectileStyle: "bullet",
     trailLength: 8, muzzleEffect: "smoke", recoil: 0.9,
+    renderOffsetX: 12, renderOffsetY: -2, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
   nail_driver: {
     id: "nail_driver", name: "Nail Driver", category: "smg", rarity: "common",
-    damage: 2, fireRate: 6.5, bulletSpeed: 175, manaCost: 0, spread: 0.12,
+    damage: 1, fireRate: 8, bulletSpeed: 175, manaCost: 0, spread: 0.12,
     pelletCount: 1, knockback: 3, critChance: 0.06, color: "#C7D3DD",
     pierce: 1, projectileLife: 1.7, minGlobalStage: 3,
     mechanic: "Free rapid nails that penetrate one target.", projectileStyle: "tracer", trailLength: 9,
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
   },
   liberator: {
     id: "liberator", name: "Liberator Pistol", category: "sidearm", rarity: "uncommon",
-    damage: 14, fireRate: 0.55, bulletSpeed: 180, manaCost: 0, spread: 0.16,
-    pelletCount: 1, knockback: 12, critChance: 0.34, color: "#D8C6A1",
+    damage: 13, fireRate: 0.5, bulletSpeed: 180, manaCost: 0, spread: 0.16,
+    pelletCount: 1, knockback: 12, critChance: 0.3, critMultiplier: 2.5, color: "#D8C6A1",
     projectileLife: 2.25, minGlobalStage: 4,
     mechanic: "Crude single-shot pistol: slow, inaccurate and brutally strong.", projectileStyle: "bullet",
     trailLength: 12, muzzleEffect: "smoke", recoil: 1.6,
+    renderOffsetX: 11, renderOffsetY: -1, muzzleOffsetX: 20, muzzleOffsetY: -4,
   },
   vector_9: {
     id: "vector_9", name: "Vector-9", category: "smg", rarity: "rare",
-    damage: 1, fireRate: 14, bulletSpeed: 220, manaCost: 0, spread: 0.16,
+    damage: 1, fireRate: 10, bulletSpeed: 220, manaCost: 0, spread: 0.16,
     pelletCount: 1, knockback: 1, critChance: 0.05, color: "#79D7FF",
     projectileLife: 1.35, minGlobalStage: 5,
     mechanic: "Zero-energy hyper-burst SMG: extreme rate, low per-shot damage.", projectileStyle: "tracer",
     trailLength: 17, muzzleEffect: "flash", recoil: 0.15,
+    renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 24, muzzleOffsetY: -4,
   },
   plasma_caster: {
     id: "plasma_caster", name: "Plasma Caster", category: "energy", rarity: "rare",
-    damage: 6, fireRate: 2.2, bulletSpeed: 145, manaCost: 2, spread: 0.05,
+    damage: 7, fireRate: 2.2, bulletSpeed: 145, manaCost: 2, spread: 0.05,
     pelletCount: 1, knockback: 6, critChance: 0.1, color: "#7DFFB3",
     projectileRadius: 4, projectileLife: 2.5, minGlobalStage: 6,
     mechanic: "Slow plasma sphere bends toward nearby enemies.", projectileStyle: "plasma",
@@ -179,7 +190,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   tesla_carbine: {
     id: "tesla_carbine", name: "Tesla Carbine", category: "special", rarity: "rare",
-    damage: 4, fireRate: 3.1, bulletSpeed: 245, manaCost: 2, spread: 0.03,
+    damage: 5, fireRate: 3, bulletSpeed: 245, manaCost: 3, spread: 0.03,
     pelletCount: 1, knockback: 3, critChance: 0.12, color: "#8DF6FF",
     projectileLife: 1.9, minGlobalStage: 7,
     mechanic: "Lightning bolt chains through two nearby targets.", projectileStyle: "lightning",
@@ -188,7 +199,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   ripper_disc: {
     id: "ripper_disc", name: "Ripper Disc", category: "special", rarity: "rare",
-    damage: 5, fireRate: 2, bulletSpeed: 165, manaCost: 2, spread: 0.02,
+    damage: 6, fireRate: 2, bulletSpeed: 165, manaCost: 3, spread: 0.02,
     pelletCount: 1, knockback: 7, critChance: 0.14, color: "#FF6B9A",
     projectileRadius: 5, projectileLife: 3.2, pierce: 2, wallBounces: 3, minGlobalStage: 8,
     mechanic: "Spinning disc pierces enemies and ricochets three times.", projectileStyle: "disc",
@@ -196,7 +207,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   micro_rocket: {
     id: "micro_rocket", name: "Micro-Rocket Pod", category: "launcher", rarity: "rare",
-    damage: 7, fireRate: 1.15, bulletSpeed: 118, manaCost: 4, spread: 0.06,
+    damage: 10, fireRate: 1.25, bulletSpeed: 118, manaCost: 4, spread: 0.06,
     pelletCount: 1, knockback: 12, critChance: 0.1, color: "#FFB36B",
     projectileRadius: 4, projectileLife: 3, minGlobalStage: 10,
     mechanic: "Homing rocket detonates in a damaging blast.", projectileStyle: "rocket",
@@ -206,15 +217,15 @@ export const WEAPONS: Record<string, WeaponData> = {
 
   kingmaker: {
     id: "kingmaker", name: "Kingmaker", category: "sidearm", rarity: "legendary",
-    damage: 8, fireRate: 4.2, bulletSpeed: 225, manaCost: 2, spread: 0.04,
-    pelletCount: 1, knockback: 7, critChance: 0.3, color: "#F9E79F",
+    damage: 7, fireRate: 3, bulletSpeed: 225, manaCost: 2, spread: 0.04,
+    pelletCount: 1, knockback: 7, critChance: 0.3, critMultiplier: 2.25, color: "#F9E79F",
     pierce: 1, projectileLife: 2.2, series: "vanguard", minGlobalStage: 7,
     mechanic: "Royal high-caliber beam round pierces one target.", projectileStyle: "tracer",
     trailLength: 20, muzzleEffect: "smoke", recoil: 0.85,
   },
   storm_repeater: {
     id: "storm_repeater", name: "Storm Repeater", category: "rifle", rarity: "legendary",
-    damage: 4, fireRate: 8.5, bulletSpeed: 230, manaCost: 2, spread: 0.18,
+    damage: 3, fireRate: 4.5, bulletSpeed: 230, manaCost: 3, spread: 0.18,
     pelletCount: 2, knockback: 4, critChance: 0.14, color: "#F4D03F",
     wallBounces: 1, projectileLife: 1.9, series: "vanguard", minGlobalStage: 9,
     mechanic: "Twin storm tracers ricochet from walls.", projectileStyle: "lightning",
@@ -222,7 +233,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   starfall_array: {
     id: "starfall_array", name: "Starfall Array", category: "energy", rarity: "legendary",
-    damage: 5, fireRate: 3.2, bulletSpeed: 245, manaCost: 4, spread: 0.48,
+    damage: 3, fireRate: 1.8, bulletSpeed: 245, manaCost: 5, spread: 0.48,
     pelletCount: 5, knockback: 4, critChance: 0.15, color: "#AF7AC5",
     pierce: 1, projectileLife: 2.15, series: "aether", minGlobalStage: 10,
     mechanic: "Five homing star-plasma shards spread across the room.", projectileStyle: "plasma",
@@ -230,7 +241,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   void_rail: {
     id: "void_rail", name: "Void Rail", category: "energy", rarity: "legendary",
-    damage: 16, fireRate: 0.9, bulletSpeed: 360, manaCost: 7, spread: 0,
+    damage: 18, fireRate: 0.9, bulletSpeed: 360, manaCost: 7, spread: 0,
     pelletCount: 1, knockback: 16, critChance: 0.25, color: "#BB8FCE",
     projectileRadius: 3, pierce: 5, projectileLife: 2.8, series: "aether", minGlobalStage: 12,
     mechanic: "Room-cutting rail beam penetrates six targets.", projectileStyle: "beam",
@@ -238,7 +249,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   dragon_breath: {
     id: "dragon_breath", name: "Dragon Breath", category: "shotgun", rarity: "legendary",
-    damage: 3, fireRate: 1.35, bulletSpeed: 138, manaCost: 5, spread: 0.86,
+    damage: 2, fireRate: 1.1, bulletSpeed: 138, manaCost: 6, spread: 0.86,
     pelletCount: 12, knockback: 7, critChance: 0.08, color: "#FF7043",
     projectileLife: 1.15, statusEffect: "burn", statusDuration: 2.8,
     series: "phoenix", minGlobalStage: 14,
@@ -247,7 +258,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   siege_breaker: {
     id: "siege_breaker", name: "Siege Breaker", category: "launcher", rarity: "legendary",
-    damage: 20, fireRate: 0.65, bulletSpeed: 112, manaCost: 8, spread: 0.02,
+    damage: 24, fireRate: 0.6, bulletSpeed: 112, manaCost: 8, spread: 0.02,
     pelletCount: 1, knockback: 20, critChance: 0.18, color: "#FF8C69",
     projectileRadius: 5, projectileLife: 3, wallBounces: 1,
     statusEffect: "burn", statusDuration: 3, series: "phoenix", minGlobalStage: 16,

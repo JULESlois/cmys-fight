@@ -36,6 +36,7 @@ import {
   type MetaProgress,
 } from "./MetaProgress";
 import type { Enemy } from "./entities/Enemy";
+import { DEFAULT_MANA_RECHARGE_DELAY, DEFAULT_MANA_RECHARGE_RATE, MAX_PLAYER_MANA } from "./entities/Player";
 import {
   createDefaultMetaUpgrades,
   getMetaBonuses,
@@ -142,8 +143,8 @@ export const defaultSave: GameSave = {
     mana: 100,
     maxMana: 100,
     manaRechargeTimer: 0,
-    manaRechargeDelay: 1.25,
-    manaRechargeRate: 12,
+    manaRechargeDelay: DEFAULT_MANA_RECHARGE_DELAY,
+    manaRechargeRate: DEFAULT_MANA_RECHARGE_RATE,
     weaponSlots: ["pistol"],
     activeWeaponSlot: 0,
     currentWeaponId: "pistol",
@@ -795,8 +796,8 @@ export class GameData {
     player.rogueCritTimer = 0;
     player.knightGuardReady = characterId === "knight";
     player.manaRechargeTimer = 0;
-    player.manaRechargeDelay = 1.25;
-    player.manaRechargeRate = 12;
+    player.manaRechargeDelay = DEFAULT_MANA_RECHARGE_DELAY;
+    player.manaRechargeRate = DEFAULT_MANA_RECHARGE_RATE;
   }
 
   private normalizePlayerSkills() {
@@ -810,9 +811,11 @@ export class GameData {
     player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
+    player.maxMana = Math.max(1, Math.min(MAX_PLAYER_MANA, Number(player.maxMana) || 100));
+    player.mana = Math.max(0, Math.min(player.maxMana, Number(player.mana) || 0));
     player.manaRechargeTimer = finiteNonNegative(player.manaRechargeTimer);
-    player.manaRechargeDelay = Math.max(0.2, Number(player.manaRechargeDelay) || 1.25);
-    player.manaRechargeRate = Math.max(0, Number(player.manaRechargeRate) || 12);
+    player.manaRechargeDelay = Math.max(0.2, Number(player.manaRechargeDelay) || DEFAULT_MANA_RECHARGE_DELAY);
+    player.manaRechargeRate = Math.max(0, Number(player.manaRechargeRate) || DEFAULT_MANA_RECHARGE_RATE);
     player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
   }
 

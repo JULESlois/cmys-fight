@@ -90,7 +90,7 @@ export class WeaponController {
       : buffProjectileStatus;
     player.mana -= energyCost;
     if (energyCost > 0) player.manaRechargeTimer = player.manaRechargeDelay;
-    player.fireCooldown = 1 / (weapon.fireRate * modifiers.fireRateMultiplier);
+    player.fireCooldown = 1 / weapon.fireRate;
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;
     player.facing = Math.cos(aimAngle) >= 0 ? "right" : "left";
@@ -108,16 +108,17 @@ export class WeaponController {
 
     for (let volley = 0; volley < volleyCount; volley++) {
       const volleyOffset = dualFireActive ? (volley === 0 ? -0.035 : 0.035) : 0;
-      for (let i = 0; i < weapon.pelletCount + modifiers.extraPellets; i++) {
-        const angle = aimAngle + volleyOffset + (random() - 0.5) * weapon.spread;
+      for (let i = 0; i < weapon.pelletCount; i++) {
+        const angle = aimAngle + volleyOffset + (random() - 0.5) * weapon.spread * modifiers.spreadMultiplier;
         const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus + modifiers.critChanceBonus);
-        const baseDamage = Math.max(1, Math.round(weapon.damage * modifiers.damageMultiplier));
-        const damage = critical ? baseDamage * 2 : baseDamage;
+        const baseDamage = Math.max(1, Math.round(weapon.damage));
+        const criticalMultiplier = Math.max(1, (weapon.critMultiplier ?? 2) + modifiers.critDamageBonus);
+        const damage = critical ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
         projectiles.push(acquireProjectile(
           muzzle.x,
           muzzle.y,
-          Math.cos(angle) * weapon.bulletSpeed,
-          Math.sin(angle) * weapon.bulletSpeed,
+          Math.cos(angle) * weapon.bulletSpeed * modifiers.projectileSpeedMultiplier,
+          Math.sin(angle) * weapon.bulletSpeed * modifiers.projectileSpeedMultiplier,
           weapon.projectileRadius ?? 3,
           damage,
           "player",

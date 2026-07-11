@@ -11,9 +11,9 @@
 
 ## Gameplay smoke
 
-- [ ] Keyboard: start a Run, move, fire, use skill, interact, switch weapon, pause, buy, and select a Buff.
-- [ ] Gamepad: repeat the keyboard smoke with left stick/D-pad and A/B/X/Y/LB/RT/Menu.
-- [ ] Touch: repeat the smoke with joystick, FIRE, USE, SKILL, SWAP, and MENU.
+- [ ] Keyboard: verify WASD movement, J fire, K interact, L skill, I swap, and Esc pause/back.
+- [ ] Gamepad: verify left stick/D-pad movement, X/RT fire, A interact, B skill in combat and back in menus, Y swap, and Start pause.
+- [ ] Touch: repeat the smoke with the virtual D-pad, X/A/B/Y face buttons, and START.
 - [ ] Complete `1-1 → 1-5` and verify Stage persistence, shop inventory, and Boss settlement.
 - [ ] Debug build: use F7/F8/F9/F10 to inspect all chapters and final settlement.
 - [ ] Complete one Normal and one Hard Mode Victory; verify no duplicate Run, challenge, or achievement rewards.

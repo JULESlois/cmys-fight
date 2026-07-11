@@ -57,7 +57,7 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   spore_mimic: enemy({
     id: "spore_mimic", name: "Spore Mimic", theme: "forest", role: "ranged", behavior: "area", visual: "mushroom", introducedAtStage: 3,
     color: "#9CCC65", maxHp: 12, speed: 18, radius: 9, attackDamage: 2, attackInterval: 2.2, attackWindup: 0.72,
-    areaRadius: 26, statusEffect: "poison", statusDuration: 3,
+    areaRadius: 20, statusEffect: "poison", statusDuration: 3,
   }),
   forest_guardian: enemy({
     id: "forest_guardian", name: "Forest Guardian", theme: "forest", role: "boss", behavior: "boss", visual: "boss", bossPattern: "grove",
@@ -92,7 +92,7 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   chain_jailer: enemy({
     id: "chain_jailer", name: "Chain Jailer", theme: "dungeon", role: "ranged", behavior: "area", visual: "jailer", introducedAtStage: 3,
     color: "#78909C", maxHp: 14, speed: 18, radius: 10, attackDamage: 2, attackInterval: 2.0, attackWindup: 0.7,
-    areaRadius: 24, statusEffect: "root", statusDuration: 1,
+    areaRadius: 18, statusEffect: "root", statusDuration: 1,
   }),
   crypt_overseer: enemy({
     id: "crypt_overseer", name: "Crypt Overseer", theme: "dungeon", role: "boss", behavior: "boss", visual: "boss", bossPattern: "crypt",
@@ -113,7 +113,7 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   ice_shaman: enemy({
     id: "ice_shaman", name: "Ice Shaman", theme: "snow", role: "ranged", behavior: "area", visual: "shaman",
     color: "#4FC3F7", maxHp: 9, speed: 21, radius: 8, attackDamage: 3, attackInterval: 2.0, attackWindup: 0.78,
-    areaRadius: 31, statusEffect: "slow", statusDuration: 2.6,
+    areaRadius: 22, statusEffect: "slow", statusDuration: 2.6,
   }),
   snow_turret: enemy({
     id: "snow_turret", name: "Snow Turret", theme: "snow", role: "ranged", behavior: "scatter", visual: "turret",
@@ -154,7 +154,7 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   cinder_oracle: enemy({
     id: "cinder_oracle", name: "Cinder Oracle", theme: "lava", role: "ranged", behavior: "area", visual: "oracle",
     color: "#FF9800", maxHp: 12, speed: 22, radius: 9, attackDamage: 4, attackInterval: 1.9, attackWindup: 0.7,
-    areaRadius: 35, statusEffect: "burn", statusDuration: 3,
+    areaRadius: 24, statusEffect: "burn", statusDuration: 3,
   }),
   code_horse: enemy({
     id: "code_horse", name: "Code Horse", theme: "lava", role: "melee", behavior: "charge", visual: "horse", introducedAtStage: 2,

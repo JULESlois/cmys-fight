@@ -1,5 +1,5 @@
 import { createSeededRandom, normalizeSeed } from "../Random";
-import type { Player } from "../entities/Player";
+import { MAX_PLAYER_MANA, type Player } from "../entities/Player";
 import type { PowerSeries } from "../PowerSeries";
 
 export type BuffRarity = "common" | "uncommon" | "rare" | "legendary";
@@ -26,9 +26,9 @@ export interface BuffDefinition {
 }
 
 export const BUFFS: Record<BuffId, BuffDefinition> = {
-  scattershot: { id: "scattershot", name: "SCATTER CORE", description: "+2 projectiles, -15% damage.", shortCode: "SCT", rarity: "common", category: "weapon" },
-  rapid_fire: { id: "rapid_fire", name: "RAPID CYCLER", description: "+25% fire rate, -10% damage.", shortCode: "RPD", rarity: "common", category: "weapon" },
-  heavy_rounds: { id: "heavy_rounds", name: "HEAVY ROUNDS", description: "+30% damage and knockback, -15% fire rate.", shortCode: "HVY", rarity: "uncommon", category: "weapon" },
+  scattershot: { id: "scattershot", name: "PATTERN CALIBRATOR", description: "Spread -30%; critical chance +5%.", shortCode: "CAL", rarity: "common", category: "weapon" },
+  rapid_fire: { id: "rapid_fire", name: "TRIGGER DISCIPLINE", description: "Spread -20%; projectile speed +12%.", shortCode: "TRG", rarity: "common", category: "weapon" },
+  heavy_rounds: { id: "heavy_rounds", name: "HOLLOW-POINT KIT", description: "Critical damage +35%; knockback +3.", shortCode: "HPT", rarity: "uncommon", category: "weapon" },
   critical_focus: { id: "critical_focus", name: "CRITICAL FOCUS", description: "+15% critical chance.", shortCode: "CRT", rarity: "uncommon", category: "weapon" },
   piercing_shots: { id: "piercing_shots", name: "PHASE ROUNDS", description: "Projectiles pierce one enemy.", shortCode: "PRC", rarity: "rare", category: "weapon" },
   rebound_rounds: { id: "rebound_rounds", name: "REBOUND ROUNDS", description: "Projectiles bounce once from walls.", shortCode: "BNC", rarity: "rare", category: "weapon" },
@@ -41,13 +41,13 @@ export const BUFFS: Record<BuffId, BuffDefinition> = {
   status_resistance: { id: "status_resistance", name: "PURIFIER CORE", description: "Negative status duration reduced by 40%.", shortCode: "RES", rarity: "uncommon", category: "defense" },
   elemental_rounds: { id: "elemental_rounds", name: "EMBER PAYLOAD", description: "Player projectiles inflict Burn.", shortCode: "FIR", rarity: "rare", category: "weapon" },
 
-  overclock_core: { id: "overclock_core", name: "OVERCLOCK CORE", description: "+35% fire rate and +10% damage.", shortCode: "OVR", rarity: "legendary", category: "weapon", series: "vanguard", minGlobalStage: 7 },
-  execution_matrix: { id: "execution_matrix", name: "EXECUTION MATRIX", description: "+30% damage and +15% critical chance.", shortCode: "EXE", rarity: "legendary", category: "weapon", series: "vanguard", minGlobalStage: 9 },
-  phase_storm: { id: "phase_storm", name: "PHASE STORM", description: "+1 projectile, pierce and wall bounce.", shortCode: "PHS", rarity: "legendary", category: "weapon", series: "vanguard", minGlobalStage: 11 },
+  overclock_core: { id: "overclock_core", name: "OVERCLOCK CORE", description: "Critical chance +12%; spread -30%; projectile speed +15%.", shortCode: "OVR", rarity: "legendary", category: "weapon", series: "vanguard", minGlobalStage: 7 },
+  execution_matrix: { id: "execution_matrix", name: "EXECUTION MATRIX", description: "Critical chance +20%; critical damage +50%.", shortCode: "EXE", rarity: "legendary", category: "weapon", series: "vanguard", minGlobalStage: 9 },
+  phase_storm: { id: "phase_storm", name: "PHASE STORM", description: "Projectiles gain pierce, wall bounce and +15% speed.", shortCode: "PHS", rarity: "legendary", category: "weapon", series: "vanguard", minGlobalStage: 11 },
 
-  mana_well: { id: "mana_well", name: "MANA WELL", description: "+40 max Energy, faster recharge and -25% weapon cost.", shortCode: "WEL", rarity: "legendary", category: "skill", series: "aether", minGlobalStage: 7 },
+  mana_well: { id: "mana_well", name: "MANA WELL", description: "+30 max Energy up to 120, faster recharge and -20% weapon cost.", shortCode: "WEL", rarity: "legendary", category: "skill", series: "aether", minGlobalStage: 7 },
   skill_loop: { id: "skill_loop", name: "SKILL LOOP", description: "-30% skill cooldown; skills restore 15 Energy.", shortCode: "LOP", rarity: "legendary", category: "skill", series: "aether", minGlobalStage: 9 },
-  entropy_engine: { id: "entropy_engine", name: "ENTROPY ENGINE", description: "+15% damage; kills restore 4 Energy.", shortCode: "ENT", rarity: "legendary", category: "skill", series: "aether", minGlobalStage: 11 },
+  entropy_engine: { id: "entropy_engine", name: "ENTROPY ENGINE", description: "Kills restore 4 Energy and reduce recharge delay by 20%.", shortCode: "ENT", rarity: "legendary", category: "skill", series: "aether", minGlobalStage: 11 },
 
   aegis_foundry: { id: "aegis_foundry", name: "AEGIS FOUNDRY", description: "+4 max Armor and +75% recharge rate.", shortCode: "AEG", rarity: "legendary", category: "defense", series: "phoenix", minGlobalStage: 7 },
   reactive_plating: { id: "reactive_plating", name: "REACTIVE PLATING", description: "Armor recharge delay 1s; status duration -50%.", shortCode: "RPL", rarity: "legendary", category: "defense", series: "phoenix", minGlobalStage: 9 },
@@ -103,8 +103,9 @@ export class BuffSystem {
       player.maxArmor += 2;
       player.armor = Math.min(player.maxArmor, player.armor + 2);
     } else if (id === "mana_well") {
-      player.maxMana += 40;
-      player.mana = Math.min(player.maxMana, player.mana + 40);
+      const previousMax = player.maxMana;
+      player.maxMana = Math.min(MAX_PLAYER_MANA, player.maxMana + 30);
+      player.mana = Math.min(player.maxMana, player.mana + (player.maxMana - previousMax));
     } else if (id === "aegis_foundry") {
       player.maxArmor += 4;
       player.armor = Math.min(player.maxArmor, player.armor + 4);
@@ -122,26 +123,48 @@ export class BuffSystem {
       ? 1
       : BuffSystem.has(player, "fast_recharge") ? 1.95 : 3;
     player.armorRechargeRate = BuffSystem.has(player, "aegis_foundry") ? 7 : 4;
-    player.manaRechargeDelay = BuffSystem.has(player, "mana_well") ? 0.8 : 1.25;
-    player.manaRechargeRate = BuffSystem.has(player, "mana_well") ? 20 : 12;
+    player.manaRechargeDelay = BuffSystem.has(player, "mana_well") ? 0.9 : 1.35;
+    if (BuffSystem.has(player, "entropy_engine")) player.manaRechargeDelay *= 0.8;
+    player.manaRechargeRate = BuffSystem.has(player, "mana_well") ? 15 : 9;
   }
 
   static getWeaponModifiers(player: Player) {
-    let damageMultiplier = 1, fireRateMultiplier = 1, extraPellets = 0;
-    let critChanceBonus = 0, knockbackBonus = 0, pierce = 0, wallBounces = 0;
+    let spreadMultiplier = 1;
+    let projectileSpeedMultiplier = 1;
+    let critChanceBonus = 0;
+    let critDamageBonus = 0;
+    let knockbackBonus = 0;
+    let pierce = 0;
+    let wallBounces = 0;
     let energyCostMultiplier = 1;
-    if (BuffSystem.has(player, "scattershot")) { extraPellets += 2; damageMultiplier *= 0.85; }
-    if (BuffSystem.has(player, "rapid_fire")) { fireRateMultiplier *= 1.25; damageMultiplier *= 0.9; }
-    if (BuffSystem.has(player, "heavy_rounds")) { damageMultiplier *= 1.3; fireRateMultiplier *= 0.85; knockbackBonus += 3; }
+    if (BuffSystem.has(player, "scattershot")) { spreadMultiplier *= 0.7; critChanceBonus += 0.05; }
+    if (BuffSystem.has(player, "rapid_fire")) { spreadMultiplier *= 0.8; projectileSpeedMultiplier *= 1.12; }
+    if (BuffSystem.has(player, "heavy_rounds")) { critDamageBonus += 0.35; knockbackBonus += 3; }
     if (BuffSystem.has(player, "critical_focus")) critChanceBonus += 0.15;
     if (BuffSystem.has(player, "piercing_shots")) pierce += 1;
     if (BuffSystem.has(player, "rebound_rounds")) wallBounces += 1;
-    if (BuffSystem.has(player, "overclock_core")) { fireRateMultiplier *= 1.35; damageMultiplier *= 1.1; }
-    if (BuffSystem.has(player, "execution_matrix")) { damageMultiplier *= 1.3; critChanceBonus += 0.15; }
-    if (BuffSystem.has(player, "phase_storm")) { extraPellets += 1; pierce += 1; wallBounces += 1; }
-    if (BuffSystem.has(player, "mana_well")) energyCostMultiplier *= 0.75;
-    if (BuffSystem.has(player, "entropy_engine")) damageMultiplier *= 1.15;
-    return { damageMultiplier, fireRateMultiplier, extraPellets, critChanceBonus, knockbackBonus, pierce, wallBounces, energyCostMultiplier };
+    if (BuffSystem.has(player, "overclock_core")) {
+      critChanceBonus += 0.12;
+      spreadMultiplier *= 0.7;
+      projectileSpeedMultiplier *= 1.15;
+    }
+    if (BuffSystem.has(player, "execution_matrix")) { critChanceBonus += 0.2; critDamageBonus += 0.5; }
+    if (BuffSystem.has(player, "phase_storm")) {
+      pierce += 1;
+      wallBounces += 1;
+      projectileSpeedMultiplier *= 1.15;
+    }
+    if (BuffSystem.has(player, "mana_well")) energyCostMultiplier *= 0.8;
+    return {
+      spreadMultiplier,
+      projectileSpeedMultiplier,
+      critChanceBonus,
+      critDamageBonus,
+      knockbackBonus,
+      pierce,
+      wallBounces,
+      energyCostMultiplier,
+    };
   }
 
   static getSkillCooldownMultiplier(player: Player): number {

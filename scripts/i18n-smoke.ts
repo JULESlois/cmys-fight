@@ -20,11 +20,11 @@ import {
 import { META_UPGRADES } from "../src/game/MetaUpgrades";
 import { createDefaultSettings, normalizeSettings, SETTINGS_VERSION } from "../src/game/Settings";
 
-assert.equal(SETTINGS_VERSION, 6);
+assert.equal(SETTINGS_VERSION, 7);
 assert.equal(createDefaultSettings().language, "en");
 assert.equal(normalizeSettings({ version: 5 }).language, "en");
-assert.equal(normalizeSettings({ version: 6, language: "zh-CN" }).language, "zh-CN");
-assert.equal(normalizeSettings({ version: 6, language: "invalid" }).language, "en");
+assert.equal(normalizeSettings({ version: 7, language: "zh-CN" }).language, "zh-CN");
+assert.equal(normalizeSettings({ version: 7, language: "invalid" }).language, "en");
 assert.equal(normalizeLanguage("zh-CN"), "zh-CN");
 assert.equal(normalizeLanguage("zh"), "en");
 
@@ -83,7 +83,7 @@ assert.match(recordsSource, /getAchievementText/);
 assert.match(pauseSource, /projectileLabel/);
 
 console.log(JSON.stringify({
-  settingsMigration: "v5-v6",
+  settingsMigration: "v6-v7",
   languages: ["en", "zh-CN"],
   talents: Object.keys(BUFFS).length,
   weaponMechanics: Object.keys(WEAPONS).length,

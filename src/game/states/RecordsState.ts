@@ -179,7 +179,7 @@ export class RecordsState extends GameState {
     ctx.fillStyle = "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(`${this.pageLabel(page)} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
-    ctx.fillText(t(language, "records.footer"), 160, 238);
+    ctx.fillText(t(language, "records.footer", { cancel: this.engine.input.getCancelPrompt() }), 160, 238);
     ctx.textAlign = "left";
   }
 }

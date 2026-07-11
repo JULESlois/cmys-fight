@@ -31,7 +31,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     color: "#3498DB", // Blue-ish
     maxHp: 4,
     maxArmor: 2,
-    maxMana: 150,
+    maxMana: 120,
     speed: 90,
     starterWeapon: "laser",
     passive: "Clearing a combat room restores 15 energy"

@@ -9,7 +9,7 @@ export type InputDevice = "keyboard" | "gamepad" | "touch";
 
 const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
   fire: [2, 7],
-  skill: [4],
+  skill: [1],
   interact: [0],
   swapWeapon: [3],
   pause: [9],
@@ -17,10 +17,10 @@ const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
 
 const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X/RT",
-  skill: "LB",
+  skill: "B",
   interact: "A",
   swapWeapon: "Y",
-  pause: "MENU",
+  pause: "START",
   moveUp: "L-STICK",
   moveDown: "L-STICK",
   moveLeft: "L-STICK",
@@ -125,6 +125,12 @@ export class Input {
     this.touchPromptMode = mode;
   }
 
+  public getCancelPrompt(): string {
+    if (this.lastDevice === "gamepad") return "B";
+    if (this.lastDevice === "touch" && this.touchPromptMode === "gamepad") return "B";
+    return "ESC";
+  }
+
   public getLastDevice(): InputDevice {
     return this.lastDevice;
   }
@@ -216,6 +222,8 @@ export class Input {
     if (action === "interact") {
       this.setTouchVirtualKey("enter", down);
       this.setTouchVirtualKey(" ", down);
+    } else if (action === "skill" && this.touchPromptMode === "gamepad") {
+      this.setTouchVirtualKey("escape", down);
     } else if (action === "pause") {
       this.setTouchVirtualKey("escape", down);
     }

@@ -6,6 +6,7 @@ import { PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 import { WEAPONS } from "../data/weapons";
+import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont } from "../i18n";
 
 export class CharacterSelectState extends GameState {
@@ -125,7 +126,7 @@ export class CharacterSelectState extends GameState {
       ctx.textAlign = "left";
       MenuRenderer.drawStatBar(ctx, "HP", char.maxHp, 10, x + 5, startY + 65, "#E74C3C");
       MenuRenderer.drawStatBar(ctx, "AR", char.maxArmor, 10, x + 5, startY + 80, "#BDC3C7");
-      MenuRenderer.drawStatBar(ctx, "MP", char.maxMana, 150, x + 5, startY + 95, "#3498DB");
+      MenuRenderer.drawStatBar(ctx, "MP", char.maxMana, MAX_PLAYER_MANA, x + 5, startY + 95, "#3498DB");
       MenuRenderer.drawStatBar(ctx, "SP", char.speed, 150, x + 5, startY + 110, "#F1C40F");
       
       // Weapon (small label)
@@ -169,7 +170,7 @@ export class CharacterSelectState extends GameState {
     ctx.fillText(`↑↓  ${selectedWeapon.name.toUpperCase()}`, 160, 225);
     ctx.fillStyle = selectedUnlocked ? "#BDC3C7" : "#E74C3C";
     ctx.font = uiFont(language, 7);
-    ctx.fillText(selectedUnlocked ? t(language, "character.footer") : t(language, "common.locked"), 160, 236);
+    ctx.fillText(selectedUnlocked ? t(language, "character.footer", { cancel: this.engine.input.getCancelPrompt() }) : t(language, "common.locked"), 160, 236);
     ctx.textAlign = "left";
   }
 }
