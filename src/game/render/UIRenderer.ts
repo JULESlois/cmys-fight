@@ -3,6 +3,7 @@ import { WEAPONS } from "../data/weapons";
 import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { BUFFS } from "../combat/BuffSystem";
+import { WeaponController } from "../combat/WeaponController";
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
@@ -165,7 +166,7 @@ export class UIRenderer {
       ctx.fillText(weapon.name.toUpperCase().slice(0, 11), x + 27, 215);
       ctx.fillStyle = rarityColor(weapon.rarity);
       ctx.font = "6px monospace";
-      ctx.fillText(`EN ${weapon.manaCost}  DMG ${weapon.damage}`, x + 27, 225);
+      ctx.fillText(`EN ${WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, weapon.id))}  DMG ${weapon.damage}`, x + 27, 225);
     };
 
     drawWeaponSlot(0, 8);

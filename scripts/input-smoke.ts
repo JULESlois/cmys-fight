@@ -40,6 +40,9 @@ Object.defineProperty(globalThis, "navigator", {
 });
 
 const { Input } = await import("../src/game/Input");
+const { CharacterSelectState } = await import("../src/game/states/CharacterSelectState");
+const { DungeonState } = await import("../src/game/states/DungeonState");
+const { MenuState } = await import("../src/game/states/MenuState");
 
 function keyboardPulse(input: InstanceType<typeof Input>, key: string) {
   windowTarget.dispatch("keydown", { key, preventDefault() {} });
@@ -122,8 +125,60 @@ promptInput.beginFrame();
 promptInput.update();
 promptInput.cleanup();
 
+const characterInput = new Input();
+let switchedState = "";
+const characterEngine = {
+  input: characterInput,
+  switchState(state: string) { switchedState = state; },
+} as any;
+gamepads = [createPad(false, true)];
+characterInput.beginFrame();
+new CharacterSelectState(characterEngine).update(0);
+assert.equal(switchedState, "hub", "gamepad B returns from character select");
+characterInput.cleanup();
+
+const menuInput = new Input();
+let menuClosed = 0;
+const menuEngine = {
+  input: menuInput,
+  closeMenu() { menuClosed++; },
+} as any;
+gamepads = [createPad(false, true)];
+menuInput.beginFrame();
+new MenuState(menuEngine).update(0);
+assert.equal(menuClosed, 1, "gamepad B closes the system menu");
+menuInput.cleanup();
+
+const shopInput = new Input();
+const shopEngine = { input: shopInput } as any;
+const shopState = new DungeonState(shopEngine) as any;
+shopState.shopOpen = true;
+gamepads = [createPad(false, true)];
+shopInput.beginFrame();
+shopState.updateShop(0);
+assert.equal(shopState.shopOpen, false, "gamepad B closes the shop before gameplay skill handling");
+shopInput.cleanup();
+
+const touchMenuInput = new Input();
+touchMenuInput.setTouchPromptMode("gamepad");
+let touchMenuClosed = 0;
+const touchMenuEngine = {
+  input: touchMenuInput,
+  closeMenu() { touchMenuClosed++; },
+} as any;
+touchMenuInput.setTouchAction("skill", true);
+new MenuState(touchMenuEngine).update(0);
+assert.equal(touchMenuClosed, 1, "touch B closes menus in gamepad label mode");
+touchMenuInput.setTouchAction("skill", false);
+touchMenuInput.setTouchPromptMode("keyboard");
+touchMenuInput.clearJustPressed();
+touchMenuInput.setTouchAction("skill", true);
+assert.equal(touchMenuInput.wasActionPressed("skill"), true);
+assert.equal(touchMenuInput.wasPressed("escape"), false, "keyboard-labelled touch skill remains a gameplay action");
+touchMenuInput.cleanup();
+
 runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok" }));

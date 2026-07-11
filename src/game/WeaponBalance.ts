@@ -4,6 +4,7 @@ export interface WeaponBalanceMetrics {
   expectedDamagePerProjectile: number;
   expectedVolleyDamage: number;
   directDps: number;
+  effectiveEnergyCost: number;
   energyPerSecond: number;
   directDamagePerEnergy: number | null;
   fullManaBurstSeconds: number | null;
@@ -24,6 +25,7 @@ export function getWeaponBalanceMetrics(
   maxMana = 120,
   manaRechargeRate = 9,
   manaRechargeDelay = 1.35,
+  energyCostMultiplier = 1,
 ): WeaponBalanceMetrics {
   const criticalMultiplier = Math.max(1, weapon.critMultiplier ?? 2);
   const criticalChance = Math.max(0, Math.min(1, weapon.critChance));
@@ -32,9 +34,10 @@ export function getWeaponBalanceMetrics(
   );
   const expectedVolleyDamage = expectedDamagePerProjectile * Math.max(1, weapon.pelletCount);
   const directDps = expectedVolleyDamage * Math.max(0, weapon.fireRate);
-  const energyPerSecond = Math.max(0, weapon.manaCost) * Math.max(0, weapon.fireRate);
-  const directDamagePerEnergy = weapon.manaCost > 0
-    ? expectedVolleyDamage / weapon.manaCost
+  const effectiveEnergyCost = Math.max(0, weapon.manaCost) * Math.max(0, energyCostMultiplier);
+  const energyPerSecond = effectiveEnergyCost * Math.max(0, weapon.fireRate);
+  const directDamagePerEnergy = effectiveEnergyCost > 0
+    ? expectedVolleyDamage / effectiveEnergyCost
     : null;
   const fullManaBurstSeconds = energyPerSecond > 0
     ? Math.max(0, maxMana) / energyPerSecond
@@ -50,6 +53,7 @@ export function getWeaponBalanceMetrics(
     expectedDamagePerProjectile: round(expectedDamagePerProjectile),
     expectedVolleyDamage: round(expectedVolleyDamage),
     directDps: round(directDps),
+    effectiveEnergyCost: round(effectiveEnergyCost),
     energyPerSecond: round(energyPerSecond),
     directDamagePerEnergy: directDamagePerEnergy === null ? null : round(directDamagePerEnergy),
     fullManaBurstSeconds: fullManaBurstSeconds === null ? null : round(fullManaBurstSeconds),

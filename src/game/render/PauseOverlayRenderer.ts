@@ -2,6 +2,7 @@ import type { Input } from "../Input";
 import type { Player } from "../entities/Player";
 import { SkillController } from "../combat/SkillController";
 import { BuffSystem } from "../combat/BuffSystem";
+import { WeaponController } from "../combat/WeaponController";
 import { WEAPONS } from "../data/weapons";
 import { getWeaponMechanic, projectileLabel, t, uiFont, wrapLocalized, type Language } from "../i18n";
 
@@ -82,7 +83,7 @@ export class PauseOverlayRenderer {
         ctx.fillText(t(language, "pause.weaponStats", {
           style: projectileLabel(activeWeapon.projectileStyle, language),
           damage: activeWeapon.damage,
-          energy: activeWeapon.manaCost,
+          energy: WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, activeWeapon.id)),
         }), 163, 160);
         ctx.fillStyle = "#9AA7B2";
         ctx.font = uiFont(language, language === "zh-CN" ? 6 : 5);

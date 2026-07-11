@@ -71,7 +71,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 16;
+const CURRENT_SAVE_VERSION = 17;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -252,6 +252,8 @@ export class GameData {
       }
       this.normalizePlayerSkills();
       this.normalizePlayerBuffs();
+      this.migrateCombatBalance(loadedVersion);
+      BuffSystem.applyManaRuntimeStats(this.data.player);
       this.normalizePlayerStatuses();
       this.normalizeRunBonuses();
       this.data.legacyData = { ...defaultSave.legacyData, ...(parsed.legacyData || {}) };
@@ -832,6 +834,15 @@ export class GameData {
       player.buffs.includes("emergency_barrier") && player.emergencyBarrierReady === true;
     player.phoenixProtocolReady =
       player.buffs.includes("phoenix_protocol") && player.phoenixProtocolReady === true;
+  }
+
+  private migrateCombatBalance(loadedVersion: number) {
+    if (loadedVersion >= 17) return;
+    const player = this.data.player;
+    const character = CHARACTERS[player.characterId] ?? CHARACTERS.knight;
+    const manaWellBonus = player.buffs.includes("mana_well") ? 30 : 0;
+    player.maxMana = Math.min(MAX_PLAYER_MANA, character.maxMana + manaWellBonus);
+    player.mana = Math.max(0, Math.min(player.maxMana, Number(player.mana) || 0));
   }
 
   private normalizePlayerStatuses() {

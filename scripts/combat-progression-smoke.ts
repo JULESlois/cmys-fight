@@ -59,7 +59,7 @@ wellPlayer.setWeaponLoadout(["void_rail"], 0);
 wellPlayer.mana = 20;
 const voidShot = WeaponController.fire(wellPlayer, 0, () => 0.5);
 assert.equal(voidShot.fired, true);
-assert.equal(wellPlayer.mana, 14, "Mana Well should reduce Void Rail cost from 7 to 6");
+assert.ok(Math.abs(wellPlayer.mana - 14.4) < 1e-9, "Mana Well should reduce Void Rail cost from 7 to 5.6");
 
 const phoenix = new Player(0, 0);
 phoenix.hp = 1;

@@ -20,6 +20,21 @@ export interface FireWeaponResult {
 }
 
 export class WeaponController {
+  static calculateEnergyCost(baseCost: number, multiplier = 1): number {
+    return Math.round(Math.max(0, baseCost * Math.max(0, multiplier)) * 100) / 100;
+  }
+
+  static getEnergyCost(player: Player, weaponId = player.currentWeaponId): number {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return 0;
+    const multiplier = BuffSystem.getWeaponModifiers(player).energyCostMultiplier;
+    return WeaponController.calculateEnergyCost(weapon.manaCost, multiplier);
+  }
+
+  static formatEnergyCost(value: number): string {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+  }
+
   static switchWeapon(player: Player): boolean {
     if (!player.weaponSlots[1]) return false;
     player.activeWeaponSlot = player.activeWeaponSlot === 0 ? 1 : 0;
@@ -79,8 +94,8 @@ export class WeaponController {
       return { fired: false, projectiles: [], recoil: 0, reason: "cooldown" };
     }
     const modifiers = BuffSystem.getWeaponModifiers(player);
-    const energyCost = Math.max(0, Math.ceil(weapon.manaCost * modifiers.energyCostMultiplier));
-    if (player.mana < energyCost) {
+    const energyCost = WeaponController.calculateEnergyCost(weapon.manaCost, modifiers.energyCostMultiplier);
+    if (player.mana + 1e-9 < energyCost) {
       return { fired: false, projectiles: [], recoil: 0, reason: "energy" };
     }
 
@@ -88,7 +103,7 @@ export class WeaponController {
     const projectileStatus = weapon.statusEffect
       ? { id: weapon.statusEffect, duration: weapon.statusDuration ?? 0 }
       : buffProjectileStatus;
-    player.mana -= energyCost;
+    player.mana = Math.max(0, player.mana - energyCost);
     if (energyCost > 0) player.manaRechargeTimer = player.manaRechargeDelay;
     player.fireCooldown = 1 / weapon.fireRate;
     player.muzzleFlash = 1;

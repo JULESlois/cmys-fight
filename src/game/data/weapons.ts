@@ -103,6 +103,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     pelletCount: 1, knockback: 3, critChance: 0.12, color: "#00F2FE",
     mechanic: "Fast coherent beam with a long luminous trace.", projectileStyle: "beam", minGlobalStage: 5,
     trailLength: 34, beamWidth: 2, muzzleEffect: "beam", impactEffect: "plasma",
+    renderOffsetX: 11, renderOffsetY: -2, muzzleOffsetX: 20, muzzleOffsetY: -4,
   },
   bell_repeater: {
     id: "bell_repeater", name: "Ding-Dong Repeater", category: "rifle", rarity: "common",
@@ -110,6 +111,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     pelletCount: 1, knockback: 2, critChance: 0.07, color: "#F1C40F",
     projectileLife: 1.45, minGlobalStage: 2,
     mechanic: "Rapid ringing tracer rounds.", projectileStyle: "tracer", trailLength: 15,
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
   mask_sprayer: {
     id: "mask_sprayer", name: "Mask Sprayer", category: "shotgun", rarity: "uncommon",
@@ -118,6 +120,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileLife: 1.05, statusEffect: "slow", statusDuration: 1.2, minGlobalStage: 3,
     mechanic: "Short-lived freezing particulate spray.", projectileStyle: "flame",
     drag: 1.5, muzzleEffect: "smoke", impactEffect: "plasma",
+    renderOffsetX: 11, renderOffsetY: -1, muzzleOffsetX: 20, muzzleOffsetY: -4,
   },
   code_scanner: {
     id: "code_scanner", name: "Code Scanner", category: "energy", rarity: "rare",
@@ -126,6 +129,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     pierce: 2, projectileLife: 2.3, minGlobalStage: 6,
     mechanic: "Scanning beam penetrates multiple targets.", projectileStyle: "beam",
     trailLength: 28, beamWidth: 1, muzzleEffect: "beam", impactEffect: "plasma",
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
   swab_lance: {
     id: "swab_lance", name: "Swab Lance", category: "launcher", rarity: "uncommon",
@@ -134,6 +138,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileRadius: 4, projectileLife: 2.8, pierce: 1, minGlobalStage: 4,
     mechanic: "Heavy lance accelerates after leaving the barrel.", projectileStyle: "tracer",
     trailLength: 18, acceleration: 75, muzzleEffect: "smoke", recoil: 1.25,
+    renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
   },
   vat_horse_cannon: {
     id: "vat_horse_cannon", name: "Vat-Horse Cannon", category: "launcher", rarity: "rare",
@@ -143,6 +148,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     statusEffect: "burn", statusDuration: 2.1, minGlobalStage: 7,
     mechanic: "Three bouncing incendiary plasma shells.", projectileStyle: "plasma",
     trailLength: 10, spinRate: 7, muzzleEffect: "rocket", impactEffect: "flame", recoil: 1.4,
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
   },
 
   service_revolver: {
@@ -187,6 +193,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileRadius: 4, projectileLife: 2.5, minGlobalStage: 6,
     mechanic: "Slow plasma sphere bends toward nearby enemies.", projectileStyle: "plasma",
     homingStrength: 2.8, trailLength: 10, muzzleEffect: "electric", impactEffect: "plasma",
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
   tesla_carbine: {
     id: "tesla_carbine", name: "Tesla Carbine", category: "special", rarity: "rare",
@@ -196,6 +203,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     mechanic: "Lightning bolt chains through two nearby targets.", projectileStyle: "lightning",
     trailLength: 24, chainCount: 2, chainRange: 58, chainDamageMultiplier: 0.72,
     muzzleEffect: "electric", impactEffect: "electric",
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
   },
   ripper_disc: {
     id: "ripper_disc", name: "Ripper Disc", category: "special", rarity: "rare",
@@ -204,6 +212,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileRadius: 5, projectileLife: 3.2, pierce: 2, wallBounces: 3, minGlobalStage: 8,
     mechanic: "Spinning disc pierces enemies and ricochets three times.", projectileStyle: "disc",
     spinRate: 16, trailLength: 8, impactEffect: "slash",
+    renderOffsetX: 11, renderOffsetY: -1, muzzleOffsetX: 20, muzzleOffsetY: -4,
   },
   micro_rocket: {
     id: "micro_rocket", name: "Micro-Rocket Pod", category: "launcher", rarity: "rare",
@@ -213,6 +222,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     mechanic: "Homing rocket detonates in a damaging blast.", projectileStyle: "rocket",
     homingStrength: 1.45, acceleration: 42, explosionRadius: 30, explosionDamageMultiplier: 0.8,
     muzzleEffect: "rocket", impactEffect: "explosion", recoil: 1.2,
+    renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
   },
 
   kingmaker: {
@@ -222,6 +232,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     pierce: 1, projectileLife: 2.2, series: "vanguard", minGlobalStage: 7,
     mechanic: "Royal high-caliber beam round pierces one target.", projectileStyle: "tracer",
     trailLength: 20, muzzleEffect: "smoke", recoil: 0.85,
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
   storm_repeater: {
     id: "storm_repeater", name: "Storm Repeater", category: "rifle", rarity: "legendary",
@@ -230,6 +241,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     wallBounces: 1, projectileLife: 1.9, series: "vanguard", minGlobalStage: 9,
     mechanic: "Twin storm tracers ricochet from walls.", projectileStyle: "lightning",
     trailLength: 20, muzzleEffect: "electric", impactEffect: "electric",
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
   },
   starfall_array: {
     id: "starfall_array", name: "Starfall Array", category: "energy", rarity: "legendary",
@@ -238,6 +250,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     pierce: 1, projectileLife: 2.15, series: "aether", minGlobalStage: 10,
     mechanic: "Five homing star-plasma shards spread across the room.", projectileStyle: "plasma",
     homingStrength: 1.25, trailLength: 14, spinRate: 5, muzzleEffect: "electric", impactEffect: "plasma",
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
   void_rail: {
     id: "void_rail", name: "Void Rail", category: "energy", rarity: "legendary",
@@ -246,6 +259,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileRadius: 3, pierce: 5, projectileLife: 2.8, series: "aether", minGlobalStage: 12,
     mechanic: "Room-cutting rail beam penetrates six targets.", projectileStyle: "beam",
     trailLength: 54, beamWidth: 3, muzzleEffect: "beam", impactEffect: "plasma", recoil: 1.5,
+    renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
   },
   dragon_breath: {
     id: "dragon_breath", name: "Dragon Breath", category: "shotgun", rarity: "legendary",
@@ -255,6 +269,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     series: "phoenix", minGlobalStage: 14,
     mechanic: "Twelve-particle incendiary flame cone.", projectileStyle: "flame",
     drag: 1.25, muzzleEffect: "flame", impactEffect: "flame", recoil: 1.2,
+    renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
   },
   siege_breaker: {
     id: "siege_breaker", name: "Siege Breaker", category: "launcher", rarity: "legendary",
@@ -265,6 +280,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     mechanic: "Massive bouncing siege rocket explodes on impact.", projectileStyle: "rocket",
     explosionRadius: 40, explosionDamageMultiplier: 0.9, acceleration: 28,
     muzzleEffect: "rocket", impactEffect: "explosion", recoil: 1.8,
+    renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
   },
 };
 

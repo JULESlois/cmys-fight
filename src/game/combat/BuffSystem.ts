@@ -118,14 +118,21 @@ export class BuffSystem {
     return true;
   }
 
-  static applyRuntimeStats(player: Player): void {
+  static applyManaRuntimeStats(player: Pick<Player, "buffs" | "manaRechargeDelay" | "manaRechargeRate">): void {
+    player.manaRechargeDelay = BuffSystem.has(player, "mana_well") ? 0.9 : 1.35;
+    if (BuffSystem.has(player, "entropy_engine")) player.manaRechargeDelay *= 0.8;
+    player.manaRechargeRate = BuffSystem.has(player, "mana_well") ? 15 : 9;
+  }
+
+  static applyRuntimeStats(player: Pick<
+    Player,
+    "buffs" | "armorRechargeDelay" | "armorRechargeRate" | "manaRechargeDelay" | "manaRechargeRate"
+  >): void {
     player.armorRechargeDelay = BuffSystem.has(player, "reactive_plating")
       ? 1
       : BuffSystem.has(player, "fast_recharge") ? 1.95 : 3;
     player.armorRechargeRate = BuffSystem.has(player, "aegis_foundry") ? 7 : 4;
-    player.manaRechargeDelay = BuffSystem.has(player, "mana_well") ? 0.9 : 1.35;
-    if (BuffSystem.has(player, "entropy_engine")) player.manaRechargeDelay *= 0.8;
-    player.manaRechargeRate = BuffSystem.has(player, "mana_well") ? 15 : 9;
+    BuffSystem.applyManaRuntimeStats(player);
   }
 
   static getWeaponModifiers(player: Player) {
