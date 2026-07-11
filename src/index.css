@@ -3,12 +3,13 @@
 :root {
   --touch-scale: 1;
   --touch-vertical-gutter: 0px;
+  --touch-side-offset: 10px;
 }
 
 .touch-controls {
   inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-  --touch-bottom-offset: 12px;
-  --touch-top-offset: 8px;
+  --touch-bottom-offset: 10px;
+  --touch-top-offset: 7px;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   -webkit-font-smoothing: none;
   text-rendering: geometricPrecision;
@@ -20,31 +21,37 @@
   touch-action: none;
   border: 0;
   border-radius: 0;
-  color: #f8fafc;
-  font: 800 10px/1 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color: #e8f0f7;
+  font: 800 9px/1 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   letter-spacing: 0;
   outline: none;
   cursor: default;
 }
 
 .touch-button:focus-visible {
-  outline: 2px solid #f8fafc;
+  outline: 2px solid rgba(232, 240, 247, 0.9);
   outline-offset: 2px;
 }
 
 .touch-button:active {
-  translate: 0 3px;
+  translate: 0 2px;
 }
 
 .touch-joystick {
   pointer-events: auto;
   position: absolute;
   bottom: var(--touch-bottom-offset);
-  width: clamp(112px, 19vmin, 128px);
-  height: clamp(112px, 19vmin, 128px);
+  width: clamp(98px, 16vmin, 110px);
+  height: clamp(98px, 16vmin, 110px);
   background: transparent;
   transform: scale(var(--touch-scale));
   isolation: isolate;
+  opacity: 0.48;
+  transition: opacity 70ms steps(2, end);
+}
+
+.touch-joystick:active {
+  opacity: 0.78;
 }
 
 .touch-joystick::before,
@@ -59,189 +66,210 @@
   inset: 2px;
   z-index: 0;
   background: #03070d;
-  filter: drop-shadow(0 5px 0 #000) drop-shadow(3px 0 0 #000);
+  filter: drop-shadow(0 4px 0 #000) drop-shadow(2px 0 0 #000);
 }
 
 .touch-joystick::after {
-  inset: 8px;
+  inset: 7px;
   z-index: 1;
   background:
     linear-gradient(90deg, transparent 0 47%, #33465a 47% 53%, transparent 53% 100%),
     linear-gradient(0deg, #172536 0 48%, #24384d 48% 100%);
-  box-shadow: inset 0 -5px 0 #0b141f, inset 0 4px 0 #3c5268;
+  box-shadow: inset 0 -4px 0 #0b141f, inset 0 3px 0 #3c5268;
 }
 
 .touch-stick-knob {
   position: absolute;
   z-index: 4;
-  width: 48px;
-  height: 48px;
-  clip-path: polygon(8px 0, 40px 0, 48px 8px, 48px 40px, 40px 48px, 8px 48px, 0 40px, 0 8px);
+  width: 42px;
+  height: 42px;
+  clip-path: polygon(7px 0, 35px 0, 42px 7px, 42px 35px, 35px 42px, 7px 42px, 0 35px, 0 7px);
   background:
     linear-gradient(90deg, transparent 0 45%, #526b82 45% 55%, transparent 55% 100%),
     linear-gradient(0deg, #1f3348 0 46%, #38546d 46% 100%);
-  filter: drop-shadow(0 4px 0 #02050a) drop-shadow(2px 0 0 #02050a);
+  filter: drop-shadow(0 3px 0 #02050a) drop-shadow(2px 0 0 #02050a);
   pointer-events: none;
 }
 
 .touch-stick-knob::after {
   content: "";
   position: absolute;
-  inset: 8px;
-  border: 3px solid #0e1b28;
+  inset: 7px;
+  border: 2px solid #0e1b28;
   background: #263f56;
-  clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
 }
 
 .touch-dpad-notch {
   position: absolute;
   z-index: 3;
-  width: 9px;
-  height: 5px;
+  width: 8px;
+  height: 4px;
   background: #7190a9;
   box-shadow: 0 2px 0 #0a111a;
   pointer-events: none;
 }
 
-.touch-dpad-notch-up { left: calc(50% - 4px); top: 14px; }
-.touch-dpad-notch-right { right: 14px; top: calc(50% - 2px); rotate: 90deg; }
-.touch-dpad-notch-down { left: calc(50% - 4px); bottom: 14px; }
-.touch-dpad-notch-left { left: 14px; top: calc(50% - 2px); rotate: 90deg; }
+.touch-dpad-notch-up { left: calc(50% - 4px); top: 12px; }
+.touch-dpad-notch-right { right: 12px; top: calc(50% - 2px); rotate: 90deg; }
+.touch-dpad-notch-down { left: calc(50% - 4px); bottom: 12px; }
+.touch-dpad-notch-left { left: 12px; top: calc(50% - 2px); rotate: 90deg; }
 
 .touch-action-cluster {
   pointer-events: none;
   position: absolute;
   bottom: var(--touch-bottom-offset);
-  width: 150px;
-  height: 150px;
+  width: 116px;
+  height: 116px;
   transform: scale(var(--touch-scale));
 }
 
 .touch-face-button {
-  width: 58px;
-  height: 58px;
+  --face-top: #24384d;
+  --face-shadow: #0b141f;
+  width: 46px;
+  height: 46px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  clip-path: polygon(8px 0, 50px 0, 58px 8px, 58px 50px, 50px 58px, 8px 58px, 0 50px, 0 8px);
+  gap: 1px;
+  clip-path: polygon(6px 0, 40px 0, 46px 6px, 46px 40px, 40px 46px, 6px 46px, 0 40px, 0 6px);
   background: var(--face-top);
-  color: #fff;
-  filter: drop-shadow(0 5px 0 var(--face-shadow)) drop-shadow(3px 0 0 #02050a);
-  box-shadow: inset 0 5px 0 rgba(255,255,255,0.16), inset 0 -6px 0 rgba(0,0,0,0.22);
+  color: #e8f0f7;
+  filter: drop-shadow(0 4px 0 var(--face-shadow)) drop-shadow(2px 0 0 #02050a);
+  box-shadow: inset 0 4px 0 rgba(130, 157, 181, 0.26), inset 0 -5px 0 rgba(0,0,0,0.24);
+  opacity: 0.5;
+  transition: opacity 70ms steps(2, end);
 }
 
 .touch-face-button::before {
   content: "";
   position: absolute;
-  inset: 5px;
-  border: 2px solid rgba(255,255,255,0.16);
-  clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
+  inset: 4px;
+  border: 2px solid rgba(113, 144, 169, 0.28);
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
   pointer-events: none;
 }
 
 .touch-face-button:active {
-  filter: drop-shadow(0 2px 0 var(--face-shadow)) drop-shadow(2px 0 0 #02050a);
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.18);
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 0 var(--face-shadow)) drop-shadow(1px 0 0 #02050a);
+  box-shadow: inset 0 2px 0 rgba(130, 157, 181, 0.2), inset 0 -2px 0 rgba(0,0,0,0.2);
 }
 
 .touch-face-letter {
   position: relative;
   z-index: 1;
-  font-size: 20px;
-  line-height: 18px;
-  text-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+  font-size: 16px;
+  line-height: 14px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.46);
+}
+
+.touch-face-letter.touch-label-long {
+  max-width: 40px;
+  overflow: hidden;
+  font-size: 8px;
+  line-height: 9px;
+  letter-spacing: -0.04em;
 }
 
 .touch-face-caption {
   position: relative;
   z-index: 1;
-  font-size: 6px;
-  line-height: 6px;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.88);
+  font-size: 5px;
+  line-height: 5px;
+  letter-spacing: 0.06em;
+  color: rgba(232,240,247,0.82);
 }
 
-.touch-face-x { left: 0; top: 46px; --face-top: #276fa7; --face-shadow: #12344f; }
-.touch-face-a { left: 46px; bottom: 0; --face-top: #2f8f59; --face-shadow: #17462d; }
-.touch-face-b { right: 0; top: 46px; --face-top: #b54646; --face-shadow: #5c2020; }
-.touch-face-y { left: 46px; top: 0; --face-top: #b38a27; --face-shadow: #5b4615; }
+.touch-face-x { left: 0; top: 35px; }
+.touch-face-a { left: 35px; bottom: 0; }
+.touch-face-b { right: 0; top: 35px; }
+.touch-face-y { left: 35px; top: 0; }
 
 .touch-start-button {
   top: var(--touch-top-offset);
-  width: 76px;
-  height: 32px;
+  width: 62px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   transform: scale(var(--touch-scale));
-  transform-origin: top right;
   color: #d8e4ee;
   background: #1b2938;
-  clip-path: polygon(6px 0, 70px 0, 76px 6px, 76px 26px, 70px 32px, 6px 32px, 0 26px, 0 6px);
-  filter: drop-shadow(0 4px 0 #02050a) drop-shadow(2px 0 0 #02050a);
-  box-shadow: inset 0 4px 0 #41566b, inset 0 -4px 0 #0b131d;
-  opacity: 0.9;
+  clip-path: polygon(5px 0, 57px 0, 62px 5px, 62px 21px, 57px 26px, 5px 26px, 0 21px, 0 5px);
+  filter: drop-shadow(0 3px 0 #02050a) drop-shadow(2px 0 0 #02050a);
+  box-shadow: inset 0 3px 0 #41566b, inset 0 -3px 0 #0b131d;
+  opacity: 0.45;
+  transition: opacity 70ms steps(2, end);
 }
 
 .touch-start-button:active {
+  opacity: 0.85;
   filter: drop-shadow(0 1px 0 #02050a) drop-shadow(1px 0 0 #02050a);
 }
 
 .touch-start-icon {
   display: flex;
-  gap: 3px;
+  gap: 2px;
 }
 
 .touch-start-icon i {
   display: block;
-  width: 3px;
-  height: 10px;
+  width: 2px;
+  height: 8px;
   background: #8ba3b8;
   box-shadow: 1px 1px 0 #05090e;
 }
 
+.touch-start-label {
+  font-size: 9px;
+  line-height: 9px;
+}
+
+.touch-start-label.touch-label-long {
+  max-width: 48px;
+  overflow: hidden;
+  font-size: 7px;
+  letter-spacing: -0.03em;
+}
+
 .touch-layout-right .touch-joystick {
-  left: clamp(14px, 3.2vw, 30px);
+  left: var(--touch-side-offset);
   transform-origin: bottom left;
 }
 
 .touch-layout-right .touch-action-cluster {
-  right: clamp(12px, 2.8vw, 28px);
+  right: var(--touch-side-offset);
   transform-origin: bottom right;
 }
 
 .touch-layout-right .touch-start-button {
-  right: clamp(12px, 2.8vw, 28px);
+  right: var(--touch-side-offset);
+  transform-origin: top right;
 }
 
 .touch-layout-left .touch-joystick {
-  right: clamp(14px, 3.2vw, 30px);
+  right: var(--touch-side-offset);
   transform-origin: bottom right;
 }
 
 .touch-layout-left .touch-action-cluster {
-  left: clamp(12px, 2.8vw, 28px);
+  left: var(--touch-side-offset);
   transform-origin: bottom left;
 }
 
 .touch-layout-left .touch-start-button {
-  left: clamp(12px, 2.8vw, 28px);
+  left: var(--touch-side-offset);
   transform-origin: top left;
 }
 
 @media (orientation: landscape) and (max-height: 520px) {
   .touch-action-cluster,
   .touch-joystick {
-    scale: 0.9;
-  }
-}
-
-@media (max-width: 430px) {
-  .touch-action-cluster {
-    width: 150px;
+    scale: 0.92;
   }
 }
 

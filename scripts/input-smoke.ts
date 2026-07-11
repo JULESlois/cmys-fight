@@ -90,8 +90,27 @@ function runContract(label: string, pulse: (input: InstanceType<typeof Input>) =
   input.cleanup();
 }
 
+
+const promptInput = new Input();
+promptInput.setBindings({ fire: "r", skill: "e", interact: " ", swapWeapon: "q", pause: "p" });
+promptInput.setTouchAction("fire", true);
+promptInput.setTouchPromptMode("gamepad");
+assert.equal(promptInput.getPrompt("fire"), "X");
+assert.equal(promptInput.getPrompt("skill"), "B");
+assert.equal(promptInput.getPrompt("interact"), "A");
+assert.equal(promptInput.getPrompt("swapWeapon"), "Y");
+assert.equal(promptInput.getPrompt("pause"), "START");
+promptInput.setTouchPromptMode("keyboard");
+assert.equal(promptInput.getPrompt("fire"), "R");
+assert.equal(promptInput.getPrompt("skill"), "E");
+assert.equal(promptInput.getPrompt("interact"), "SPACE");
+assert.equal(promptInput.getPrompt("swapWeapon"), "Q");
+assert.equal(promptInput.getPrompt("pause"), "P");
+promptInput.setTouchAction("fire", false);
+promptInput.cleanup();
+
 runContract("keyboard", input => keyboardPulse(input, " "));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok" }));

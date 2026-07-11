@@ -46,6 +46,7 @@ export class Engine {
     this.data = new GameData();
     this.data.load();
     this.input.setBindings(this.data.settings.keyBindings);
+    this.input.setTouchPromptMode(this.data.settings.touchLabelMode);
     audio.setMasterVolume(this.data.settings.masterVolume / 100);
     audio.setMusicVolume(this.data.settings.musicVolume / 100);
     audio.setMusicMode(this.data.settings.musicMode);
@@ -142,6 +143,7 @@ export class Engine {
 
   public applySettings() {
     this.input.setBindings(this.data.settings.keyBindings);
+    this.input.setTouchPromptMode(this.data.settings.touchLabelMode);
     audio.setMasterVolume(this.data.settings.masterVolume / 100);
     audio.setMusicVolume(this.data.settings.musicVolume / 100);
     audio.setMusicMode(this.data.settings.musicMode);

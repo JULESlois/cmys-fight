@@ -11,6 +11,7 @@ import {
   type InputAction,
   type MusicMode,
   type TouchHandedness,
+  type TouchLabelMode,
 } from "../Settings";
 
 const OPTIONS = [
@@ -26,6 +27,7 @@ const OPTIONS = [
   "TOUCH CONTROLS",
   "TOUCH LAYOUT",
   "TOUCH SIZE",
+  "TOUCH LABELS",
   "CONTROLS",
   "FULLSCREEN",
   "EXPORT DATA",
@@ -189,6 +191,10 @@ export class SettingsState extends GameState {
       settings.touchHandedness = layouts[(index + direction + layouts.length) % layouts.length];
     } else if (option === "TOUCH SIZE") {
       settings.touchScale = Math.max(0.85, Math.min(1.15, Math.round((settings.touchScale + direction * 0.1) * 20) / 20));
+    } else if (option === "TOUCH LABELS") {
+      const modes: TouchLabelMode[] = ["gamepad", "keyboard"];
+      const index = modes.indexOf(settings.touchLabelMode);
+      settings.touchLabelMode = modes[(index + direction + modes.length) % modes.length];
     } else if (option === "COLOR MODE") {
       const modes: ColorblindMode[] = ["off", "deuteranopia", "tritanopia"];
       const index = modes.indexOf(settings.colorblindMode);
@@ -219,10 +225,10 @@ export class SettingsState extends GameState {
 
     const settings = this.engine.data.settings;
     OPTIONS.forEach((option, index) => {
-      const y = 37 + index * 9;
+      const y = 37 + index * 8;
       const selected = index === this.selectedIndex;
       ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
-      if (selected) ctx.fillRect(32, y - 7, 256, 9);
+      if (selected) ctx.fillRect(32, y - 6, 256, 8);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = "bold 6px monospace";
@@ -241,7 +247,8 @@ export class SettingsState extends GameState {
                     : option === "TOUCH CONTROLS" ? (settings.touchControls ? "AUTO" : "OFF")
                       : option === "TOUCH LAYOUT" ? settings.touchHandedness.toUpperCase()
                         : option === "TOUCH SIZE" ? `${Math.round(settings.touchScale * 100)}%`
-                          : option === "CONTROLS" ? "ENTER"
+                          : option === "TOUCH LABELS" ? settings.touchLabelMode.toUpperCase()
+                            : option === "CONTROLS" ? "ENTER"
                         : option === "FULLSCREEN" ? "TOGGLE"
                           : option === "EXPORT DATA" ? "DOWNLOAD"
                             : option === "IMPORT DATA" ? "SELECT"

@@ -1,9 +1,38 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { Engine } from "../game/Engine";
-import type { InputAction, TouchHandedness } from "../game/Settings";
+import { formatBinding, type InputAction, type TouchHandedness, type TouchLabelMode } from "../game/Settings";
 import { QaPanel } from "./QaPanel";
 import { installQaBridge, isQaMode } from "../game/qa/BrowserQa";
 import { calculateTouchViewportOffsets } from "../game/TouchLayout";
+
+type TouchActionLabel = "fire" | "interact" | "skill" | "swapWeapon" | "pause";
+type TouchLabels = Record<TouchActionLabel, string>;
+
+const GAMEPAD_TOUCH_LABELS: TouchLabels = {
+  fire: "X",
+  interact: "A",
+  skill: "B",
+  swapWeapon: "Y",
+  pause: "START",
+};
+
+function buildTouchLabels(
+  mode: TouchLabelMode,
+  bindings: Record<InputAction, string>,
+): TouchLabels {
+  if (mode === "gamepad") return GAMEPAD_TOUCH_LABELS;
+  return {
+    fire: formatBinding(bindings.fire),
+    interact: formatBinding(bindings.interact),
+    skill: formatBinding(bindings.skill),
+    swapWeapon: formatBinding(bindings.swapWeapon),
+    pause: formatBinding(bindings.pause),
+  };
+}
+
+function sameTouchLabels(a: TouchLabels, b: TouchLabels): boolean {
+  return Object.keys(a).every(key => a[key as TouchActionLabel] === b[key as TouchActionLabel]);
+}
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -14,6 +43,8 @@ export function GameCanvas() {
   const [touchEnabled, setTouchEnabled] = useState(true);
   const [touchHandedness, setTouchHandedness] = useState<TouchHandedness>("right");
   const [touchScale, setTouchScale] = useState(1);
+  const [touchLabelMode, setTouchLabelMode] = useState<TouchLabelMode>("gamepad");
+  const [touchLabels, setTouchLabels] = useState<TouchLabels>(GAMEPAD_TOUCH_LABELS);
   const [stick, setStick] = useState({ x: 0, y: 0 });
   const [status, setStatus] = useState("");
   const [qaReady, setQaReady] = useState(false);
@@ -51,6 +82,7 @@ export function GameCanvas() {
           containerRef.current.style.setProperty("--touch-vertical-gutter", `${offsets.verticalGutter}px`);
           containerRef.current.style.setProperty("--touch-bottom-offset", `${offsets.bottomOffset}px`);
           containerRef.current.style.setProperty("--touch-top-offset", `${offsets.topOffset}px`);
+          containerRef.current.style.setProperty("--touch-side-offset", `${offsets.sideOffset}px`);
         }
       }
     });
@@ -69,6 +101,12 @@ export function GameCanvas() {
       setTouchEnabled(settings?.touchControls !== false);
       setTouchHandedness(settings?.touchHandedness === "left" ? "left" : "right");
       setTouchScale(settings?.touchScale ?? 1);
+      const labelMode: TouchLabelMode = settings?.touchLabelMode === "keyboard" ? "keyboard" : "gamepad";
+      setTouchLabelMode(labelMode);
+      if (settings) {
+        const nextLabels = buildTouchLabels(labelMode, settings.keyBindings);
+        setTouchLabels(previous => sameTouchLabels(previous, nextLabels) ? previous : nextLabels);
+      }
     }, 300);
 
     if (engineRef.current.data.lastRecoveryMessage) {
@@ -195,7 +233,7 @@ export function GameCanvas() {
 
       {touchEnabled && (
         <div
-          className={`touch-controls touch-layout-${touchHandedness} absolute inset-0 pointer-events-none select-none`}
+          className={`touch-controls touch-layout-${touchHandedness} touch-labels-${touchLabelMode} absolute inset-0 pointer-events-none select-none`}
           style={{ "--touch-scale": touchScale } as CSSProperties}
           onContextMenu={event => event.preventDefault()}
           onDragStart={event => event.preventDefault()}
@@ -203,13 +241,13 @@ export function GameCanvas() {
         >
           <button
             type="button"
-            aria-label="Start and pause menu"
+            aria-label={`${touchLabels.pause} button, pause menu`}
             data-gamepad-button="start"
             className="touch-button touch-start-button touch-menu-button"
             {...actionHandlers("pause")}
           >
-            <span className="touch-start-icon" aria-hidden="true"><i /><i /></span>
-            <span>START</span>
+            {touchLabelMode === "gamepad" && <span className="touch-start-icon" aria-hidden="true"><i /><i /></span>}
+            <span className={`touch-start-label ${touchLabels.pause.length > 3 ? "touch-label-long" : ""}`}>{touchLabels.pause}</span>
           </button>
 
           <div
@@ -237,24 +275,24 @@ export function GameCanvas() {
             <div
               className="touch-stick-knob"
               style={{
-                left: `calc(50% - 24px + ${stick.x * 30}px)`,
-                top: `calc(50% - 24px + ${stick.y * 30}px)`,
+                left: `calc(50% - 21px + ${stick.x * 26}px)`,
+                top: `calc(50% - 21px + ${stick.y * 26}px)`,
               }}
             />
           </div>
 
-          <div className="touch-action-cluster touch-face-cluster" aria-label="Virtual gamepad face buttons">
-            <button type="button" aria-label="X button, fire" data-gamepad-button="x" className="touch-button touch-face-button touch-face-x touch-fire-button" {...actionHandlers("fire")}>
-              <span className="touch-face-letter">X</span><span className="touch-face-caption">FIRE</span>
+          <div className="touch-action-cluster touch-face-cluster" aria-label="Virtual action buttons">
+            <button type="button" aria-label={`${touchLabels.fire} button, fire`} data-gamepad-button="x" className="touch-button touch-face-button touch-face-x touch-fire-button" {...actionHandlers("fire")}>
+              <span className={`touch-face-letter ${touchLabels.fire.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.fire}</span><span className="touch-face-caption">FIRE</span>
             </button>
-            <button type="button" aria-label="A button, interact" data-gamepad-button="a" className="touch-button touch-face-button touch-face-a touch-use-button" {...actionHandlers("interact")}>
-              <span className="touch-face-letter">A</span><span className="touch-face-caption">USE</span>
+            <button type="button" aria-label={`${touchLabels.interact} button, interact`} data-gamepad-button="a" className="touch-button touch-face-button touch-face-a touch-use-button" {...actionHandlers("interact")}>
+              <span className={`touch-face-letter ${touchLabels.interact.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.interact}</span><span className="touch-face-caption">USE</span>
             </button>
-            <button type="button" aria-label="B button, use skill" data-gamepad-button="b" className="touch-button touch-face-button touch-face-b touch-skill-button" {...actionHandlers("skill")}>
-              <span className="touch-face-letter">B</span><span className="touch-face-caption">SKILL</span>
+            <button type="button" aria-label={`${touchLabels.skill} button, use skill`} data-gamepad-button="b" className="touch-button touch-face-button touch-face-b touch-skill-button" {...actionHandlers("skill")}>
+              <span className={`touch-face-letter ${touchLabels.skill.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.skill}</span><span className="touch-face-caption">SKILL</span>
             </button>
-            <button type="button" aria-label="Y button, swap weapon" data-gamepad-button="y" className="touch-button touch-face-button touch-face-y touch-swap-button" {...actionHandlers("swapWeapon")}>
-              <span className="touch-face-letter">Y</span><span className="touch-face-caption">SWAP</span>
+            <button type="button" aria-label={`${touchLabels.swapWeapon} button, swap weapon`} data-gamepad-button="y" className="touch-button touch-face-button touch-face-y touch-swap-button" {...actionHandlers("swapWeapon")}>
+              <span className={`touch-face-letter ${touchLabels.swapWeapon.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.swapWeapon}</span><span className="touch-face-caption">SWAP</span>
             </button>
           </div>
         </div>

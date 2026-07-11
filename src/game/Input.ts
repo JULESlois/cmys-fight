@@ -2,6 +2,7 @@ import {
   DEFAULT_KEY_BINDINGS,
   formatBinding,
   type InputAction,
+  type TouchLabelMode,
 } from "./Settings";
 
 export type InputDevice = "keyboard" | "gamepad" | "touch";
@@ -26,6 +27,18 @@ const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   moveRight: "L-STICK",
 };
 
+const TOUCH_GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
+  fire: "X",
+  skill: "B",
+  interact: "A",
+  swapWeapon: "Y",
+  pause: "START",
+  moveUp: "D-PAD",
+  moveDown: "D-PAD",
+  moveLeft: "D-PAD",
+  moveRight: "D-PAD",
+};
+
 export class Input {
   public keys: Record<string, boolean> = {};
   public justPressed: Record<string, boolean> = {};
@@ -45,6 +58,7 @@ export class Input {
   private previousGamepadDirections = { up: false, down: false, left: false, right: false };
   private physicalKeysThisFrame: string[] = [];
   private lastDevice: InputDevice = "keyboard";
+  private touchPromptMode: TouchLabelMode = "gamepad";
 
   private handleKeyDown: (e: KeyboardEvent) => void;
   private handleKeyUp: (e: KeyboardEvent) => void;
@@ -99,8 +113,16 @@ export class Input {
 
   public getPrompt(action: InputAction): string {
     if (this.lastDevice === "gamepad") return GAMEPAD_PROMPTS[action] ?? action.toUpperCase();
-    if (this.lastDevice === "touch") return action === "interact" ? "USE" : action === "swapWeapon" ? "SWAP" : action.toUpperCase();
+    if (this.lastDevice === "touch") {
+      return this.touchPromptMode === "keyboard"
+        ? formatBinding(this.bindings[action])
+        : TOUCH_GAMEPAD_PROMPTS[action] ?? action.toUpperCase();
+    }
     return formatBinding(this.bindings[action]);
+  }
+
+  public setTouchPromptMode(mode: TouchLabelMode): void {
+    this.touchPromptMode = mode;
   }
 
   public getLastDevice(): InputDevice {
