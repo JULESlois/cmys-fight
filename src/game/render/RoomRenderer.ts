@@ -170,19 +170,26 @@ export class RoomRenderer {
         : theme === "lava" ? "rgba(255, 84, 36, 0.25)"
           : theme === "dungeon" ? "rgba(174, 96, 255, 0.22)"
             : "rgba(114, 224, 145, 0.2)";
+      ctx.fillStyle = accent;
+      const outer = [
+        [160, 78], [176, 82], [190, 90], [198, 104], [202, 120], [198, 136], [190, 150], [176, 158],
+        [160, 162], [144, 158], [130, 150], [122, 136], [118, 120], [122, 104], [130, 90], [144, 82],
+      ] as const;
+      outer.forEach(([x, y], index) => ctx.fillRect(x - (index % 2 ? 2 : 3), y - 2, index % 2 ? 4 : 6, 4));
       ctx.strokeStyle = accent;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(160, 120, 42, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.strokeRect(132, 92, 56, 56);
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(160, 120, 28, 0, Math.PI * 2);
-      ctx.stroke();
-      for (let i = 0; i < 8; i++) {
-        const angle = i / 8 * Math.PI * 2;
-        ctx.fillStyle = accent;
-        ctx.fillRect(Math.round(160 + Math.cos(angle) * 36) - 2, Math.round(120 + Math.sin(angle) * 36) - 2, 4, 4);
+      ctx.strokeRect(140, 100, 40, 40);
+      ctx.fillRect(156, 116, 8, 8);
+    } else if (currentRoom?.type === "npc") {
+      ctx.fillStyle = "rgba(155, 89, 182, 0.15)";
+      ctx.fillRect(128, 88, 64, 64);
+      ctx.strokeStyle = "rgba(217, 128, 250, 0.5)";
+      ctx.strokeRect(132, 92, 56, 56);
+      for (let x = 140; x <= 180; x += 8) {
+        ctx.fillStyle = x % 16 === 0 ? "rgba(0,242,254,0.25)" : "rgba(241,196,15,0.2)";
+        ctx.fillRect(x, 98, 4, 44);
       }
     } else if (currentRoom?.type === "treasure") {
       ctx.strokeStyle = "rgba(241, 196, 15, 0.3)";
@@ -224,13 +231,11 @@ export class RoomRenderer {
         const tx = x * TILE_SIZE + 8;
         const ty = y * TILE_SIZE + 14;
         if (tileId === 1) {
-          ctx.beginPath();
-          ctx.ellipse(tx, ty + 2, 9, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillRect(tx - 9, ty, 18, 5);
+          ctx.fillRect(tx - 6, ty + 5, 12, 2);
         } else if (tileId === 4) {
-          ctx.beginPath();
-          ctx.ellipse(tx, ty, 6, 3, 0, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillRect(tx - 6, ty - 1, 12, 4);
+          ctx.fillRect(tx - 3, ty + 3, 6, 2);
         }
       }
     }
@@ -375,15 +380,13 @@ export class RoomRenderer {
           const lX = x * TILE_SIZE + 8;
           const lY = y * TILE_SIZE + 5;
 
-          const lightGlow = ctx.createRadialGradient(lX, lY, 2, lX, lY, lanternPulse);
-          lightGlow.addColorStop(0, "rgba(254, 211, 48, 0.4)");
-          lightGlow.addColorStop(0.3, "rgba(254, 211, 48, 0.15)");
-          lightGlow.addColorStop(1, "rgba(254, 211, 48, 0)");
-
-          ctx.fillStyle = lightGlow;
-          ctx.beginPath();
-          ctx.arc(lX, lY, lanternPulse, 0, Math.PI * 2);
-          ctx.fill();
+          const glowSize = Math.round(lanternPulse);
+          ctx.fillStyle = "rgba(254, 211, 48, 0.05)";
+          ctx.fillRect(lX - glowSize, lY - glowSize, glowSize * 2, glowSize * 2);
+          ctx.fillStyle = "rgba(254, 211, 48, 0.1)";
+          ctx.fillRect(lX - 12, lY - 12, 24, 24);
+          ctx.fillStyle = "rgba(254, 211, 48, 0.2)";
+          ctx.fillRect(lX - 6, lY - 6, 12, 12);
         }
       }
     }
@@ -396,14 +399,11 @@ export class RoomRenderer {
         
         if (theme === "forest") {
           ctx.fillStyle = "rgba(232, 130, 164, 0.8)";
-          ctx.beginPath();
-          ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillRect(-Math.max(1, Math.round(p.size)), -1, Math.max(2, Math.round(p.size * 2)), 2);
         } else if (theme === "snow") {
           ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size * 0.5, 0, Math.PI * 2);
-          ctx.fill();
+          const flake = Math.max(1, Math.round(p.size));
+          ctx.fillRect(-Math.floor(flake / 2), -Math.floor(flake / 2), flake, flake);
         } else if (theme === "lava") {
           ctx.fillStyle = "rgba(243, 156, 18, 0.8)";
           ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);

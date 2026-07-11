@@ -41,6 +41,8 @@ export class MinimapRenderer {
          ctx.fillStyle = "#F1C40F";
        } else if (r.type === "treasure") {
          ctx.fillStyle = r.cleared ? "#F39C12" : "#F1C40F";
+       } else if (r.type === "npc") {
+         ctx.fillStyle = r.interactionCompleted ? "#566573" : "#D980FA";
        } else if (r.type === "legacy_rpg" || r.type === "legacy_tactics") {
          ctx.fillStyle = r.cleared ? "#8E44AD" : "#9B59B6";
        } else {

@@ -193,9 +193,12 @@ export class UIRenderer {
       let statusColor = "#C0392B";
       let statusText = "LOCKED";
       
-      if (currentRoom.type === "start" || currentRoom.type === "npc") {
+      if (currentRoom.type === "start") {
          statusColor = "#7F8C8D";
          statusText = "SAFE";
+      } else if (currentRoom.type === "npc") {
+         statusColor = "#8E44AD";
+         statusText = currentRoom.interactionCompleted ? "SILENT" : "BROADCAST";
       } else if (currentRoom.type === "exit") {
          statusColor = "#16A085";
          statusText = "PORTAL";

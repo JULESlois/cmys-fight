@@ -82,7 +82,10 @@ export class WeaponController {
     }
 
     const modifiers = BuffSystem.getWeaponModifiers(player);
-    const projectileStatus = BuffSystem.getProjectileStatus(player);
+    const buffProjectileStatus = BuffSystem.getProjectileStatus(player);
+    const projectileStatus = weapon.statusEffect
+      ? { id: weapon.statusEffect, duration: weapon.statusDuration ?? 0 }
+      : buffProjectileStatus;
     player.mana -= weapon.manaCost;
     player.fireCooldown = 1 / (weapon.fireRate * modifiers.fireRateMultiplier);
     player.muzzleFlash = 1;
@@ -111,15 +114,15 @@ export class WeaponController {
           muzzle.y,
           Math.cos(angle) * weapon.bulletSpeed,
           Math.sin(angle) * weapon.bulletSpeed,
-          3,
+          weapon.projectileRadius ?? 3,
           damage,
           "player",
-          2,
+          weapon.projectileLife ?? 2,
           weapon.color,
           weapon.knockback + modifiers.knockbackBonus,
           critical,
-          modifiers.pierce,
-          modifiers.wallBounces,
+          modifiers.pierce + (weapon.pierce ?? 0),
+          modifiers.wallBounces + (weapon.wallBounces ?? 0),
           projectileStatus?.id,
           projectileStatus?.duration ?? 0,
         ));

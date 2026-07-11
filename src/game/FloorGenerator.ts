@@ -281,7 +281,10 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
   const specialDeadEnds = deadEnds.filter(room => room !== exitRoom);
   const remainingCombat = rooms.filter(room => room.type === "combat");
   assignRoomType(random() < 0.55 ? "shop" : "treasure", specialDeadEnds, remainingCombat, random);
-  if (random() < 0.5) {
+  const specialRoll = random();
+  if (specialRoll < 0.28) {
+    assignRoomType("npc", specialDeadEnds, remainingCombat, random);
+  } else if (specialRoll < 0.64) {
     assignRoomType("legacy_rpg", specialDeadEnds, remainingCombat, random);
   } else {
     assignRoomType("legacy_tactics", specialDeadEnds, remainingCombat, random);

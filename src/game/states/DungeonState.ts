@@ -25,7 +25,8 @@ import { segmentCircleHit } from "../combat/Collision";
 import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
-import { hashSeed } from "../Random";
+import { createSeededRandom, hashSeed } from "../Random";
+import { WEAPONS } from "../data/weapons";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
@@ -37,6 +38,7 @@ import {
 import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
 import { TutorialSystem } from "../TutorialSystem";
+import { getEnemyDefinition } from "../data/enemies";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -183,6 +185,7 @@ export class DungeonState extends GameState {
   }
 
   private addEnemy(enemy: Enemy) {
+    this.moveToNearestPassable(enemy, enemy.radius);
     this.enemies.push(enemy);
     this.engine.data.discoverEnemy(enemy.enemyId);
   }
@@ -261,12 +264,14 @@ export class DungeonState extends GameState {
 
     normalizeRoomState(currentRoom);
     this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
+    this.moveToNearestPassable(this.player, this.player.radius);
     this.environmentHazards = EnvironmentSystem.generate(floor, currentRoom, this.currentMapData);
     const template = getRoomTemplate(currentRoom);
 
     if (currentRoom && currentRoom.pickups) {
       this.pickups = currentRoom.pickups.map((p: any) => {
         const pickup = acquirePickup(p.x, p.y, p.type, p.value, p.weaponId);
+        this.moveToNearestPassable(pickup, 4);
         pickup.blockedUntilPlayerLeaves = p.blockedUntilPlayerLeaves === true;
         if (p.weaponId) this.engine.data.discoverWeapon(p.weaponId);
         return pickup;
@@ -296,7 +301,12 @@ export class DungeonState extends GameState {
       if (!currentRoom.interactionCompleted) {
         const pts = template.pickupSpawnPoints;
         const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-        this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: "shotgun", opened: false };
+        const random = createSeededRandom(hashSeed(currentRoom.encounterSeed ?? floor.seed, "treasure-weapon"));
+        const weaponPool = Object.values(WEAPONS).filter(weapon =>
+          weapon.id !== "pistol" && (floor.globalStageIndex >= 6 || weapon.rarity !== "rare")
+        );
+        const weapon = weaponPool[Math.floor(random() * weaponPool.length)] ?? WEAPONS.shotgun;
+        this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: weapon.id, opened: false };
       }
       this.setPhase("exploration");
       return;
@@ -1065,6 +1075,12 @@ export class DungeonState extends GameState {
     return { x: point.x * 16 + 8, y: point.y * 16 + 8 };
   }
 
+  private getBroadcastPosition(room: Room): { x: number; y: number } {
+    const template = getRoomTemplate(room);
+    const point = template.pickupSpawnPoints[0] ?? template.legacySpawnPoint ?? { x: 10, y: 7.5 };
+    return { x: point.x * 16 + 8, y: point.y * 16 + 8 };
+  }
+
   private handleInteract(target: any) {
     if (target.type === "portal" && this.portal) {
        this.portal.state = "activating";
@@ -1073,6 +1089,32 @@ export class DungeonState extends GameState {
     } else if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
        this.engine.input.clear();
        this.engine.switchState(target.type, { sourceRoomId: target.roomId });
+    } else if (target.type === "broadcast") {
+       const floor = this.engine.data.data.floor;
+       const room = floor.rooms.find((candidate: Room) => candidate.id === target.roomId);
+       if (room && !room.interactionCompleted) {
+         const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, "broadcast-reward"));
+         const reward = Math.floor(random() * 4);
+         if (reward === 0) {
+           this.pickups.push(acquirePickup(target.x, target.y + 16, "coin", 24));
+         } else if (reward === 1) {
+           this.pickups.push(acquirePickup(target.x, target.y + 16, "mana", 38));
+         } else if (reward === 2) {
+           this.pickups.push(acquirePickup(target.x, target.y + 16, "hp", 2));
+         } else {
+           const broadcastWeapons = ["bell_repeater", "mask_sprayer", "code_scanner", "swab_lance", "vat_horse_cannon"];
+           const weaponId = broadcastWeapons[Math.floor(random() * broadcastWeapons.length)];
+           this.pickups.push(acquirePickup(target.x, target.y + 16, "weapon", 1, weaponId));
+           this.engine.data.discoverWeapon(weaponId);
+         }
+         room.interactionCompleted = true;
+         room.rewardGenerated = true;
+         audio.playClearRoom();
+         this.fx.emitRoomClear(target.x, target.y, this.engine.isPerformanceDegraded());
+         this.syncRoomState();
+         this.syncPlayerState();
+         this.engine.data.save();
+       }
     } else if (target.type === "treasure" && this.chest && !this.chest.opened) {
        this.chest.opened = true;
        audio.playPickup();
@@ -1097,6 +1139,13 @@ export class DungeonState extends GameState {
   private getInteractTarget(): { type: string, x: number, y: number, roomId?: string } | null {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+
+    if (currentRoom?.type === "npc" && !currentRoom.interactionCompleted) {
+      const broadcast = this.getBroadcastPosition(currentRoom);
+      if (Math.hypot(this.player.x - broadcast.x, this.player.y - broadcast.y) < 30) {
+        return { type: "broadcast", x: broadcast.x, y: broadcast.y, roomId: currentRoom.id };
+      }
+    }
 
     if (currentRoom && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") && !currentRoom.interactionCompleted) {
       const template = getRoomTemplate(currentRoom);
@@ -1131,6 +1180,30 @@ export class DungeonState extends GameState {
     }
 
     return null;
+  }
+
+  private moveToNearestPassable(entity: { x: number; y: number }, radius: number): void {
+    if (!this.isCollidingWithMap(entity.x, entity.y, radius)) return;
+    const originX = Math.max(1, Math.min(MAP_WIDTH - 2, Math.floor(entity.x / TILE_SIZE)));
+    const originY = Math.max(1, Math.min(MAP_HEIGHT - 2, Math.floor(entity.y / TILE_SIZE)));
+    for (let distance = 0; distance <= 9; distance++) {
+      for (let dy = -distance; dy <= distance; dy++) {
+        for (let dx = -distance; dx <= distance; dx++) {
+          if (distance > 0 && Math.abs(dx) !== distance && Math.abs(dy) !== distance) continue;
+          const tileX = originX + dx;
+          const tileY = originY + dy;
+          if (tileX <= 0 || tileX >= MAP_WIDTH - 1 || tileY <= 0 || tileY >= MAP_HEIGHT - 1) continue;
+          const x = tileX * TILE_SIZE + TILE_SIZE / 2;
+          const y = tileY * TILE_SIZE + TILE_SIZE / 2;
+          if (this.isCollidingWithMap(x, y, radius)) continue;
+          entity.x = x;
+          entity.y = y;
+          return;
+        }
+      }
+    }
+    entity.x = 160;
+    entity.y = 120;
   }
 
   private isCollidingWithMap(x: number, y: number, radius: number): boolean {
@@ -1530,24 +1603,143 @@ export class DungeonState extends GameState {
       }
       enemy.projectileSpeed = originalSpeed;
     };
+    const fan = (count: number, spread: number, speedScale = 1) => {
+      const originalSpeed = enemy.projectileSpeed;
+      enemy.projectileSpeed *= speedScale;
+      for (let i = 0; i < count; i++) {
+        const offset = (i - (count - 1) / 2) * spread;
+        this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset, 4, 4);
+      }
+      enemy.projectileSpeed = originalSpeed;
+    };
 
-    if (enemy.bossPhase === 1) {
-      radial(enemy.projectileCount, enemy.attackSequence * 0.12);
+    const pattern = getEnemyDefinition(enemy.enemyId).bossPattern;
+    if (pattern === "grove") {
+      if (enemy.bossPhase === 1) {
+        radial(6, enemy.attackSequence * 0.16, 0.95);
+        if (enemy.attackSequence % 2 === 1) fan(3, 0.2);
+      } else if (enemy.bossPhase === 2) {
+        radial(9, enemy.attackSequence * 0.2);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(8, enemy.attackSequence * 0.27, 1.08);
+        radial(8, enemy.attackSequence * 0.27 + Math.PI / 8, 0.78);
+        fan(3, 0.16, 1.15);
+      }
       return;
     }
 
-    if (enemy.bossPhase === 2) {
+    if (pattern === "broadcast") {
+      if (enemy.bossPhase === 1) {
+        fan(3, 0.22, 1.18);
+        if (enemy.attackSequence % 3 === 2) radial(5, enemy.attackSequence * 0.18, 0.9);
+      } else if (enemy.bossPhase === 2) {
+        radial(6, enemy.attackSequence * 0.28, 1.15);
+        fan(5, 0.18, 1.08);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        fan(7, 0.14, 1.25);
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 0.92);
+        if (enemy.attackSequence % 3 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    if (pattern === "crypt") {
+      const crossOffset = enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4;
+      if (enemy.bossPhase === 1) {
+        radial(4, crossOffset, 1.12);
+      } else if (enemy.bossPhase === 2) {
+        radial(6, crossOffset + enemy.attackSequence * 0.08);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(8, crossOffset, 1.2);
+        fan(5, 0.2, 1.08);
+      }
+      return;
+    }
+
+    if (pattern === "kennel") {
+      if (enemy.bossPhase === 1) {
+        fan(3, 0.28, 1.18);
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 0.88);
+      } else if (enemy.bossPhase === 2) {
+        fan(5, 0.2, 1.12);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(8, enemy.attackSequence * 0.18, 1.2);
+        fan(3, 0.12, 1.3);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    if (pattern === "frost") {
+      if (enemy.bossPhase === 1) {
+        radial(4, enemy.attackSequence % 2 ? Math.PI / 4 : 0, 1.15);
+        this.spawnEnemyProjectile(enemy, enemy.attackAngle, 4, 4);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.12, 1.05);
+        fan(3, 0.24, 1.18);
+      } else {
+        fan(7, 0.16, 1.22);
+        radial(6, enemy.attackSequence * 0.2, 0.9);
+      }
+      return;
+    }
+
+    if (pattern === "sample") {
+      if (enemy.bossPhase === 1) {
+        fan(3, 0.3, 1.2);
+        this.spawnEnemyProjectile(enemy, enemy.attackAngle, 4, 4);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.1, 1.02);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        fan(7, 0.13, 1.25);
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 1.1);
+        if (enemy.attackSequence % 3 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    if (pattern === "inferno") {
+      if (enemy.bossPhase === 1) {
+        radial(6, enemy.attackSequence * 0.32, 1.08);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.34, 1.12);
+        radial(8, -enemy.attackSequence * 0.22 + Math.PI / 8, 0.82);
+      } else {
+        radial(12, enemy.attackSequence * 0.24, 1.18);
+        fan(5, 0.18, 1.24);
+      }
+      return;
+    }
+
+    if (pattern === "code") {
+      if (enemy.bossPhase === 1) {
+        radial(5, enemy.attackSequence * 0.4, 1.15);
+        if (enemy.attackSequence % 3 === 0) fan(3, 0.16, 1.05);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.28, 1.2);
+        if (enemy.attackSequence % 3 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(10, enemy.attackSequence * 0.32, 1.28);
+        radial(10, -enemy.attackSequence * 0.2 + Math.PI / 10, 0.85);
+        fan(3, 0.1, 1.3);
+        if (enemy.attackSequence % 3 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    if (enemy.bossPhase === 1) radial(enemy.projectileCount, enemy.attackSequence * 0.12);
+    else if (enemy.bossPhase === 2) {
       radial(enemy.projectileCount + 2, enemy.attackSequence * 0.2, 1.08);
       this.spawnEnemyProjectile(enemy, enemy.attackAngle, 4, 4);
-      return;
+    } else {
+      fan(5, 0.18);
+      radial(Math.max(6, enemy.projectileCount), enemy.attackSequence * 0.28, 1.15);
     }
-
-    const fanCount = 5;
-    for (let i = 0; i < fanCount; i++) {
-      const offset = (i - 2) * 0.18;
-      this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset, 4, 4);
-    }
-    radial(Math.max(6, enemy.projectileCount), enemy.attackSequence * 0.28, 1.15);
   }
 
   private updateProjectiles(dt: number) {
@@ -1739,16 +1931,29 @@ export class DungeonState extends GameState {
     const doorLocked = this.roomPhase !== "exploration";
     this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", doorLocked);
     
-    // Draw telegraphs
+    // Pixel-grid enemy arrival telegraphs.
     for (const t of this.encounterCtrl.telegraphs) {
-       ctx.strokeStyle = t.isElite ? "rgba(241, 196, 15, 0.95)" : "rgba(231, 76, 60, 0.8)";
-       ctx.lineWidth = 2;
-       ctx.beginPath();
-       const rad = (t.type === "boss" ? 24 : 12) + (t.isElite ? 4 : 0);
-       ctx.arc(t.x, t.y, rad, 0, Math.PI * 2);
-       ctx.stroke();
-       ctx.fillStyle = t.isElite ? "rgba(241, 196, 15, 0.18)" : "rgba(231, 76, 60, 0.2)";
-       ctx.fill();
+      const blink = Math.floor(t.timeLeft * 14) % 2 === 0;
+      const color = t.isElite ? "rgba(241, 196, 15, 0.95)" : "rgba(231, 76, 60, 0.9)";
+      const half = (t.type === "boss" ? 22 : 11) + (t.isElite ? 4 : 0);
+      ctx.fillStyle = blink ? color : "rgba(255,255,255,0.45)";
+      const size = t.type === "boss" ? 8 : 5;
+      const corners = [
+        [t.x - half, t.y - half, size, 2], [t.x - half, t.y - half, 2, size],
+        [t.x + half - size, t.y - half, size, 2], [t.x + half - 2, t.y - half, 2, size],
+        [t.x - half, t.y + half - 2, size, 2], [t.x - half, t.y + half - size, 2, size],
+        [t.x + half - size, t.y + half - 2, size, 2], [t.x + half - 2, t.y + half - size, 2, size],
+      ] as const;
+      for (const [x, y, w, h] of corners) ctx.fillRect(Math.round(x), Math.round(y), w, h);
+      ctx.fillStyle = t.isElite ? "rgba(241,196,15,0.2)" : "rgba(231,76,60,0.18)";
+      const cell = t.type === "boss" ? 8 : 6;
+      for (let y = -1; y <= 1; y++) {
+        for (let x = -1; x <= 1; x++) {
+          if ((x + y + (blink ? 1 : 0)) % 2 === 0) {
+            ctx.fillRect(Math.round(t.x + x * cell - cell / 2), Math.round(t.y + y * cell - cell / 2), cell - 1, cell - 1);
+          }
+        }
+      }
     }
 
     for (const arc of this.lightningArcs) {
@@ -1785,6 +1990,31 @@ export class DungeonState extends GameState {
     if (currentRoom?.type === "shop") {
       const shop = this.getShopPosition(currentRoom);
       ShopRenderer.drawMerchant(ctx, shop.x, shop.y, time);
+    }
+
+    if (currentRoom?.type === "npc") {
+      const broadcast = this.getBroadcastPosition(currentRoom);
+      ctx.save();
+      ctx.translate(Math.round(broadcast.x), Math.round(broadcast.y));
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(-12, 9, 24, 4);
+      ctx.fillStyle = currentRoom.interactionCompleted ? "#4D5656" : "#8E44AD";
+      ctx.fillRect(-10, -14, 20, 24);
+      ctx.fillStyle = "#17202A";
+      ctx.fillRect(-7, -11, 14, 9);
+      const signal = Math.floor(time * 6) % 4;
+      const colors = ["#F1C40F", "#ECF0F1", "#2ECC71", "#FF7043"];
+      colors.forEach((color, index) => {
+        ctx.fillStyle = currentRoom.interactionCompleted ? "#566573" : color;
+        ctx.fillRect(-6 + index * 4, -9 + ((index + signal) % 2), 3, 5);
+      });
+      ctx.fillStyle = "#BDC3C7";
+      ctx.fillRect(-7, 1, 4, 5);
+      ctx.fillRect(3, 1, 4, 5);
+      ctx.fillStyle = "#09101A";
+      ctx.fillRect(-8, 10, 4, 5);
+      ctx.fillRect(4, 10, 4, 5);
+      ctx.restore();
     }
 
     for (const p of this.pickups) {

@@ -12,6 +12,7 @@ export class PromptRenderer {
     else if (target.type === "legacy_tactics") action = "TACTICS";
     else if (target.type === "treasure") action = "OPEN";
     else if (target.type === "shop") action = "SHOP";
+    else if (target.type === "broadcast") action = "TUNE IN";
     const msg = action ? `[${interactPrompt}] ${action}` : "";
 
     if (msg) {

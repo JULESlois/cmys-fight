@@ -7,6 +7,7 @@ import { getStageDifficulty } from "./combat/StageDifficulty";
 import { EnemyFactory } from "./EnemyFactory";
 import {
   getBossDefinition,
+  getBossPool,
   getEnemyPool,
   getThemeForChapter,
   type EnemyRole,
@@ -41,7 +42,7 @@ export class EncounterFactory {
 
     if (room.type === "boss") {
       const point = template.enemySpawnPoints[0] ?? { x: 10, y: 6 };
-      const boss = getBossDefinition(theme);
+      const boss = choose(getBossPool(theme), random);
       return {
         id: room.encounterId ?? `enc_boss_${stage.globalStageIndex}_${room.id}`,
         waves: [{
@@ -70,8 +71,10 @@ export class EncounterFactory {
       for (let i = 0; i < spawnCount; i++) {
         const point = points[i];
         const role: EnemyRole = random() < difficulty.rangedChance ? "ranged" : "melee";
-        const rolePool = getEnemyPool(theme, role);
-        const definition = choose(rolePool.length > 0 ? rolePool : getEnemyPool(theme), random);
+        const rolePool = getEnemyPool(theme, role, stage.stageIndex);
+        const fullPool = getEnemyPool(theme, undefined, stage.stageIndex);
+        const candidates = rolePool.filter(candidate => !spawns.some(spawn => spawn.enemyId === candidate.id));
+        const definition = choose(candidates.length > 0 ? candidates : rolePool.length > 0 ? rolePool : fullPool, random);
         spawns.push({
           x: point.x * 16 + 8,
           y: point.y * 16 + 8,
@@ -82,9 +85,17 @@ export class EncounterFactory {
       }
 
       if (spawns.length > 1 && spawns.every(spawn => spawn.type === "ranged")) {
-        const melee = choose(getEnemyPool(theme, "melee"), random);
+        const melee = choose(getEnemyPool(theme, "melee", stage.stageIndex), random);
         spawns[0].type = "melee";
         spawns[0].enemyId = melee.id;
+      }
+      if (spawns.length > 2 && spawns.every(spawn => spawn.type === "melee")) {
+        const rangedPool = getEnemyPool(theme, "ranged", stage.stageIndex);
+        if (rangedPool.length > 0) {
+          const ranged = choose(rangedPool, random);
+          spawns[spawns.length - 1].type = "ranged";
+          spawns[spawns.length - 1].enemyId = ranged.id;
+        }
       }
 
       waves.push({

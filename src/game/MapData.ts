@@ -1,5 +1,6 @@
 import { Room } from "./FloorGenerator";
 import { ROOM_TEMPLATES, RoomTemplate } from "./data/roomTemplates";
+import { applyRoomVariant } from "./RoomVariantSystem";
 
 export const TILE_SIZE = 16;
 export const MAP_WIDTH = 20;
@@ -68,8 +69,9 @@ export function getRoomTemplate(currentRoom: Room | undefined): RoomTemplate {
 export function getMapData(currentRoom: Room | undefined, theme: string): number[] {
   const template = getRoomTemplate(currentRoom);
   const data = [...template.tiles];
-  
+
   if (currentRoom) {
+    applyRoomVariant(data, currentRoom, theme, template, MAP_WIDTH, MAP_HEIGHT);
     const applyDoor = (zone: {xMin: number, xMax: number, yMin: number, yMax: number}) => {
       for (let y = zone.yMin; y <= zone.yMax; y++) {
         for (let x = zone.xMin; x <= zone.xMax; x++) {
