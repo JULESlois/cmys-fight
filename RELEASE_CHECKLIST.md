@@ -43,3 +43,12 @@
 - [ ] Cache version in `public/sw.js` is incremented for each incompatible release.
 - [ ] `dist/` contains manifest, service worker, icons, client assets, and `server.cjs`.
 - [ ] Release commit and tag are created only after the checklist is signed off.
+
+## Browser QA mode
+
+- [ ] Open `/?qa=1`, tap once, reload once, then run all checks.
+- [ ] Confirm no failed checks and review any warnings.
+- [ ] Capture Forest, Dungeon, Snow, Lava and Boss screenshots.
+- [ ] Run the external-music fallback probe and confirm procedural recovery.
+- [ ] Verify `window.__CMYS_QA__.snapshot()` in DevTools.
+- [ ] Repeat the normal entry URL without `qa=1` and confirm no QA UI is present.

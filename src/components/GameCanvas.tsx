@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Engine } from "../game/Engine";
 import type { InputAction } from "../game/Settings";
+import { QaPanel } from "./QaPanel";
+import { installQaBridge, isQaMode } from "../game/qa/BrowserQa";
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,6 +13,8 @@ export function GameCanvas() {
   const [touchEnabled, setTouchEnabled] = useState(true);
   const [stick, setStick] = useState({ x: 0, y: 0 });
   const [status, setStatus] = useState("");
+  const [qaReady, setQaReady] = useState(false);
+  const qaEnabled = useRef(isQaMode()).current;
 
   useEffect(() => {
     if (!status) return;
@@ -36,6 +40,10 @@ export function GameCanvas() {
     canvasRef.current.width = containerRef.current.clientWidth;
     canvasRef.current.height = containerRef.current.clientHeight;
     engineRef.current.init(canvasRef.current);
+    const removeQaBridge = qaEnabled
+      ? installQaBridge(engineRef.current, canvasRef.current)
+      : () => {};
+    if (qaEnabled) setQaReady(true);
 
     const settingsTimer = window.setInterval(() => {
       setTouchEnabled(engineRef.current?.data.settings.touchControls !== false);
@@ -78,10 +86,11 @@ export function GameCanvas() {
       document.removeEventListener("game:import-data", importData);
       document.removeEventListener("game:fullscreen", toggleFullscreen);
       window.clearInterval(settingsTimer);
+      removeQaBridge();
       engineRef.current?.cleanup();
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [qaEnabled]);
 
 
   const importSave = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -139,12 +148,16 @@ export function GameCanvas() {
   return (
     <div ref={containerRef} className="game-shell relative w-full h-full bg-black flex items-center justify-center overflow-hidden focus:outline-none" tabIndex={0}>
       <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={importSave} />
-      <canvas ref={canvasRef} className="block w-full h-full" style={{ imageRendering: "pixelated", touchAction: "none" }} />
+      <canvas ref={canvasRef} data-testid="game-canvas" className="block w-full h-full" style={{ imageRendering: "pixelated", touchAction: "none" }} />
 
       {status && (
         <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] left-1/2 z-30 -translate-x-1/2 rounded border border-cyan-300/50 bg-slate-950/90 px-3 py-1 font-mono text-[10px] text-cyan-100">
           {status}
         </div>
+      )}
+
+      {qaEnabled && qaReady && engineRef.current && canvasRef.current && (
+        <QaPanel engine={engineRef.current} canvas={canvasRef.current} />
       )}
 
       {touchEnabled && (

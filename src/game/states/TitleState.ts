@@ -4,6 +4,7 @@ import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
+import { APP_VERSION } from "../../version";
 import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 
 export class TitleState extends GameState {
@@ -130,7 +131,7 @@ export class TitleState extends GameState {
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
     ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
-    ctx.fillText("v0.8.0 - AUDIOVISUAL PASS", 160, 230);
+    ctx.fillText(`v${APP_VERSION} - BROWSER QA`, 160, 230);
     ctx.textAlign = "left";
   }
 }

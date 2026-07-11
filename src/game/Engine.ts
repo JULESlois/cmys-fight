@@ -146,6 +146,22 @@ export class Engine {
     audio.setMusicMode(this.data.settings.musicMode);
   }
 
+  public getOverlayState(): string | null {
+    return this.overlayState;
+  }
+
+  public qaJumpToStage(globalStageIndex: number): boolean {
+    if (!this.debugMode) return false;
+    this.rebuildStateAfterDataChange("dungeon", () => jumpToStage(this.data, globalStageIndex));
+    return true;
+  }
+
+  public qaGrantDebugLoadout(): boolean {
+    if (!this.debugMode) return false;
+    this.rebuildStateAfterDataChange("dungeon", () => grantDebugLoadout(this.data));
+    return true;
+  }
+
   private syncStateMusic(params?: any) {
     if (this.currentState === "dungeon") return;
     const stateScenes: Record<string, MusicScene> = {

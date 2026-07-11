@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, Schema, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
+import { APP_VERSION } from "./src/version";
 
 dotenv.config();
 
@@ -13,7 +14,7 @@ async function startServer() {
   app.use(express.json());
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, service: "cmys-fight", version: "0.8.0" });
+    res.json({ ok: true, service: "cmys-fight", version: APP_VERSION });
   });
 
   // AI Dialog Endpoint

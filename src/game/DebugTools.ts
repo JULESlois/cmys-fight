@@ -6,7 +6,7 @@ import { BUFFS, BuffSystem, type BuffId } from "./combat/BuffSystem";
 export function isDebugMode(): boolean {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
-  return Boolean((import.meta as any).env?.DEV) || params.get("debug") === "1";
+  return Boolean((import.meta as any).env?.DEV) || params.get("debug") === "1" || params.get("qa") === "1";
 }
 
 export function jumpToStage(data: GameData, globalStageIndex: number): void {

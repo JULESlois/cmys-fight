@@ -11,6 +11,22 @@ function midiToFrequency(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
+export type AudioSourceStatus = "unsupported" | "blocked" | "off" | "external" | "procedural" | "idle";
+
+export interface AudioDiagnostics {
+  supported: boolean;
+  contextState: string;
+  unlocked: boolean;
+  scene: MusicScene;
+  mode: MusicMode;
+  source: AudioSourceStatus;
+  masterVolume: number;
+  musicVolume: number;
+  externalConfigured: boolean;
+  externalFailed: boolean;
+  attribution?: string;
+}
+
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -107,6 +123,69 @@ export class AudioManager {
 
   getMusicScene(): MusicScene {
     return this.scene;
+  }
+
+  getDiagnostics(): AudioDiagnostics {
+    const externalConfigured = Boolean(resolveExternalMusicUrl(this.externalConfig.tracks?.[this.scene]));
+    let source: AudioSourceStatus = "idle";
+    if (!this.ctx) source = "unsupported";
+    else if (this.musicMode === "off" || this.masterVolume <= 0 || this.musicVolume <= 0) source = "off";
+    else if (!this.unlocked || this.ctx.state !== "running") source = "blocked";
+    else if (this.externalAudio) source = "external";
+    else if (this.musicTimer) source = "procedural";
+    return {
+      supported: Boolean(this.ctx),
+      contextState: this.ctx?.state ?? "unavailable",
+      unlocked: this.unlocked,
+      scene: this.scene,
+      mode: this.musicMode,
+      source,
+      masterVolume: this.masterVolume,
+      musicVolume: this.musicVolume,
+      externalConfigured,
+      externalFailed: this.externalFailedScene === this.scene,
+      attribution: this.externalConfig.attribution,
+    };
+  }
+
+  async probeExternalFallback(timeoutMs = 2400): Promise<{ passed: boolean; source: string }> {
+    if (typeof Audio === "undefined") return { passed: false, source: "unsupported" };
+    await this.unlock();
+    if (!this.ctx || !this.unlocked) return { passed: false, source: this.getDiagnostics().source };
+
+    const previousConfig = this.externalConfig;
+    const previousMode = this.musicMode;
+    const previousScene = this.scene;
+    const previousFailure = this.externalFailedScene;
+    const probeScene = this.scene;
+
+    this.externalConfig = {
+      attribution: "QA failure probe",
+      tracks: { [probeScene]: "http://127.0.0.1:9/__cmys_missing_audio__.mp3" },
+    };
+    this.musicMode = "external";
+    this.externalFailedScene = null;
+    this.restartMusic();
+
+    const deadline = Date.now() + timeoutMs;
+    let passed = false;
+    while (Date.now() < deadline) {
+      const diagnostics = this.getDiagnostics();
+      if (diagnostics.source === "procedural" && diagnostics.externalFailed) {
+        passed = true;
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    const source = this.getDiagnostics().source;
+
+    this.stopMusic();
+    this.externalConfig = previousConfig;
+    this.musicMode = previousMode;
+    this.scene = previousScene;
+    this.externalFailedScene = previousFailure;
+    this.restartMusic();
+    return { passed, source };
   }
 
   setMusicScene(scene: MusicScene) {
