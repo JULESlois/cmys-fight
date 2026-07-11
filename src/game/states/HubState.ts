@@ -10,6 +10,7 @@ import { MenuRenderer } from "../render/MenuRenderer";
 import { GameState } from "./GameState";
 import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 import { CHALLENGES, getDailyChallengeId } from "../ChallengeSystem";
+import { getChallengeText, getMetaUpgradeText, t, uiFont } from "../i18n";
 
 export class HubState extends GameState {
   private selectedIndex = 0;
@@ -27,7 +28,7 @@ export class HubState extends GameState {
       this.engine.data.setPreferredChallenge(undefined);
     }
     this.selectedIndex = Math.min(this.selectedIndex, META_UPGRADE_IDS.length - 1);
-    this.message = "SPACE: PREPARE RUN";
+    this.message = t(this.engine.data.settings.language, "hub.prepare");
     this.refundArmed = false;
   }
 
@@ -57,24 +58,30 @@ export class HubState extends GameState {
     }
     if (this.engine.input.wasPressed("h")) {
       if (!this.engine.data.meta.hardModeUnlocked) {
-        this.message = "HARD MODE: COMPLETE A RUN FIRST";
+        this.message = t(this.engine.data.settings.language, "hub.hardLockedMessage");
         audio.playHurt();
       } else {
         const enabled = !this.engine.data.meta.preferredHardMode;
         this.engine.data.setPreferredHardMode(enabled);
-        this.message = `HARD MODE ${enabled ? "ENABLED" : "DISABLED"}`;
+        this.message = t(this.engine.data.settings.language, "hub.hardState", {
+          state: t(this.engine.data.settings.language, enabled ? "common.enabled" : "common.disabled"),
+        });
         audio.playPickup();
       }
     }
     if (this.engine.input.wasPressed("c")) {
       if (!this.engine.data.meta.hardModeUnlocked || !this.engine.data.meta.preferredHardMode) {
-        this.message = "ENABLE HARD MODE BEFORE SELECTING A CHALLENGE";
+        this.message = t(this.engine.data.settings.language, "hub.challengeNeedsHard");
         audio.playHurt();
       } else {
         const daily = getDailyChallengeId();
         const next = this.engine.data.meta.preferredChallengeId === daily ? undefined : daily;
         this.engine.data.setPreferredChallenge(next);
-        this.message = next ? `${CHALLENGES[next].name} SELECTED` : "CHALLENGE DISABLED";
+        const language = this.engine.data.settings.language;
+        const challengeName = next ? getChallengeText(next, CHALLENGES[next], language).name : "";
+        this.message = next
+          ? t(language, "hub.challengeSelected", { name: challengeName })
+          : t(language, "hub.challengeDisabled");
         audio.playPickup();
       }
     }
@@ -84,10 +91,12 @@ export class HubState extends GameState {
     }
     if (this.engine.input.wasPressed("r")) {
       this.refundArmed = true;
-      this.message = "PRESS Y TO REFUND ALL UPGRADES";
+      this.message = t(this.engine.data.settings.language, "hub.refundConfirm");
     } else if (this.refundArmed && this.engine.input.wasPressed("y")) {
       const refunded = this.engine.data.refundMetaUpgrades();
-      this.message = refunded > 0 ? `REFUNDED ${refunded} SHARDS` : "NO UPGRADES TO REFUND";
+      this.message = refunded > 0
+        ? t(this.engine.data.settings.language, "hub.refunded", { amount: refunded })
+        : t(this.engine.data.settings.language, "hub.noRefund");
       this.refundArmed = false;
       refunded > 0 ? audio.playPickup() : audio.playHurt();
     }
@@ -97,13 +106,14 @@ export class HubState extends GameState {
     const id = META_UPGRADE_IDS[this.selectedIndex] as MetaUpgradeId;
     const result = this.engine.data.purchaseMetaUpgrade(id);
     if (result.success) {
-      this.message = `${META_UPGRADES[id].name} UPGRADED`;
+      const localized = getMetaUpgradeText(id, META_UPGRADES[id], this.engine.data.settings.language);
+      this.message = t(this.engine.data.settings.language, "hub.upgraded", { name: localized.name });
       audio.playPickup();
     } else if (result.reason === "max") {
-      this.message = "UPGRADE ALREADY MAXED";
+      this.message = t(this.engine.data.settings.language, "hub.maxed");
       audio.playHurt();
     } else {
-      this.message = `NEED ${result.cost} SHARDS`;
+      this.message = t(this.engine.data.settings.language, "hub.needShards", { amount: result.cost });
       audio.playHurt();
     }
   }
@@ -121,18 +131,20 @@ export class HubState extends GameState {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke();
     }
 
-    MenuRenderer.drawTitle(ctx, "THE DEEP HUB", 160, 22);
+    const language = this.engine.data.settings.language;
+    MenuRenderer.drawTitle(ctx, t(language, "hub.title"), 160, 22, language);
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
-    ctx.font = "bold 8px monospace";
-    ctx.fillText(
-      `SHARDS ${meta.currency} // ACH ${meta.unlockedAchievements.length}/6 // TRIALS ${meta.completedChallenges}`,
-      160,
-      39,
-    );
+    ctx.font = uiFont(language, 8, true);
+    ctx.fillText(t(language, "hub.header", {
+      shards: meta.currency,
+      achievements: meta.unlockedAchievements.length,
+      trials: meta.completedChallenges,
+    }), 160, 39);
 
     META_UPGRADE_IDS.forEach((id, index) => {
       const definition = META_UPGRADES[id];
+      const localized = getMetaUpgradeText(id, definition, language);
       const level = meta.upgrades[id];
       const cost = getUpgradeCost(id, level);
       const y = 56 + index * 22;
@@ -143,47 +155,48 @@ export class HubState extends GameState {
       ctx.strokeRect(28, y - 11, 264, 18);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#BDC3C7";
-      ctx.font = "bold 8px monospace";
-      ctx.fillText(`${selected ? ">" : " "} ${definition.name}`, 34, y);
+      ctx.font = uiFont(language, 8, true);
+      ctx.fillText(`${selected ? ">" : " "} ${localized.name}`, 34, y);
       ctx.textAlign = "center";
       ctx.fillStyle = "#2ECC71";
-      ctx.fillText(`LV ${level}/${definition.maxLevel}`, 212, y);
+      ctx.fillText(t(language, "hub.level", { level, max: definition.maxLevel }), 212, y);
       ctx.textAlign = "right";
       ctx.fillStyle = cost === null ? "#7F8C8D" : meta.currency >= cost ? "#F1C40F" : "#E74C3C";
-      ctx.fillText(cost === null ? "MAX" : `${cost} S`, 284, y);
+      ctx.fillText(cost === null ? t(language, "common.max") : `${cost} S`, 284, y);
     });
 
     const selectedId = META_UPGRADE_IDS[this.selectedIndex];
     ctx.textAlign = "center";
     ctx.fillStyle = "#8E9EAB";
-    ctx.font = "7px monospace";
-    ctx.fillText(META_UPGRADES[selectedId].description, 160, 191);
+    ctx.font = uiFont(language, 7);
+    ctx.fillText(getMetaUpgradeText(selectedId, META_UPGRADES[selectedId], language).description, 160, 191);
     ctx.fillStyle = meta.hardModeUnlocked
       ? meta.preferredHardMode ? "#E74C3C" : "#BDC3C7"
       : "#4B5563";
-    ctx.font = "bold 8px monospace";
+    ctx.font = uiFont(language, 8, true);
     ctx.fillText(
       meta.hardModeUnlocked
-        ? `H HARD ${meta.preferredHardMode ? "ON" : "OFF"}  +50% SHARDS`
-        : "H HARD LOCKED",
+        ? t(language, "hub.hardLine", { state: t(language, meta.preferredHardMode ? "common.on" : "common.off") })
+        : t(language, "hub.hardLocked"),
       160,
       205,
     );
     const dailyChallenge = getDailyChallengeId();
     const challengeEnabled = meta.preferredChallengeId === dailyChallenge && meta.preferredHardMode;
     ctx.fillStyle = challengeEnabled ? "#F1C40F" : "#5D6D7E";
-    ctx.font = "bold 6px monospace";
-    ctx.fillText(
-      `C ${CHALLENGES[dailyChallenge].name}  ${challengeEnabled ? "ON" : "OFF"}  +${CHALLENGES[dailyChallenge].reward}`,
-      160,
-      213,
-    );
+    ctx.font = uiFont(language, 6, true);
+    const dailyText = getChallengeText(dailyChallenge, CHALLENGES[dailyChallenge], language);
+    ctx.fillText(t(language, "hub.challengeLine", {
+      name: dailyText.name,
+      state: t(language, challengeEnabled ? "common.on" : "common.off"),
+      reward: CHALLENGES[dailyChallenge].reward,
+    }), 160, 213);
     ctx.fillStyle = this.refundArmed ? "#E74C3C" : "#00F2FE";
-    ctx.font = "bold 7px monospace";
+    ctx.font = uiFont(language, 7, true);
     ctx.fillText(this.message, 160, 226);
     ctx.fillStyle = "#BDC3C7";
-    ctx.font = "6px monospace";
-    ctx.fillText("ENTER BUY   SPACE RUN   A ARCHIVE   H/C MODE", 160, 238);
+    ctx.font = uiFont(language, 6);
+    ctx.fillText(t(language, "hub.footer"), 160, 238);
     ctx.textAlign = "left";
   }
 }

@@ -1,3 +1,5 @@
+import { uiFont, type Language } from "../i18n";
+
 export class MenuRenderer {
   static drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
     ctx.fillStyle = "rgba(10, 15, 25, 0.9)";
@@ -14,9 +16,9 @@ export class MenuRenderer {
     ctx.fillRect(x + w - 2, y + h - 2, 3, 3);
   }
 
-  static drawTitle(ctx: CanvasRenderingContext2D, text: string, x: number, y: number) {
+  static drawTitle(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, language: Language = "en") {
     ctx.fillStyle = "#00F2FE";
-    ctx.font = "bold 24px monospace";
+    ctx.font = uiFont(language, 24, true);
     ctx.textAlign = "center";
     ctx.fillText(text, x, y);
     // Glitch shadow
@@ -25,8 +27,8 @@ export class MenuRenderer {
     ctx.textAlign = "left";
   }
 
-  static drawButton(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, selected: boolean) {
-    ctx.font = "12px monospace";
+  static drawButton(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, selected: boolean, language: Language = "en") {
+    ctx.font = uiFont(language, 12);
     if (selected) {
       ctx.fillStyle = "rgba(0, 242, 254, 0.2)";
       ctx.fillRect(x - 10, y - 10, 120, 18);

@@ -1,3 +1,16 @@
+import { BUFFS } from "../combat/BuffSystem";
+import { WEAPONS } from "../data/weapons";
+import {
+  categoryLabel,
+  getBuffText,
+  getWeaponMechanic,
+  rarityLabel,
+  seriesLabel,
+  t,
+  uiFont,
+  wrapLocalized,
+  type Language,
+} from "../i18n";
 import type { ShopItem, ShopPurchaseFailure } from "../shop/ShopSystem";
 
 const RARITY_COLORS: Record<string, string> = {
@@ -7,32 +20,37 @@ const RARITY_COLORS: Record<string, string> = {
   legendary: "#FFB347",
 };
 
-const FAILURE_TEXT: Record<ShopPurchaseFailure, string> = {
-  sold: "ITEM ALREADY SOLD",
-  coins: "NOT ENOUGH COINS",
-  full_hp: "HP ALREADY FULL",
-  full_armor: "ARMOR ALREADY FULL",
-  owned_weapon: "WEAPON ALREADY OWNED",
-  owned_buff: "TALENT ALREADY OWNED",
-  buff_limit: "TALENT LIMIT REACHED",
-  invalid: "ITEM UNAVAILABLE",
-};
-
-function wrap(text: string, width: number): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let line = "";
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (next.length > width) {
-      if (line) lines.push(line);
-      line = word;
-    } else {
-      line = next;
-    }
+function getItemText(item: ShopItem, language: Language): { name: string; description: string; kind: string } {
+  if (item.kind === "buff" && item.buffId) {
+    const buff = BUFFS[item.buffId];
+    const localized = getBuffText(item.buffId, buff, language);
+    return { name: localized.name, description: localized.description, kind: t(language, "shop.talent") };
   }
-  if (line) lines.push(line);
-  return lines;
+  if (item.kind === "weapon" && item.weaponId) {
+    const weapon = WEAPONS[item.weaponId];
+    const prefix = [
+      weapon.series ? seriesLabel(weapon.series, language) : "",
+      rarityLabel(weapon.rarity, language),
+      categoryLabel(weapon.category, language),
+    ].filter(Boolean).join(" ");
+    return {
+      name: weapon.name.toUpperCase(),
+      description: `${prefix}${language === "zh-CN" ? "。" : ". "}${getWeaponMechanic(weapon.id, weapon.mechanic, language)}`,
+      kind: t(language, "shop.weapon"),
+    };
+  }
+  if (item.kind === "heal") {
+    return {
+      name: t(language, "shop.medkit"),
+      description: t(language, "shop.medkitDesc", { amount: item.amount ?? 0 }),
+      kind: t(language, "shop.heal"),
+    };
+  }
+  return {
+    name: t(language, "shop.armorPatch"),
+    description: t(language, "shop.armorPatchDesc", { amount: item.amount ?? 0 }),
+    kind: t(language, "shop.armor"),
+  };
 }
 
 export class ShopRenderer {
@@ -64,22 +82,24 @@ export class ShopRenderer {
     confirmPrompt = "SPACE",
     cyclePrompt = "Q",
     closePrompt = "ESC",
+    language: Language = "en",
   ) {
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
     ctx.fillRect(0, 0, 320, 240);
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
-    ctx.font = "bold 14px monospace";
-    ctx.fillText("SHOP", 160, 30);
+    ctx.font = uiFont(language, 14, true);
+    ctx.fillText(t(language, "shop.title"), 160, 30);
     ctx.fillStyle = "#ECF0F1";
-    ctx.font = "8px monospace";
-    ctx.fillText(`COINS ${coins}`, 160, 44);
+    ctx.font = uiFont(language, 8);
+    ctx.fillText(t(language, "shop.coins", { coins }), 160, 44);
 
     const width = 70;
     const gap = 6;
     const startX = 11;
     stock.slice(0, 4).forEach((item, index) => {
+      const display = getItemText(item, language);
       const x = startX + index * (width + gap);
       const y = 58;
       const color = item.purchased ? "#566573" : RARITY_COLORS[item.rarity ?? "common"] ?? "#F1C40F";
@@ -95,32 +115,32 @@ export class ShopRenderer {
       }
 
       ctx.fillStyle = color;
-      ctx.font = "bold 11px monospace";
+      ctx.font = uiFont(language, 11, true);
       ctx.fillText(String(index + 1), x + width / 2, y + 17);
-      ctx.font = "bold 7px monospace";
-      wrap(item.name, 14).slice(0, 2).forEach((line, lineIndex) => {
+      ctx.font = uiFont(language, language === "zh-CN" ? 6 : 7, true);
+      wrapLocalized(display.name, language === "zh-CN" ? 18 : 14).slice(0, 2).forEach((line, lineIndex) => {
         ctx.fillText(line, x + width / 2, y + 34 + lineIndex * 9);
       });
       ctx.fillStyle = "#8E9EAB";
-      ctx.font = "6px monospace";
-      ctx.fillText(item.kind === "buff" ? "TALENT" : item.kind.toUpperCase(), x + width / 2, y + 57);
+      ctx.font = uiFont(language, 6);
+      ctx.fillText(display.kind, x + width / 2, y + 57);
       ctx.fillStyle = "#ECF0F1";
-      wrap(item.description, 16).slice(0, 4).forEach((line, lineIndex) => {
+      wrapLocalized(display.description, language === "zh-CN" ? 14 : 16).slice(0, 4).forEach((line, lineIndex) => {
         ctx.fillText(line, x + width / 2, y + 75 + lineIndex * 9);
       });
       ctx.fillStyle = item.purchased ? "#7F8C8D" : "#F1C40F";
-      ctx.font = "bold 8px monospace";
-      ctx.fillText(item.purchased ? "SOLD" : `${item.price} COINS`, x + width / 2, y + 122);
+      ctx.font = uiFont(language, 8, true);
+      ctx.fillText(item.purchased ? t(language, "common.sold") : t(language, "shop.price", { price: item.price }), x + width / 2, y + 122);
     });
 
     if (failure) {
       ctx.fillStyle = "#E74C3C";
-      ctx.font = "bold 9px monospace";
-      ctx.fillText(FAILURE_TEXT[failure], 160, 211);
+      ctx.font = uiFont(language, 9, true);
+      ctx.fillText(t(language, `shop.failure.${failure}` as Parameters<typeof t>[1]), 160, 211);
     } else {
       ctx.fillStyle = "#8E9EAB";
-      ctx.font = "7px monospace";
-      ctx.fillText(`[${cyclePrompt}] MOVE   [${confirmPrompt}] BUY   [${closePrompt}] EXIT`, 160, 211);
+      ctx.font = uiFont(language, 7);
+      ctx.fillText(t(language, "shop.footer", { cycle: cyclePrompt, confirm: confirmPrompt, close: closePrompt }), 160, 211);
     }
     ctx.restore();
   }

@@ -3,15 +3,16 @@ import type { Player } from "../entities/Player";
 import { SkillController } from "../combat/SkillController";
 import { BuffSystem } from "../combat/BuffSystem";
 import { WEAPONS } from "../data/weapons";
+import { getWeaponMechanic, projectileLabel, t, uiFont, wrapLocalized, type Language } from "../i18n";
 
 export class PauseOverlayRenderer {
-  static draw(ctx: CanvasRenderingContext2D, input: Input, player?: Player) {
+  static draw(ctx: CanvasRenderingContext2D, input: Input, player?: Player, language: Language = "en") {
     ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
     ctx.fillRect(0, 0, 320, 240);
     ctx.fillStyle = "#FFF";
-    ctx.font = "bold 18px monospace";
+    ctx.font = uiFont(language, 18, true);
     ctx.textAlign = "center";
-    ctx.fillText("PAUSED", 160, 35);
+    ctx.fillText(t(language, "pause.title"), 160, 35);
 
     ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
     ctx.lineWidth = 1.5;
@@ -20,14 +21,14 @@ export class PauseOverlayRenderer {
     ctx.fillRect(18, 48, 284, 157);
 
     const rows = [
-      [input.getLastDevice() === "gamepad" ? "L-STICK" : input.getLastDevice() === "touch" ? "JOYSTICK" : "WASD", "MOVE"],
-      [input.getPrompt("fire"), "FIRE"],
-      [input.getPrompt("interact"), "INTERACT"],
-      [input.getPrompt("skill"), "USE SKILL"],
-      [input.getPrompt("swapWeapon"), "SWAP WEAPON"],
-      [input.getPrompt("pause"), "RESUME"],
+      [input.getLastDevice() === "gamepad" ? "L-STICK" : input.getLastDevice() === "touch" ? "JOYSTICK" : "WASD", t(language, "common.move")],
+      [input.getPrompt("fire"), t(language, "action.fire")],
+      [input.getPrompt("interact"), t(language, "action.interact")],
+      [input.getPrompt("skill"), t(language, "pause.useSkill")],
+      [input.getPrompt("swapWeapon"), t(language, "pause.swapWeapon")],
+      [input.getPrompt("pause"), t(language, "common.resume")],
     ];
-    ctx.font = "7px monospace";
+    ctx.font = uiFont(language, 7);
     rows.forEach(([prompt, action], index) => {
       const y = 69 + index * 16;
       ctx.textAlign = "right";
@@ -48,60 +49,56 @@ export class PauseOverlayRenderer {
       const skill = SkillController.getConfig(player.characterId);
       const totalCooldown = skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
       const skillState = player.skillActiveTimer > 0
-        ? `ACTIVE ${player.skillActiveTimer.toFixed(1)}S`
+        ? t(language, "pause.active", { seconds: player.skillActiveTimer.toFixed(1) })
         : player.skillCooldown <= 0
-          ? "READY"
-          : `COOLDOWN ${player.skillCooldown.toFixed(1)} / ${totalCooldown.toFixed(1)}S`;
+          ? t(language, "common.ready")
+          : t(language, "pause.cooldown", { remaining: player.skillCooldown.toFixed(1), total: totalCooldown.toFixed(1) });
       ctx.textAlign = "left";
       ctx.fillStyle = "#00F2FE";
-      ctx.font = "bold 7px monospace";
-      ctx.fillText("SKILL", 163, 69);
+      ctx.font = uiFont(language, 7, true);
+      ctx.fillText(t(language, "pause.skill"), 163, 69);
       ctx.fillStyle = "#FFF";
       ctx.fillText(skill.name, 163, 81);
       ctx.fillStyle = player.skillCooldown <= 0 ? "#2ECC71" : "#F1C40F";
-      ctx.font = "6px monospace";
+      ctx.font = uiFont(language, 6);
       ctx.fillText(skillState, 163, 92);
 
       ctx.fillStyle = "#00F2FE";
-      ctx.font = "bold 7px monospace";
-      ctx.fillText("LOADOUT", 163, 113);
+      ctx.font = uiFont(language, 7, true);
+      ctx.fillText(t(language, "pause.loadout"), 163, 113);
       player.weaponSlots.forEach((weaponId, index) => {
         if (!weaponId) return;
         const weapon = WEAPONS[weaponId];
         const active = player.activeWeaponSlot === index;
         ctx.fillStyle = active ? "#FFF" : "#7F8C8D";
-        ctx.font = active ? "bold 7px monospace" : "7px monospace";
+        ctx.font = uiFont(language, 7, active);
         ctx.fillText(`${active ? ">" : " "}${index + 1} ${weapon?.name?.toUpperCase() ?? weaponId.toUpperCase()}`, 163, 127 + index * 13);
       });
 
       const activeWeapon = WEAPONS[player.currentWeaponId];
       if (activeWeapon) {
         ctx.fillStyle = "#F1C40F";
-        ctx.font = "bold 6px monospace";
-        ctx.fillText(`${(activeWeapon.projectileStyle ?? "bullet").toUpperCase()} // DMG ${activeWeapon.damage} // EN ${activeWeapon.manaCost}`, 163, 160);
+        ctx.font = uiFont(language, 6, true);
+        ctx.fillText(t(language, "pause.weaponStats", {
+          style: projectileLabel(activeWeapon.projectileStyle, language),
+          damage: activeWeapon.damage,
+          energy: activeWeapon.manaCost,
+        }), 163, 160);
         ctx.fillStyle = "#9AA7B2";
-        ctx.font = "5px monospace";
-        const words = activeWeapon.mechanic.toUpperCase().split(" ");
-        const lines: string[] = [];
-        let line = "";
-        for (const word of words) {
-          const next = line ? `${line} ${word}` : word;
-          if (next.length > 30 && line) {
-            lines.push(line);
-            line = word;
-          } else {
-            line = next;
-          }
-        }
-        if (line) lines.push(line);
-        lines.slice(0, 2).forEach((text, index) => ctx.fillText(text, 163, 171 + index * 9));
+        ctx.font = uiFont(language, language === "zh-CN" ? 6 : 5);
+        const mechanic = getWeaponMechanic(activeWeapon.id, activeWeapon.mechanic, language);
+        wrapLocalized(mechanic, language === "zh-CN" ? 26 : 30).slice(0, 2)
+          .forEach((text, index) => ctx.fillText(text, 163, 171 + index * 9));
       }
     }
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#7F8C8D";
-    ctx.font = "6px monospace";
-    ctx.fillText(`[${input.getPrompt("interact")}] MENU    [${input.getPrompt("pause")}] RESUME`, 160, 197);
+    ctx.font = uiFont(language, 6);
+    ctx.fillText(t(language, "pause.footer", {
+      menu: input.getPrompt("interact"),
+      pause: input.getPrompt("pause"),
+    }), 160, 197);
     ctx.textAlign = "left";
   }
 }

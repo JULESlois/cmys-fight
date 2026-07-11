@@ -4,6 +4,7 @@ import { formatBinding, type InputAction, type TouchHandedness, type TouchLabelM
 import { QaPanel } from "./QaPanel";
 import { installQaBridge, isQaMode } from "../game/qa/BrowserQa";
 import { calculateTouchViewportOffsets } from "../game/TouchLayout";
+import { t } from "../game/i18n";
 
 type TouchActionLabel = "fire" | "interact" | "skill" | "swapWeapon" | "pause";
 type TouchLabels = Record<TouchActionLabel, string>;
@@ -125,16 +126,19 @@ export function GameCanvas() {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
-      setStatus("SAVE DATA EXPORTED");
+      const language = engineRef.current?.data.settings.language ?? "en";
+      setStatus(t(language, "status.exported"));
     };
     const importData = () => importRef.current?.click();
     const toggleFullscreen = async () => {
       try {
         if (document.fullscreenElement) await document.exitFullscreen();
         else await containerRef.current?.requestFullscreen();
-        setStatus(document.fullscreenElement ? "FULLSCREEN ENABLED" : "FULLSCREEN DISABLED");
+        const language = engineRef.current?.data.settings.language ?? "en";
+        setStatus(t(language, document.fullscreenElement ? "status.fullscreenEnabled" : "status.fullscreenDisabled"));
       } catch {
-        setStatus("FULLSCREEN UNAVAILABLE");
+        const language = engineRef.current?.data.settings.language ?? "en";
+        setStatus(t(language, "status.fullscreenUnavailable"));
       }
     };
     document.addEventListener("game:export-data", exportData);
@@ -159,13 +163,15 @@ export function GameCanvas() {
     if (!file || !engineRef.current) return;
     try {
       const result = engineRef.current.data.importBundle(await file.text());
-      setStatus(result.message);
+      const language = engineRef.current.data.settings.language;
+      setStatus(result.success ? t(language, "status.imported") : t(language, "status.importFailed"));
       if (result.success) {
         engineRef.current.applySettings();
         engineRef.current.switchState("title");
       }
     } catch {
-      setStatus("SAVE IMPORT FAILED");
+      const language = engineRef.current?.data.settings.language ?? "en";
+      setStatus(t(language, "status.importFailed"));
     }
   };
 

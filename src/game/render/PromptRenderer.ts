@@ -1,5 +1,7 @@
+import { t, uiFont, type Language } from "../i18n";
+
 export class PromptRenderer {
-  static draw(ctx: CanvasRenderingContext2D, target: any, time: number, interactPrompt = "SPACE") {
+  static draw(ctx: CanvasRenderingContext2D, target: any, time: number, interactPrompt = "SPACE", language: Language = "en") {
     if (!target) return;
 
     ctx.save();
@@ -7,16 +9,16 @@ export class PromptRenderer {
     const yBase = target.y - 20 + floatY;
 
     let action = "";
-    if (target.type === "portal") action = "DESCEND";
-    else if (target.type === "legacy_rpg") action = "MEMORY";
-    else if (target.type === "legacy_tactics") action = "TACTICS";
-    else if (target.type === "treasure") action = "OPEN";
-    else if (target.type === "shop") action = "SHOP";
-    else if (target.type === "broadcast") action = "TUNE IN";
+    if (target.type === "portal") action = t(language, "prompt.descend");
+    else if (target.type === "legacy_rpg") action = t(language, "prompt.memory");
+    else if (target.type === "legacy_tactics") action = t(language, "prompt.tactics");
+    else if (target.type === "treasure") action = t(language, "prompt.open");
+    else if (target.type === "shop") action = t(language, "prompt.shop");
+    else if (target.type === "broadcast") action = t(language, "prompt.tuneIn");
     const msg = action ? `[${interactPrompt}] ${action}` : "";
 
     if (msg) {
-      ctx.font = "8px monospace";
+      ctx.font = uiFont(language, 8);
       const textWidth = ctx.measureText(msg).width;
       const padX = 4;
       const padY = 4;

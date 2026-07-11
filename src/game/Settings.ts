@@ -1,5 +1,5 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 5;
+export const SETTINGS_VERSION = 6;
 
 export type InputAction =
   | "moveUp"
@@ -64,9 +64,11 @@ export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
 export type MusicMode = "adaptive" | "external" | "off";
 export type TouchHandedness = "right" | "left";
 export type TouchLabelMode = "gamepad" | "keyboard";
+export type Language = "en" | "zh-CN";
 
 export interface GameSettings {
   version: number;
+  language: Language;
   masterVolume: number;
   musicVolume: number;
   musicMode: MusicMode;
@@ -87,6 +89,7 @@ export interface GameSettings {
 export function createDefaultSettings(): GameSettings {
   return {
     version: SETTINGS_VERSION,
+    language: "en",
     masterVolume: 100,
     musicVolume: 55,
     musicMode: "adaptive",
@@ -141,8 +144,10 @@ export function normalizeSettings(value: unknown): GameSettings {
     : "off";
   const touchHandedness: TouchHandedness = raw.touchHandedness === "left" ? "left" : "right";
   const touchLabelMode: TouchLabelMode = raw.touchLabelMode === "keyboard" ? "keyboard" : "gamepad";
+  const language: Language = raw.language === "zh-CN" ? "zh-CN" : "en";
   return {
     version: SETTINGS_VERSION,
+    language,
     masterVolume: Number.isFinite(masterVolume) ? Math.max(0, Math.min(100, Math.round(masterVolume))) : fallback.masterVolume,
     musicVolume: Number.isFinite(musicVolume) ? Math.max(0, Math.min(100, Math.round(musicVolume))) : fallback.musicVolume,
     musicMode,

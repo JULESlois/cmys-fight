@@ -46,6 +46,7 @@ import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
 import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
+import { t, uiFont } from "../i18n";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 
@@ -2224,16 +2225,16 @@ export class DungeonState extends GameState {
     );
     
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
-    this.tutorial.draw(ctx, this.engine.input);
+    this.tutorial.draw(ctx, this.engine.input, this.engine.data.settings.language);
     
     if (this.roomPhase === "cleared" && this.phaseTimer > 0) {
       ctx.save();
       const alpha = Math.min(1, this.phaseTimer);
       ctx.fillStyle = `rgba(241, 196, 15, ${alpha})`;
-      ctx.font = "bold 24px monospace";
+      ctx.font = uiFont(this.engine.data.settings.language, 24, true);
       ctx.textAlign = "center";
       const yOffset = (1.0 - this.phaseTimer) * 10;
-      ctx.fillText("ROOM CLEAR", 160, 100 - yOffset);
+      ctx.fillText(t(this.engine.data.settings.language, "dungeon.roomClear"), 160, 100 - yOffset);
       ctx.restore();
     }
 
@@ -2249,7 +2250,7 @@ export class DungeonState extends GameState {
     }
     
     MinimapRenderer.draw(ctx, floor);
-    PromptRenderer.draw(ctx, this.getInteractTarget(), time, this.engine.input.getPrompt("interact"));
+    PromptRenderer.draw(ctx, this.getInteractTarget(), time, this.engine.input.getPrompt("interact"), this.engine.data.settings.language);
 
     if (this.buffSelection) {
       BuffSelectionRenderer.draw(
@@ -2259,6 +2260,7 @@ export class DungeonState extends GameState {
         this.buffSelectionIndex,
         this.engine.input.getPrompt("interact"),
         this.engine.input.getPrompt("swapWeapon"),
+        this.engine.data.settings.language,
       );
     }
 
@@ -2272,6 +2274,7 @@ export class DungeonState extends GameState {
         this.engine.input.getPrompt("interact"),
         this.engine.input.getPrompt("swapWeapon"),
         this.engine.input.getPrompt("pause"),
+        this.engine.data.settings.language,
       );
     }
     
@@ -2279,12 +2282,12 @@ export class DungeonState extends GameState {
       ctx.fillStyle = "rgba(0,0,0,0.7)";
       ctx.fillRect(0, 0, 320, 240);
       ctx.fillStyle = "#E74C3C";
-      ctx.font = "20px monospace";
+      ctx.font = uiFont(this.engine.data.settings.language, 20);
       ctx.textAlign = "center";
-      ctx.fillText("YOU DIED", 160, 120);
+      ctx.fillText(t(this.engine.data.settings.language, "dungeon.died"), 160, 120);
       ctx.fillStyle = "#FFF";
       ctx.font = "10px monospace";
-      ctx.fillText(`[${this.engine.input.getPrompt("interact")}] RETRY`, 160, 150);
+      ctx.fillText(t(this.engine.data.settings.language, "dungeon.retry", { prompt: this.engine.input.getPrompt("interact") }), 160, 150);
       ctx.textAlign = "left";
     }
 

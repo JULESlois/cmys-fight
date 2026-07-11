@@ -1,14 +1,8 @@
 import type { Input } from "./Input";
+import { t, uiFont, type Language } from "./i18n";
 
 export type TutorialStepId = "move" | "fire" | "skill" | "interact" | "swap";
-
-const STEPS: Array<{ id: TutorialStepId; label: string }> = [
-  { id: "move", label: "MOVE" },
-  { id: "fire", label: "FIRE" },
-  { id: "skill", label: "SKILL" },
-  { id: "interact", label: "INTERACT" },
-  { id: "swap", label: "SWAP" },
-];
+const STEPS: TutorialStepId[] = ["move", "fire", "skill", "interact", "swap"];
 
 export class TutorialSystem {
   private stepIndex = 0;
@@ -23,18 +17,13 @@ export class TutorialSystem {
     if (this.complete) return false;
     const step = STEPS[this.stepIndex];
     let advanced = false;
-    if (step.id === "move") {
+    if (step === "move") {
       const axis = input.getAxis();
       advanced = Math.hypot(axis.x, axis.y) > 0.3;
-    } else if (step.id === "fire") {
-      advanced = input.wasActionPressed("fire");
-    } else if (step.id === "skill") {
-      advanced = input.wasActionPressed("skill");
-    } else if (step.id === "interact") {
-      advanced = input.wasActionPressed("interact");
-    } else if (step.id === "swap") {
-      advanced = input.wasActionPressed("swapWeapon");
-    }
+    } else if (step === "fire") advanced = input.wasActionPressed("fire");
+    else if (step === "skill") advanced = input.wasActionPressed("skill");
+    else if (step === "interact") advanced = input.wasActionPressed("interact");
+    else advanced = input.wasActionPressed("swapWeapon");
     if (!advanced) return false;
     this.stepIndex++;
     if (this.stepIndex >= STEPS.length) {
@@ -44,12 +33,12 @@ export class TutorialSystem {
     return false;
   }
 
-  draw(ctx: CanvasRenderingContext2D, input: Input) {
+  draw(ctx: CanvasRenderingContext2D, input: Input, language: Language = "en") {
     if (this.complete) return;
     const step = STEPS[this.stepIndex];
-    const prompt = step.id === "move"
+    const prompt = step === "move"
       ? input.getLastDevice() === "gamepad" ? "L-STICK" : input.getLastDevice() === "touch" ? "JOYSTICK" : "WASD"
-      : input.getPrompt(step.id === "swap" ? "swapWeapon" : step.id);
+      : input.getPrompt(step === "swap" ? "swapWeapon" : step);
     ctx.save();
     ctx.fillStyle = "rgba(7, 13, 24, 0.92)";
     ctx.strokeStyle = "#00F2FE";
@@ -57,8 +46,8 @@ export class TutorialSystem {
     ctx.strokeRect(62, 176, 196, 18);
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
-    ctx.font = "bold 7px monospace";
-    ctx.fillText(`${this.stepIndex + 1}/${STEPS.length}  [${prompt}] ${step.label}`, 160, 188);
+    ctx.font = uiFont(language, 7, true);
+    ctx.fillText(`${this.stepIndex + 1}/${STEPS.length}  [${prompt}] ${t(language, `tutorial.${step}` as Parameters<typeof t>[1])}`, 160, 188);
     ctx.restore();
   }
 }

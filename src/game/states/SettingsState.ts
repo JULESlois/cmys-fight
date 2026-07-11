@@ -3,40 +3,65 @@ import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
 import {
-  ACTION_LABELS,
   DEFAULT_KEY_BINDINGS,
   INPUT_ACTIONS,
   formatBinding,
   type ColorblindMode,
   type InputAction,
+  type Language,
   type MusicMode,
   type TouchHandedness,
   type TouchLabelMode,
 } from "../Settings";
+import { actionLabel, t, uiFont } from "../i18n";
 
 const OPTIONS = [
-  "MASTER VOLUME",
-  "MUSIC VOLUME",
-  "MUSIC SOURCE",
-  "UI SCALE",
-  "SCREEN SHAKE",
-  "CRT FILTER",
-  "REDUCED FLASH",
-  "DYNAMIC BG",
-  "COLOR MODE",
-  "TOUCH CONTROLS",
-  "TOUCH LAYOUT",
-  "TOUCH SIZE",
-  "TOUCH LABELS",
-  "CONTROLS",
-  "FULLSCREEN",
-  "EXPORT DATA",
-  "IMPORT DATA",
-  "RESET TUTORIAL",
-  "BACK",
+  "language",
+  "masterVolume",
+  "musicVolume",
+  "musicSource",
+  "uiScale",
+  "screenShake",
+  "crtFilter",
+  "reducedFlash",
+  "dynamicBg",
+  "colorMode",
+  "touchControls",
+  "touchLayout",
+  "touchSize",
+  "touchLabels",
+  "controls",
+  "fullscreen",
+  "exportData",
+  "importData",
+  "resetTutorial",
+  "back",
 ] as const;
 
 type SettingOption = typeof OPTIONS[number];
+
+const OPTION_KEYS: Record<SettingOption, Parameters<typeof t>[1]> = {
+  language: "settings.language",
+  masterVolume: "settings.masterVolume",
+  musicVolume: "settings.musicVolume",
+  musicSource: "settings.musicSource",
+  uiScale: "settings.uiScale",
+  screenShake: "settings.screenShake",
+  crtFilter: "settings.crtFilter",
+  reducedFlash: "settings.reducedFlash",
+  dynamicBg: "settings.dynamicBg",
+  colorMode: "settings.colorMode",
+  touchControls: "settings.touchControls",
+  touchLayout: "settings.touchLayout",
+  touchSize: "settings.touchSize",
+  touchLabels: "settings.touchLabels",
+  controls: "settings.controls",
+  fullscreen: "settings.fullscreen",
+  exportData: "settings.exportData",
+  importData: "settings.importData",
+  resetTutorial: "settings.resetTutorial",
+  back: "common.back",
+};
 
 export class SettingsState extends GameState {
   private selectedIndex = 0;
@@ -88,24 +113,25 @@ export class SettingsState extends GameState {
       this.adjustSetting(option, 1);
     }
     if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
-      if (option === "BACK") {
+      const language = this.engine.data.settings.language;
+      if (option === "back") {
         this.engine.switchState("title");
-      } else if (option === "CONTROLS") {
+      } else if (option === "controls") {
         this.controlsOpen = true;
-        this.message = "ENTER: REBIND // R: RESET KEYS";
+        this.message = t(language, "settings.rebindHelp");
         this.engine.input.clearJustPressed();
-      } else if (option === "FULLSCREEN") {
+      } else if (option === "fullscreen") {
         document.dispatchEvent(new CustomEvent("game:fullscreen"));
-        this.message = "FULLSCREEN TOGGLED";
-      } else if (option === "EXPORT DATA") {
+        this.message = t(language, "settings.fullscreenToggled");
+      } else if (option === "exportData") {
         document.dispatchEvent(new CustomEvent("game:export-data"));
-        this.message = "EXPORT REQUESTED";
-      } else if (option === "IMPORT DATA") {
+        this.message = t(language, "settings.exportRequested");
+      } else if (option === "importData") {
         document.dispatchEvent(new CustomEvent("game:import-data"));
-        this.message = "SELECT A SAVE FILE";
-      } else if (option === "RESET TUTORIAL") {
+        this.message = t(language, "settings.selectSave");
+      } else if (option === "resetTutorial") {
         this.engine.data.settings.tutorialCompleted = false;
-        this.saveSettings("TUTORIAL WILL START ON NEXT RUN");
+        this.saveSettings(t(language, "settings.tutorialNextRun"));
       } else {
         this.adjustSetting(option, 1);
       }
@@ -113,10 +139,11 @@ export class SettingsState extends GameState {
   }
 
   private updateControls() {
+    const language = this.engine.data.settings.language;
     if (this.captureAction) {
       if (this.engine.input.wasPressed("escape")) {
         this.captureAction = null;
-        this.message = "REBIND CANCELLED";
+        this.message = t(language, "settings.rebindCancelled");
         this.engine.input.clearJustPressed();
         return;
       }
@@ -129,8 +156,12 @@ export class SettingsState extends GameState {
       );
       if (conflictingAction) settings.keyBindings[conflictingAction] = oldKey;
       settings.keyBindings[this.captureAction] = key;
+      const reboundAction = this.captureAction;
       this.captureAction = null;
-      this.saveSettings(`${ACTION_LABELS[this.currentAction()]} BOUND TO ${formatBinding(key)}`);
+      this.saveSettings(t(language, "settings.bound", {
+        action: actionLabel(reboundAction, language),
+        key: formatBinding(key),
+      }));
       this.engine.input.clearJustPressed();
       return;
     }
@@ -150,11 +181,13 @@ export class SettingsState extends GameState {
     }
     if (this.engine.input.wasPressed("r")) {
       this.engine.data.settings.keyBindings = { ...DEFAULT_KEY_BINDINGS };
-      this.saveSettings("KEY BINDINGS RESET");
+      this.saveSettings(t(language, "settings.keysReset"));
     }
     if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
       this.captureAction = this.currentAction();
-      this.message = `PRESS A KEY FOR ${ACTION_LABELS[this.captureAction]}`;
+      this.message = t(language, "settings.pressKey", {
+        action: actionLabel(this.captureAction, language),
+      });
       this.engine.input.clearJustPressed();
     }
   }
@@ -165,44 +198,49 @@ export class SettingsState extends GameState {
 
   private adjustSetting(option: SettingOption, direction: number) {
     const settings = this.engine.data.settings;
-    if (option === "MASTER VOLUME") {
+    if (option === "language") {
+      const languages: Language[] = ["en", "zh-CN"];
+      const index = languages.indexOf(settings.language);
+      settings.language = languages[(index + direction + languages.length) % languages.length];
+    } else if (option === "masterVolume") {
       settings.masterVolume = Math.max(0, Math.min(100, settings.masterVolume + direction * 10));
-    } else if (option === "MUSIC VOLUME") {
+    } else if (option === "musicVolume") {
       settings.musicVolume = Math.max(0, Math.min(100, settings.musicVolume + direction * 10));
-    } else if (option === "MUSIC SOURCE") {
+    } else if (option === "musicSource") {
       const modes: MusicMode[] = ["adaptive", "external", "off"];
       const index = modes.indexOf(settings.musicMode);
       settings.musicMode = modes[(index + direction + modes.length) % modes.length];
-    } else if (option === "UI SCALE") {
+    } else if (option === "uiScale") {
       settings.uiScale = Math.max(0.85, Math.min(1.25, Math.round((settings.uiScale + direction * 0.1) * 20) / 20));
-    } else if (option === "SCREEN SHAKE") {
+    } else if (option === "screenShake") {
       settings.screenShake = !settings.screenShake;
-    } else if (option === "CRT FILTER") {
+    } else if (option === "crtFilter") {
       settings.crtFilter = !settings.crtFilter;
-    } else if (option === "REDUCED FLASH") {
+    } else if (option === "reducedFlash") {
       settings.reducedFlashing = !settings.reducedFlashing;
-    } else if (option === "DYNAMIC BG") {
+    } else if (option === "dynamicBg") {
       settings.dynamicBackground = !settings.dynamicBackground;
-    } else if (option === "TOUCH CONTROLS") {
+    } else if (option === "touchControls") {
       settings.touchControls = !settings.touchControls;
-    } else if (option === "TOUCH LAYOUT") {
+    } else if (option === "touchLayout") {
       const layouts: TouchHandedness[] = ["right", "left"];
       const index = layouts.indexOf(settings.touchHandedness);
       settings.touchHandedness = layouts[(index + direction + layouts.length) % layouts.length];
-    } else if (option === "TOUCH SIZE") {
+    } else if (option === "touchSize") {
       settings.touchScale = Math.max(0.85, Math.min(1.15, Math.round((settings.touchScale + direction * 0.1) * 20) / 20));
-    } else if (option === "TOUCH LABELS") {
+    } else if (option === "touchLabels") {
       const modes: TouchLabelMode[] = ["gamepad", "keyboard"];
       const index = modes.indexOf(settings.touchLabelMode);
       settings.touchLabelMode = modes[(index + direction + modes.length) % modes.length];
-    } else if (option === "COLOR MODE") {
+    } else if (option === "colorMode") {
       const modes: ColorblindMode[] = ["off", "deuteranopia", "tritanopia"];
       const index = modes.indexOf(settings.colorblindMode);
       settings.colorblindMode = modes[(index + direction + modes.length) % modes.length];
     } else {
       return;
     }
-    this.saveSettings(`${option} UPDATED`);
+    const language = settings.language;
+    this.saveSettings(t(language, "settings.updated", { option: t(language, OPTION_KEYS[option]) }));
   }
 
   private saveSettings(message: string) {
@@ -212,10 +250,40 @@ export class SettingsState extends GameState {
     audio.playPickup();
   }
 
+  private getValue(option: SettingOption): string {
+    const settings = this.engine.data.settings;
+    const language = settings.language;
+    const bool = (value: boolean) => t(language, value ? "common.on" : "common.off");
+    if (option === "language") return t(language, language === "zh-CN" ? "language.chinese" : "language.english");
+    if (option === "masterVolume") return `${settings.masterVolume}%`;
+    if (option === "musicVolume") return `${settings.musicVolume}%`;
+    if (option === "musicSource") return t(language, settings.musicMode === "adaptive" ? "value.adaptive" : settings.musicMode === "external" ? "value.external" : "common.off");
+    if (option === "uiScale") return `${Math.round(settings.uiScale * 100)}%`;
+    if (option === "screenShake") return bool(settings.screenShake);
+    if (option === "crtFilter") return bool(settings.crtFilter);
+    if (option === "reducedFlash") return bool(settings.reducedFlashing);
+    if (option === "dynamicBg") return bool(settings.dynamicBackground);
+    if (option === "colorMode") {
+      if (settings.colorblindMode === "off") return t(language, "common.off");
+      return t(language, settings.colorblindMode === "deuteranopia" ? "value.deuteranopia" : "value.tritanopia");
+    }
+    if (option === "touchControls") return settings.touchControls ? t(language, "common.auto") : t(language, "common.off");
+    if (option === "touchLayout") return t(language, settings.touchHandedness === "right" ? "value.right" : "value.left");
+    if (option === "touchSize") return `${Math.round(settings.touchScale * 100)}%`;
+    if (option === "touchLabels") return t(language, settings.touchLabelMode === "gamepad" ? "value.gamepad" : "value.keyboard");
+    if (option === "controls") return t(language, "common.enter");
+    if (option === "fullscreen") return t(language, "common.toggle");
+    if (option === "exportData") return t(language, "common.download");
+    if (option === "importData") return t(language, "common.select");
+    if (option === "resetTutorial") return t(language, settings.tutorialCompleted ? "common.reset" : "common.ready");
+    return t(language, "common.enter");
+  }
+
   draw(ctx: CanvasRenderingContext2D) {
+    const language = this.engine.data.settings.language;
     ctx.fillStyle = "#0A0F19";
     ctx.fillRect(0, 0, 320, 240);
-    MenuRenderer.drawTitle(ctx, this.controlsOpen ? "CONTROL BINDINGS" : "SYSTEM SETTINGS", 160, 20);
+    MenuRenderer.drawTitle(ctx, t(language, this.controlsOpen ? "settings.controlsTitle" : "settings.title"), 160, 20, language);
     MenuRenderer.drawPanel(ctx, 24, 27, 272, 197);
 
     if (this.controlsOpen) {
@@ -223,51 +291,32 @@ export class SettingsState extends GameState {
       return;
     }
 
-    const settings = this.engine.data.settings;
     OPTIONS.forEach((option, index) => {
-      const y = 37 + index * 8;
+      const y = 34 + index * 8;
       const selected = index === this.selectedIndex;
       ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
       if (selected) ctx.fillRect(32, y - 6, 256, 8);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
-      ctx.font = "bold 6px monospace";
-      ctx.fillText(`${selected ? ">" : " "} ${option}`, 36, y);
+      ctx.font = uiFont(language, 6, true);
+      ctx.fillText(`${selected ? ">" : " "} ${t(language, OPTION_KEYS[option])}`, 36, y);
       ctx.textAlign = "right";
       ctx.fillStyle = "#00F2FE";
-      const value = option === "MASTER VOLUME" ? `${settings.masterVolume}%`
-        : option === "MUSIC VOLUME" ? `${settings.musicVolume}%`
-          : option === "MUSIC SOURCE" ? settings.musicMode.toUpperCase()
-            : option === "UI SCALE" ? `${Math.round(settings.uiScale * 100)}%`
-          : option === "SCREEN SHAKE" ? (settings.screenShake ? "ON" : "OFF")
-            : option === "CRT FILTER" ? (settings.crtFilter ? "ON" : "OFF")
-              : option === "REDUCED FLASH" ? (settings.reducedFlashing ? "ON" : "OFF")
-                : option === "DYNAMIC BG" ? (settings.dynamicBackground ? "ON" : "OFF")
-                  : option === "COLOR MODE" ? settings.colorblindMode.toUpperCase().slice(0, 8)
-                    : option === "TOUCH CONTROLS" ? (settings.touchControls ? "AUTO" : "OFF")
-                      : option === "TOUCH LAYOUT" ? settings.touchHandedness.toUpperCase()
-                        : option === "TOUCH SIZE" ? `${Math.round(settings.touchScale * 100)}%`
-                          : option === "TOUCH LABELS" ? settings.touchLabelMode.toUpperCase()
-                            : option === "CONTROLS" ? "ENTER"
-                        : option === "FULLSCREEN" ? "TOGGLE"
-                          : option === "EXPORT DATA" ? "DOWNLOAD"
-                            : option === "IMPORT DATA" ? "SELECT"
-                              : option === "RESET TUTORIAL" ? (settings.tutorialCompleted ? "RESET" : "READY")
-                                : "ENTER";
-      ctx.fillText(value, 282, y);
+      ctx.fillText(this.getValue(option), 282, y);
     });
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#F1C40F";
-    ctx.font = "6px monospace";
+    ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = "#7F8C8D";
-    ctx.fillText("↑↓ MOVE   ←→ CHANGE   ENTER   ESC", 160, 228);
+    ctx.fillText(t(language, "settings.footer"), 160, 228);
     ctx.textAlign = "left";
   }
 
   private drawControls(ctx: CanvasRenderingContext2D) {
     const settings = this.engine.data.settings;
+    const language = settings.language;
     INPUT_ACTIONS.forEach((action, index) => {
       const y = 51 + index * 16;
       const selected = index === this.controlIndex;
@@ -275,17 +324,17 @@ export class SettingsState extends GameState {
       if (selected) ctx.fillRect(34, y - 10, 252, 14);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
-      ctx.font = "bold 7px monospace";
-      ctx.fillText(`${selected ? ">" : " "} ${ACTION_LABELS[action]}`, 40, y);
+      ctx.font = uiFont(language, 7, true);
+      ctx.fillText(`${selected ? ">" : " "} ${actionLabel(action, language)}`, 40, y);
       ctx.textAlign = "right";
       ctx.fillStyle = this.captureAction === action ? "#F1C40F" : "#00F2FE";
-      ctx.fillText(this.captureAction === action ? "PRESS KEY" : formatBinding(settings.keyBindings[action]), 278, y);
+      ctx.fillText(this.captureAction === action ? t(language, "settings.pressKeyShort") : formatBinding(settings.keyBindings[action]), 278, y);
     });
     ctx.textAlign = "center";
     ctx.fillStyle = this.captureAction ? "#F1C40F" : "#7F8C8D";
-    ctx.font = "6px monospace";
+    ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 204);
-    ctx.fillText("ENTER BIND   R RESET   ESC", 160, 228);
+    ctx.fillText(t(language, "settings.controlsFooter"), 160, 228);
     ctx.textAlign = "left";
   }
 }

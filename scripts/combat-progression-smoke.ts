@@ -19,7 +19,7 @@ const oldDefaults = {
   fire: "f", skill: "e", interact: " ", swapWeapon: "q", pause: "p",
 } as const;
 
-assert.equal(SETTINGS_VERSION, 5);
+assert.equal(SETTINGS_VERSION, 6);
 assert.deepEqual(DEFAULT_KEY_BINDINGS, {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
   fire: "j", skill: "k", interact: "l", swapWeapon: "i", pause: "escape",

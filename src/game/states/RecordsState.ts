@@ -2,6 +2,18 @@ import { ACHIEVEMENTS, ACHIEVEMENT_IDS } from "../AchievementSystem";
 import { BUFFS } from "../combat/BuffSystem";
 import { ENEMIES } from "../data/enemies";
 import { WEAPONS } from "../data/weapons";
+import {
+  categoryLabel,
+  getAchievementText,
+  getBuffText,
+  getWeaponMechanic,
+  projectileLabel,
+  rarityLabel,
+  seriesLabel,
+  t,
+  uiFont,
+  wrapLocalized,
+} from "../i18n";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { MonsterModelRenderer } from "../render/MonsterModelRenderer";
 import { GameState } from "./GameState";
@@ -49,16 +61,25 @@ export class RecordsState extends GameState {
     }
   }
 
+  private pageLabel(page: RecordsPage): string {
+    const language = this.engine.data.settings.language;
+    return t(language, page === "buffs" ? "records.talents" : `records.${page}` as Parameters<typeof t>[1]);
+  }
+
   private getRows(): RecordRow[] {
     const meta = this.engine.data.meta;
+    const language = this.engine.data.settings.language;
     const page = PAGES[this.pageIndex];
     if (page === "achievements") {
-      return ACHIEVEMENT_IDS.map(id => ({
-        id,
-        name: ACHIEVEMENTS[id].name,
-        description: `${ACHIEVEMENTS[id].description} (+${ACHIEVEMENTS[id].reward} Shards)`,
-        unlocked: meta.unlockedAchievements.includes(id),
-      }));
+      return ACHIEVEMENT_IDS.map(id => {
+        const localized = getAchievementText(id, ACHIEVEMENTS[id], language);
+        return {
+          id,
+          name: localized.name,
+          description: `${localized.description} ${t(language, "records.reward", { reward: ACHIEVEMENTS[id].reward })}`,
+          unlocked: meta.unlockedAchievements.includes(id),
+        };
+      });
     }
     if (page === "enemies" || page === "bosses") {
       const bossPage = page === "bosses";
@@ -75,19 +96,23 @@ export class RecordsState extends GameState {
       return Object.values(WEAPONS).map(weapon => ({
         id: weapon.id,
         name: weapon.name.toUpperCase(),
-        description: `${weapon.series ? `${weapon.series.toUpperCase()} // ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()} // ${(weapon.projectileStyle ?? "bullet").toUpperCase()} // ${weapon.mechanic}`,
+        description: `${weapon.series ? `${seriesLabel(weapon.series, language)} // ` : ""}${rarityLabel(weapon.rarity, language)} ${categoryLabel(weapon.category, language)} // ${projectileLabel(weapon.projectileStyle, language)} // ${getWeaponMechanic(weapon.id, weapon.mechanic, language)}`,
         unlocked: meta.codex.weapons.includes(weapon.id),
       }));
     }
-    return Object.values(BUFFS).map(buff => ({
-      id: buff.id,
-      name: buff.name,
-      description: `${buff.series ? `${buff.series.toUpperCase()} // ` : ""}${buff.description}`,
-      unlocked: meta.codex.buffs.includes(buff.id),
-    }));
+    return Object.values(BUFFS).map(buff => {
+      const localized = getBuffText(buff.id, buff, language);
+      return {
+        id: buff.id,
+        name: localized.name,
+        description: `${buff.series ? `${seriesLabel(buff.series, language)} // ` : ""}${localized.description}`,
+        unlocked: meta.codex.buffs.includes(buff.id),
+      };
+    });
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    const language = this.engine.data.settings.language;
     const rows = this.getRows();
     const page = PAGES[this.pageIndex];
     const selected = rows[this.selectedIndex];
@@ -96,13 +121,13 @@ export class RecordsState extends GameState {
 
     ctx.fillStyle = "#080D16";
     ctx.fillRect(0, 0, 320, 240);
-    MenuRenderer.drawTitle(ctx, "ARCHIVE RECORDS", 160, 22);
+    MenuRenderer.drawTitle(ctx, t(language, "records.title"), 160, 22, language);
 
     ctx.textAlign = "center";
-    ctx.font = "bold 7px monospace";
+    ctx.font = uiFont(language, language === "zh-CN" ? 6 : 7, true);
     PAGES.forEach((entry, index) => {
       ctx.fillStyle = index === this.pageIndex ? "#00F2FE" : "#4B5563";
-      ctx.fillText(entry === "buffs" ? "TALENTS" : entry.toUpperCase(), 38 + index * 61, 40);
+      ctx.fillText(this.pageLabel(entry), 38 + index * 61, 40);
     });
 
     rows.slice(start, start + pageSize).forEach((row, localIndex) => {
@@ -114,12 +139,12 @@ export class RecordsState extends GameState {
       ctx.strokeStyle = active ? "#00F2FE" : "#263445";
       ctx.strokeRect(34, y - 10, 252, 14);
       ctx.textAlign = "left";
-      ctx.font = "bold 8px monospace";
+      ctx.font = uiFont(language, 8, true);
       ctx.fillStyle = row.unlocked ? "#ECF0F1" : "#4B5563";
       ctx.fillText(`${active ? ">" : " "} ${row.unlocked ? row.name : "???"}`, 40, y);
       ctx.textAlign = "right";
       ctx.fillStyle = row.unlocked ? "#2ECC71" : "#7F8C8D";
-      ctx.fillText(row.unlocked ? "FOUND" : "HIDDEN", 280, y);
+      ctx.fillText(t(language, row.unlocked ? "common.found" : "common.hidden"), 280, y);
     });
 
     const isMonsterPage = page === "enemies" || page === "bosses";
@@ -135,38 +160,26 @@ export class RecordsState extends GameState {
       ctx.restore();
       ctx.textAlign = "left";
       ctx.fillStyle = "#ECF0F1";
-      ctx.font = "bold 7px monospace";
+      ctx.font = uiFont(language, 7, true);
       ctx.fillText(selected.name, 104, 194);
       ctx.fillStyle = "#BDC3C7";
-      ctx.font = "6px monospace";
+      ctx.font = uiFont(language, 6);
       ctx.fillText(selected.description, 104, 207);
       ctx.fillStyle = definition.color;
       ctx.fillText(`${definition.role.toUpperCase()} // HP ${definition.maxHp}`, 104, 219);
     } else {
       ctx.textAlign = "center";
       ctx.fillStyle = selected?.unlocked ? "#BDC3C7" : "#4B5563";
-      ctx.font = "7px monospace";
-      const detail = selected?.unlocked ? selected.description : "HIDDEN";
-      const words = detail.split(" ");
-      const lines: string[] = [];
-      let line = "";
-      for (const word of words) {
-        const next = line ? `${line} ${word}` : word;
-        if (next.length > 48 && line) {
-          lines.push(line);
-          line = word;
-        } else {
-          line = next;
-        }
-      }
-      if (line) lines.push(line);
-      lines.slice(0, 2).forEach((text, index) => ctx.fillText(text, 160, 200 + index * 10));
+      ctx.font = uiFont(language, 7);
+      const detail = selected?.unlocked ? selected.description : t(language, "common.hidden");
+      wrapLocalized(detail, language === "zh-CN" ? 38 : 48).slice(0, 2)
+        .forEach((text, index) => ctx.fillText(text, 160, 200 + index * 10));
     }
     ctx.textAlign = "center";
     ctx.fillStyle = "#7F8C8D";
-    ctx.font = "6px monospace";
-    ctx.fillText(`${page === "buffs" ? "TALENTS" : page.toUpperCase()} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
-    ctx.fillText("Q/E PAGE   W/S SELECT   ESC", 160, 238);
+    ctx.font = uiFont(language, 6);
+    ctx.fillText(`${this.pageLabel(page)} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
+    ctx.fillText(t(language, "records.footer"), 160, 238);
     ctx.textAlign = "left";
   }
 }

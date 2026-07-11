@@ -6,6 +6,7 @@ import { PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 import { WEAPONS } from "../data/weapons";
+import { getCharacterText, t, uiFont } from "../i18n";
 
 export class CharacterSelectState extends GameState {
     protected characters = Object.values(CHARACTERS);
@@ -73,11 +74,14 @@ export class CharacterSelectState extends GameState {
     ctx.fillStyle = "#0A0F19";
     ctx.fillRect(0, 0, 320, 240);
 
-    MenuRenderer.drawTitle(ctx, "SELECT CHARACTER", 160, 30);
+    const language = this.engine.data.settings.language;
+    MenuRenderer.drawTitle(ctx, t(language, "character.title"), 160, 30, language);
     ctx.fillStyle = this.engine.data.meta.preferredHardMode ? "#E74C3C" : "#7F8C8D";
     ctx.textAlign = "center";
-    ctx.font = "bold 6px monospace";
-    ctx.fillText(`RUN MODE: ${this.engine.data.meta.preferredHardMode ? "HARD" : "NORMAL"}`, 160, 40);
+    ctx.font = uiFont(language, 6, true);
+    ctx.fillText(t(language, "character.runMode", {
+      mode: t(language, this.engine.data.meta.preferredHardMode ? "common.hard" : "common.normal"),
+    }), 160, 40);
 
     const cardW = 85;
     const cardH = 130;
@@ -114,7 +118,7 @@ export class CharacterSelectState extends GameState {
       // Name
       ctx.fillStyle = "#FFF";
       ctx.textAlign = "center";
-      ctx.font = "bold 10px monospace";
+      ctx.font = uiFont(language, 10, true);
       ctx.fillText(char.name, x + cardW/2, startY + 45);
       
       // Stats
@@ -126,15 +130,17 @@ export class CharacterSelectState extends GameState {
       
       // Weapon (small label)
       ctx.fillStyle = "#BDC3C7";
-      ctx.font = "8px monospace";
+      ctx.font = uiFont(language, 8);
       const defaultUnlocked = this.engine.data.isStarterWeaponUnlocked(char.starterWeapon);
-      ctx.fillText(`DEF: ${defaultUnlocked ? char.starterWeapon.toUpperCase() : "LOCKED"}`, x + 5, startY + 122);
+      ctx.fillText(t(language, "character.defaultWeapon", {
+        weapon: defaultUnlocked ? char.starterWeapon.toUpperCase() : t(language, "common.locked"),
+      }), x + 5, startY + 122);
       ctx.globalAlpha = 1;
       if (!isUnlocked) {
         ctx.fillStyle = "#E74C3C";
         ctx.textAlign = "center";
-        ctx.font = "bold 9px monospace";
-        ctx.fillText("LOCKED", x + cardW / 2, startY + 58);
+        ctx.font = uiFont(language, 9, true);
+        ctx.fillText(t(language, "common.locked"), x + cardW / 2, startY + 58);
       }
     }
     
@@ -143,26 +149,27 @@ export class CharacterSelectState extends GameState {
     const selectedChar = this.characters[this.selectedIndex];
     const selectedUnlocked = this.engine.data.isCharacterUnlocked(selectedChar.id);
     
+    const localizedCharacter = getCharacterText(selectedChar.id, selectedChar, language);
     ctx.fillStyle = selectedChar.color;
-    ctx.font = "bold 10px monospace";
-    ctx.fillText(selectedChar.title.toUpperCase(), 160, 202);
+    ctx.font = uiFont(language, 10, true);
+    ctx.fillText(localizedCharacter.title, 160, 202);
     
     ctx.fillStyle = selectedUnlocked ? "#F1C40F" : "#E74C3C";
-    ctx.font = "9px monospace";
+    ctx.font = uiFont(language, 9);
     const detail = selectedUnlocked
-      ? selectedChar.passive
+      ? localizedCharacter.passive
       : selectedChar.id === "mage"
-        ? "UNLOCK: REACH 2-1 OR EARN 50 SHARDS"
-        : "UNLOCK: WIN A RUN OR EARN 120 SHARDS";
+        ? t(language, "character.unlockMage")
+        : t(language, "character.unlockRogue");
     ctx.fillText(detail, 160, 214);
 
     const selectedWeapon = this.getUnlockedWeapons()[this.selectedWeaponIndex] ?? WEAPONS.pistol;
     ctx.fillStyle = "#00F2FE";
-    ctx.font = "bold 8px monospace";
+    ctx.font = uiFont(language, 8, true);
     ctx.fillText(`↑↓  ${selectedWeapon.name.toUpperCase()}`, 160, 225);
     ctx.fillStyle = selectedUnlocked ? "#BDC3C7" : "#E74C3C";
-    ctx.font = "7px monospace";
-    ctx.fillText(selectedUnlocked ? "←→ CHARACTER   ENTER START   ESC" : "LOCKED", 160, 236);
+    ctx.font = uiFont(language, 7);
+    ctx.fillText(selectedUnlocked ? t(language, "character.footer") : t(language, "common.locked"), 160, 236);
     ctx.textAlign = "left";
   }
 }

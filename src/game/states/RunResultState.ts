@@ -5,6 +5,7 @@ import { MenuRenderer } from "../render/MenuRenderer";
 import { GameState } from "./GameState";
 import { ACHIEVEMENTS, type AchievementId } from "../AchievementSystem";
 import { CHALLENGES } from "../ChallengeSystem";
+import { getAchievementText, getChallengeText, t, uiFont } from "../i18n";
 
 function formatTime(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
@@ -51,6 +52,7 @@ export class RunResultState extends GameState {
     if (!summary) return;
 
     const victory = summary.outcome === "victory";
+    const language = this.engine.data.settings.language;
     ctx.fillStyle = "#080D16";
     ctx.fillRect(0, 0, 320, 240);
 
@@ -62,15 +64,15 @@ export class RunResultState extends GameState {
       ctx.stroke();
     }
 
-    MenuRenderer.drawTitle(ctx, victory ? "RUN COMPLETE" : "RUN TERMINATED", 160, 30);
+    MenuRenderer.drawTitle(ctx, t(language, victory ? "result.complete" : "result.terminated"), 160, 30, language);
     ctx.textAlign = "center";
     ctx.fillStyle = victory ? "#F1C40F" : "#E74C3C";
-    ctx.font = "bold 12px monospace";
-    ctx.fillText(victory ? "THE CORE HAS FALLEN" : "THE DELVE CLAIMED YOU", 160, 50);
+    ctx.font = uiFont(language, 12, true);
+    ctx.fillText(t(language, victory ? "result.victoryLine" : "result.defeatLine"), 160, 50);
     if (this.engine.data.data.run.hardMode) {
       ctx.fillStyle = "#E74C3C";
-      ctx.font = "bold 6px monospace";
-      ctx.fillText("HARD MODE // SOUL SHARDS x1.5", 160, 59);
+      ctx.font = uiFont(language, 6, true);
+      ctx.fillText(t(language, "result.hardBonus"), 160, 59);
     }
 
     ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
@@ -80,15 +82,15 @@ export class RunResultState extends GameState {
 
     const stage = getStageLabel(createRunProgressFromGlobalStage(summary.highestStage));
     const rows: Array<[string, string]> = [
-      ["TIME", formatTime(summary.elapsedSeconds)],
-      ["FURTHEST STAGE", stage],
-      ["ROOMS CLEARED", String(summary.stagesCleared)],
-      ["ENEMIES", String(summary.kills)],
-      ["ELITES", String(summary.eliteKills)],
-      ["BOSSES", String(summary.bossKills)],
+      [t(language, "result.time"), formatTime(summary.elapsedSeconds)],
+      [t(language, "result.stage"), stage],
+      [t(language, "result.rooms"), String(summary.stagesCleared)],
+      [t(language, "result.enemies"), String(summary.kills)],
+      [t(language, "result.elites"), String(summary.eliteKills)],
+      [t(language, "result.bosses"), String(summary.bossKills)],
     ];
 
-    ctx.font = "8px monospace";
+    ctx.font = uiFont(language, 8);
     rows.forEach(([label, value], index) => {
       const y = 79 + index * 13;
       ctx.textAlign = "left";
@@ -101,49 +103,55 @@ export class RunResultState extends GameState {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#00F2FE";
-    ctx.font = "bold 10px monospace";
-    const rewardLabel = summary.alreadyClaimed ? "REWARD ALREADY CLAIMED" : `+${summary.rewardEarned} SOUL SHARDS`;
+    ctx.font = uiFont(language, 10, true);
+    const rewardLabel = summary.alreadyClaimed
+      ? t(language, "result.claimed")
+      : t(language, "result.reward", { amount: summary.rewardEarned });
     ctx.fillText(rewardLabel, 160, 163);
     ctx.fillStyle = "#BDC3C7";
-    ctx.font = "7px monospace";
-    ctx.fillText(`TOTAL SHARDS: ${summary.totalCurrency}`, 160, 173);
+    ctx.font = uiFont(language, 7);
+    ctx.fillText(t(language, "result.total", { amount: summary.totalCurrency }), 160, 173);
 
     if (!summary.alreadyClaimed) {
       ctx.fillStyle = "#7F8C8D";
-      ctx.font = "6px monospace";
-      ctx.fillText(
-        `RUN ${summary.baseReward} | CHALLENGE ${summary.challengeReward} | ACHIEVEMENT ${summary.achievementReward}`,
-        160,
-        182,
-      );
+      ctx.font = uiFont(language, 6);
+      ctx.fillText(t(language, "result.breakdown", {
+        run: summary.baseReward,
+        challenge: summary.challengeReward,
+        achievement: summary.achievementReward,
+      }), 160, 182);
     }
 
     if (summary.challengeCompleted && this.engine.data.data.run.challengeId) {
       const challenge = CHALLENGES[this.engine.data.data.run.challengeId];
+      const localized = getChallengeText(challenge.id, challenge, language);
       ctx.fillStyle = "#F1C40F";
-      ctx.font = "bold 7px monospace";
-      ctx.fillText(`CHALLENGE COMPLETE: ${challenge.name}`, 160, 191);
+      ctx.font = uiFont(language, 7, true);
+      ctx.fillText(t(language, "result.challenge", { name: localized.name }), 160, 191);
     }
 
     const achievementNames = summary.newAchievements
-      .map(id => ACHIEVEMENTS[id as AchievementId]?.name)
+      .map(id => {
+        const achievement = ACHIEVEMENTS[id as AchievementId];
+        return achievement ? getAchievementText(achievement.id, achievement, language).name : undefined;
+      })
       .filter(Boolean);
     const notices = [...achievementNames, ...summary.newUnlocks];
     if (notices.length > 0) {
       ctx.fillStyle = "#2ECC71";
-      ctx.font = "bold 7px monospace";
+      ctx.font = uiFont(language, 7, true);
       const firstLine = notices.slice(0, 2).join(" / ");
       const secondLine = notices.slice(2, 4).join(" / ");
-      ctx.fillText(`UNLOCKED: ${firstLine}`, 160, 200);
+      ctx.fillText(t(language, "result.unlocked", { items: firstLine }), 160, 200);
       if (secondLine) ctx.fillText(secondLine, 160, 209);
     }
 
     ctx.fillStyle = "#00F2FE";
-    ctx.font = "bold 8px monospace";
-    ctx.fillText("ENTER TITLE", 160, 220);
+    ctx.font = uiFont(language, 8, true);
+    ctx.fillText(t(language, "result.titleButton"), 160, 220);
     ctx.fillStyle = "#7F8C8D";
-    ctx.font = "7px monospace";
-    ctx.fillText("R HUB", 160, 233);
+    ctx.font = uiFont(language, 7);
+    ctx.fillText(t(language, "result.hubButton"), 160, 233);
     ctx.textAlign = "left";
   }
 }

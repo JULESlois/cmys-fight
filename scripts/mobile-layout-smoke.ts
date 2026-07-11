@@ -95,9 +95,12 @@ assert.match(cssSource, /border-radius: 0/);
 assert.doesNotMatch(cssSource.slice(0, cssSource.indexOf("@media (hover: hover)")), /border-radius: 9999px/);
 assert.match(cssSource, /@media \(max-width: 360px\)/);
 assert.match(cssSource, /env\(safe-area-inset-bottom/);
-assert.match(settingsSource, /"TOUCH LAYOUT"/);
-assert.match(settingsSource, /"TOUCH SIZE"/);
-assert.match(settingsSource, /"TOUCH LABELS"/);
+assert.match(settingsSource, /"touchLayout"/);
+assert.match(settingsSource, /settings\.touchLayout/);
+assert.match(settingsSource, /"touchSize"/);
+assert.match(settingsSource, /settings\.touchSize/);
+assert.match(settingsSource, /"touchLabels"/);
+assert.match(settingsSource, /settings\.touchLabels/);
 
 console.log(JSON.stringify({
   settingsMigration: "ok",

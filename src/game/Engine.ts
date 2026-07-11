@@ -354,7 +354,7 @@ export class Engine {
       const dungeonPlayer = this.currentState === "dungeon"
         ? (this.states.dungeon as DungeonState).getPlayer()
         : undefined;
-      PauseOverlayRenderer.draw(this.ctx, this.input, dungeonPlayer);
+      PauseOverlayRenderer.draw(this.ctx, this.input, dungeonPlayer, settings.language);
     }
 
     if (settings.crtFilter && !degraded) {

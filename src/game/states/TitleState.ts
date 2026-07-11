@@ -6,9 +6,10 @@ import { SpriteRenderer } from "../render/SpriteRenderer";
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
 import { APP_VERSION } from "../../version";
 import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
+import { t as tr, uiFont } from "../i18n";
 
 export class TitleState extends GameState {
-    protected options = ["NEW RUN", "CONTINUE", "HUB", "SETTINGS"];
+    protected options = ["newRun", "continue", "hub", "settings"] as const;
   protected selectedIndex = 0;
 
   constructor(engine: Engine) {
@@ -34,17 +35,17 @@ export class TitleState extends GameState {
 
   private handleSelect() {
     const opt = this.options[this.selectedIndex];
-    if (opt === "NEW RUN") {
+    if (opt === "newRun") {
       this.engine.switchState("character_select", { backState: "title" });
-    } else if (opt === "HUB") {
+    } else if (opt === "hub") {
       this.engine.switchState("hub");
-    } else if (opt === "CONTINUE") {
+    } else if (opt === "continue") {
       if (!this.engine.data.hasValidSave()) {
         this.engine.switchState("hub");
         return;
       }
       this.engine.switchState("dungeon");
-    } else if (opt === "SETTINGS") {
+    } else if (opt === "settings") {
       this.engine.switchState("settings");
     }
   }
@@ -114,25 +115,25 @@ export class TitleState extends GameState {
     ctx.textAlign = "left";
 
     const startY = 120;
+    const language = this.engine.data.settings.language;
     const hasSave = this.engine.data.hasValidSave();
     for (let i = 0; i < this.options.length; i++) {
-      let label = this.options[i];
-      if (label === "CONTINUE" && !hasSave) {
-        ctx.globalAlpha = 0.5;
-      }
-      MenuRenderer.drawButton(ctx, label, 120, startY + i * 20, i === this.selectedIndex);
+      const option = this.options[i];
+      const label = tr(language, `title.${option}` as Parameters<typeof tr>[1]);
+      if (option === "continue" && !hasSave) ctx.globalAlpha = 0.5;
+      MenuRenderer.drawButton(ctx, label, 120, startY + i * 20, i === this.selectedIndex, language);
       ctx.globalAlpha = 1.0;
     }
     
     ctx.fillStyle = "#34495E";
-    ctx.font = "8px monospace";
+    ctx.font = uiFont(this.engine.data.settings.language, 8);
     ctx.textAlign = "center";
     const meta = this.engine.data.meta;
     const bestTime = meta.bestVictoryTime === null
       ? "--:--"
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
-    ctx.fillText(`SHARDS ${meta.currency}  STAGE ${bestStage}  WINS ${meta.victories}  BEST ${bestTime}`, 160, 218);
+    ctx.fillText(tr(language, "title.stats", { shards: meta.currency, stage: bestStage, wins: meta.victories, best: bestTime }), 160, 218);
     ctx.fillText(`v${APP_VERSION}`, 160, 230);
     ctx.textAlign = "left";
   }
