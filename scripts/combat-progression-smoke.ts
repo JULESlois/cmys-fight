@@ -84,13 +84,13 @@ const boss = EnemyFactory.create(stage, { x: 80, y: 80, type: "boss", enemyId: b
 assert.ok(boss.radius < bossDef.radius);
 
 const legendaryWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "legendary");
-assert.equal(Object.keys(WEAPONS).length, 22);
-assert.equal(legendaryWeapons.length, 6);
+assert.equal(Object.keys(WEAPONS).length, 30);
+assert.equal(legendaryWeapons.length, 8);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "phoenix").length, 2);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 6);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 8);
 assert.deepEqual(
   getAvailableWeapons(1).map(weapon => weapon.id),
   getAvailableWeapons(20).map(weapon => weapon.id),

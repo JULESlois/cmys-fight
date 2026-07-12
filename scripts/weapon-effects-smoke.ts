@@ -59,7 +59,7 @@ assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.hig
 assert.ok(bossRates.legendary >= 0.24, `Boss chest legendary rate ${bossRates.legendary}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 6);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 8);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
 

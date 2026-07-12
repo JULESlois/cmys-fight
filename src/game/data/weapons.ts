@@ -281,6 +281,55 @@ export const WEAPONS: Record<string, WeaponData> = {
     muzzleEffect: "rocket", impactEffect: "explosion", recoil: 1.8,
     renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
   },
+  ballistic_knife: {
+    id: "ballistic_knife", name: "Ballistic Knife", category: "special", rarity: "uncommon",
+    damage: 14, fireRate: 1.1, bulletSpeed: 320, manaCost: 0, spread: 0, pelletCount: 1, knockback: 5, critChance: 0.15, color: "#BDC3C7",
+    projectileRadius: 3, projectileLife: 1.2, pierce: 3,
+    mechanic: "Thrown blade silently pierces multiple enemies.", projectileStyle: "disc", trailLength: 5, spinRate: 20,
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -3,
+  },
+  olympia: {
+    id: "olympia", name: "Olympia", category: "shotgun", rarity: "common",
+    damage: 5, fireRate: 0.8, bulletSpeed: 160, manaCost: 0, spread: 0.9, pelletCount: 12, knockback: 8, critChance: 0.08, color: "#E67E22",
+    projectileLife: 1, mechanic: "Classic double barrel burst with devastating close range spread.", projectileStyle: "bullet", trailLength: 4,
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 24, muzzleOffsetY: -4,
+  },
+  ksg_12: {
+    id: "ksg_12", name: "KSG 12", category: "shotgun", rarity: "rare",
+    damage: 22, fireRate: 0.65, bulletSpeed: 300, manaCost: 2, spread: 0.04, pelletCount: 1, knockback: 18, critChance: 0.2, color: "#F1C40F",
+    projectileLife: 2.5, pierce: 1, mechanic: "Slug shotgun fires a powerful accurate projectile.", projectileStyle: "tracer", trailLength: 16,
+    renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 26, muzzleOffsetY: -4,
+  },
+  akimbo_scorpion: {
+    id: "akimbo_scorpion", name: "Akimbo Scorpion", category: "smg", rarity: "rare",
+    damage: 1, fireRate: 14, bulletSpeed: 240, manaCost: 0, spread: 0.3, pelletCount: 2, knockback: 1, critChance: 0.05, color: "#27AE60",
+    projectileLife: 1.5, mechanic: "Twin machine pistols unleash an uncontrollable bullet storm.", projectileStyle: "tracer", trailLength: 10,
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
+  },
+  scavenger: {
+    id: "scavenger", name: "Scavenger", category: "launcher", rarity: "rare",
+    damage: 18, fireRate: 0.7, bulletSpeed: 110, manaCost: 5, spread: 0, pelletCount: 1, knockback: 20, critChance: 0.15, color: "#3498DB",
+    projectileLife: 3, explosionRadius: 32, explosionDamageMultiplier: 1, mechanic: "Explosive sniper round creates a huge blast on impact.", projectileStyle: "rocket", trailLength: 20,
+    muzzleEffect: "rocket", impactEffect: "explosion", renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
+  },
+  venom_x: {
+    id: "venom_x", name: "Venom-X", category: "energy", rarity: "rare",
+    damage: 12, fireRate: 1.4, bulletSpeed: 150, manaCost: 5, spread: 0.05, pelletCount: 1, knockback: 10, critChance: 0.1, color: "#2ECC71",
+    projectileLife: 2.5, homingStrength: 1.8, mechanic: "Toxic tracking projectile leaves a poisonous cloud.", projectileStyle: "plasma", trailLength: 18,
+    impactEffect: "flame", renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
+  },
+  ray_gun: {
+    id: "ray_gun", name: "Ray Gun", category: "energy", rarity: "legendary",
+    damage: 20, fireRate: 1.6, bulletSpeed: 260, manaCost: 6, spread: 0, pelletCount: 1, knockback: 14, critChance: 0.25, color: "#00F2FE",
+    projectileRadius: 5, projectileLife: 2, explosionRadius: 24, explosionDamageMultiplier: 0.9, mechanic: "Classic wonder weapon fires explosive plasma shots.", projectileStyle: "plasma", trailLength: 28,
+    impactEffect: "explosion", muzzleEffect: "beam", renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 26, muzzleOffsetY: -4,
+  },
+  wunderwaffe: {
+    id: "wunderwaffe", name: "Wunderwaffe DG-2", category: "energy", rarity: "legendary",
+    damage: 16, fireRate: 0.75, bulletSpeed: 280, manaCost: 9, spread: 0, pelletCount: 1, knockback: 12, critChance: 0.2, color: "#8DF6FF",
+    projectileLife: 2, chainCount: 5, chainRange: 80, chainDamageMultiplier: 0.65, mechanic: "Lightning bolt jumps between groups of enemies.", projectileStyle: "lightning", trailLength: 35,
+    impactEffect: "electric", muzzleEffect: "electric", renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
+  },
 };
 
 export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {

@@ -495,6 +495,14 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   void_rail: "贯穿房间的轨道射线，可连续穿透六个目标。",
   dragon_breath: "喷射十二枚附带燃烧的火焰粒子。",
   siege_breaker: "大型攻城火箭反弹后会产生范围爆炸。",
+  ballistic_knife: "投掷刀刃可穿透多个敌人。",
+  olympia: "经典双管散弹枪，近距离爆发极高。",
+  ksg_12: "精确独头弹霰弹枪，拥有强大穿透力。",
+  akimbo_scorpion: "双持冲锋枪释放高速弹幕。",
+  scavenger: "爆炸狙击弹命中后产生巨大范围伤害。",
+  venom_x: "毒性追踪弹会留下腐蚀效果。",
+  ray_gun: "经典奇迹武器，发射爆炸等离子弹。",
+  wunderwaffe: "闪电会在敌人之间连续跳跃。",
 };
 
 const ACHIEVEMENT_ZH: Record<string, { name: string; description: string }> = {
