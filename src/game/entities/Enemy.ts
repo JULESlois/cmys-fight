@@ -35,6 +35,10 @@ export class Enemy {
   public projectileSpread: number = 0.28;
   public attackInterval: number = 1;
   public attackWindup: number = 0.4;
+  public attackRange: number = 190;
+  public minimumWindup: number = 0.22;
+  public minimumAttackInterval: number = 0.6;
+  public requiresLineOfSight: boolean = false;
   public attackAnimationDuration: number = 0.4;
   public attackTargetX: number = 0;
   public attackTargetY: number = 0;
@@ -81,6 +85,10 @@ export class Enemy {
     this.projectileSpread = 0.28;
     this.attackInterval = 1;
     this.attackWindup = 0.4;
+    this.attackRange = 190;
+    this.minimumWindup = 0.22;
+    this.minimumAttackInterval = 0.6;
+    this.requiresLineOfSight = false;
     this.attackAnimationDuration = 0.4;
     this.attackTargetX = 0;
     this.attackTargetY = 0;

@@ -22,7 +22,7 @@ function round(value: number, digits = 2): number {
  */
 export function getWeaponBalanceMetrics(
   weapon: WeaponData,
-  maxMana = 120,
+  maxMana = 80,
   manaRechargeRate = 9,
   manaRechargeDelay = 1.35,
   energyCostMultiplier = 1,

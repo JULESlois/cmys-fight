@@ -71,7 +71,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 17;
+const CURRENT_SAVE_VERSION = 18;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -140,11 +140,11 @@ export const defaultSave: GameSave = {
     maxHp: 6,
     armor: 5,
     maxArmor: 5,
-    mana: 100,
-    maxMana: 100,
+    mana: CHARACTERS.knight.maxMana,
+    maxMana: CHARACTERS.knight.maxMana,
     manaRechargeTimer: 0,
-    manaRechargeDelay: DEFAULT_MANA_RECHARGE_DELAY,
-    manaRechargeRate: DEFAULT_MANA_RECHARGE_RATE,
+    manaRechargeDelay: CHARACTERS.knight.manaRechargeDelay,
+    manaRechargeRate: CHARACTERS.knight.manaRechargeRate,
     weaponSlots: ["pistol"],
     activeWeaponSlot: 0,
     currentWeaponId: "pistol",
@@ -204,6 +204,7 @@ export class GameData {
     this.normalizePlayerWeapons();
     this.normalizePlayerSkills();
     this.normalizePlayerBuffs();
+    BuffSystem.applyManaRuntimeStats(this.data.player);
     this.normalizePlayerStatuses();
     this.normalizeRunBonuses();
     this.data.run = normalizeRunProgress(this.data.run);
@@ -252,7 +253,7 @@ export class GameData {
       }
       this.normalizePlayerSkills();
       this.normalizePlayerBuffs();
-      this.migrateCombatBalance(loadedVersion);
+      this.migrateCombatBalance(loadedVersion, parsed.player);
       BuffSystem.applyManaRuntimeStats(this.data.player);
       this.normalizePlayerStatuses();
       this.normalizeRunBonuses();
@@ -798,8 +799,9 @@ export class GameData {
     player.rogueCritTimer = 0;
     player.knightGuardReady = characterId === "knight";
     player.manaRechargeTimer = 0;
-    player.manaRechargeDelay = DEFAULT_MANA_RECHARGE_DELAY;
-    player.manaRechargeRate = DEFAULT_MANA_RECHARGE_RATE;
+    const character = CHARACTERS[characterId] ?? CHARACTERS.knight;
+    player.manaRechargeDelay = character.manaRechargeDelay;
+    player.manaRechargeRate = character.manaRechargeRate;
   }
 
   private normalizePlayerSkills() {
@@ -813,7 +815,8 @@ export class GameData {
     player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
-    player.maxMana = Math.max(1, Math.min(MAX_PLAYER_MANA, Number(player.maxMana) || 100));
+    const character = CHARACTERS[player.characterId] ?? CHARACTERS.knight;
+    player.maxMana = Math.max(1, Math.min(MAX_PLAYER_MANA, Number(player.maxMana) || character.maxMana));
     player.mana = Math.max(0, Math.min(player.maxMana, Number(player.mana) || 0));
     player.manaRechargeTimer = finiteNonNegative(player.manaRechargeTimer);
     player.manaRechargeDelay = Math.max(0.2, Number(player.manaRechargeDelay) || DEFAULT_MANA_RECHARGE_DELAY);
@@ -836,13 +839,15 @@ export class GameData {
       player.buffs.includes("phoenix_protocol") && player.phoenixProtocolReady === true;
   }
 
-  private migrateCombatBalance(loadedVersion: number) {
-    if (loadedVersion >= 17) return;
-    const player = this.data.player;
-    const character = CHARACTERS[player.characterId] ?? CHARACTERS.knight;
-    const manaWellBonus = player.buffs.includes("mana_well") ? 30 : 0;
-    player.maxMana = Math.min(MAX_PLAYER_MANA, character.maxMana + manaWellBonus);
-    player.mana = Math.max(0, Math.min(player.maxMana, Number(player.mana) || 0));
+  private migrateCombatBalance(loadedVersion: number, rawPlayer?: Partial<GameSave["player"]>) {
+    if (loadedVersion >= 18) return;
+    const oldMaxMana = Number(rawPlayer?.maxMana);
+    const oldMana = Number(rawPlayer?.mana);
+    const manaRatio = Number.isFinite(oldMaxMana) && oldMaxMana > 0
+      ? Math.max(0, Math.min(1, (Number.isFinite(oldMana) ? oldMana : oldMaxMana) / oldMaxMana))
+      : 1;
+    BuffSystem.applyManaRuntimeStats(this.data.player);
+    this.data.player.mana = this.data.player.maxMana * manaRatio;
   }
 
   private normalizePlayerStatuses() {

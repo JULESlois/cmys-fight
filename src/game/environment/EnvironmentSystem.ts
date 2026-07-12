@@ -40,7 +40,14 @@ export class EnvironmentSystem {
     if (room.type !== "combat" && room.type !== "boss") return [];
     const type = typeForChapter(stage.chapterIndex);
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? stage.seed, `environment:${type}`));
-    const groupCount = room.type === "boss" ? 4 : 2 + Math.min(2, Math.floor(stage.globalStageIndex / 6));
+    const walkableTiles = mapData.filter(tile => tile !== 1).length;
+    const walkableRatio = walkableTiles / Math.max(1, mapData.length);
+    const stageGroups = 2 + Math.min(2, Math.floor(stage.globalStageIndex / 6));
+    const groupCount = room.type === "boss"
+      ? 4
+      : walkableRatio < 0.5 ? 1
+        : walkableRatio < 0.65 ? Math.min(2, stageGroups)
+          : Math.min(3, stageGroups);
     const hazards: EnvironmentHazard[] = [];
     const occupied = new Set<string>();
 

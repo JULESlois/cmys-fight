@@ -8,8 +8,10 @@ import { EnemyFactory } from "./EnemyFactory";
 import {
   getBossDefinition,
   getBossPool,
+  getEnemyDefinition,
   getEnemyPool,
   getThemeForChapter,
+  type EnemyDefinition,
   type EnemyRole,
 } from "./data/enemies";
 
@@ -30,6 +32,60 @@ function shuffle<T>(values: T[], random: () => number): T[] {
 
 function choose<T>(values: T[], random: () => number): T {
   return values[Math.min(values.length - 1, Math.floor(random() * values.length))];
+}
+
+function isMovementController(definition: EnemyDefinition): boolean {
+  return definition.statusEffect === "slow" || definition.statusEffect === "root";
+}
+
+export function isCrampedCombatTemplate(template: RoomTemplate): boolean {
+  const walkableTiles = template.tiles.filter(tile => tile !== 1).length;
+  return walkableTiles / Math.max(1, template.tiles.length) < 0.5;
+}
+
+function chooseEnemyForWave(
+  theme: ReturnType<typeof getThemeForChapter>,
+  stageIndex: number,
+  preferredRole: EnemyRole,
+  existingSpawns: EnemySpawn[],
+  cramped: boolean,
+  random: () => number,
+): EnemyDefinition {
+  const rolePool = getEnemyPool(theme, preferredRole, stageIndex);
+  const fullPool = getEnemyPool(theme, undefined, stageIndex);
+  const existingDefinitions = existingSpawns
+    .map(spawn => spawn.enemyId ? getEnemyDefinition(spawn.enemyId) : null)
+    .filter((definition): definition is EnemyDefinition => definition !== null);
+  const usedIds = new Set(existingDefinitions.map(definition => definition.id));
+  const areaUsed = existingDefinitions.some(definition => definition.behavior === "area");
+  const controlUsed = existingDefinitions.some(isMovementController);
+
+  const respectsThreatBudget = (definition: EnemyDefinition) =>
+    !usedIds.has(definition.id) &&
+    (!cramped || definition.behavior !== "area") &&
+    (!areaUsed || definition.behavior !== "area") &&
+    (!controlUsed || !isMovementController(definition));
+
+  const respectsThreatBudgetWithDuplicates = (definition: EnemyDefinition) =>
+    (!cramped || definition.behavior !== "area") &&
+    (!areaUsed || definition.behavior !== "area") &&
+    (!controlUsed || !isMovementController(definition));
+
+  const noDuplicate = (definition: EnemyDefinition) =>
+    !usedIds.has(definition.id) && (!cramped || definition.behavior !== "area");
+
+  const candidateTiers = [
+    rolePool.filter(respectsThreatBudget),
+    fullPool.filter(respectsThreatBudget),
+    rolePool.filter(respectsThreatBudgetWithDuplicates),
+    fullPool.filter(respectsThreatBudgetWithDuplicates),
+    rolePool.filter(noDuplicate),
+    fullPool.filter(noDuplicate),
+    fullPool.filter(definition => !cramped || definition.behavior !== "area"),
+    fullPool,
+  ];
+  const candidates = candidateTiers.find(tier => tier.length > 0) ?? fullPool;
+  return choose(candidates, random);
 }
 
 export class EncounterFactory {
@@ -62,6 +118,7 @@ export class EncounterFactory {
     const spawnPoints = template.enemySpawnPoints.length > 0
       ? template.enemySpawnPoints
       : [{ x: 10, y: 7 }];
+    const cramped = isCrampedCombatTemplate(template);
     const waves: Wave[] = [];
 
     for (let waveIndex = 0; waveIndex < difficulty.normalWaveCount; waveIndex++) {
@@ -71,10 +128,14 @@ export class EncounterFactory {
       for (let i = 0; i < spawnCount; i++) {
         const point = points[i];
         const role: EnemyRole = random() < difficulty.rangedChance ? "ranged" : "melee";
-        const rolePool = getEnemyPool(theme, role, stage.stageIndex);
-        const fullPool = getEnemyPool(theme, undefined, stage.stageIndex);
-        const candidates = rolePool.filter(candidate => !spawns.some(spawn => spawn.enemyId === candidate.id));
-        const definition = choose(candidates.length > 0 ? candidates : rolePool.length > 0 ? rolePool : fullPool, random);
+        const definition = chooseEnemyForWave(
+          theme,
+          stage.stageIndex,
+          role,
+          spawns,
+          cramped,
+          random,
+        );
         spawns.push({
           x: point.x * 16 + 8,
           y: point.y * 16 + 8,
@@ -85,17 +146,21 @@ export class EncounterFactory {
       }
 
       if (spawns.length > 1 && spawns.every(spawn => spawn.type === "ranged")) {
-        const melee = choose(getEnemyPool(theme, "melee", stage.stageIndex), random);
-        spawns[0].type = "melee";
+        const melee = chooseEnemyForWave(theme, stage.stageIndex, "melee", spawns.slice(1), cramped, random);
+        spawns[0].type = melee.role;
         spawns[0].enemyId = melee.id;
       }
       if (spawns.length > 2 && spawns.every(spawn => spawn.type === "melee")) {
-        const rangedPool = getEnemyPool(theme, "ranged", stage.stageIndex);
-        if (rangedPool.length > 0) {
-          const ranged = choose(rangedPool, random);
-          spawns[spawns.length - 1].type = "ranged";
-          spawns[spawns.length - 1].enemyId = ranged.id;
-        }
+        const ranged = chooseEnemyForWave(
+          theme,
+          stage.stageIndex,
+          "ranged",
+          spawns.slice(0, -1),
+          cramped,
+          random,
+        );
+        spawns[spawns.length - 1].type = ranged.role;
+        spawns[spawns.length - 1].enemyId = ranged.id;
       }
 
       waves.push({

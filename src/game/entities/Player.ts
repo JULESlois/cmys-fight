@@ -7,7 +7,7 @@ export const PLAYER_WEAPON_OFFSET_Y = -2;
 export const PLAYER_HAND_OFFSET_Y = -2;
 export const PLAYER_MUZZLE_OFFSET_X = 18;
 export const PLAYER_MUZZLE_OFFSET_Y = -4;
-export const MAX_PLAYER_MANA = 120;
+export const MAX_PLAYER_MANA = 80;
 export const DEFAULT_MANA_RECHARGE_DELAY = 1.35;
 export const DEFAULT_MANA_RECHARGE_RATE = 9;
 
@@ -66,8 +66,10 @@ export class Player {
     this.y = y;
     this.maxHp = 6;
     this.hp = this.maxHp;
-    this.maxMana = 100;
+    this.maxMana = 25;
     this.mana = this.maxMana;
+    this.manaRechargeDelay = 0.85;
+    this.manaRechargeRate = 10;
     this.armor = this.maxArmor;
   }
 

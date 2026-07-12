@@ -21,6 +21,10 @@ export interface EnemyDefinition {
   attackDamage: number;
   attackInterval: number;
   attackWindup: number;
+  attackRange?: number;
+  minimumWindup?: number;
+  minimumAttackInterval?: number;
+  requiresLineOfSight?: boolean;
   projectileSpeed?: number;
   projectileCount?: number;
   projectileSpread?: number;
@@ -56,7 +60,8 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   }),
   spore_mimic: enemy({
     id: "spore_mimic", name: "Spore Mimic", theme: "forest", role: "ranged", behavior: "area", visual: "mushroom", introducedAtStage: 3,
-    color: "#9CCC65", maxHp: 12, speed: 18, radius: 9, attackDamage: 2, attackInterval: 2.2, attackWindup: 0.72,
+    color: "#9CCC65", maxHp: 12, speed: 18, radius: 9, attackDamage: 2, attackInterval: 2.2, attackWindup: 0.82,
+    attackRange: 145, minimumWindup: 0.65, minimumAttackInterval: 1.55, requiresLineOfSight: true,
     areaRadius: 20, statusEffect: "poison", statusDuration: 3,
   }),
   forest_guardian: enemy({
@@ -91,8 +96,9 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   }),
   chain_jailer: enemy({
     id: "chain_jailer", name: "Chain Jailer", theme: "dungeon", role: "ranged", behavior: "area", visual: "jailer", introducedAtStage: 3,
-    color: "#78909C", maxHp: 14, speed: 18, radius: 10, attackDamage: 2, attackInterval: 2.0, attackWindup: 0.7,
-    areaRadius: 18, statusEffect: "root", statusDuration: 1,
+    color: "#78909C", maxHp: 14, speed: 18, radius: 10, attackDamage: 2, attackInterval: 2.15, attackWindup: 0.85,
+    attackRange: 140, minimumWindup: 0.7, minimumAttackInterval: 1.55, requiresLineOfSight: true,
+    areaRadius: 18, statusEffect: "root", statusDuration: 0.65,
   }),
   crypt_overseer: enemy({
     id: "crypt_overseer", name: "Crypt Overseer", theme: "dungeon", role: "boss", behavior: "boss", visual: "boss", bossPattern: "crypt",
@@ -108,37 +114,38 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   frost_hound: enemy({
     id: "frost_hound", name: "Frost Hound", theme: "snow", role: "melee", behavior: "charge", visual: "hound",
     color: "#81D4FA", maxHp: 10, speed: 40, radius: 8, attackDamage: 3, attackInterval: 1.4, attackWindup: 0.5,
-    chargeDistance: 60, statusEffect: "slow", statusDuration: 2,
+    chargeDistance: 60,
   }),
   ice_shaman: enemy({
     id: "ice_shaman", name: "Ice Shaman", theme: "snow", role: "ranged", behavior: "area", visual: "shaman",
-    color: "#4FC3F7", maxHp: 9, speed: 21, radius: 8, attackDamage: 3, attackInterval: 2.0, attackWindup: 0.78,
-    areaRadius: 22, statusEffect: "slow", statusDuration: 2.6,
+    color: "#4FC3F7", maxHp: 9, speed: 21, radius: 8, attackDamage: 2, attackInterval: 2.3, attackWindup: 0.95,
+    attackRange: 135, minimumWindup: 0.75, minimumAttackInterval: 1.65, requiresLineOfSight: true,
+    areaRadius: 18, statusEffect: "slow", statusDuration: 1.25,
   }),
   snow_turret: enemy({
     id: "snow_turret", name: "Snow Turret", theme: "snow", role: "ranged", behavior: "scatter", visual: "turret",
     color: "#B3E5FC", maxHp: 12, speed: 14, radius: 9, attackDamage: 2, attackInterval: 1.35, attackWindup: 0.42,
-    projectileSpeed: 100, projectileCount: 4, projectileSpread: 0.22, statusEffect: "slow", statusDuration: 1.8,
+    projectileSpeed: 100, projectileCount: 4, projectileSpread: 0.22, statusEffect: "slow", statusDuration: 0.85,
   }),
   white_sampler: enemy({
     id: "white_sampler", name: "White Sampler", theme: "snow", role: "ranged", behavior: "shoot", visual: "hazmat", introducedAtStage: 2,
     color: "#ECEFF1", maxHp: 11, speed: 25, radius: 8, attackDamage: 2, attackInterval: 1.15, attackWindup: 0.4,
-    projectileSpeed: 132, statusEffect: "root", statusDuration: 0.55,
+    projectileSpeed: 132, statusEffect: "root", statusDuration: 0.4,
   }),
   mirror_wisp: enemy({
     id: "mirror_wisp", name: "Mirror Wisp", theme: "snow", role: "ranged", behavior: "scatter", visual: "wisp", introducedAtStage: 3,
     color: "#80DEEA", maxHp: 7, speed: 32, radius: 7, attackDamage: 2, attackInterval: 1.3, attackWindup: 0.44,
-    projectileSpeed: 120, projectileCount: 2, projectileSpread: 0.52, statusEffect: "slow", statusDuration: 1.4,
+    projectileSpeed: 120, projectileCount: 2, projectileSpread: 0.52,
   }),
   frost_titan: enemy({
     id: "frost_titan", name: "Frost Titan", theme: "snow", role: "boss", behavior: "boss", visual: "boss", bossPattern: "frost",
     color: "#0288D1", maxHp: 64, speed: 25, radius: 16, attackDamage: 4, attackInterval: 2.15, attackWindup: 0.68,
-    projectileSpeed: 64, projectileCount: 10, statusEffect: "slow", statusDuration: 2.4,
+    projectileSpeed: 64, projectileCount: 10, statusEffect: "slow", statusDuration: 1.2,
   }),
   white_director: enemy({
     id: "white_director", name: "White Director", theme: "snow", role: "boss", behavior: "boss", visual: "hazmat", bossPattern: "sample",
     color: "#ECEFF1", maxHp: 61, speed: 24, radius: 15, attackDamage: 3, attackInterval: 1.88, attackWindup: 0.58,
-    projectileSpeed: 82, projectileCount: 8, summonEnemyId: "white_sampler", statusEffect: "slow", statusDuration: 2,
+    projectileSpeed: 82, projectileCount: 8, summonEnemyId: "white_sampler", statusEffect: "slow", statusDuration: 1,
   }),
 
   ember_knight: enemy({
@@ -153,7 +160,8 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
   }),
   cinder_oracle: enemy({
     id: "cinder_oracle", name: "Cinder Oracle", theme: "lava", role: "ranged", behavior: "area", visual: "oracle",
-    color: "#FF9800", maxHp: 12, speed: 22, radius: 9, attackDamage: 4, attackInterval: 1.9, attackWindup: 0.7,
+    color: "#FF9800", maxHp: 12, speed: 22, radius: 9, attackDamage: 4, attackInterval: 2.05, attackWindup: 0.82,
+    attackRange: 145, minimumWindup: 0.65, minimumAttackInterval: 1.5, requiresLineOfSight: true,
     areaRadius: 24, statusEffect: "burn", statusDuration: 3,
   }),
   code_horse: enemy({

@@ -1,12 +1,19 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { BUFFS, BuffSystem, type BuffId } from "../src/game/combat/BuffSystem";
+import { StatusEffectSystem } from "../src/game/combat/StatusEffectSystem";
 import { WeaponController } from "../src/game/combat/WeaponController";
 import { CHARACTERS } from "../src/game/data/characters";
-import { ENEMIES } from "../src/game/data/enemies";
+import { ENEMIES, getEnemyDefinition } from "../src/game/data/enemies";
+import { ROOM_TEMPLATES } from "../src/game/data/roomTemplates";
 import { WEAPONS } from "../src/game/data/weapons";
 import { SPRITES } from "../src/game/data/sprites";
 import { MAX_PLAYER_MANA, Player } from "../src/game/entities/Player";
+import { EnemyFactory } from "../src/game/EnemyFactory";
+import { EncounterFactory, isCrampedCombatTemplate } from "../src/game/EncounterFactory";
+import { EnvironmentSystem } from "../src/game/environment/EnvironmentSystem";
+import { acquirePickup } from "../src/game/EntityPools";
+import { DungeonState } from "../src/game/states/DungeonState";
 import { GameData, RUN_SAVE_KEY } from "../src/game/GameData";
 import { DEFAULT_KEY_BINDINGS, SETTINGS_VERSION, normalizeSettings } from "../src/game/Settings";
 import { getWeaponBalanceMetrics, hasWeaponUtility } from "../src/game/WeaponBalance";
@@ -38,18 +45,64 @@ const v6Custom = normalizeSettings({ version: 6, keyBindings: { ...v6Defaults, s
 assert.equal(v6Custom.keyBindings.skill, "u");
 assert.equal(v6Custom.keyBindings.interact, "l");
 
-assert.equal(MAX_PLAYER_MANA, 120);
-assert.equal(CHARACTERS.mage.maxMana, MAX_PLAYER_MANA);
-const manaPlayer = new Player(0, 0);
-manaPlayer.maxMana = 110;
-manaPlayer.mana = 0;
-assert.equal(BuffSystem.acquire(manaPlayer, "mana_well"), true);
-assert.equal(manaPlayer.maxMana, MAX_PLAYER_MANA);
-assert.equal(manaPlayer.mana, 10);
-assert.equal(manaPlayer.manaRechargeRate, 15);
-assert.ok(manaPlayer.manaRechargeDelay < 1);
+assert.equal(MAX_PLAYER_MANA, 80);
+assert.deepEqual(
+  Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, {
+    maxMana: character.maxMana,
+    rate: character.manaRechargeRate,
+    delay: character.manaRechargeDelay,
+  }])),
+  {
+    knight: { maxMana: 25, rate: 10, delay: 0.85 },
+    mage: { maxMana: 60, rate: 12, delay: 1.1 },
+    rogue: { maxMana: 40, rate: 9, delay: 1.35 },
+  },
+);
 
-function loadV16CombatSave(options: {
+const manaPlayer = new Player(0, 0);
+assert.equal(manaPlayer.maxMana, 25);
+assert.equal(manaPlayer.manaRechargeRate, 10);
+assert.equal(manaPlayer.manaRechargeDelay, 0.85);
+assert.equal(BuffSystem.acquire(manaPlayer, "capacitor_cell"), true);
+assert.equal(manaPlayer.maxMana, 33);
+assert.equal(manaPlayer.mana, 33);
+assert.equal(BuffSystem.acquire(manaPlayer, "mana_well"), true);
+assert.equal(manaPlayer.maxMana, 45);
+assert.equal(manaPlayer.mana, 45);
+assert.ok(Math.abs(manaPlayer.manaRechargeDelay - 0.6375) < 1e-9);
+assert.equal(BuffSystem.acquire(manaPlayer, "flux_regulator"), true);
+assert.equal(manaPlayer.manaRechargeRate, 12.5);
+
+const capacityOrderA = new Player(0, 0);
+capacityOrderA.characterId = "rogue";
+BuffSystem.applyRuntimeStats(capacityOrderA);
+BuffSystem.acquire(capacityOrderA, "capacitor_cell");
+BuffSystem.acquire(capacityOrderA, "mana_well");
+const capacityOrderB = new Player(0, 0);
+capacityOrderB.characterId = "rogue";
+BuffSystem.applyRuntimeStats(capacityOrderB);
+BuffSystem.acquire(capacityOrderB, "mana_well");
+BuffSystem.acquire(capacityOrderB, "capacitor_cell");
+assert.equal(capacityOrderA.maxMana, 60);
+assert.equal(capacityOrderB.maxMana, 60);
+
+const mageCapacity = new Player(0, 0);
+mageCapacity.characterId = "mage";
+BuffSystem.applyRuntimeStats(mageCapacity);
+mageCapacity.mana = mageCapacity.maxMana;
+BuffSystem.acquire(mageCapacity, "capacitor_cell");
+BuffSystem.acquire(mageCapacity, "mana_well");
+assert.equal(mageCapacity.maxMana, MAX_PLAYER_MANA);
+assert.equal(mageCapacity.mana, MAX_PLAYER_MANA);
+
+const energyRestorePlayer = new Player(0, 0);
+energyRestorePlayer.buffs = ["energy_feedback", "skill_loop", "entropy_engine"];
+assert.equal(BuffSystem.getSkillEnergyRestore(energyRestorePlayer), 12);
+assert.equal(BuffSystem.getKillEnergyRestore(energyRestorePlayer), 2);
+assert.ok(Math.abs(BuffSystem.getSkillCooldownMultiplier(energyRestorePlayer) - 0.75) < 1e-9);
+
+function loadLegacyCombatSave(options: {
+  saveVersion?: number;
   characterId: keyof typeof CHARACTERS;
   buffs?: BuffId[];
   maxMana: number;
@@ -59,7 +112,7 @@ function loadV16CombatSave(options: {
 }) {
   storage.clear();
   const legacy = new GameData();
-  legacy.data.saveVersion = 16;
+  legacy.data.saveVersion = options.saveVersion ?? 17;
   legacy.data.player.characterId = options.characterId;
   legacy.data.player.buffs = options.buffs ?? [];
   legacy.data.player.maxMana = options.maxMana;
@@ -71,57 +124,60 @@ function loadV16CombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 17);
+  assert.equal(persisted.saveVersion, 18);
   return loaded.data.player;
 }
 
-const migratedKnight = loadV16CombatSave({
+const migratedKnight = loadLegacyCombatSave({
+  saveVersion: 16,
   characterId: "knight",
-  maxMana: 90,
-  mana: 90,
-  manaRechargeDelay: 0.8,
-  manaRechargeRate: 20,
+  maxMana: 50,
+  mana: 25,
+  manaRechargeDelay: 1.35,
+  manaRechargeRate: 9,
 });
-assert.equal(migratedKnight.maxMana, 50);
-assert.equal(migratedKnight.mana, 50);
-assert.equal(migratedKnight.manaRechargeDelay, 1.35);
-assert.equal(migratedKnight.manaRechargeRate, 9);
+assert.equal(migratedKnight.maxMana, 25);
+assert.equal(migratedKnight.mana, 12.5);
+assert.equal(migratedKnight.manaRechargeDelay, 0.85);
+assert.equal(migratedKnight.manaRechargeRate, 10);
 
-const migratedManaBuild = loadV16CombatSave({
+const migratedManaBuild = loadLegacyCombatSave({
   characterId: "knight",
   buffs: ["mana_well", "entropy_engine"],
-  maxMana: 90,
-  mana: 90,
-  manaRechargeDelay: 0.8,
-  manaRechargeRate: 20,
+  maxMana: 80,
+  mana: 40,
+  manaRechargeDelay: 0.72,
+  manaRechargeRate: 15,
 });
-assert.equal(migratedManaBuild.maxMana, 80);
-assert.equal(migratedManaBuild.mana, 80);
-assert.ok(Math.abs(migratedManaBuild.manaRechargeDelay - 0.72) < 1e-9);
-assert.equal(migratedManaBuild.manaRechargeRate, 15);
+assert.equal(migratedManaBuild.maxMana, 37);
+assert.equal(migratedManaBuild.mana, 18.5);
+assert.ok(Math.abs(migratedManaBuild.manaRechargeDelay - 0.51) < 1e-9);
+assert.equal(migratedManaBuild.manaRechargeRate, 10);
 
-const migratedRogue = loadV16CombatSave({
+const migratedRogue = loadLegacyCombatSave({
   characterId: "rogue",
   buffs: ["mana_well"],
-  maxMana: 120,
-  mana: 120,
-  manaRechargeDelay: 0.8,
-  manaRechargeRate: 20,
+  maxMana: 110,
+  mana: 55,
+  manaRechargeDelay: 0.9,
+  manaRechargeRate: 15,
 });
-assert.equal(migratedRogue.maxMana, 110);
-assert.equal(migratedRogue.mana, 110);
+assert.equal(migratedRogue.maxMana, 52);
+assert.equal(migratedRogue.mana, 26);
+assert.ok(Math.abs(migratedRogue.manaRechargeDelay - 1.0125) < 1e-9);
+assert.equal(migratedRogue.manaRechargeRate, 9);
 
-const migratedMage = loadV16CombatSave({
+const migratedMage = loadLegacyCombatSave({
   characterId: "mage",
-  maxMana: 150,
-  mana: 150,
-  manaRechargeDelay: 1.25,
-  manaRechargeRate: 12,
+  maxMana: 120,
+  mana: 30,
+  manaRechargeDelay: 1.35,
+  manaRechargeRate: 9,
 });
-assert.equal(migratedMage.maxMana, MAX_PLAYER_MANA);
-assert.equal(migratedMage.mana, MAX_PLAYER_MANA);
-assert.equal(migratedMage.manaRechargeDelay, 1.35);
-assert.equal(migratedMage.manaRechargeRate, 9);
+assert.equal(migratedMage.maxMana, 60);
+assert.equal(migratedMage.mana, 15);
+assert.equal(migratedMage.manaRechargeDelay, 1.1);
+assert.equal(migratedMage.manaRechargeRate, 12);
 
 const forbiddenTalentPhrases = [
   /fire rate/i,
@@ -143,25 +199,22 @@ assert.ok("critChanceBonus" in modifiers);
 assert.ok("critDamageBonus" in modifiers);
 assert.ok("spreadMultiplier" in modifiers);
 
-const discountPlayer = new Player(0, 0);
-discountPlayer.buffs = ["mana_well"];
-BuffSystem.applyRuntimeStats(discountPlayer);
+const resourcePlayer = new Player(0, 0);
+resourcePlayer.buffs = ["mana_well"];
+BuffSystem.applyRuntimeStats(resourcePlayer);
 for (const weapon of Object.values(WEAPONS).filter(candidate => candidate.manaCost > 0)) {
-  const expectedCost = weapon.manaCost * 0.8;
-  assert.ok(
-    Math.abs(WeaponController.getEnergyCost(discountPlayer, weapon.id) - expectedCost) < 1e-9,
-    `${weapon.id} receives the full 20% energy discount`,
+  assert.equal(
+    WeaponController.getEnergyCost(resourcePlayer, weapon.id),
+    weapon.manaCost,
+    `${weapon.id} keeps its authored energy cost`,
   );
-  const discountedMetrics = getWeaponBalanceMetrics(weapon, discountPlayer.maxMana, 15, 0.9, 0.8);
-  assert.ok(Math.abs(discountedMetrics.effectiveEnergyCost - expectedCost) < 1e-9);
 }
-
-discountPlayer.setWeaponLoadout(["laser"], 0);
-discountPlayer.mana = 1;
-discountPlayer.fireCooldown = 0;
-const discountedShot = WeaponController.fire(discountPlayer, 0, () => 0.5);
-assert.equal(discountedShot.fired, true);
-assert.ok(Math.abs(discountPlayer.mana - 0.2) < 1e-9);
+resourcePlayer.setWeaponLoadout(["laser"], 0);
+resourcePlayer.mana = 1;
+resourcePlayer.fireCooldown = 0;
+const resourceShot = WeaponController.fire(resourcePlayer, 0, () => 0.5);
+assert.equal(resourceShot.fired, true);
+assert.equal(resourcePlayer.mana, 0);
 assert.equal(WeaponController.formatEnergyCost(0.8), "0.8");
 assert.equal(WeaponController.formatEnergyCost(2), "2");
 
@@ -179,26 +232,116 @@ assert.ok(metrics.liberator.directDps < metrics.void_rail.directDps);
 for (const id of ["kingmaker", "storm_repeater", "starfall_array", "dragon_breath"]) {
   assert.ok(metrics[id].directDps <= 33, `${id} legendary direct DPS ${metrics[id].directDps}`);
 }
-
 for (const weapon of Object.values(WEAPONS).filter(weapon => weapon.manaCost >= 3)) {
   assert.ok(
     metrics[weapon.id].directDps > 12 || hasWeaponUtility(weapon),
     `${weapon.id} needs burst output or meaningful utility`,
   );
   assert.ok(metrics[weapon.id].fullManaBurstSeconds !== null);
+  assert.ok(Math.floor(CHARACTERS.knight.maxMana / weapon.manaCost) >= 3, `${weapon.id} must allow at least three Knight shots`);
 }
 
 const areaEnemies = Object.values(ENEMIES).filter(enemy => enemy.behavior === "area");
 assert.equal(areaEnemies.length, 4);
-for (const enemy of areaEnemies) assert.ok((enemy.areaRadius ?? 999) <= 24);
+for (const enemy of areaEnemies) {
+  assert.ok((enemy.areaRadius ?? 999) <= 24);
+  assert.ok((enemy.attackRange ?? 999) <= 145);
+  assert.ok((enemy.minimumWindup ?? 0) >= 0.65);
+  assert.equal(enemy.requiresLineOfSight, true);
+}
+const iceShamanDefinition = ENEMIES.ice_shaman;
+assert.equal(iceShamanDefinition.attackDamage, 2);
+assert.equal(iceShamanDefinition.areaRadius, 18);
+assert.equal(iceShamanDefinition.statusDuration, 1.25);
+assert.equal(iceShamanDefinition.attackRange, 135);
+const snowStage = { globalStageIndex: 15, chapterIndex: 3, stageIndex: 5, hardMode: false } as any;
+const scaledShaman = EnemyFactory.create(snowStage, {
+  x: 80, y: 80, type: "ranged", enemyId: "ice_shaman", isElite: false,
+});
+const scaledEliteShaman = EnemyFactory.create(snowStage, {
+  x: 80, y: 80, type: "ranged", enemyId: "ice_shaman", isElite: true,
+});
+assert.ok(scaledShaman.attackWindup >= 0.75);
+assert.ok(scaledShaman.attackInterval >= 1.65);
+assert.ok(scaledShaman.attackDamage <= 4);
+assert.ok(scaledEliteShaman.attackWindup >= 0.75);
+assert.ok(scaledEliteShaman.attackInterval >= 1.65);
+
+const controlPlayer = new Player(0, 0);
+controlPlayer.statusEffects = [];
+StatusEffectSystem.applyPlayer(controlPlayer, "slow", 1.25);
+assert.equal(StatusEffectSystem.getMovementMultiplier(controlPlayer), 0.72);
+StatusEffectSystem.updatePlayer(controlPlayer, 0.8);
+const slowBeforeRefresh = controlPlayer.statusEffects.find(status => status.id === "slow")!.duration;
+StatusEffectSystem.applyPlayer(controlPlayer, "slow", 1.25);
+const slowAfterRefresh = controlPlayer.statusEffects.find(status => status.id === "slow")!.duration;
+assert.ok(slowAfterRefresh <= slowBeforeRefresh + 0.300001);
+for (let i = 0; i < 10; i++) StatusEffectSystem.applyPlayer(controlPlayer, "slow", 3);
+assert.ok(controlPlayer.statusEffects.find(status => status.id === "slow")!.duration <= 1.5);
+controlPlayer.statusEffects = [];
+StatusEffectSystem.applyPlayer(controlPlayer, "root", 3);
+assert.ok(controlPlayer.statusEffects.find(status => status.id === "root")!.duration <= 0.65);
+
+let constrainedWaves = 0;
+let crampedTemplateCount = 0;
+for (const template of ROOM_TEMPLATES.filter(candidate => candidate.allowedRoomTypes.includes("combat"))) {
+  const cramped = isCrampedCombatTemplate(template);
+  if (cramped) crampedTemplateCount++;
+  for (let seed = 1; seed <= 40; seed++) {
+    const stage = {
+      seed,
+      globalStageIndex: 13,
+      chapterIndex: 3,
+      stageIndex: 3,
+      hardMode: false,
+    } as any;
+    const room = {
+      id: `balance-${template.id}-${seed}`,
+      type: "combat",
+      encounterSeed: seed,
+    } as any;
+    const encounter = EncounterFactory.create({ stage, room, template });
+    for (const wave of encounter.waves) {
+      constrainedWaves++;
+      const definitions = wave.spawns.map(spawn => getEnemyDefinition(spawn.enemyId!));
+      assert.ok(definitions.filter(definition => definition.behavior === "area").length <= 1);
+      assert.ok(definitions.filter(definition => definition.statusEffect === "slow" || definition.statusEffect === "root").length <= 1);
+      if (cramped) assert.equal(definitions.some(definition => definition.behavior === "area"), false);
+    }
+    if (cramped) {
+      const hazards = EnvironmentSystem.generate(stage, room, [...template.tiles]);
+      const groups = new Set(hazards.map(hazard => hazard.id.split(":").at(-2)));
+      assert.ok(groups.size <= 1, `${template.id} should have at most one hazard group`);
+    }
+  }
+}
+assert.ok(crampedTemplateCount >= 4);
+assert.ok(constrainedWaves > 100);
+
+const dungeonHarness = new DungeonState({} as any) as any;
+dungeonHarness.currentMapData = Array.from({ length: 20 * 15 }, () => 0);
+assert.equal(dungeonHarness.hasLineOfSight(32, 32, 288, 32), true);
+dungeonHarness.currentMapData[2 * 20 + 10] = 1;
+assert.equal(dungeonHarness.hasLineOfSight(32, 32, 288, 32), false);
+dungeonHarness.currentMapData = Array.from({ length: 20 * 15 }, () => 0);
+dungeonHarness.player.x = 80;
+dungeonHarness.player.y = 80;
+dungeonHarness.player.mana = dungeonHarness.player.maxMana;
+dungeonHarness.pickups = [acquirePickup(80, 80, "mana", 5)];
+dungeonHarness.updatePickups(0);
+assert.equal(dungeonHarness.pickups.length, 1, "full Energy must not consume a mana pickup");
 
 const enemyFactory = fs.readFileSync("src/game/EnemyFactory.ts", "utf8");
 const renderer = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
+const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 assert.match(enemyFactory, /definition\.role === "boss" \? 0\.72 : 0\.66/);
 assert.match(renderer, /enemy\.isElite \? 1\.62 : 1\.42/);
 assert.match(renderer, /enemy\.type === "boss"\) scale = 2\.15/);
 assert.match(renderer, /weapon\?\.renderOffsetX/);
 assert.match(renderer, /weapon\?\.muzzleOffsetX/);
+assert.match(dungeonSource, /dist <= e\.attackRange/);
+assert.match(dungeonSource, /hasLineOfSight/);
+assert.match(dungeonSource, /p\.type === "mana" && this\.player\.mana >= this\.player\.maxMana/);
 
 const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 const spriteSignatures = new Set<string>();
@@ -238,7 +381,6 @@ const report = Object.values(WEAPONS)
   .map(weapon => ({
     id: weapon.id,
     cost: weapon.manaCost,
-    discountedCost: getWeaponBalanceMetrics(weapon, MAX_PLAYER_MANA, 15, 0.9, 0.8).effectiveEnergyCost,
     dps: metrics[weapon.id].directDps,
     energyPerSecond: metrics[weapon.id].energyPerSecond,
     burstSeconds: metrics[weapon.id].fullManaBurstSeconds,
@@ -251,16 +393,29 @@ const characterSustain = Object.fromEntries(
     character.id,
     Object.fromEntries(["laser", "tesla_carbine", "void_rail", "dragon_breath"].map(id => [
       id,
-      getWeaponBalanceMetrics(WEAPONS[id], character.maxMana).sustainedCycleDps,
+      getWeaponBalanceMetrics(
+        WEAPONS[id],
+        character.maxMana,
+        character.manaRechargeRate,
+        character.manaRechargeDelay,
+      ).sustainedCycleDps,
     ])),
   ]),
 );
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v16-v17",
+  runMigration: "v17-v18-ratio-preserved",
   manaCap: MAX_PLAYER_MANA,
-  manaDiscount: "fractional-20-percent",
+  characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
+    character.maxMana,
+    character.manaRechargeRate,
+    character.manaRechargeDelay,
+  ]])),
+  energyCostDiscount: "removed",
+  controlRefreshCap: "ok",
+  constrainedWaves,
+  crampedTemplateCount,
   zeroEnergyCeiling: Math.max(...zeroEnergy.map(weapon => metrics[weapon.id].directDps)),
   areaRadii: areaEnemies.map(enemy => [enemy.id, enemy.areaRadius]),
   weaponModels: spriteSignatures.size,

@@ -149,15 +149,29 @@ export class EntityRenderer {
     }
   }
 
-  private static drawAreaTiles(ctx: CanvasRenderingContext2D, localX: number, localY: number, radius: number, color: string): void {
+  private static drawAreaTiles(
+    ctx: CanvasRenderingContext2D,
+    localX: number,
+    localY: number,
+    radius: number,
+    fillColor: string,
+    outlineColor: string,
+  ): void {
     const cells = Math.max(1, Math.ceil(radius / 16));
-    ctx.fillStyle = color;
+    ctx.fillStyle = fillColor;
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = 1;
     for (let y = -cells; y <= cells; y++) {
       for (let x = -cells; x <= cells; x++) {
         if (x * x + y * y > cells * cells + 1) continue;
-        ctx.fillRect(Math.round(localX + x * 16) - 7, Math.round(localY + y * 16) - 7, 14, 14);
+        const left = Math.round(localX + x * 16) - 7;
+        const top = Math.round(localY + y * 16) - 7;
+        ctx.fillRect(left, top, 14, 14);
+        ctx.strokeRect(left, top, 14, 14);
       }
     }
+    ctx.fillStyle = outlineColor;
+    ctx.fillRect(Math.round(localX) - 2, Math.round(localY) - 2, 5, 5);
   }
 
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string, reducedFlashing = false) {
@@ -174,7 +188,14 @@ export class EntityRenderer {
         ctx.strokeStyle = lineColor;
         ctx.strokeRect(Math.round(Math.cos(enemy.attackAngle) * enemy.chargeDistance) - 5, Math.round(Math.sin(enemy.attackAngle) * enemy.chargeDistance) - 5, 10, 10);
       } else if (enemy.behavior === "area") {
-        EntityRenderer.drawAreaTiles(ctx, enemy.attackTargetX - enemy.x, enemy.attackTargetY - enemy.y, enemy.areaRadius, tileColor);
+        EntityRenderer.drawAreaTiles(
+          ctx,
+          enemy.attackTargetX - enemy.x,
+          enemy.attackTargetY - enemy.y,
+          enemy.areaRadius,
+          tileColor,
+          lineColor,
+        );
       } else if (enemy.behavior === "summon") {
         ctx.fillStyle = tileColor;
         for (const [x, y] of [[0, -18], [18, 0], [0, 18], [-18, 0], [0, 0]] as const) ctx.fillRect(x - 4, y - 4, 8, 8);

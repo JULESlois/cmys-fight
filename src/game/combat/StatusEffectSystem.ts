@@ -13,6 +13,14 @@ export interface ActiveStatusEffect {
 }
 
 const STATUS_IDS: StatusEffectId[] = ["poison", "burn", "slow", "root"];
+const MAX_SLOW_DURATION = 1.5;
+const MAX_ROOT_DURATION = 0.65;
+
+function capControlDuration(id: StatusEffectId, duration: number): number {
+  if (id === "slow") return Math.min(MAX_SLOW_DURATION, duration);
+  if (id === "root") return Math.min(MAX_ROOT_DURATION, duration);
+  return duration;
+}
 
 function tickInterval(id: StatusEffectId): number {
   if (id === "burn") return 0.65;
@@ -25,7 +33,7 @@ function normalizeOne(value: unknown): ActiveStatusEffect | null {
   const raw = value as Partial<ActiveStatusEffect>;
   if (!STATUS_IDS.includes(raw.id as StatusEffectId)) return null;
   const id = raw.id as StatusEffectId;
-  const duration = Math.max(0, Number(raw.duration) || 0);
+  const duration = capControlDuration(id, Math.max(0, Number(raw.duration) || 0));
   if (duration <= 0) return null;
   const rawTickTimer = Number(raw.tickTimer);
   return {
@@ -65,16 +73,27 @@ export class StatusEffectSystem {
   }
 
   private static apply(list: ActiveStatusEffect[], id: StatusEffectId, duration: number): void {
-    if (duration <= 0) return;
+    const cappedDuration = capControlDuration(id, duration);
+    if (cappedDuration <= 0) return;
     const existing = list.find(status => status.id === id);
     if (existing) {
-      existing.duration = Math.max(existing.duration, duration);
-      if (id === "poison" || id === "burn") {
+      if (id === "slow") {
+        existing.duration = Math.min(
+          MAX_SLOW_DURATION,
+          Math.max(existing.duration, Math.min(cappedDuration, existing.duration + 0.3)),
+        );
+      } else if (id === "root") {
+        existing.duration = Math.min(
+          MAX_ROOT_DURATION,
+          Math.max(existing.duration, Math.min(cappedDuration, existing.duration + 0.12)),
+        );
+      } else {
+        existing.duration = Math.max(existing.duration, cappedDuration);
         existing.stacks = Math.min(3, existing.stacks + 1);
       }
       return;
     }
-    list.push({ id, duration, tickTimer: tickInterval(id), stacks: 1 });
+    list.push({ id, duration: cappedDuration, tickTimer: tickInterval(id), stacks: 1 });
   }
 
   static updatePlayer(player: Player, dt: number): void {
@@ -114,7 +133,7 @@ export class StatusEffectSystem {
 
   static getMovementMultiplier(target: Pick<Player | Enemy, "statusEffects">): number {
     if (target.statusEffects.some(status => status.id === "root")) return 0;
-    return target.statusEffects.some(status => status.id === "slow") ? 0.6 : 1;
+    return target.statusEffects.some(status => status.id === "slow") ? 0.72 : 1;
   }
 
   static has(target: Pick<Player | Enemy, "statusEffects">, id: StatusEffectId): boolean {

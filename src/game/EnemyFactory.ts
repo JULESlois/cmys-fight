@@ -47,6 +47,10 @@ export class EnemyFactory {
     enemy.attackDamage = definition.attackDamage;
     enemy.attackInterval = definition.attackInterval;
     enemy.attackWindup = definition.attackWindup;
+    enemy.attackRange = definition.attackRange ?? 190;
+    enemy.minimumWindup = definition.minimumWindup ?? (definition.behavior === "area" ? 0.65 : 0.22);
+    enemy.minimumAttackInterval = definition.minimumAttackInterval ?? (definition.behavior === "area" ? 1.5 : 0.6);
+    enemy.requiresLineOfSight = definition.requiresLineOfSight === true;
     enemy.projectileSpeed = definition.projectileSpeed ?? enemy.projectileSpeed;
     enemy.projectileCount = definition.projectileCount ?? enemy.projectileCount;
     enemy.projectileSpread = definition.projectileSpread ?? enemy.projectileSpread;
@@ -66,8 +70,8 @@ export class EnemyFactory {
     enemy.speed *= 1.12;
     enemy.attackDamage += 1;
     enemy.projectileSpeed *= 1.08;
-    enemy.attackInterval *= 0.84;
-    enemy.attackWindup = Math.max(0.2, enemy.attackWindup * 0.9);
+    enemy.attackInterval = Math.max(enemy.minimumAttackInterval, enemy.attackInterval * 0.84);
+    enemy.attackWindup = Math.max(enemy.minimumWindup, enemy.attackWindup * 0.9);
     enemy.eliteCoinReward = 18;
     return enemy;
   }

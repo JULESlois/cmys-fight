@@ -64,8 +64,14 @@ export function applyStageDifficulty(enemy: Enemy, difficulty: StageDifficulty):
     enemy.attackDamage += Math.floor((difficulty.globalStageIndex - 1) / 5);
     enemy.projectileSpeed = Math.max(enemy.projectileSpeed, difficulty.bossProjectileSpeed);
     enemy.projectileCount = Math.max(enemy.projectileCount, difficulty.bossProjectileCount);
-    enemy.attackInterval *= difficulty.attackCooldownMultiplier;
-    enemy.attackWindup = Math.max(0.42, enemy.attackWindup * difficulty.attackCooldownMultiplier);
+    enemy.attackInterval = Math.max(
+      enemy.minimumAttackInterval,
+      enemy.attackInterval * difficulty.attackCooldownMultiplier,
+    );
+    enemy.attackWindup = Math.max(
+      Math.max(0.42, enemy.minimumWindup),
+      enemy.attackWindup * difficulty.attackCooldownMultiplier,
+    );
   } else {
     enemy.maxHp = Math.max(1, Math.round(enemy.maxHp * difficulty.healthMultiplier));
     enemy.speed *= difficulty.speedMultiplier;
@@ -74,8 +80,14 @@ export function applyStageDifficulty(enemy: Enemy, difficulty: StageDifficulty):
       enemy.projectileSpeed,
       difficulty.rangedProjectileSpeed * Math.max(0.8, enemy.projectileSpeed / 90),
     );
-    enemy.attackInterval *= difficulty.attackCooldownMultiplier;
-    enemy.attackWindup = Math.max(0.22, enemy.attackWindup * difficulty.attackCooldownMultiplier);
+    enemy.attackInterval = Math.max(
+      enemy.minimumAttackInterval,
+      enemy.attackInterval * difficulty.attackCooldownMultiplier,
+    );
+    enemy.attackWindup = Math.max(
+      enemy.minimumWindup,
+      enemy.attackWindup * difficulty.attackCooldownMultiplier,
+    );
   }
 
   enemy.hp = enemy.maxHp;

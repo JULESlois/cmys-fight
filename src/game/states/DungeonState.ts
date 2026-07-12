@@ -146,7 +146,7 @@ export class DungeonState extends GameState {
           const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 8.5 };
           const p2 = pts.length > 1 ? pts[1] : { x: 8.5, y: 7.5 };
           if (params.legacyType === "legacy_rpg") {
-             this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "mana", 50));
+             this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "mana", 20));
              this.pickups.push(acquirePickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
           } else if (params.legacyType === "legacy_tactics") {
              this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
@@ -432,7 +432,7 @@ export class DungeonState extends GameState {
       audio.playClearRoom();
       this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
       if (this.player.characterId === "mage") {
-        this.player.mana = Math.min(this.player.maxMana, this.player.mana + 15);
+        this.player.mana = Math.min(this.player.maxMana, this.player.mana + 8);
       }
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -614,7 +614,7 @@ export class DungeonState extends GameState {
          160,
          120,
          Math.random() > 0.5 ? "hp" : "mana",
-         Math.round(15 * difficulty.rewardMultiplier),
+         Math.round(8 * difficulty.rewardMultiplier),
        ));
        this.pickups.push(acquirePickup(150, 110, "coin", Math.round(20 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "treasure") {
@@ -882,7 +882,7 @@ export class DungeonState extends GameState {
         enemy.x + 8,
         enemy.y,
         Math.random() < 0.5 ? "mana" : "hp",
-        12,
+        8,
       ));
       return;
     }
@@ -892,7 +892,7 @@ export class DungeonState extends GameState {
         enemy.x,
         enemy.y,
         Math.random() < 0.5 ? "mana" : "hp",
-        10,
+        5,
       ));
     }
   }
@@ -1121,7 +1121,7 @@ export class DungeonState extends GameState {
          if (reward === 0) {
            this.pickups.push(acquirePickup(target.x, target.y + 16, "coin", 24));
          } else if (reward === 1) {
-           this.pickups.push(acquirePickup(target.x, target.y + 16, "mana", 38));
+           this.pickups.push(acquirePickup(target.x, target.y + 16, "mana", 15));
          } else if (reward === 2) {
            this.pickups.push(acquirePickup(target.x, target.y + 16, "hp", 2));
          } else {
@@ -1250,6 +1250,18 @@ export class DungeonState extends GameState {
     return false;
   }
 
+  private hasLineOfSight(startX: number, startY: number, endX: number, endY: number): boolean {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const distance = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(distance / 6));
+    for (let step = 1; step < steps; step++) {
+      const t = step / steps;
+      if (this.isCollidingWithMap(startX + dx * t, startY + dy * t, 2)) return false;
+    }
+    return true;
+  }
+
   // TODO: Move to PlayerController
   private updatePlayerFacingAndAnimation(dt: number, moved: boolean) {
     this.player.facing = Math.cos(this.player.aimAngle) >= 0 ? "right" : "left";
@@ -1372,14 +1384,15 @@ export class DungeonState extends GameState {
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
       } else if (e.type === "ranged") {
-        const canAttack = e.behavior !== "summon" || this.enemies.length < 7;
-        if (canAttack && e.attackCooldown <= 0 && dist <= 190) {
+        const hasAttackLine = !e.requiresLineOfSight || this.hasLineOfSight(e.x, e.y, this.player.x, this.player.y);
+        const canAttack = (e.behavior !== "summon" || this.enemies.length < 7) && hasAttackLine;
+        if (canAttack && e.attackCooldown <= 0 && dist <= e.attackRange) {
           this.beginEnemyAttack(e, e.attackWindup);
           updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
           continue;
         }
 
-        if (dist > 112) {
+        if (dist > 112 || !hasAttackLine) {
           const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
@@ -2072,6 +2085,7 @@ export class DungeonState extends GameState {
         }
         
         if (pickupDistance < pickupRange) {
+           if (p.type === "mana" && this.player.mana >= this.player.maxMana - 1e-9) continue;
            let droppedWeapon: Pickup | null = null;
            if (p.type === "mana") {
               this.player.mana = Math.min(this.player.maxMana, this.player.mana + p.value);

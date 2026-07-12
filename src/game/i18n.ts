@@ -456,15 +456,17 @@ const BUFF_ZH: Record<string, { name: string; description: string }> = {
   fast_recharge: { name: "快速充能", description: "护甲回复等待时间减少 35%。" },
   emergency_barrier: { name: "紧急屏障", description: "可抵挡一次致命伤害，并保留 1 点生命。" },
   skill_accelerator: { name: "技能加速器", description: "技能冷却时间减少 20%。" },
-  energy_feedback: { name: "能量反馈", description: "使用技能时恢复 10 点能量。" },
+  energy_feedback: { name: "能量反馈", description: "使用技能时恢复 5 点能量。" },
   status_resistance: { name: "净化核心", description: "负面状态持续时间减少 40%。" },
+  capacitor_cell: { name: "能量电容", description: "最大能量 +8，并恢复 8 点能量。" },
+  flux_regulator: { name: "通量调节器", description: "能量回复速度 +25%。" },
   elemental_rounds: { name: "余烬载荷", description: "玩家弹丸会附加燃烧。" },
   overclock_core: { name: "超频核心", description: "暴击率 +12%，散布 -30%，弹速 +15%。" },
   execution_matrix: { name: "处决矩阵", description: "暴击率 +20%，暴击伤害 +50%。" },
   phase_storm: { name: "相位风暴", description: "弹丸获得穿透、墙壁反弹与 +15% 弹速。" },
-  mana_well: { name: "能量之井", description: "最大能量 +30（上限 120），加快回复，武器消耗 -20%。" },
-  skill_loop: { name: "技能循环", description: "技能冷却 -30%；使用技能恢复 15 点能量。" },
-  entropy_engine: { name: "熵能引擎", description: "击杀恢复 4 点能量，回复等待时间 -20%。" },
+  mana_well: { name: "能量之井", description: "最大能量 +12，回复等待时间 -25%。" },
+  skill_loop: { name: "技能循环", description: "技能冷却 -25%；使用技能恢复 7 点能量。" },
+  entropy_engine: { name: "熵能引擎", description: "击杀恢复 2 点能量，回复等待时间 -20%。" },
   aegis_foundry: { name: "神盾铸炉", description: "最大护甲 +4，护甲回复速度 +75%。" },
   reactive_plating: { name: "反应装甲", description: "护甲等待时间降至 1 秒；负面状态时间 -50%。" },
   phoenix_protocol: { name: "凤凰协议", description: "可抵挡一次致命伤害，保留 2 点生命并恢复 3 点护甲。" },
@@ -521,7 +523,7 @@ const META_ZH: Record<string, { name: string; description: string }> = {
 
 const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
   knight: { title: "坚守者", passive: "护甲充满时获得守卫，使下一次受到的伤害减少 1 点。" },
-  mage: { title: "求知者", passive: "清理战斗房间后恢复 15 点能量。" },
+  mage: { title: "求知者", passive: "清理战斗房间后恢复 8 点能量。" },
   rogue: { title: "迅捷者", passive: "冲刺后 2 秒内暴击率 +25%。" },
 };
 

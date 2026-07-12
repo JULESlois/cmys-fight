@@ -32,7 +32,7 @@ assert.equal(customLegacy.keyBindings.skill, "e");
 
 const player = new Player(100, 100);
 player.mana = 0;
-player.maxMana = 100;
+player.maxMana = 25;
 player.manaRechargeTimer = 1;
 DamageSystem.updatePlayer(player, 0.5);
 assert.equal(player.mana, 0);
@@ -52,14 +52,14 @@ assert.equal(player.manaRechargeTimer, player.manaRechargeDelay);
 const wellPlayer = new Player(0, 0);
 wellPlayer.mana = 0;
 assert.equal(BuffSystem.acquire(wellPlayer, "mana_well"), true);
-assert.equal(wellPlayer.maxMana, 120);
-assert.equal(wellPlayer.manaRechargeRate, 15);
-assert.equal(wellPlayer.manaRechargeDelay, 0.9);
+assert.equal(wellPlayer.maxMana, 37);
+assert.equal(wellPlayer.manaRechargeRate, 10);
+assert.ok(Math.abs(wellPlayer.manaRechargeDelay - 0.6375) < 1e-9);
 wellPlayer.setWeaponLoadout(["void_rail"], 0);
 wellPlayer.mana = 20;
 const voidShot = WeaponController.fire(wellPlayer, 0, () => 0.5);
 assert.equal(voidShot.fired, true);
-assert.ok(Math.abs(wellPlayer.mana - 14.4) < 1e-9, "Mana Well should reduce Void Rail cost from 7 to 5.6");
+assert.equal(wellPlayer.mana, 13, "Mana Well should preserve the authored Void Rail cost of 7");
 
 const phoenix = new Player(0, 0);
 phoenix.hp = 1;
@@ -95,7 +95,7 @@ assert.ok(WEAPONS.void_rail.damage > WEAPONS.laser.damage * 2);
 assert.ok(WEAPONS.dragon_breath.pelletCount > WEAPONS.shotgun.pelletCount * 2);
 
 const legendaryBuffs = Object.values(BUFFS).filter(buff => buff.rarity === "legendary");
-assert.equal(Object.keys(BUFFS).length, 23);
+assert.equal(Object.keys(BUFFS).length, 25);
 assert.equal(legendaryBuffs.length, 9);
 for (const series of ["vanguard", "aether", "phoenix"] as const) {
   assert.equal(legendaryBuffs.filter(buff => buff.series === series).length, 3);
