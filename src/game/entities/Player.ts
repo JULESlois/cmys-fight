@@ -111,9 +111,15 @@ export class Player {
     this.activeWeaponSlot = activeSlot === 1 && this.weaponSlots[1] ? 1 : 0;
   }
 
+  public get weaponHandOffsetY(): number {
+    return this.characterId === "michele" || this.characterId === "kanami"
+      ? -18
+      : PLAYER_HAND_OFFSET_Y;
+  }
+
   public getPlayerMuzzlePosition(angle: number) {
     const handX = this.x;
-    const handY = this.y + PLAYER_HAND_OFFSET_Y;
+    const handY = this.y + this.weaponHandOffsetY;
     const weapon = WEAPONS[this.currentWeaponId];
     const localMuzzleX = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
     const localMuzzleY = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;

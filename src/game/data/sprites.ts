@@ -1,4 +1,10 @@
 import { WEAPON_PALETTES, WEAPON_SPRITES } from "./weaponArt";
+import {
+  KANAMI_CHARACTER_SPRITES,
+  KANAMI_HIGH_RES_PALETTE,
+  MICHELE_CHARACTER_SPRITES,
+  MICHELE_HIGH_RES_PALETTE,
+} from "./characterArt";
 
 export type SpriteData = string[];
 
@@ -62,116 +68,8 @@ export const SPRITES: Record<string, SpriteData> = {
     "................"
   ],
 
-  player_michele_side_idle: [
-    ".....11..11.....",
-    "....12211221....",
-    "...1222222221...",
-    "...1222222221...",
-    "...1244444221...",
-    "..12495549221...",
-    "..12444444221...",
-    "...116666611....",
-    "..1677777761....",
-    "..1679797761....",
-    "...16777761.....",
-    "...16888861.....",
-    "....188881......",
-    "....188881......",
-    "....11..11......",
-    "................"
-  ],
-  player_michele_side_walk_0: [
-    ".....11..11.....",
-    "....12211221....",
-    "...1222222221...",
-    "...1222222221...",
-    "...1244444221...",
-    "..12495549221...",
-    "..12444444221...",
-    "...116666611....",
-    "..1677777761....",
-    "..1679797761....",
-    "...16777761.....",
-    "...16888861.....",
-    "....188881......",
-    "....1881........",
-    "....11..........",
-    "................"
-  ],
-  player_michele_side_walk_1: [
-    ".....11..11.....",
-    "....12211221....",
-    "...1222222221...",
-    "...1222222221...",
-    "...1244444221...",
-    "..12495549221...",
-    "..12444444221...",
-    "...116666611....",
-    "..1677777761....",
-    "..1679797761....",
-    "...16777761.....",
-    "...16888861.....",
-    "....188881......",
-    ".......1881.....",
-    "........11......",
-    "................"
-  ],
-
-
-  player_kanami_side_idle: [
-    "......11........",
-    ".....1221........",
-    "....122221.......",
-    "...12222221......",
-    "..1222444221.....",
-    "..1244554421.....",
-    ".12244444221.....",
-    ".12166667121.....",
-    ".1687777861......",
-    "168696997861.....",
-    "168777777861.....",
-    ".116888861.......",
-    "..1888881........",
-    "..1998891........",
-    "..11..11.........",
-    "................"
-  ],
-  player_kanami_side_walk_0: [
-    "......11........",
-    ".....1221........",
-    "....122221.......",
-    "...12222221......",
-    "..1222444221.....",
-    "..1244554421.....",
-    ".12244444221.....",
-    ".12166667121.....",
-    ".1687777861......",
-    "168696997861.....",
-    "168777777861.....",
-    ".116888861.......",
-    "..1888881........",
-    "..18881..........",
-    "..11.............",
-    "................"
-  ],
-  player_kanami_side_walk_1: [
-    "......11........",
-    ".....1221........",
-    "....122221.......",
-    "...12222221......",
-    "..1222444221.....",
-    "..1244554421.....",
-    ".12244444221.....",
-    ".12166667121.....",
-    ".1687777861......",
-    "168696997861.....",
-    "168777777861.....",
-    ".116888861.......",
-    "..1888881........",
-    ".....18881.......",
-    "......11.........",
-    "................"
-  ],
+  ...MICHELE_CHARACTER_SPRITES,
+  ...KANAMI_CHARACTER_SPRITES,
 
   enemy_melee_idle: [
     "...11......11...",
@@ -379,36 +277,22 @@ export const DEFAULT_PALETTE: Record<string, string> = {
   "9": "#fff1e8"
 };
 
-export const SPRITE_PALETTES: Record<string, Record<string, string>> = Object.fromEntries(
-  Object.entries(WEAPON_PALETTES).map(([weaponId, palette]) => [`weapon_${weaponId}`, palette]),
-);
-
-
-export const KANAMI_PLAYER_PALETTE: Record<string, string> = {
-  ".": "transparent",
-  "1": "#111421",
-  "2": "#B9AEDC",
-  "3": "#8D82B6",
-  "4": "#F4C9B2",
-  "5": "#5EA7FF",
-  "6": "#20202A",
-  "7": "#F4F1F7",
-  "8": "#F06CA8",
-  "9": "#D8D0F2"
+export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
+  ...Object.fromEntries(
+    Object.entries(WEAPON_PALETTES).map(([weaponId, palette]) => [`weapon_${weaponId}`, palette]),
+  ),
+  ...Object.fromEntries(
+    Object.keys(MICHELE_CHARACTER_SPRITES).map(spriteName => [spriteName, MICHELE_HIGH_RES_PALETTE]),
+  ),
+  ...Object.fromEntries(
+    Object.keys(KANAMI_CHARACTER_SPRITES).map(spriteName => [spriteName, KANAMI_HIGH_RES_PALETTE]),
+  ),
 };
 
-export const MICHELE_PLAYER_PALETTE: Record<string, string> = {
-  ".": "transparent",
-  "1": "#101827",
-  "2": "#F0D267",
-  "3": "#C9953F",
-  "4": "#F5C8A8",
-  "5": "#263B55",
-  "6": "#F4F8FC",
-  "7": "#4C8FD1",
-  "8": "#172D4D",
-  "9": "#62E4F5"
-};
+
+export const KANAMI_PLAYER_PALETTE: Record<string, string> = KANAMI_HIGH_RES_PALETTE;
+
+export const MICHELE_PLAYER_PALETTE: Record<string, string> = MICHELE_HIGH_RES_PALETTE;
 
 export const PLAYER_PALETTE: Record<string, string> = {
   ".": "transparent",

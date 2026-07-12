@@ -150,7 +150,7 @@ export class CharacterSelectState extends GameState {
       : characterId === "kanami"
         ? KANAMI_PLAYER_PALETTE
         : { ...PLAYER_PALETTE, "2": color };
-    SpriteRenderer.drawPixelSprite(ctx, spriteName, x, y, scale, {
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, x, y, dedicated ? 1 : scale, {
       paletteOverride: dedicated ? palette : { ...palette, "2": color },
     });
   }
@@ -202,16 +202,16 @@ export class CharacterSelectState extends GameState {
         });
       } else {
         const character = CHARACTERS[id];
-        this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 24, 3, character.color);
+        this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 32, 3, character.color);
         ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
         ctx.font = uiFont(language, 11, true);
-        ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 55);
+        ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 67);
         ctx.fillStyle = character.color;
         ctx.font = uiFont(language, 6, true);
-        ctx.fillText(getCharacterText(character.id, character, language).title, x + cardW / 2, startY + 68);
+        ctx.fillText(getCharacterText(character.id, character, language).title, x + cardW / 2, startY + 77);
         ctx.textAlign = "left";
-        this.drawStats(ctx, character, x + 7, startY + 80, 51);
+        this.drawStats(ctx, character, x + 7, startY + 83, 51);
       }
     }
 

@@ -164,8 +164,30 @@ assert.ok(migratedMeta.unlockedStarterWeapons.includes("finale"));
 assert.ok(SPRITES.player_kanami_side_idle);
 assert.ok(SPRITES.player_kanami_side_walk_0);
 assert.ok(SPRITES.player_kanami_side_walk_1);
-assert.equal(KANAMI_PLAYER_PALETTE["2"], "#B9AEDC");
-assert.equal(KANAMI_PLAYER_PALETTE["8"], "#F06CA8");
+assert.ok(SPRITES.player_kanami_side_idle_1);
+assert.ok(SPRITES.player_kanami_side_walk_2);
+assert.ok(SPRITES.player_kanami_side_walk_3);
+for (const frameName of [
+  "player_kanami_side_idle",
+  "player_kanami_side_idle_1",
+  "player_kanami_side_walk_0",
+  "player_kanami_side_walk_1",
+  "player_kanami_side_walk_2",
+  "player_kanami_side_walk_3",
+]) {
+  const frame = SPRITES[frameName];
+  assert.equal(frame.length, 64, `${frameName} high-resolution height`);
+  assert.ok(frame.every(row => row.length === 48), `${frameName} high-resolution width`);
+  assert.ok(new Set(frame.join("").replaceAll(".", "")).size >= 14, `${frameName} color detail`);
+}
+assert.notDeepEqual(SPRITES.player_kanami_side_idle, SPRITES.player_kanami_side_idle_1);
+assert.notDeepEqual(SPRITES.player_kanami_side_walk_0, SPRITES.player_kanami_side_walk_2);
+assert.equal(KANAMI_PLAYER_PALETTE.B, "#7E70A6");
+assert.equal(KANAMI_PLAYER_PALETTE.P, "#E466A5");
+assert.notEqual(KANAMI_PLAYER_PALETTE.A, "#000000");
+const kanamiArtPlayer = new Player(100, 100);
+kanamiArtPlayer.characterId = "kanami";
+assert.equal(kanamiArtPlayer.weaponHandOffsetY, -18);
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
@@ -177,6 +199,8 @@ assert.match(dungeonSource, /updateKanamiBeacon/);
 assert.match(dungeonSource, /getKanamiBeaconTarget/);
 assert.match(dungeonSource, /clearRoomScopedSkillEntities/);
 assert.match(rendererSource, /drawKanamiBeacon/);
+assert.match(rendererSource, /detailedCharacter \? undefined : "#09101A"/);
+assert.match(rendererSource, /player\.animFrame % 4/);
 assert.match(gameDataSource, /player\.characterId === "michele" \|\| player\.characterId === "kanami"/);
 
 console.log(JSON.stringify({
@@ -185,7 +209,7 @@ console.log(JSON.stringify({
   finaleImpact: "22px-resonant-burst",
   beaconLure: "projectile-to-7s-room-lure",
   normalEnemyAttraction: "ok",
-  dedicatedCharacterSprite: "ok",
+  dedicatedCharacterSprite: "48x64-six-frame-color-outline",
   roomScopedSummonsNotSerialized: "ok",
   saveAndMetaMigration: "ok",
 }));

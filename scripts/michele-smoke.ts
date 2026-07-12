@@ -16,6 +16,7 @@ import { DungeonState } from "../src/game/states/DungeonState";
 import { META_SAVE_VERSION, createDefaultMetaProgress, normalizeMetaProgress } from "../src/game/MetaProgress";
 import { acquireProjectile, releaseProjectile } from "../src/game/EntityPools";
 import { GameData } from "../src/game/GameData";
+import { MICHELE_PLAYER_PALETTE, SPRITES } from "../src/game/data/sprites";
 
 assert.ok(CHARACTERS.michele);
 assert.equal(CHARACTERS.michele.starterWeapon, "inspector");
@@ -182,11 +183,34 @@ const migratedMeta = normalizeMetaProgress({ unlockedCharacters: ["knight"], unl
 assert.ok(migratedMeta.unlockedCharacters.includes("michele"));
 assert.ok(migratedMeta.unlockedStarterWeapons.includes("inspector"));
 
+for (const frameName of [
+  "player_michele_side_idle",
+  "player_michele_side_idle_1",
+  "player_michele_side_walk_0",
+  "player_michele_side_walk_1",
+  "player_michele_side_walk_2",
+  "player_michele_side_walk_3",
+]) {
+  const frame = SPRITES[frameName];
+  assert.equal(frame.length, 64, `${frameName} high-resolution height`);
+  assert.ok(frame.every(row => row.length === 48), `${frameName} high-resolution width`);
+  assert.ok(new Set(frame.join("").replaceAll(".", "")).size >= 13, `${frameName} color detail`);
+}
+assert.notDeepEqual(SPRITES.player_michele_side_idle, SPRITES.player_michele_side_idle_1);
+assert.notDeepEqual(SPRITES.player_michele_side_walk_0, SPRITES.player_michele_side_walk_2);
+assert.equal(MICHELE_PLAYER_PALETTE.C, "#E1B94E");
+assert.equal(MICHELE_PLAYER_PALETTE.M, "#69DFF1");
+assert.notEqual(MICHELE_PLAYER_PALETTE.A, "#000000");
+const micheleArtPlayer = new Player(100, 100);
+micheleArtPlayer.characterId = "michele";
+assert.equal(micheleArtPlayer.weaponHandOffsetY, -18);
+
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
+const characterArtSource = fs.readFileSync("src/game/data/characterArt.ts", "utf8");
 assert.match(selectSource, /isWeaponAvailableForCharacter\(weapon, characterId\)/);
 assert.match(selectSource, /player_michele_side_idle/);
 assert.match(dungeonSource, /updateMicheleTurret[\s\S]*MICHELE_TURRET_SLOW_DURATION/);
@@ -197,7 +221,9 @@ assert.match(dungeonSource, /micheleTurretActive/);
 assert.match(gameDataSource, /setStarterWeapons\(starterWeapon, char\.id\)/);
 assert.match(rendererSource, /drawMicheleTurret/);
 assert.match(rendererSource, /drawMicheleMark/);
-assert.match(spriteSource, /player_michele_side_idle/);
+assert.match(rendererSource, /detailedCharacter \? undefined : "#09101A"/);
+assert.match(spriteSource, /MICHELE_CHARACTER_SPRITES/);
+assert.match(characterArtSource, /player_michele_side_idle/);
 
 console.log(JSON.stringify({
   character: "michele",
@@ -206,7 +232,7 @@ console.log(JSON.stringify({
   pawtectorDurability: "six-hits-and-priority-taunt",
   catTrace: "2s-attacker-mark",
   markedInspectorMultiplier: 1.35,
-  dedicatedCharacterSprite: "ok",
+  dedicatedCharacterSprite: "48x64-six-frame-color-outline",
   singleWeaponStart: "inspector-only",
   roomScopedPawtector: "ok",
   saveAndMetaMigration: "ok",
