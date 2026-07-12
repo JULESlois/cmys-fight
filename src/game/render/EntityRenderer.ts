@@ -52,8 +52,8 @@ export class EntityRenderer {
   public static drawTargetMarker(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number) {
     const pulse = Math.floor(time * 8) % 2;
     ctx.save();
-    ctx.translate(Math.round(enemy.x), Math.round(enemy.y + enemy.radius + 5));
-    EntityRenderer.drawCornerFrame(ctx, enemy.type === "boss" ? 14 + pulse : 9 + pulse, "rgba(0, 242, 254, 0.9)", 4);
+    ctx.translate(Math.round(enemy.hitboxX), Math.round(enemy.hitboxY));
+    EntityRenderer.drawCornerFrame(ctx, enemy.hitboxRadius + 2 + pulse, "rgba(0, 242, 254, 0.9)", 4);
     ctx.fillStyle = "rgba(0, 242, 254, 0.8)";
     ctx.fillRect(-1, -1, 2, 2);
     ctx.restore();
@@ -61,9 +61,9 @@ export class EntityRenderer {
 
   public static drawMicheleMark(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number): void {
     const pulse = Math.floor(time * 10) % 2;
-    const half = enemy.radius + 7 + pulse;
+    const half = enemy.hitboxRadius + 3 + pulse;
     ctx.save();
-    ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
+    ctx.translate(Math.round(enemy.hitboxX), Math.round(enemy.hitboxY));
     EntityRenderer.drawCornerFrame(ctx, half, "rgba(244, 211, 94, 0.95)", 5);
     ctx.fillStyle = "rgba(112, 215, 255, 0.95)";
     ctx.fillRect(-5, -half - 4, 3, 3);
@@ -231,7 +231,9 @@ export class EntityRenderer {
   public static drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number, theme: string, reducedFlashing = false) {
     ctx.save();
     ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
-    if (enemy.statusEffects.length > 0) EntityRenderer.drawStatusChips(ctx, enemy.statusEffects, -enemy.radius - 13);
+    if (enemy.statusEffects.length > 0) {
+      EntityRenderer.drawStatusChips(ctx, enemy.statusEffects, enemy.hitboxOffsetY - enemy.hitboxRadius - 5);
+    }
 
     if (enemy.attackState === "windup") {
       const blink = Math.floor(time * 16) % 2 === 0;
@@ -266,7 +268,12 @@ export class EntityRenderer {
       }
     }
 
-    if (enemy.isElite) EntityRenderer.drawCornerFrame(ctx, enemy.radius + 6, "rgba(241,196,15,0.9)", 6);
+    if (enemy.isElite) {
+      ctx.save();
+      ctx.translate(0, enemy.hitboxOffsetY);
+      EntityRenderer.drawCornerFrame(ctx, enemy.hitboxRadius + 3, "rgba(241,196,15,0.9)", 6);
+      ctx.restore();
+    }
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     const shadowWidth = enemy.type === "boss" ? 23 : 13;
     ctx.fillRect(-shadowWidth / 2, enemy.radius - 4, shadowWidth, 5);
@@ -281,7 +288,7 @@ export class EntityRenderer {
     const barW = enemy.type === "boss" ? 40 : 16;
     const barH = 2;
     const barX = Math.round(enemy.x) - barW / 2;
-    const barY = Math.round(enemy.y) - enemy.radius - (enemy.type === "boss" ? 14 : 9);
+    const barY = Math.round(enemy.hitboxY - enemy.hitboxRadius) - (enemy.type === "boss" ? 8 : 5);
     ctx.fillStyle = "#1a1c2c"; ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
     ctx.fillStyle = "#e43b44"; ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = enemy.isElite ? "#F1C40F" : "#2ECC71";

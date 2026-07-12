@@ -114,7 +114,7 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
     unlock(meta.unlockedStarterWeapons, "shotgun", "Rusty Shotgun");
   }
   if (meta.highestStage >= 6 || meta.currency >= 50) {
-    unlock(meta.unlockedCharacters, "mage", "Mage");
+    unlock(meta.unlockedCharacters, "mage", "CMYS Arcane Form");
   }
   if (meta.victories >= 1) {
     if (!meta.hardModeUnlocked) {
@@ -122,9 +122,9 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
       unlocks.push("Hard Mode");
     }
     unlock(meta.unlockedStarterWeapons, "laser", "Energy Blaster");
-    unlock(meta.unlockedCharacters, "rogue", "Rogue");
+    unlock(meta.unlockedCharacters, "rogue", "CMYS Swift Form");
   } else if (meta.currency >= 120) {
-    unlock(meta.unlockedCharacters, "rogue", "Rogue");
+    unlock(meta.unlockedCharacters, "rogue", "CMYS Swift Form");
   }
   return unlocks;
 }

@@ -142,6 +142,49 @@ new CharacterSelectState(characterEngine).update(0);
 assert.equal(switchedState, "hub", "gamepad B returns from character select");
 characterInput.cleanup();
 
+const hierarchyInput = new Input();
+let hierarchySwitch = "";
+let hierarchyStart: { characterId: string; weaponId?: string } | null = null;
+const hierarchyEngine = {
+  input: hierarchyInput,
+  data: {
+    settings: { language: "en" },
+    meta: { preferredHardMode: false },
+    isStarterWeaponUnlocked: () => true,
+    isCharacterUnlocked: () => true,
+    getStarterWeaponForCharacter(characterId: string) {
+      return characterId === "michele" ? "inspector" : characterId === "mage" ? "laser" : characterId === "rogue" ? "shotgun" : "pistol";
+    },
+    startNewRun(characterId: string, weaponId?: string) {
+      hierarchyStart = { characterId, weaponId };
+    },
+  },
+  switchState(state: string) { hierarchySwitch = state; },
+} as any;
+const hierarchyState = new CharacterSelectState(hierarchyEngine) as any;
+hierarchyState.enter({ backState: "hub" });
+assert.equal(hierarchyState.mode, "identity");
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+hierarchyState.update(0);
+assert.equal(hierarchyState.mode, "form", "selecting CMYS must open form selection");
+assert.equal(hierarchyStart, null, "selecting CMYS must not immediately start a run");
+hierarchyInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+hierarchyInput.update();
+windowTarget.dispatch("keydown", { key: "ArrowRight", preventDefault() {} });
+hierarchyState.update(0);
+assert.equal(hierarchyState.selectedForm.id, "mage", "CMYS form selection must cycle Guard, Arcane, and Swift forms");
+hierarchyInput.update();
+windowTarget.dispatch("keyup", { key: "ArrowRight", preventDefault() {} });
+hierarchyInput.update();
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+hierarchyState.update(0);
+assert.deepEqual(hierarchyStart, { characterId: "mage", weaponId: "laser" });
+assert.equal(hierarchySwitch, "dungeon");
+hierarchyInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+hierarchyInput.cleanup();
+
 const menuInput = new Input();
 let menuClosed = 0;
 const menuEngine = {
@@ -257,4 +300,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok", hubPurchaseControls: "ok" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok", hubPurchaseControls: "ok", cmysFormSelection: "identity-to-three-forms" }));

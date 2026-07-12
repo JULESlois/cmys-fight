@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { CHARACTERS } from "../src/game/data/characters";
 import {
   WEAPONS,
+  createStarterWeaponSlots,
   getAvailableWeapons,
   isWeaponAvailableForCharacter,
   rollAvailableWeapon,
@@ -14,6 +15,7 @@ import { SkillController } from "../src/game/combat/SkillController";
 import { DungeonState } from "../src/game/states/DungeonState";
 import { META_SAVE_VERSION, createDefaultMetaProgress, normalizeMetaProgress } from "../src/game/MetaProgress";
 import { acquireProjectile, releaseProjectile } from "../src/game/EntityPools";
+import { GameData } from "../src/game/GameData";
 
 assert.ok(CHARACTERS.michele);
 assert.equal(CHARACTERS.michele.starterWeapon, "inspector");
@@ -34,6 +36,18 @@ assert.equal(getAvailableWeapons(1, "michele").some(weapon => weapon.id === "ins
 assert.equal(getAvailableWeapons(1, "knight").some(weapon => weapon.id === "inspector"), false);
 const allExceptInspector = Object.keys(WEAPONS).filter(id => id !== "inspector");
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", allExceptInspector, "michele").id, "inspector");
+assert.deepEqual(createStarterWeaponSlots("inspector", "michele"), ["inspector"]);
+assert.deepEqual(createStarterWeaponSlots("laser", "michele"), ["laser"]);
+assert.deepEqual(createStarterWeaponSlots("laser", "mage"), ["laser", "pistol"]);
+const migratedRun = new GameData() as any;
+migratedRun.data.player.characterId = "michele";
+migratedRun.data.player.weaponSlots = ["inspector", "pistol"];
+migratedRun.data.player.activeWeaponSlot = 1;
+migratedRun.data.player.currentWeaponId = "pistol";
+migratedRun.migrateMicheleStarterLoadout(20);
+assert.deepEqual(migratedRun.data.player.weaponSlots, ["inspector"]);
+assert.equal(migratedRun.data.player.currentWeaponId, "inspector");
+assert.equal(migratedRun.data.player.activeWeaponSlot, 0);
 
 const knight = new Player(0, 0);
 knight.characterId = "knight";
@@ -62,6 +76,18 @@ assert.equal(skillUser.micheleTurretX, 80);
 assert.equal(skillUser.micheleTurretY, 90);
 SkillController.update(skillUser, 0.5);
 assert.equal(skillUser.skillActiveTimer, 7.5);
+
+const roomResetDungeon = new DungeonState({} as any) as any;
+roomResetDungeon.player.characterId = "michele";
+roomResetDungeon.player.skillActiveTimer = 6;
+roomResetDungeon.player.micheleTurretFireCooldown = 0.2;
+roomResetDungeon.player.micheleMarkedEnemyId = 42;
+roomResetDungeon.player.micheleMarkTimer = 1.4;
+roomResetDungeon.resetMicheleRoomEntities();
+assert.equal(roomResetDungeon.player.skillActiveTimer, 0, "Pawtector must despawn on room transition");
+assert.equal(roomResetDungeon.player.micheleTurretFireCooldown, 0);
+assert.equal(roomResetDungeon.player.micheleMarkedEnemyId, -1);
+assert.equal(roomResetDungeon.player.micheleMarkTimer, 0);
 
 const fakeEngine = {
   data: {
@@ -146,6 +172,7 @@ assert.ok(migratedMeta.unlockedStarterWeapons.includes("inspector"));
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
+const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 assert.match(selectSource, /isWeaponAvailableForCharacter\(weapon, characterId\)/);
@@ -153,6 +180,8 @@ assert.match(selectSource, /player_michele_side_idle/);
 assert.match(dungeonSource, /updateMicheleTurret[\s\S]*MICHELE_TURRET_SLOW_DURATION/);
 assert.match(dungeonSource, /markMicheleAttacker[\s\S]*MICHELE_MARK_DURATION/);
 assert.match(dungeonSource, /markedTargetDamageMultiplier/);
+assert.match(dungeonSource, /private loadRoom\(\)[\s\S]*resetMicheleRoomEntities\(\)/);
+assert.match(gameDataSource, /setStarterWeapons\(starterWeapon, char\.id\)/);
 assert.match(rendererSource, /drawMicheleTurret/);
 assert.match(rendererSource, /drawMicheleMark/);
 assert.match(spriteSource, /player_michele_side_idle/);
@@ -164,5 +193,7 @@ console.log(JSON.stringify({
   catTrace: "2s-attacker-mark",
   markedInspectorMultiplier: 1.35,
   dedicatedCharacterSprite: "ok",
+  singleWeaponStart: "inspector-only",
+  roomScopedPawtector: "ok",
   saveAndMetaMigration: "ok",
 }));

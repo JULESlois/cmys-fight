@@ -11,13 +11,15 @@ export interface CharacterConfig {
   speed: number;
   starterWeapon: string;
   passive: string;
+  familyId: "cmys" | "michele";
+  formName?: string;
 }
 
 export const CHARACTERS: Record<string, CharacterConfig> = {
   knight: {
     id: "knight",
-    name: "Knight",
-    title: "The Stalwart",
+    name: "CMYS",
+    title: "Guard Form",
     color: "#E74C3C", // Red-ish
     maxHp: 8,
     maxArmor: 10,
@@ -26,12 +28,14 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 10,
     speed: 80,
     starterWeapon: "pistol",
-    passive: "Full armor prepares a guard that reduces the next hit by 1"
+    passive: "Full armor prepares a guard that reduces the next hit by 1",
+    familyId: "cmys",
+    formName: "GUARD",
   },
   mage: {
     id: "mage",
-    name: "Mage",
-    title: "The Scholar",
+    name: "CMYS",
+    title: "Arcane Form",
     color: "#3498DB", // Blue-ish
     maxHp: 4,
     maxArmor: 2,
@@ -40,7 +44,9 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 12,
     speed: 90,
     starterWeapon: "laser",
-    passive: "Spending 12 Energy echoes the triggering attack at 50% damage"
+    passive: "Spending 12 Energy echoes the triggering attack at 50% damage",
+    familyId: "cmys",
+    formName: "ARCANE",
   },
 
   michele: {
@@ -55,12 +61,13 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 10,
     speed: 96,
     starterWeapon: "inspector",
-    passive: "Taking damage marks the attacker for 2 seconds; Inspector deals +35% damage to marked targets"
+    passive: "Taking damage marks the attacker for 2 seconds; Inspector deals +35% damage to marked targets",
+    familyId: "michele",
   },
   rogue: {
     id: "rogue",
-    name: "Rogue",
-    title: "The Swift",
+    name: "CMYS",
+    title: "Swift Form",
     color: "#2ECC71", // Green-ish
     maxHp: 6,
     maxArmor: 4,
@@ -69,6 +76,8 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 9,
     speed: 120,
     starterWeapon: "shotgun",
-    passive: "Dashing grants +25% critical chance for 2 seconds"
+    passive: "Dashing grants +25% critical chance for 2 seconds",
+    familyId: "cmys",
+    formName: "SWIFT",
   }
 };

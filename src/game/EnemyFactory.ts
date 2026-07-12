@@ -44,6 +44,11 @@ export class EnemyFactory {
       definition.role === "boss" ? 7 : 4,
       Math.round(definition.radius * (definition.role === "boss" ? 0.72 : 0.66)),
     );
+    enemy.hitboxRadius = Math.max(
+      definition.role === "boss" ? 30 : 14,
+      Math.round(definition.radius * (definition.role === "boss" ? 2.0 : 1.7)),
+    );
+    enemy.hitboxOffsetY = -Math.round(enemy.hitboxRadius * (definition.role === "boss" ? 0.72 : 0.72));
     enemy.attackDamage = definition.attackDamage;
     enemy.attackInterval = definition.attackInterval;
     enemy.attackWindup = definition.attackWindup;
@@ -72,6 +77,8 @@ export class EnemyFactory {
     enemy.projectileSpeed *= 1.08;
     enemy.attackInterval = Math.max(enemy.minimumAttackInterval, enemy.attackInterval * 0.84);
     enemy.attackWindup = Math.max(enemy.minimumWindup, enemy.attackWindup * 0.9);
+    enemy.hitboxRadius = Math.round(enemy.hitboxRadius * 1.12);
+    enemy.hitboxOffsetY = -Math.round(enemy.hitboxRadius * 0.72);
     enemy.eliteCoinReward = 18;
     return enemy;
   }

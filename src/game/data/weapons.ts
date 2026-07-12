@@ -57,6 +57,8 @@ export interface ProjectileProfile {
   highHealthDamageMultiplier: number;
   criticalExplosionRadius: number;
   criticalExplosionDamageMultiplier: number;
+  closeRangeDamageMultiplier: number;
+  closeRangeFalloffDistance: number;
 }
 
 export interface WeaponData {
@@ -129,9 +131,14 @@ export interface WeaponData {
   highHealthDamageMultiplier?: number;
   criticalExplosionRadius?: number;
   criticalExplosionDamageMultiplier?: number;
+  closeRangeDamageMultiplier?: number;
+  closeRangeFalloffDistance?: number;
   exclusiveCharacterId?: string;
   markedTargetDamageMultiplier?: number;
 }
+
+export const SHOTGUN_CLOSE_RANGE_MULTIPLIER = 1.75;
+export const SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE = 96;
 
 export const WEAPONS: Record<string, WeaponData> = {
   pistol: {
@@ -545,6 +552,8 @@ export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
     highHealthDamageMultiplier: Math.max(1, weapon.highHealthDamageMultiplier ?? 1),
     criticalExplosionRadius: Math.max(0, weapon.criticalExplosionRadius ?? 0),
     criticalExplosionDamageMultiplier: Math.max(0, weapon.criticalExplosionDamageMultiplier ?? 0.5),
+    closeRangeDamageMultiplier: Math.max(1, weapon.closeRangeDamageMultiplier ?? (weapon.category === "shotgun" ? SHOTGUN_CLOSE_RANGE_MULTIPLIER : 1)),
+    closeRangeFalloffDistance: Math.max(0, weapon.closeRangeFalloffDistance ?? (weapon.category === "shotgun" ? SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE : 0)),
   };
 }
 
@@ -605,7 +614,10 @@ export function normalizeWeaponSlots(value: unknown, fallbackWeapon = "pistol"):
   return second ? [first, second] : [first];
 }
 
-export function createStarterWeaponSlots(starterWeapon: string): WeaponSlots {
+export function createStarterWeaponSlots(starterWeapon: string, characterId?: string): WeaponSlots {
   const starter = isWeaponId(starterWeapon) ? starterWeapon : "pistol";
-  return starter === "pistol" ? ["pistol"] : [starter, "pistol"];
+  const weapon = WEAPONS[starter];
+  if (starter === "pistol") return ["pistol"];
+  if (characterId === "michele" || weapon?.exclusiveCharacterId) return [starter];
+  return [starter, "pistol"];
 }

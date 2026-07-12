@@ -8,7 +8,11 @@ export class Enemy {
   public id: number;
   public x: number;
   public y: number;
+  /** Ground collision radius, centered at the feet. */
   public radius: number = 8;
+  /** Projectile hurtbox, shifted upward to cover the rendered body. */
+  public hitboxRadius: number = 13;
+  public hitboxOffsetY: number = -9;
   public hp: number;
   public maxHp: number;
   public speed: number;
@@ -62,6 +66,8 @@ export class Enemy {
     this.x = x;
     this.y = y;
     this.radius = 8;
+    this.hitboxRadius = 13;
+    this.hitboxOffsetY = -9;
     this.type = type;
     this.enemyId = type;
     this.name = "Enemy";
@@ -128,6 +134,14 @@ export class Enemy {
     }
     this.hp = this.maxHp;
     return this;
+  }
+
+  get hitboxX(): number {
+    return this.x;
+  }
+
+  get hitboxY(): number {
+    return this.y + this.hitboxOffsetY;
   }
 
 }

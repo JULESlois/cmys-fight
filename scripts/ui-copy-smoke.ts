@@ -48,6 +48,9 @@ assert.match(hub, /getPrompt\("interact"\)/);
 assert.match(hub, /getPrompt\("fire"\)/);
 assert.doesNotMatch(character, /ARMORY: SHOTGUN|\[PASSIVE\]/);
 assert.match(character, /this\.engine\.switchState\(this\.backState\)/);
+assert.match(character, /CMYS_FORM_IDS = \["knight", "mage", "rogue"\]/);
+assert.match(character, /SelectionMode = "identity" \| "form"/);
+assert.match(character, /selectedIdentity === "cmys"[\s\S]*this\.mode = "form"/);
 assert.match(records, /common\.hidden/);
 assert.match(dungeon, /dungeon\.retry/);
 
@@ -61,6 +64,7 @@ console.log(JSON.stringify({
   compactTutorial: "ok",
   pauseAsControlReference: "ok",
   conciseSelectionOverlays: "ok",
+  cmysIdentityAndForms: "ok",
   reducedMenuCopy: "ok",
   distinctWeaponHudModels: "ok",
 }));

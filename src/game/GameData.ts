@@ -73,7 +73,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 20;
+const CURRENT_SAVE_VERSION = 21;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -262,6 +262,7 @@ export class GameData {
         this.data.player.activeWeaponSlot = 0;
       }
       this.normalizePlayerWeapons();
+      this.migrateMicheleStarterLoadout(loadedVersion);
       if (typeof parsed.player?.knightGuardReady !== "boolean") {
         this.data.player.knightGuardReady = this.data.player.characterId === "knight";
       }
@@ -340,7 +341,7 @@ export class GameData {
       isWeaponAvailableForCharacter(requestedStarter, char.id)
       ? requestedStarter.id
       : this.getStarterWeaponForCharacter(char.id);
-    this.setStarterWeapons(starterWeapon);
+    this.setStarterWeapons(starterWeapon, char.id);
     this.resetSkillState(char.id);
     this.resetBuffState();
     this.data.player.statusEffects = [];
@@ -377,7 +378,7 @@ export class GameData {
     this.data.player.mana = char.maxMana;
     this.data.player.maxMana = char.maxMana;
     this.data.player.speed = char.speed;
-    this.setStarterWeapons(this.getStarterWeaponForCharacter(char.id));
+    this.setStarterWeapons(this.getStarterWeaponForCharacter(char.id), char.id);
     this.resetSkillState(this.data.player.characterId);
     this.resetBuffState();
     this.data.player.statusEffects = [];
@@ -437,8 +438,8 @@ export class GameData {
     this.save();
   }
 
-  private setStarterWeapons(starterWeapon: string) {
-    const slots = createStarterWeaponSlots(starterWeapon);
+  private setStarterWeapons(starterWeapon: string, characterId = this.data.player.characterId) {
+    const slots = createStarterWeaponSlots(starterWeapon, characterId);
     this.data.player.weaponSlots = slots[1] ? [slots[0], slots[1]] : [slots[0]];
     this.data.player.activeWeaponSlot = 0;
     this.data.player.currentWeaponId = this.data.player.weaponSlots[0];
@@ -866,6 +867,20 @@ export class GameData {
     player.micheleTurretFireCooldown = player.characterId === "michele"
       ? finiteNonNegative(player.micheleTurretFireCooldown)
       : 0;
+  }
+
+  private migrateMicheleStarterLoadout(loadedVersion: number): void {
+    if (loadedVersion >= 21) return;
+    const player = this.data.player;
+    if (
+      player.characterId === "michele" &&
+      player.weaponSlots[0] === "inspector" &&
+      player.weaponSlots[1] === "pistol"
+    ) {
+      player.weaponSlots = ["inspector"];
+      player.activeWeaponSlot = 0;
+      player.currentWeaponId = "inspector";
+    }
   }
 
   private resetBuffState() {

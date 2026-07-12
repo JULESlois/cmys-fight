@@ -25,6 +25,7 @@ import { WeaponController } from "../combat/WeaponController";
 import { segmentCircleHit } from "../combat/Collision";
 import {
   calculateChainDamage,
+  calculateCloseRangeDamageMultiplier,
   calculateExplosionDamage,
   calculateExplosionFalloff,
   rotateVelocityToward,
@@ -310,7 +311,18 @@ export class DungeonState extends GameState {
     return chest;
   }
 
+  private resetMicheleRoomEntities(): void {
+    if (this.player.characterId !== "michele") return;
+    this.player.skillActiveTimer = 0;
+    this.player.micheleTurretFireCooldown = 0;
+    this.player.micheleTurretX = this.player.x;
+    this.player.micheleTurretY = this.player.y;
+    this.player.micheleMarkedEnemyId = -1;
+    this.player.micheleMarkTimer = 0;
+  }
+
   private loadRoom() {
+    this.resetMicheleRoomEntities();
     for (const projectile of this.projectiles) releaseProjectile(projectile);
     for (const pickup of this.pickups) releasePickup(pickup);
     for (const enemy of this.enemies) releaseEnemy(enemy);
@@ -1408,7 +1420,7 @@ export class DungeonState extends GameState {
   private getPlayerAimAngle(): number {
     const target = this.getClosestEnemy();
     if (target) {
-      return Math.atan2(target.y - this.player.y, target.x - this.player.x);
+      return Math.atan2(target.hitboxY - this.player.y, target.hitboxX - this.player.x);
     }
     const axis = this.engine.input.getAxis();
     if (axis.x !== 0 || axis.y !== 0) {
@@ -1431,14 +1443,14 @@ export class DungeonState extends GameState {
     const marked = this.player.micheleMarkTimer > 0
       ? this.enemies.find(enemy => enemy.id === this.player.micheleMarkedEnemyId && enemy.hp > 0)
       : undefined;
-    let target = marked && Math.hypot(marked.x - this.player.micheleTurretX, marked.y - this.player.micheleTurretY) <= range
+    let target = marked && Math.hypot(marked.hitboxX - this.player.micheleTurretX, marked.hitboxY - this.player.micheleTurretY) <= range
       ? marked
       : undefined;
     if (!target) {
       let closestDistance = range;
       for (const enemy of this.enemies) {
         if (enemy.hp <= 0) continue;
-        const distance = Math.hypot(enemy.x - this.player.micheleTurretX, enemy.y - this.player.micheleTurretY);
+        const distance = Math.hypot(enemy.hitboxX - this.player.micheleTurretX, enemy.hitboxY - this.player.micheleTurretY);
         if (distance <= closestDistance) {
           closestDistance = distance;
           target = enemy;
@@ -1446,7 +1458,7 @@ export class DungeonState extends GameState {
       }
     }
     if (!target) return;
-    const angle = Math.atan2(target.y - this.player.micheleTurretY, target.x - this.player.micheleTurretX);
+    const angle = Math.atan2(target.hitboxY - this.player.micheleTurretY, target.hitboxX - this.player.micheleTurretX);
     const profile = getProjectileProfile(WEAPONS.inspector);
     const projectile = acquireProjectile(
       this.player.micheleTurretX,
@@ -1482,7 +1494,7 @@ export class DungeonState extends GameState {
     let closest = null;
     let minDist = Infinity;
     for (const e of this.enemies) {
-      const d = Math.hypot(e.x - this.player.x, e.y - this.player.y);
+      const d = Math.hypot(e.hitboxX - this.player.x, e.hitboxY - this.player.y);
       if (d < minDist) {
         minDist = d;
         closest = e;
@@ -2002,7 +2014,7 @@ export class DungeonState extends GameState {
           if (p.hitEnemyIds.has(e.id)) continue;
           const hit = segmentCircleHit(
             p.previousX, p.previousY, p.x, p.y,
-            e.x, e.y, p.radius + e.radius,
+            e.hitboxX, e.hitboxY, p.radius + e.hitboxRadius,
           );
           if (hit && hit.t < closestHitT) {
             closestHitT = hit.t;
@@ -2012,14 +2024,20 @@ export class DungeonState extends GameState {
 
         if (closestEnemyIndex >= 0 && (environmentHitT === null || closestHitT <= environmentHitT)) {
           const e = this.enemies[closestEnemyIndex];
-          const hitX = e.x;
-          const hitY = e.y;
           p.x = p.previousX + (p.x - p.previousX) * closestHitT;
           p.y = p.previousY + (p.y - p.previousY) * closestHitT;
+          const hitX = p.x;
+          const hitY = p.y;
           const healthRatioBeforeHit = e.maxHp > 0 ? e.hp / e.maxHp : 0;
           let directDamage = p.highHealthDamageThreshold > 0 && healthRatioBeforeHit >= p.highHealthDamageThreshold
             ? p.damage * p.highHealthDamageMultiplier
             : p.damage;
+          const travelDistance = Math.hypot(p.x - p.originX, p.y - p.originY);
+          directDamage *= calculateCloseRangeDamageMultiplier(
+            travelDistance,
+            p.closeRangeDamageMultiplier,
+            p.closeRangeFalloffDistance,
+          );
           const weapon = WEAPONS[p.weaponId];
           if (
             this.player.characterId === "michele" &&
@@ -2153,15 +2171,15 @@ export class DungeonState extends GameState {
         let closestDistance = tether;
         for (const enemy of this.enemies) {
           if (enemy.hp <= 0) continue;
-          const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+          const distance = Math.hypot(enemy.hitboxX - projectile.x, enemy.hitboxY - projectile.y);
           if (distance < closestDistance) {
             target = enemy;
             closestDistance = distance;
           }
         }
         if (target) {
-          targetX = target.x;
-          targetY = target.y;
+          targetX = target.hitboxX;
+          targetY = target.hitboxY;
         } else {
           targetX = this.player.x + Math.cos(this.player.aimAngle) * tether * 0.72;
           targetY = this.player.y + Math.sin(this.player.aimAngle) * tether * 0.72;
@@ -2178,15 +2196,15 @@ export class DungeonState extends GameState {
         let closestDistance = 240;
         for (const enemy of this.enemies) {
           if (enemy.hp <= 0) continue;
-          const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+          const distance = Math.hypot(enemy.hitboxX - projectile.x, enemy.hitboxY - projectile.y);
           if (distance < closestDistance) {
             target = enemy;
             closestDistance = distance;
           }
         }
         if (target) {
-          targetX = target.x;
-          targetY = target.y;
+          targetX = target.hitboxX;
+          targetY = target.hitboxY;
         } else {
           const orbitAngle = projectile.age * 2.2 + projectile.id * 0.73;
           targetX = this.player.x + Math.cos(orbitAngle) * 54;
@@ -2202,15 +2220,15 @@ export class DungeonState extends GameState {
       let closestDistance = projectile.style === "sword" ? 220 : 150;
       for (const enemy of this.enemies) {
         if (enemy.hp <= 0 || projectile.hitEnemyIds.has(enemy.id)) continue;
-        const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+        const distance = Math.hypot(enemy.hitboxX - projectile.x, enemy.hitboxY - projectile.y);
         if (distance < closestDistance) {
           target = enemy;
           closestDistance = distance;
         }
       }
       if (target) {
-        targetX = target.x;
-        targetY = target.y;
+        targetX = target.hitboxX;
+        targetY = target.hitboxY;
       }
     }
 
@@ -2236,7 +2254,7 @@ export class DungeonState extends GameState {
       let closestDistance = projectile.chainRange;
       for (const enemy of this.enemies) {
         if (enemy.hp <= 0 || visited.has(enemy.id)) continue;
-        const distance = Math.hypot(enemy.x - fromX, enemy.y - fromY);
+        const distance = Math.hypot(enemy.hitboxX - fromX, enemy.hitboxY - fromY);
         if (distance < closestDistance) {
           target = enemy;
           closestDistance = distance;
@@ -2246,8 +2264,8 @@ export class DungeonState extends GameState {
 
       visited.add(target.id);
       projectile.hitEnemyIds.add(target.id);
-      const targetX = target.x;
-      const targetY = target.y;
+      const targetX = target.hitboxX;
+      const targetY = target.hitboxY;
       const damage = calculateChainDamage(
         projectile.damage,
         projectile.chainDamageMultiplier,
@@ -2324,10 +2342,11 @@ export class DungeonState extends GameState {
     for (let index = this.enemies.length - 1; index >= 0; index--) {
       const enemy = this.enemies[index];
       if (enemy.id === directEnemyId || enemy.hp <= 0) continue;
-      const dx = enemy.x - projectile.x;
-      const dy = enemy.y - projectile.y;
-      const distance = Math.hypot(dx, dy);
-      if (distance > radius + enemy.radius) continue;
+      const dx = enemy.hitboxX - projectile.x;
+      const dy = enemy.hitboxY - projectile.y;
+      const centerDistance = Math.hypot(dx, dy);
+      const distance = Math.max(0, centerDistance - enemy.hitboxRadius);
+      if (distance > radius) continue;
       const falloff = calculateExplosionFalloff(distance, radius);
       const damage = calculateExplosionDamage(
         projectile.damage,
@@ -2340,10 +2359,10 @@ export class DungeonState extends GameState {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration);
         }
-        if (enemy.type !== "boss" && distance > 0) {
+        if (enemy.type !== "boss" && centerDistance > 0) {
           const push = projectile.knockback * falloff;
-          const nextX = enemy.x + dx / distance * push;
-          const nextY = enemy.y + dy / distance * push;
+          const nextX = enemy.x + dx / centerDistance * push;
+          const nextY = enemy.y + dy / centerDistance * push;
           if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
           if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
         }

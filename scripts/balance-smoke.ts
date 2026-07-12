@@ -125,7 +125,7 @@ function loadLegacyCombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 20);
+  assert.equal(persisted.saveVersion, 21);
   return loaded.data.player;
 }
 
@@ -405,7 +405,7 @@ const characterSustain = Object.fromEntries(
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v17-v20-ratio-preserved",
+  runMigration: "v17-v21-ratio-preserved",
   manaCap: MAX_PLAYER_MANA,
   characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
     character.maxMana,

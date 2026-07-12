@@ -5,14 +5,26 @@ import { WeaponController } from "../src/game/combat/WeaponController";
 import { SkillController } from "../src/game/combat/SkillController";
 import {
   calculateChainDamage,
+  calculateCloseRangeDamageMultiplier,
   calculateExplosionDamage,
   calculateExplosionFalloff,
   rotateVelocityToward,
 } from "../src/game/combat/ProjectileEffects";
-import { WEAPONS, getAvailableWeapons, rollAvailableWeapon, type ProjectileStyle, type WeaponRollContext } from "../src/game/data/weapons";
+import {
+  SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE,
+  SHOTGUN_CLOSE_RANGE_MULTIPLIER,
+  WEAPONS,
+  getAvailableWeapons,
+  getProjectileProfile,
+  rollAvailableWeapon,
+  type ProjectileStyle,
+  type WeaponRollContext,
+} from "../src/game/data/weapons";
 import { DungeonState } from "../src/game/states/DungeonState";
 import { Enemy } from "../src/game/entities/Enemy";
 import { acquireProjectile, releaseProjectile } from "../src/game/EntityPools";
+import { EnemyFactory } from "../src/game/EnemyFactory";
+import { ENEMIES } from "../src/game/data/enemies";
 
 const turned = rotateVelocityToward(100, 0, Math.PI / 2, 0.2);
 assert.ok(Math.abs(Math.hypot(turned.vx, turned.vy) - 100) < 0.0001);
@@ -26,6 +38,16 @@ assert.equal(calculateExplosionDamage(10, 1, 30, 30), 5);
 assert.equal(calculateExplosionDamage(10, 1, 31, 30), 0);
 assert.equal(calculateExplosionFalloff(0, 30), 1);
 assert.equal(calculateExplosionFalloff(30, 30), 0.45);
+assert.equal(calculateCloseRangeDamageMultiplier(0, 1.75, 96), 1.75);
+assert.equal(calculateCloseRangeDamageMultiplier(48, 1.75, 96), 1.375);
+assert.equal(calculateCloseRangeDamageMultiplier(96, 1.75, 96), 1);
+assert.equal(calculateCloseRangeDamageMultiplier(140, 1.75, 96), 1);
+for (const weapon of Object.values(WEAPONS).filter(weapon => weapon.category === "shotgun")) {
+  const profile = getProjectileProfile(weapon);
+  assert.equal(profile.closeRangeDamageMultiplier, SHOTGUN_CLOSE_RANGE_MULTIPLIER, `${weapon.id} close multiplier`);
+  assert.equal(profile.closeRangeFalloffDistance, SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE, `${weapon.id} falloff distance`);
+}
+assert.equal(getProjectileProfile(WEAPONS.pistol).closeRangeDamageMultiplier, 1);
 
 const expectedStyles = new Set<ProjectileStyle>([
   "bullet", "tracer", "beam", "lightning", "plasma", "flame", "rocket", "disc",
@@ -377,6 +399,40 @@ const fakeEngine = {
 };
 const dungeon = new DungeonState(fakeEngine as any) as any;
 dungeon.isCollidingWithMap = () => false;
+
+const resolveKsgDamage = (targetX: number) => {
+  const target = new Enemy(targetX, 100, "melee");
+  target.hp = target.maxHp = 100;
+  target.hitboxRadius = 14;
+  target.hitboxOffsetY = -10;
+  const profile = getProjectileProfile(WEAPONS.ksg_12);
+  const shot = acquireProjectile(
+    0, target.hitboxY, 100, 0, 2, WEAPONS.ksg_12.damage, "player", 3,
+    WEAPONS.ksg_12.color, 0, false, 0, 0, undefined, 0, false, profile,
+  );
+  dungeon.projectiles = [shot];
+  dungeon.enemies = [target];
+  dungeon.updateProjectiles(targetX / 100 + 0.1);
+  return 100 - target.hp;
+};
+const closeShotgunDamage = resolveKsgDamage(24);
+const distantShotgunDamage = resolveKsgDamage(140);
+assert.ok(closeShotgunDamage > distantShotgunDamage * 1.45, `${closeShotgunDamage} vs ${distantShotgunDamage}`);
+assert.equal(distantShotgunDamage, WEAPONS.ksg_12.damage, "shotguns must settle at 1x damage beyond falloff distance");
+
+const bodyEnemy = new Enemy(50, 100, "melee");
+EnemyFactory.applyDefinition(bodyEnemy, ENEMIES.moss_brute);
+assert.ok(bodyEnemy.hitboxRadius > bodyEnemy.radius * 2, "body hurtbox must be substantially larger than foot collision");
+assert.ok(bodyEnemy.hitboxOffsetY < 0, "body hurtbox must be shifted above the feet");
+const upperBodyY = bodyEnemy.hitboxY - bodyEnemy.hitboxRadius * 0.5;
+assert.ok(Math.abs(upperBodyY - bodyEnemy.y) > bodyEnemy.radius + 2, "test ray must miss the old foot hitbox");
+const bodyShot = acquireProjectile(0, upperBodyY, 200, 0, 2, 3, "player", 2);
+dungeon.projectiles = [bodyShot];
+dungeon.enemies = [bodyEnemy];
+const bodyHpBefore = bodyEnemy.hp;
+dungeon.updateProjectiles(0.35);
+assert.ok(bodyEnemy.hp < bodyHpBefore, "projectiles through the rendered upper body must hit");
+
 dungeon.player.mana = 80;
 dungeon.player.setWeaponLoadout(["stardust_dragon_staff"], 0);
 dungeon.getPlayerAimAngle = () => 0;
@@ -515,6 +571,8 @@ console.log(JSON.stringify({
   accelerationAndDrag: "ok",
   chainLightning: "ok",
   radialExplosion: "ok",
+  shotgunDistanceDamage: { close: Number(closeShotgunDamage.toFixed(2)), far: distantShotgunDamage },
+  fullBodyEnemyHitboxes: "ok",
   codBurstHeatAndLink: "ok",
   mythAdaptiveAndOpeningShots: "ok",
   wildLotusCriticalBloom: "ok",

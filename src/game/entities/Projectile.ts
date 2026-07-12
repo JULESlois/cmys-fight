@@ -9,6 +9,8 @@ export class Projectile {
   public y = 0;
   public previousX = 0;
   public previousY = 0;
+  public originX = 0;
+  public originY = 0;
   public vx = 0;
   public vy = 0;
   public radius = 1;
@@ -62,6 +64,8 @@ export class Projectile {
   public highHealthDamageMultiplier = 1;
   public criticalExplosionRadius = 0;
   public criticalExplosionDamageMultiplier = 0.5;
+  public closeRangeDamageMultiplier = 1;
+  public closeRangeFalloffDistance = 0;
 
   private static nextId = 0;
 
@@ -105,6 +109,8 @@ export class Projectile {
     this.y = y;
     this.previousX = x;
     this.previousY = y;
+    this.originX = x;
+    this.originY = y;
     this.vx = vx;
     this.vy = vy;
     this.radius = radius;
@@ -157,6 +163,8 @@ export class Projectile {
     this.highHealthDamageMultiplier = profile?.highHealthDamageMultiplier ?? 1;
     this.criticalExplosionRadius = profile?.criticalExplosionRadius ?? 0;
     this.criticalExplosionDamageMultiplier = profile?.criticalExplosionDamageMultiplier ?? 0.5;
+    this.closeRangeDamageMultiplier = profile?.closeRangeDamageMultiplier ?? 1;
+    this.closeRangeFalloffDistance = profile?.closeRangeFalloffDistance ?? 0;
     this.hitEnemyIds.clear();
     return this;
   }

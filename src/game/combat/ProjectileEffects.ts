@@ -47,3 +47,15 @@ export function calculateExplosionFalloff(distance: number, radius: number): num
   if (radius <= 0 || distance > radius) return 0;
   return Math.max(0.45, 1 - Math.max(0, distance) / radius * 0.55);
 }
+
+
+export function calculateCloseRangeDamageMultiplier(
+  distance: number,
+  maximumMultiplier: number,
+  falloffDistance: number,
+): number {
+  const maximum = Math.max(1, maximumMultiplier);
+  if (falloffDistance <= 0 || maximum <= 1) return 1;
+  const ratio = Math.max(0, Math.min(1, 1 - Math.max(0, distance) / falloffDistance));
+  return 1 + (maximum - 1) * ratio;
+}
