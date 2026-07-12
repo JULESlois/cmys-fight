@@ -56,6 +56,7 @@ assert.deepEqual(
     knight: { maxMana: 25, rate: 10, delay: 0.85 },
     mage: { maxMana: 60, rate: 12, delay: 1.1 },
     michele: { maxMana: 42, rate: 10, delay: 1.1 },
+    kanami: { maxMana: 48, rate: 10, delay: 1.2 },
     rogue: { maxMana: 40, rate: 9, delay: 1.35 },
   },
 );
@@ -125,7 +126,7 @@ function loadLegacyCombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 21);
+  assert.equal(persisted.saveVersion, 22);
   return loaded.data.player;
 }
 
@@ -225,7 +226,8 @@ const metrics = Object.fromEntries(
 );
 const zeroEnergy = Object.values(WEAPONS).filter(weapon => weapon.manaCost === 0);
 for (const weapon of zeroEnergy) {
-  assert.ok(metrics[weapon.id].directDps <= 12.5, `${weapon.id} free DPS ${metrics[weapon.id].directDps}`);
+  const ceiling = weapon.maxHeat ? 15 : 12.5;
+  assert.ok(metrics[weapon.id].directDps <= ceiling, `${weapon.id} free DPS ${metrics[weapon.id].directDps}`);
 }
 assert.ok(metrics.vector_9.directDps <= metrics.laser.directDps * 0.55);
 assert.ok(metrics.nail_driver.directDps < metrics.plasma_caster.directDps);
@@ -405,7 +407,7 @@ const characterSustain = Object.fromEntries(
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v17-v21-ratio-preserved",
+  runMigration: "v17-v22-ratio-preserved",
   manaCap: MAX_PLAYER_MANA,
   characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
     character.maxMana,

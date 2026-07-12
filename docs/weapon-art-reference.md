@@ -1,6 +1,6 @@
 # Weapon Art Reference Register
 
-This register documents the visual reference selected for the weapon-art pass introduced in version 0.18.0 and expanded in versions 0.19.0, 0.20.0 and 0.21.0. External images are used only as temporary study references. The repository contains newly authored low-resolution sprites and palettes, not the downloaded source images.
+This register documents the visual reference selected for the weapon-art pass introduced in version 0.18.0 and expanded in versions 0.19.0, 0.20.0, 0.21.0 and 0.23.0. External images are used only as temporary study references. The repository contains newly authored low-resolution sprites and palettes, not the downloaded source images.
 
 ## Reference-driven licensed designs
 
@@ -25,6 +25,7 @@ This register documents the visual reference selected for the weapon-art pass in
 | `awp_dragon_lore` | AWP &#124; Dragon Lore | Counter-Strike: Global Offensive inventory/market profile | https://counterstrike.fandom.com/wiki/AWP/Gallery |
 | `ak47_wild_lotus` | AK-47 &#124; Wild Lotus | Counter-Strike: Global Offensive inventory profile | https://counterstrike.fandom.com/wiki/AK-47/Gallery |
 | `inspector` | Inspector | Strinova Michele weapon profile | https://wiki.biligame.com/klbq/米雪儿·李 |
+| `finale` | Finale / 谢幕曲 | Strinova Kanami weapon profile | https://wiki.biligame.com/klbq/谢幕曲 |
 | `minishark` | Minishark | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Minishark |
 | `water_bolt` | Water Bolt | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Water_Bolt |
 | `stardust_dragon_staff` | Stardust Dragon Staff | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Stardust_Dragon_Staff |
@@ -57,3 +58,7 @@ The remaining weapons do not claim a one-to-one external prototype. Their sprite
 3. Each weapon uses an independent material palette rather than the global character palette.
 4. Grip and muzzle anchors are authored against the final sprite and converted into runtime offsets.
 5. Reference silhouettes and signature colors are preserved, while the pixels are redrawn to match the project's outline weight and 320 × 240 presentation.
+
+## Character sprite adaptation
+
+Kanami's dedicated player sprite was authored from the approved pixel reference sheet rather than importing the generated image as a runtime asset. The 16 × 16 model preserves the readable identity markers that survive the game's 320 × 240 presentation: long silver-lavender hair, blue eyes, black hair ornament, black-and-white idol outfit, pink waist accents and trailing ribbon panels. Finale is kept as a separate weapon layer so its long sniper silhouette remains visible above the character body.

@@ -38,10 +38,10 @@ assert.equal(calculateExplosionDamage(10, 1, 30, 30), 5);
 assert.equal(calculateExplosionDamage(10, 1, 31, 30), 0);
 assert.equal(calculateExplosionFalloff(0, 30), 1);
 assert.equal(calculateExplosionFalloff(30, 30), 0.45);
-assert.equal(calculateCloseRangeDamageMultiplier(0, 1.75, 96), 1.75);
-assert.equal(calculateCloseRangeDamageMultiplier(48, 1.75, 96), 1.375);
-assert.equal(calculateCloseRangeDamageMultiplier(96, 1.75, 96), 1);
-assert.equal(calculateCloseRangeDamageMultiplier(140, 1.75, 96), 1);
+assert.equal(calculateCloseRangeDamageMultiplier(0, 3, 96), 3);
+assert.equal(calculateCloseRangeDamageMultiplier(48, 3, 96), 2);
+assert.equal(calculateCloseRangeDamageMultiplier(96, 3, 96), 1);
+assert.equal(calculateCloseRangeDamageMultiplier(140, 3, 96), 1);
 for (const weapon of Object.values(WEAPONS).filter(weapon => weapon.category === "shotgun")) {
   const profile = getProjectileProfile(weapon);
   assert.equal(profile.closeRangeDamageMultiplier, SHOTGUN_CLOSE_RANGE_MULTIPLIER, `${weapon.id} close multiplier`);
@@ -205,7 +205,7 @@ mg42Player.setWeaponLoadout(["mg42", "pistol"], 0);
 mg42Player.mana = 0;
 const coolShot = WeaponController.fire(mg42Player, 0, () => 0.99);
 assert.equal(coolShot.fired, true);
-assert.equal(mg42Player.weaponHeat, 9);
+assert.equal(mg42Player.weaponHeat, 6.5);
 const coolAngle = Math.abs(Math.atan2(coolShot.projectiles[0].vy, coolShot.projectiles[0].vx));
 for (const projectile of coolShot.projectiles) releaseProjectile(projectile);
 mg42Player.weaponHeat = 90;
@@ -417,7 +417,7 @@ const resolveKsgDamage = (targetX: number) => {
 };
 const closeShotgunDamage = resolveKsgDamage(24);
 const distantShotgunDamage = resolveKsgDamage(140);
-assert.ok(closeShotgunDamage > distantShotgunDamage * 1.45, `${closeShotgunDamage} vs ${distantShotgunDamage}`);
+assert.ok(closeShotgunDamage > distantShotgunDamage * 2.35, `${closeShotgunDamage} vs ${distantShotgunDamage}`);
 assert.equal(distantShotgunDamage, WEAPONS.ksg_12.damage, "shotguns must settle at 1x damage beyond falloff distance");
 
 const bodyEnemy = new Enemy(50, 100, "melee");

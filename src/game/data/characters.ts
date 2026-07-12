@@ -11,7 +11,7 @@ export interface CharacterConfig {
   speed: number;
   starterWeapon: string;
   passive: string;
-  familyId: "cmys" | "michele";
+  familyId: "cmys" | "michele" | "kanami";
   formName?: string;
 }
 
@@ -64,6 +64,23 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     passive: "Taking damage marks the attacker for 2 seconds; Inspector deals +35% damage to marked targets",
     familyId: "michele",
   },
+
+  kanami: {
+    id: "kanami",
+    name: "Kanami",
+    title: "Soul Diva",
+    color: "#F06CA8",
+    maxHp: 5,
+    maxArmor: 4,
+    maxMana: 48,
+    manaRechargeDelay: 1.2,
+    manaRechargeRate: 10,
+    speed: 94,
+    starterWeapon: "finale",
+    passive: "Finale impacts release a resonant pulse that damages nearby enemies",
+    familyId: "kanami",
+  },
+
   rogue: {
     id: "rogue",
     name: "CMYS",

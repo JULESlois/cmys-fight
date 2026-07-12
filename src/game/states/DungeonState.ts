@@ -113,7 +113,9 @@ export class DungeonState extends GameState {
     player.speed = savedP.speed;
     player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
     player.skillCooldown = savedP.skillCooldown ?? 0;
-    player.skillActiveTimer = savedP.skillActiveTimer ?? 0;
+    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami"
+      ? 0
+      : savedP.skillActiveTimer ?? 0;
     player.skillDirectionX = savedP.skillDirectionX ?? 0;
     player.skillDirectionY = savedP.skillDirectionY ?? 0;
     player.rogueCritTimer = savedP.rogueCritTimer ?? 0;
@@ -123,7 +125,8 @@ export class DungeonState extends GameState {
     player.micheleMarkTimer = savedP.micheleMarkTimer ?? 0;
     player.micheleTurretX = savedP.micheleTurretX ?? player.x;
     player.micheleTurretY = savedP.micheleTurretY ?? player.y;
-    player.micheleTurretFireCooldown = savedP.micheleTurretFireCooldown ?? 0;
+    player.micheleTurretFireCooldown = 0;
+    player.micheleTurretActive = false;
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
     player.phoenixProtocolReady = savedP.phoenixProtocolReady === true;
@@ -172,6 +175,7 @@ export class DungeonState extends GameState {
   }
   
   exit() {
+    this.clearRoomScopedSkillEntities();
     this.prepareForSave();
   }
 
@@ -199,17 +203,19 @@ export class DungeonState extends GameState {
     savedP.activeWeaponSlot = this.player.activeWeaponSlot;
     savedP.currentWeaponId = this.player.currentWeaponId;
     savedP.skillCooldown = this.player.skillCooldown;
-    savedP.skillActiveTimer = this.player.skillActiveTimer;
+    savedP.skillActiveTimer = this.player.characterId === "michele" || this.player.characterId === "kanami"
+      ? 0
+      : this.player.skillActiveTimer;
     savedP.skillDirectionX = this.player.skillDirectionX;
     savedP.skillDirectionY = this.player.skillDirectionY;
     savedP.rogueCritTimer = this.player.rogueCritTimer;
     savedP.mageArcaneCharge = this.player.mageArcaneCharge;
     savedP.knightGuardReady = this.player.knightGuardReady;
-    savedP.micheleMarkedEnemyId = this.player.micheleMarkedEnemyId;
-    savedP.micheleMarkTimer = this.player.micheleMarkTimer;
-    savedP.micheleTurretX = this.player.micheleTurretX;
-    savedP.micheleTurretY = this.player.micheleTurretY;
-    savedP.micheleTurretFireCooldown = this.player.micheleTurretFireCooldown;
+    savedP.micheleMarkedEnemyId = -1;
+    savedP.micheleMarkTimer = 0;
+    savedP.micheleTurretX = 0;
+    savedP.micheleTurretY = 0;
+    savedP.micheleTurretFireCooldown = 0;
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
     savedP.phoenixProtocolReady = this.player.phoenixProtocolReady;
@@ -311,18 +317,29 @@ export class DungeonState extends GameState {
     return chest;
   }
 
-  private resetMicheleRoomEntities(): void {
-    if (this.player.characterId !== "michele") return;
-    this.player.skillActiveTimer = 0;
-    this.player.micheleTurretFireCooldown = 0;
-    this.player.micheleTurretX = this.player.x;
-    this.player.micheleTurretY = this.player.y;
-    this.player.micheleMarkedEnemyId = -1;
-    this.player.micheleMarkTimer = 0;
+  private clearRoomScopedSkillEntities(): void {
+    if (this.player.characterId === "michele") {
+      this.player.skillActiveTimer = 0;
+      this.player.micheleTurretActive = false;
+      this.player.micheleTurretFireCooldown = 0;
+      this.player.micheleTurretX = this.player.x;
+      this.player.micheleTurretY = this.player.y;
+      this.player.micheleMarkedEnemyId = -1;
+      this.player.micheleMarkTimer = 0;
+    }
+    if (this.player.characterId === "kanami") {
+      this.player.skillActiveTimer = 0;
+      this.player.kanamiBeaconX = this.player.x;
+      this.player.kanamiBeaconY = this.player.y;
+      this.player.kanamiBeaconVx = 0;
+      this.player.kanamiBeaconVy = 0;
+      this.player.kanamiBeaconFlightTimer = 0;
+      this.player.kanamiBeaconDeployed = false;
+    }
   }
 
   private loadRoom() {
-    this.resetMicheleRoomEntities();
+    this.clearRoomScopedSkillEntities();
     for (const projectile of this.projectiles) releaseProjectile(projectile);
     for (const pickup of this.pickups) releasePickup(pickup);
     for (const enemy of this.enemies) releaseEnemy(enemy);
@@ -809,6 +826,7 @@ export class DungeonState extends GameState {
     }
     SkillController.update(this.player, dt);
     this.updateMicheleTurret(dt);
+    this.updateKanamiBeacon(dt);
     this.updateLightningArcs(dt);
 
     const canUseSkill = ["combat", "cleared", "reward", "exiting", "exploration"].includes(this.roomPhase);
@@ -1437,7 +1455,7 @@ export class DungeonState extends GameState {
   }
 
   private updateMicheleTurret(_dt: number): void {
-    if (this.player.characterId !== "michele" || this.player.skillActiveTimer <= 0) return;
+    if (this.player.characterId !== "michele" || !this.player.micheleTurretActive || this.player.skillActiveTimer <= 0) return;
     if (this.player.micheleTurretFireCooldown > 0) return;
     const range = SkillController.MICHELE_TURRET_RANGE;
     const marked = this.player.micheleMarkTimer > 0
@@ -1486,6 +1504,39 @@ export class DungeonState extends GameState {
     this.fx.emitMuzzle(projectile, this.engine.isPerformanceDegraded());
   }
 
+  private updateKanamiBeacon(dt: number): void {
+    if (this.player.characterId !== "kanami" || this.player.skillActiveTimer <= 0) return;
+    if (this.player.kanamiBeaconDeployed) return;
+
+    const nextX = this.player.kanamiBeaconX + this.player.kanamiBeaconVx * dt;
+    const nextY = this.player.kanamiBeaconY + this.player.kanamiBeaconVy * dt;
+    this.player.kanamiBeaconFlightTimer = Math.max(0, this.player.kanamiBeaconFlightTimer - dt);
+    const collided = this.isCollidingWithMap(nextX, nextY, 5)
+      || nextX < 12 || nextX > 308 || nextY < 12 || nextY > 228;
+    if (!collided) {
+      this.player.kanamiBeaconX = nextX;
+      this.player.kanamiBeaconY = nextY;
+    }
+    if (collided || this.player.kanamiBeaconFlightTimer <= 0) {
+      this.player.kanamiBeaconDeployed = true;
+      this.player.kanamiBeaconVx = 0;
+      this.player.kanamiBeaconVy = 0;
+    }
+  }
+
+  private getKanamiBeaconTarget(enemy: Enemy): { x: number; y: number; distance: number } | null {
+    if (
+      this.player.characterId !== "kanami" ||
+      this.player.skillActiveTimer <= 0 ||
+      !this.player.kanamiBeaconDeployed
+    ) return null;
+    const dx = this.player.kanamiBeaconX - enemy.x;
+    const dy = this.player.kanamiBeaconY - enemy.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > SkillController.KANAMI_BEACON_RANGE) return null;
+    return { x: this.player.kanamiBeaconX, y: this.player.kanamiBeaconY, distance };
+  }
+
   private getClosestEnemy(): Enemy | null {
     if (this.player.characterId === "michele" && this.player.micheleMarkTimer > 0) {
       const marked = this.enemies.find(enemy => enemy.id === this.player.micheleMarkedEnemyId && enemy.hp > 0);
@@ -1520,6 +1571,29 @@ export class DungeonState extends GameState {
       if (e.hitFlash > 0) {
         e.hitFlash = Math.max(0, e.hitFlash - dt);
         currentSpeed *= 0.5;
+      }
+
+      const beaconTarget = this.getKanamiBeaconTarget(e);
+      if (beaconTarget && e.type !== "boss") {
+        e.attackState = "idle";
+        e.attackTimer = 0;
+        e.attackCooldown = Math.max(e.attackCooldown, 0.2);
+        if (beaconTarget.distance > SkillController.KANAMI_BEACON_STOP_RADIUS) {
+          const angle = Math.atan2(beaconTarget.y - e.y, beaconTarget.x - e.x);
+          nextX += Math.cos(angle) * currentSpeed * dt;
+          nextY += Math.sin(angle) * currentSpeed * dt;
+        }
+        if (!this.isCollidingWithMap(nextX, e.y, e.radius)) e.x = nextX;
+        if (!this.isCollidingWithMap(e.x, nextY, e.radius)) e.y = nextY;
+        e.x = Math.max(16, Math.min(304, e.x));
+        e.y = Math.max(16, Math.min(224, e.y));
+        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: beaconTarget.x });
+        continue;
+      }
+      if (beaconTarget && e.type === "boss" && beaconTarget.distance > SkillController.KANAMI_BEACON_STOP_RADIUS) {
+        const pullAngle = Math.atan2(beaconTarget.y - e.y, beaconTarget.x - e.x);
+        nextX += Math.cos(pullAngle) * currentSpeed * SkillController.KANAMI_BEACON_BOSS_PULL * dt;
+        nextY += Math.sin(pullAngle) * currentSpeed * SkillController.KANAMI_BEACON_BOSS_PULL * dt;
       }
 
       e.attackCooldown = Math.max(0, e.attackCooldown - dt);
@@ -2520,11 +2594,20 @@ export class DungeonState extends GameState {
       const markedEnemy = this.enemies.find(enemy => enemy.id === this.player.micheleMarkedEnemyId);
       if (markedEnemy) EntityRenderer.drawMicheleMark(ctx, markedEnemy, time);
     }
-    if (this.player.characterId === "michele" && this.player.skillActiveTimer > 0) {
+    if (this.player.characterId === "michele" && this.player.micheleTurretActive && this.player.skillActiveTimer > 0) {
       EntityRenderer.drawMicheleTurret(
         ctx,
         this.player.micheleTurretX,
         this.player.micheleTurretY,
+        time,
+      );
+    }
+    if (this.player.characterId === "kanami" && this.player.skillActiveTimer > 0) {
+      EntityRenderer.drawKanamiBeacon(
+        ctx,
+        this.player.kanamiBeaconX,
+        this.player.kanamiBeaconY,
+        this.player.kanamiBeaconDeployed,
         time,
       );
     }

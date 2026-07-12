@@ -652,6 +652,26 @@ SOURCE_DERIVED_SPRITES.mg42 = drawWeapon(32, 16, canvas => {
   canvas.line(25, 9, 27, 14, "2");
 });
 
+
+SOURCE_DERIVED_SPRITES.finale = drawWeapon(32, 18, canvas => {
+  canvas.polygon([[1,8],[5,5],[10,5],[12,7],[11,11],[6,13],[1,12]], "3");
+  canvas.polygon([[3,8],[6,6],[10,6],[10,10],[6,11],[3,11]], "4");
+  canvas.rect(10, 5, 12, 6, "3");
+  canvas.rect(12, 6, 9, 3, "4");
+  canvas.rect(13, 4, 8, 2, "5");
+  canvas.rect(15, 2, 9, 3, "3");
+  canvas.rect(16, 1, 7, 1, "5");
+  canvas.rect(22, 6, 9, 3, "4");
+  canvas.rect(23, 7, 8, 1, "6");
+  canvas.rect(28, 5, 4, 5, "2");
+  canvas.rect(30, 6, 2, 3, "5");
+  canvas.polygon([[12,10],[17,10],[16,16],[12,15]], "2");
+  canvas.polygon([[17,10],[22,10],[20,14],[17,14]], "4");
+  canvas.rect(13, 11, 2, 3, "6");
+  canvas.rect(8, 7, 3, 1, "6");
+  canvas.rect(18, 7, 2, 1, "6");
+});
+
 SOURCE_DERIVED_SPRITES.last_prism = recolorBands(
   SOURCE_DERIVED_SPRITES.last_prism,
   ["8", "7", "6", "5", "4", "3", "2"],
@@ -841,6 +861,7 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   ak47_wild_lotus: { ...BASE_OUTLINE, "2":"#102B20","3":"#1E5A42","4":"#D7A348","5":"#2D7A54","6":"#4FB77A","7":"#E75A92","8":"#F0A6C0" },
 
   inspector: { ...BASE_OUTLINE, "2":"#101820","3":"#263A52","4":"#3D6D91","5":"#70D7FF","6":"#E8F5FF" },
+  finale: { ...BASE_OUTLINE, "2":"#111217","3":"#282A31","4":"#454852","5":"#C6CAD3","6":"#F06CA8" },
   minishark: { ...BASE_OUTLINE, "2":"#30363A","3":"#657079","4":"#8A5A2E","5":"#B9C3C8" },
   water_bolt: { ...BASE_OUTLINE, "2":"#5A1E22","3":"#A42E35","4":"#E5C98E" },
   stardust_dragon_staff: { ...BASE_OUTLINE, "2":"#9B6827","3":"#273B9E","4":"#3E87D0","5":"#77CBE8","6":"#DFF8FF" },
@@ -900,6 +921,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   ak47_wild_lotus: { grip: [14, 13], muzzle: [31, 6] },
 
   inspector: { grip: [15, 12], muzzle: [31, 6] },
+  finale: { grip: [14, 13], muzzle: [31, 7] },
   minishark: { grip: [10, 12], muzzle: [29, 8] },
   water_bolt: { grip: [8, 13], muzzle: [19, 7] },
   stardust_dragon_staff: { grip: [8, 11], muzzle: [29, 5] },

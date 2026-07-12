@@ -2,7 +2,7 @@ import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 
-export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash" | "pawtector";
+export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash" | "pawtector" | "beacon_lure";
 
 export interface SkillConfig {
   id: SkillId;
@@ -52,6 +52,12 @@ const SKILLS: Record<string, SkillConfig> = {
     cooldown: 12,
     duration: 8,
   },
+  kanami: {
+    id: "beacon_lure",
+    name: "BEACON LURE",
+    cooldown: 13,
+    duration: 7,
+  },
 };
 
 const EMPTY_RESULT: SkillActivationResult = {
@@ -73,6 +79,11 @@ export class SkillController {
   static readonly MICHELE_TURRET_FIRE_INTERVAL = 0.35;
   static readonly MICHELE_TURRET_DAMAGE = 2;
   static readonly MICHELE_TURRET_SLOW_DURATION = 1.2;
+  static readonly KANAMI_BEACON_SPEED = 260;
+  static readonly KANAMI_BEACON_FLIGHT_TIME = 0.45;
+  static readonly KANAMI_BEACON_RANGE = 108;
+  static readonly KANAMI_BEACON_STOP_RADIUS = 16;
+  static readonly KANAMI_BEACON_BOSS_PULL = 0.35;
 
   static getConfig(characterId: string): SkillConfig {
     return SKILLS[characterId] ?? SKILLS.knight;
@@ -85,10 +96,28 @@ export class SkillController {
     player.micheleTurretFireCooldown = Math.max(0, player.micheleTurretFireCooldown - dt);
     if (player.micheleMarkTimer <= 0) player.micheleMarkedEnemyId = -1;
 
-    if (player.skillActiveTimer <= 0) return;
+    if (player.skillActiveTimer <= 0) {
+      if (player.characterId === "michele") player.micheleTurretActive = false;
+      if (player.characterId === "kanami") {
+        player.kanamiBeaconDeployed = false;
+        player.kanamiBeaconFlightTimer = 0;
+        player.kanamiBeaconVx = 0;
+        player.kanamiBeaconVy = 0;
+      }
+      return;
+    }
 
     const wasActive = player.skillActiveTimer > 0;
     player.skillActiveTimer = Math.max(0, player.skillActiveTimer - dt);
+    if (player.skillActiveTimer <= 0) {
+      if (player.characterId === "michele") player.micheleTurretActive = false;
+      if (player.characterId === "kanami") {
+        player.kanamiBeaconDeployed = false;
+        player.kanamiBeaconFlightTimer = 0;
+        player.kanamiBeaconVx = 0;
+        player.kanamiBeaconVy = 0;
+      }
+    }
 
     if (player.characterId === "rogue") {
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.08);
@@ -134,6 +163,20 @@ export class SkillController {
       player.micheleTurretX = player.x;
       player.micheleTurretY = player.y;
       player.micheleTurretFireCooldown = 0;
+      player.micheleTurretActive = true;
+      restoreEnergy();
+      return { activated: true, killedEnemyIds: [], lightningArcs: [] };
+    }
+
+    if (config.id === "beacon_lure") {
+      player.skillActiveTimer = config.duration;
+      player.skillCooldown = cooldown;
+      player.kanamiBeaconX = player.x;
+      player.kanamiBeaconY = player.y - 4;
+      player.kanamiBeaconVx = Math.cos(aimAngle) * SkillController.KANAMI_BEACON_SPEED;
+      player.kanamiBeaconVy = Math.sin(aimAngle) * SkillController.KANAMI_BEACON_SPEED;
+      player.kanamiBeaconFlightTimer = SkillController.KANAMI_BEACON_FLIGHT_TIME;
+      player.kanamiBeaconDeployed = false;
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }

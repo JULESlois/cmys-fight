@@ -2,7 +2,7 @@ import { Player, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, PLAYER_MUZZLE_O
 import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
-import { MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
+import { KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
@@ -102,6 +102,54 @@ export class EntityRenderer {
     ctx.restore();
   }
 
+
+  public static drawKanamiBeacon(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    deployed: boolean,
+    time: number,
+  ): void {
+    const pulse = Math.floor(time * 8) % 3;
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    if (deployed) {
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = "#F06CA8";
+      ctx.lineWidth = 1;
+      for (let ring = 0; ring < 3; ring++) {
+        const radius = 12 + ((pulse + ring) % 3) * 8;
+        ctx.strokeRect(-radius, -radius / 2, radius * 2, radius);
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(-8, 7, 16, 4);
+      ctx.fillStyle = "#171722";
+      ctx.fillRect(-6, -8, 12, 16);
+      ctx.fillStyle = "#3D3B49";
+      ctx.fillRect(-4, -6, 8, 11);
+      ctx.fillStyle = "#F06CA8";
+      ctx.fillRect(-2, -4, 4, 7);
+      ctx.fillStyle = "#FFF1F8";
+      ctx.fillRect(-1, -3, 2, 2);
+      ctx.fillStyle = "#8FD9FF";
+      ctx.fillRect(-4, 6, 3, 3);
+      ctx.fillRect(1, 6, 3, 3);
+      ctx.fillStyle = "#F06CA8";
+      ctx.fillRect(-11, -8 - pulse, 2, 4);
+      ctx.fillRect(9, -12 + pulse, 2, 4);
+    } else {
+      ctx.rotate(time * 8);
+      ctx.fillStyle = "#171722";
+      ctx.fillRect(-5, -3, 10, 6);
+      ctx.fillStyle = "#F06CA8";
+      ctx.fillRect(-3, -2, 6, 4);
+      ctx.fillStyle = "#FFF1F8";
+      ctx.fillRect(-1, -1, 2, 2);
+    }
+    ctx.restore();
+  }
+
   public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
     if (player.hp <= 0) return;
     ctx.save();
@@ -119,11 +167,16 @@ export class EntityRenderer {
     } else if (player.characterId === "rogue" && player.skillActiveTimer > 0) {
       ctx.fillStyle = "rgba(46, 204, 113, 0.25)";
       ctx.fillRect(Math.round(-player.skillDirectionX * 18) - 7, Math.round(-player.skillDirectionY * 18) - 14, 14, 22);
-    } else if (player.characterId === "michele" && player.skillActiveTimer > 0) {
+    } else if (player.characterId === "michele" && player.micheleTurretActive) {
       EntityRenderer.drawCornerFrame(ctx, 13, "rgba(112, 215, 255, 0.85)", 5);
       ctx.fillStyle = "rgba(244, 211, 94, 0.8)";
       ctx.fillRect(-5, -23, 3, 3);
       ctx.fillRect(2, -23, 3, 3);
+    } else if (player.characterId === "kanami" && player.skillActiveTimer > 0) {
+      EntityRenderer.drawCornerFrame(ctx, 13, "rgba(240, 108, 168, 0.88)", 5);
+      ctx.fillStyle = "rgba(143, 217, 255, 0.8)";
+      ctx.fillRect(-7, -23, 3, 2);
+      ctx.fillRect(4, -20, 2, 3);
     }
 
     if (player.characterId === "knight" && player.knightGuardReady) {
@@ -136,13 +189,22 @@ export class EntityRenderer {
     ctx.fillRect(-7, 11, 14, 2);
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
-    const playerSpritePrefix = player.characterId === "michele" ? "player_michele_side" : "player_main_side";
+    const playerSpritePrefix = player.characterId === "michele"
+      ? "player_michele_side"
+      : player.characterId === "kanami"
+        ? "player_kanami_side"
+        : "player_main_side";
+    const playerPalette = player.characterId === "michele"
+      ? MICHELE_PLAYER_PALETTE
+      : player.characterId === "kanami"
+        ? KANAMI_PLAYER_PALETTE
+        : PLAYER_PALETTE;
     let spriteName = `${playerSpritePrefix}_idle`;
     if (player.animState === "walk") spriteName = `${playerSpritePrefix}_walk_${player.animFrame}`;
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX: player.facing === "left",
-      paletteOverride: player.characterId === "michele" ? MICHELE_PLAYER_PALETTE : PLAYER_PALETTE,
+      paletteOverride: playerPalette,
       outlineColor: "#09101A",
     });
     // Weapon and muzzle effects are always drawn after the body so the authored

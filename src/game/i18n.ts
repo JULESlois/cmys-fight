@@ -169,6 +169,7 @@ const EN = {
   "character.identityFooter": "←→ CHARACTER   ENTER SELECT   [{cancel}] BACK",
   "character.formFooter": "←→ FORM   ↑↓ WEAPON   ENTER START   [{cancel}] CHARACTERS",
   "character.micheleFooter": "↑↓ WEAPON   ENTER START   [{cancel}] BACK",
+  "character.identityCharacterFooter": "↑↓ WEAPON   ENTER START   [{cancel}] BACK",
   "character.footer": "←→ CHARACTER   ENTER START   [{cancel}] BACK",
   "records.title": "ARCHIVE RECORDS",
   "records.achievements": "ACHIEVEMENTS",
@@ -401,6 +402,7 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "character.identityFooter": "←→ 角色   确认选择   [{cancel}] 返回",
   "character.formFooter": "←→ 形态   ↑↓ 武器   确认开始   [{cancel}] 角色",
   "character.micheleFooter": "↑↓ 武器   确认开始   [{cancel}] 返回",
+  "character.identityCharacterFooter": "↑↓ 武器   确认开始   [{cancel}] 返回",
   "character.footer": "←→ 角色   确认开始   [{cancel}] 返回",
   "records.title": "档案记录",
   "records.achievements": "成就",
@@ -542,6 +544,7 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   awp_dragon_lore: "神话级重型狙击步枪，对生命高于 75% 的目标造成额外 75% 伤害，并穿透四个目标。",
   ak47_wild_lotus: "传奇突击步枪，暴击命中时绽放短距离莲花爆破。",
   inspector: "米雪儿专属自动步枪，兼顾精度与射速；对被标记的攻击者伤害提高 35%。",
+  finale: "香奈美专属高精度狙击步枪；命中点会释放音波爆破，对附近敌人造成伤害。",
 };
 
 const ACHIEVEMENT_ZH: Record<string, { name: string; description: string }> = {
@@ -573,6 +576,7 @@ const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
   mage: { title: "CMYS·奥术形态", passive: "每累计消耗 12 点能量，触发一次 50% 伤害的奥术回响。" },
   rogue: { title: "CMYS·疾行形态", passive: "冲刺后 2 秒内暴击率 +25%。" },
   michele: { title: "萌新搜查官", passive: "受到伤害后标记攻击者 2 秒；Inspector 对标记目标伤害 +35%。" },
+  kanami: { title: "灵魂歌姬", passive: "Finale 命中时释放共鸣音波，对附近敌人造成范围伤害。" },
 };
 
 export function normalizeLanguage(value: unknown): Language {

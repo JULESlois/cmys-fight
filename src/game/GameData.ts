@@ -73,7 +73,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 21;
+const CURRENT_SAVE_VERSION = 22;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -807,9 +807,10 @@ export class GameData {
     const eligibleSlots = player.weaponSlots.filter((weaponId): weaponId is string =>
       Boolean(weaponId) && isWeaponAvailableForCharacter(WEAPONS[weaponId], player.characterId)
     );
+    const characterStarter = CHARACTERS[player.characterId]?.starterWeapon ?? "pistol";
     player.weaponSlots = eligibleSlots.length > 0
       ? (eligibleSlots[1] ? [eligibleSlots[0], eligibleSlots[1]] : [eligibleSlots[0]])
-      : ["pistol"];
+      : [characterStarter];
     player.activeWeaponSlot = player.activeWeaponSlot === 1 && player.weaponSlots[1] ? 1 : 0;
     player.currentWeaponId = player.weaponSlots[player.activeWeaponSlot] ?? player.weaponSlots[0];
   }
@@ -841,7 +842,9 @@ export class GameData {
       return Number.isFinite(number) ? Math.max(0, number) : 0;
     };
     player.skillCooldown = finiteNonNegative(player.skillCooldown);
-    player.skillActiveTimer = finiteNonNegative(player.skillActiveTimer);
+    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami"
+      ? 0
+      : finiteNonNegative(player.skillActiveTimer);
     player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
@@ -855,18 +858,11 @@ export class GameData {
     player.manaRechargeDelay = Math.max(0.2, Number(player.manaRechargeDelay) || DEFAULT_MANA_RECHARGE_DELAY);
     player.manaRechargeRate = Math.max(0, Number(player.manaRechargeRate) || DEFAULT_MANA_RECHARGE_RATE);
     player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
-    const markedEnemyId = Number(player.micheleMarkedEnemyId);
-    player.micheleMarkedEnemyId = player.characterId === "michele" && Number.isFinite(markedEnemyId)
-      ? Math.floor(markedEnemyId)
-      : -1;
-    player.micheleMarkTimer = player.characterId === "michele"
-      ? finiteNonNegative(player.micheleMarkTimer)
-      : 0;
-    player.micheleTurretX = Number.isFinite(Number(player.micheleTurretX)) ? Number(player.micheleTurretX) : 0;
-    player.micheleTurretY = Number.isFinite(Number(player.micheleTurretY)) ? Number(player.micheleTurretY) : 0;
-    player.micheleTurretFireCooldown = player.characterId === "michele"
-      ? finiteNonNegative(player.micheleTurretFireCooldown)
-      : 0;
+    player.micheleMarkedEnemyId = -1;
+    player.micheleMarkTimer = 0;
+    player.micheleTurretX = 0;
+    player.micheleTurretY = 0;
+    player.micheleTurretFireCooldown = 0;
   }
 
   private migrateMicheleStarterLoadout(loadedVersion: number): void {

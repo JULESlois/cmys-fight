@@ -137,7 +137,7 @@ export interface WeaponData {
   markedTargetDamageMultiplier?: number;
 }
 
-export const SHOTGUN_CLOSE_RANGE_MULTIPLIER = 1.75;
+export const SHOTGUN_CLOSE_RANGE_MULTIPLIER = 3;
 export const SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE = 96;
 
 export const WEAPONS: Record<string, WeaponData> = {
@@ -379,8 +379,8 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   bp50: {
     id: "bp50", name: "BP50", category: "rifle", rarity: "rare",
-    damage: 2, fireRate: 7, bulletSpeed: 275, manaCost: 1.5, spread: 0.055,
-    pelletCount: 1, knockback: 2, critChance: 0.08, color: "#D7E0DD",
+    damage: 3, fireRate: 7.2, bulletSpeed: 290, manaCost: 2, spread: 0.045,
+    pelletCount: 1, knockback: 3, critChance: 0.1, color: "#D7E0DD",
     projectileLife: 1.8,
     mechanic: "Fast-firing bullpup rifle combines exceptional accuracy with strong mid-range velocity.",
     projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", recoil: 0.22,
@@ -395,10 +395,10 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   mg42: {
     id: "mg42", name: "MG42", category: "rifle", rarity: "rare",
-    damage: 1, fireRate: 11.5, bulletSpeed: 245, manaCost: 0, spread: 0.13,
-    pelletCount: 1, knockback: 2, critChance: 0.04, color: "#F0C56A",
-    projectileLife: 1.7, pierce: 1,
-    heatPerShot: 9, heatDecayRate: 22, maxHeat: 100, overheatLockout: 1.35, heatSpreadMultiplier: 2.4,
+    damage: 1, fireRate: 13, bulletSpeed: 260, manaCost: 0, spread: 0.1,
+    pelletCount: 1, knockback: 3, critChance: 0.08, color: "#F0C56A",
+    projectileLife: 1.8, pierce: 2,
+    heatPerShot: 6.5, heatDecayRate: 24, maxHeat: 100, overheatLockout: 1.1, heatSpreadMultiplier: 1.8,
     mechanic: "Buzzsaw-rate machine gun builds heat and spread until an overheat lockout forces cooling.",
     projectileStyle: "tracer", trailLength: 16, muzzleEffect: "smoke", recoil: 0.28,
   },
@@ -452,6 +452,17 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", impactEffect: "plasma", recoil: 0.38,
   },
 
+
+  finale: {
+    id: "finale", name: "Finale", category: "rifle", rarity: "rare",
+    damage: 18, fireRate: 0.72, bulletSpeed: 360, manaCost: 5, spread: 0.005,
+    pelletCount: 1, knockback: 14, critChance: 0.18, critMultiplier: 2.3, color: "#F06CA8",
+    projectileRadius: 3, projectileLife: 2.8,
+    explosionRadius: 22, explosionDamageMultiplier: 0.35,
+    exclusiveCharacterId: "kanami",
+    mechanic: "Kanami-exclusive precision sniper; every impact releases a resonant sonic burst.",
+    projectileStyle: "tracer", trailLength: 30, muzzleEffect: "smoke", impactEffect: "plasma", recoil: 1.55,
+  },
 
   inspector: {
     id: "inspector", name: "Inspector", category: "rifle", rarity: "rare",

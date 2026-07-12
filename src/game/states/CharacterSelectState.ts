@@ -2,7 +2,7 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
-import { MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
+import { KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS, type CharacterConfig } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 import { WEAPONS, isWeaponAvailableForCharacter, type WeaponData } from "../data/weapons";
@@ -10,10 +10,10 @@ import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont, wrapLocalized } from "../i18n";
 import { SkillController } from "../combat/SkillController";
 
-type IdentityId = "cmys" | "michele";
+type IdentityId = "cmys" | "michele" | "kanami";
 type SelectionMode = "identity" | "form";
 
-const IDENTITY_IDS: IdentityId[] = ["cmys", "michele"];
+const IDENTITY_IDS: IdentityId[] = ["cmys", "michele", "kanami"];
 const CMYS_FORM_IDS = ["knight", "mage", "rogue"] as const;
 
 export class CharacterSelectState extends GameState {
@@ -32,7 +32,7 @@ export class CharacterSelectState extends GameState {
     this.mode = "identity";
     this.selectedIndex = 0;
     this.selectedFormIndex = 0;
-    this.syncWeaponSelection("michele");
+    this.syncWeaponSelection("knight");
   }
 
   exit() {}
@@ -100,12 +100,12 @@ export class CharacterSelectState extends GameState {
       if (left || right) {
         const direction = left ? -1 : 1;
         this.selectedIndex = (this.selectedIndex + direction + IDENTITY_IDS.length) % IDENTITY_IDS.length;
-        if (this.selectedIdentity === "michele") this.syncWeaponSelection("michele");
+        if (this.selectedIdentity !== "cmys") this.syncWeaponSelection(this.selectedIdentity);
         audio.playShoot();
       }
-      if (this.selectedIdentity === "michele") {
-        if (up) this.cycleWeapon("michele", -1);
-        if (down) this.cycleWeapon("michele", 1);
+      if (this.selectedIdentity !== "cmys") {
+        if (up) this.cycleWeapon(this.selectedIdentity, -1);
+        if (down) this.cycleWeapon(this.selectedIdentity, 1);
       }
       if (confirm) {
         if (this.selectedIdentity === "cmys") {
@@ -114,7 +114,7 @@ export class CharacterSelectState extends GameState {
           this.syncWeaponSelection(this.selectedForm.id);
           audio.playPickup();
         } else {
-          this.startCharacter(CHARACTERS.michele);
+          this.startCharacter(CHARACTERS[this.selectedIdentity]);
         }
       }
       return;
@@ -139,17 +139,20 @@ export class CharacterSelectState extends GameState {
     scale: number,
     color: string,
   ): void {
-    const michele = characterId === "michele";
-    SpriteRenderer.drawPixelSprite(
-      ctx,
-      michele ? "player_michele_side_idle" : "player_main_side_idle",
-      x,
-      y,
-      scale,
-      {
-        paletteOverride: michele ? MICHELE_PLAYER_PALETTE : { ...PLAYER_PALETTE, "2": color },
-      },
-    );
+    const dedicated = characterId === "michele" || characterId === "kanami";
+    const spriteName = characterId === "michele"
+      ? "player_michele_side_idle"
+      : characterId === "kanami"
+        ? "player_kanami_side_idle"
+        : "player_main_side_idle";
+    const palette = characterId === "michele"
+      ? MICHELE_PLAYER_PALETTE
+      : characterId === "kanami"
+        ? KANAMI_PLAYER_PALETTE
+        : { ...PLAYER_PALETTE, "2": color };
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, x, y, scale, {
+      paletteOverride: dedicated ? palette : { ...palette, "2": color },
+    });
   }
 
   private drawStats(ctx: CanvasRenderingContext2D, character: CharacterConfig, x: number, y: number, width: number): void {
@@ -161,11 +164,11 @@ export class CharacterSelectState extends GameState {
 
   private drawIdentityScreen(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
-    const cardW = 122;
-    const cardH = 128;
-    const gap = 14;
-    const startX = 160 - (cardW * 2 + gap) / 2;
-    const startY = 54;
+    const cardW = 94;
+    const cardH = 132;
+    const gap = 8;
+    const startX = 160 - (cardW * IDENTITY_IDS.length + gap * (IDENTITY_IDS.length - 1)) / 2;
+    const startY = 50;
 
     for (let index = 0; index < IDENTITY_IDS.length; index++) {
       const id = IDENTITY_IDS[index];
@@ -178,34 +181,37 @@ export class CharacterSelectState extends GameState {
       ctx.strokeRect(x, startY, cardW, cardH);
 
       if (id === "cmys") {
-        this.drawCharacterSprite(ctx, "knight", x + cardW / 2, startY + 25, 3, "#E74C3C");
+        this.drawCharacterSprite(ctx, "knight", x + cardW / 2, startY + 24, 3, "#E74C3C");
         ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
-        ctx.font = uiFont(language, 14, true);
-        ctx.fillText("CMYS", x + cardW / 2, startY + 57);
+        ctx.font = uiFont(language, 12, true);
+        ctx.fillText("CMYS", x + cardW / 2, startY + 55);
         ctx.fillStyle = "#F1C40F";
-        ctx.font = uiFont(language, 7, true);
-        ctx.fillText(t(language, "character.cmysFormsShort"), x + cardW / 2, startY + 73);
+        ctx.font = uiFont(language, 6, true);
+        ctx.fillText(t(language, "character.cmysFormsShort"), x + cardW / 2, startY + 69);
         const formLabels = language === "zh-CN" ? ["守御", "奥术", "疾行"] : ["GUARD", "ARCANE", "SWIFT"];
         formLabels.forEach((label, formIndex) => {
           const form = CHARACTERS[CMYS_FORM_IDS[formIndex]];
           const unlocked = this.engine.data.isCharacterUnlocked(form.id);
           ctx.fillStyle = unlocked ? form.color : "#4D5656";
-          ctx.fillRect(x + 13, startY + 84 + formIndex * 11, 5, 5);
+          ctx.fillRect(x + 10, startY + 82 + formIndex * 12, 5, 5);
           ctx.fillStyle = unlocked ? "#BDC3C7" : "#616A6B";
           ctx.textAlign = "left";
-          ctx.font = uiFont(language, 7, unlocked);
-          ctx.fillText(label, x + 24, startY + 89 + formIndex * 11);
+          ctx.font = uiFont(language, 6, unlocked);
+          ctx.fillText(label, x + 21, startY + 87 + formIndex * 12);
         });
       } else {
-        const character = CHARACTERS.michele;
-        this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 25, 3, character.color);
+        const character = CHARACTERS[id];
+        this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 24, 3, character.color);
         ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
-        ctx.font = uiFont(language, 14, true);
-        ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 57);
+        ctx.font = uiFont(language, 11, true);
+        ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 55);
+        ctx.fillStyle = character.color;
+        ctx.font = uiFont(language, 6, true);
+        ctx.fillText(getCharacterText(character.id, character, language).title, x + cardW / 2, startY + 68);
         ctx.textAlign = "left";
-        this.drawStats(ctx, character, x + 8, startY + 78, 70);
+        this.drawStats(ctx, character, x + 7, startY + 80, 51);
       }
     }
 
@@ -220,7 +226,7 @@ export class CharacterSelectState extends GameState {
       ctx.fillStyle = "#BDC3C7";
       ctx.fillText(t(language, "character.identityFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 232);
     } else {
-      const character = CHARACTERS.michele;
+      const character = CHARACTERS[this.selectedIdentity];
       const localized = getCharacterText(character.id, character, language);
       ctx.fillStyle = character.color;
       ctx.font = uiFont(language, 9, true);
@@ -229,13 +235,13 @@ export class CharacterSelectState extends GameState {
       ctx.font = uiFont(language, 7);
       wrapLocalized(localized.passive, language === "zh-CN" ? 36 : 52).slice(0, 2)
         .forEach((line, lineIndex) => ctx.fillText(line, 160, 208 + lineIndex * 8));
-      const weapon = this.getUnlockedWeapons(character.id)[this.selectedWeaponIndex] ?? WEAPONS.inspector;
+      const weapon = this.getUnlockedWeapons(character.id)[this.selectedWeaponIndex] ?? WEAPONS[character.starterWeapon];
       ctx.fillStyle = "#00F2FE";
       ctx.font = uiFont(language, 8, true);
       ctx.fillText(`↑↓  ${weapon.name.toUpperCase()}`, 160, 226);
       ctx.fillStyle = "#BDC3C7";
       ctx.font = uiFont(language, 7);
-      ctx.fillText(t(language, "character.micheleFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 238);
+      ctx.fillText(t(language, "character.identityCharacterFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 238);
     }
   }
 

@@ -35,6 +35,8 @@ assert.equal(actionLabel("fire", "zh-CN"), "射击");
 assert.equal(t("en", "title.newRun"), "NEW RUN");
 assert.equal(rarityLabel("myth", "en"), "MYTH");
 assert.equal(rarityLabel("myth", "zh-CN"), "神话");
+assert.equal(getCharacterText("kanami", CHARACTERS.kanami, "zh-CN").title, "灵魂歌姬");
+assert.match(getWeaponMechanic("finale", WEAPONS.finale.mechanic, "zh-CN"), /音波爆破/);
 
 for (const buff of Object.values(BUFFS)) {
   const localized = getBuffText(buff.id, buff, "zh-CN");

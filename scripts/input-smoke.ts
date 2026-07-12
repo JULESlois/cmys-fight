@@ -153,7 +153,7 @@ const hierarchyEngine = {
     isStarterWeaponUnlocked: () => true,
     isCharacterUnlocked: () => true,
     getStarterWeaponForCharacter(characterId: string) {
-      return characterId === "michele" ? "inspector" : characterId === "mage" ? "laser" : characterId === "rogue" ? "shotgun" : "pistol";
+      return characterId === "michele" ? "inspector" : characterId === "kanami" ? "finale" : characterId === "mage" ? "laser" : characterId === "rogue" ? "shotgun" : "pistol";
     },
     startNewRun(characterId: string, weaponId?: string) {
       hierarchyStart = { characterId, weaponId };
@@ -184,6 +184,39 @@ assert.equal(hierarchySwitch, "dungeon");
 hierarchyInput.update();
 windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
 hierarchyInput.cleanup();
+
+const kanamiInput = new Input();
+let kanamiSwitch = "";
+let kanamiStart: { characterId: string; weaponId?: string } | null = null;
+const kanamiEngine = {
+  input: kanamiInput,
+  data: {
+    settings: { language: "en" },
+    meta: { preferredHardMode: false },
+    isStarterWeaponUnlocked: () => true,
+    isCharacterUnlocked: () => true,
+    getStarterWeaponForCharacter: (characterId: string) => characterId === "kanami" ? "finale" : "pistol",
+    startNewRun(characterId: string, weaponId?: string) { kanamiStart = { characterId, weaponId }; },
+  },
+  switchState(state: string) { kanamiSwitch = state; },
+} as any;
+const kanamiState = new CharacterSelectState(kanamiEngine) as any;
+kanamiState.enter({ backState: "hub" });
+for (let step = 0; step < 2; step++) {
+  windowTarget.dispatch("keydown", { key: "ArrowRight", preventDefault() {} });
+  kanamiState.update(0);
+  kanamiInput.update();
+  windowTarget.dispatch("keyup", { key: "ArrowRight", preventDefault() {} });
+  kanamiInput.update();
+}
+assert.equal(kanamiState.selectedIdentity, "kanami");
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+kanamiState.update(0);
+assert.deepEqual(kanamiStart, { characterId: "kanami", weaponId: "finale" });
+assert.equal(kanamiSwitch, "dungeon");
+kanamiInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+kanamiInput.cleanup();
 
 const menuInput = new Input();
 let menuClosed = 0;
@@ -300,4 +333,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok", hubPurchaseControls: "ok", cmysFormSelection: "identity-to-three-forms" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok", hubPurchaseControls: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));

@@ -49,6 +49,8 @@ assert.match(hub, /getPrompt\("fire"\)/);
 assert.doesNotMatch(character, /ARMORY: SHOTGUN|\[PASSIVE\]/);
 assert.match(character, /this\.engine\.switchState\(this\.backState\)/);
 assert.match(character, /CMYS_FORM_IDS = \["knight", "mage", "rogue"\]/);
+assert.match(character, /IDENTITY_IDS: IdentityId\[\] = \["cmys", "michele", "kanami"\]/);
+assert.match(character, /player_kanami_side_idle/);
 assert.match(character, /SelectionMode = "identity" \| "form"/);
 assert.match(character, /selectedIdentity === "cmys"[\s\S]*this\.mode = "form"/);
 assert.match(records, /common\.hidden/);

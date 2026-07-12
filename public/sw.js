@@ -1,4 +1,4 @@
-const CACHE_NAME = "cmys-fight-v0.22.0";
+const CACHE_NAME = "cmys-fight-v0.23.0";
 const CORE_ASSETS = ["/", "/index.html", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/music-tracks.json"];
 
 self.addEventListener("install", event => {

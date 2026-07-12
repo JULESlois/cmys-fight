@@ -67,6 +67,13 @@ export class Player {
   public micheleTurretX: number = 0;
   public micheleTurretY: number = 0;
   public micheleTurretFireCooldown: number = 0;
+  public micheleTurretActive: boolean = false;
+  public kanamiBeaconX: number = 0;
+  public kanamiBeaconY: number = 0;
+  public kanamiBeaconVx: number = 0;
+  public kanamiBeaconVy: number = 0;
+  public kanamiBeaconFlightTimer: number = 0;
+  public kanamiBeaconDeployed: boolean = false;
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;
   public phoenixProtocolReady: boolean = false;
