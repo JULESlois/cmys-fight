@@ -590,7 +590,18 @@ const SOURCE_DERIVED_SPRITES: Record<string, string[]> = {
   ]
 };
 
-for (const id of ["olympia", "ksg_12", "scavenger", "minishark"]) {
+// Runtime weapon art always faces right. These imported reference silhouettes
+// face left in their source images and must be mirrored exactly once.
+export const LEFT_FACING_REFERENCE_SPRITES = [
+  "olympia",
+  "ksg_12",
+  "scavenger",
+  "r9_0",
+  "awp_dragon_lore",
+  "ak47_wild_lotus",
+] as const;
+
+for (const id of LEFT_FACING_REFERENCE_SPRITES) {
   SOURCE_DERIVED_SPRITES[id] = flipRows(SOURCE_DERIVED_SPRITES[id]);
 }
 
@@ -837,7 +848,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
 
   so_14: { grip: [15, 11], muzzle: [31, 7] },
   aa_12: { grip: [13, 13], muzzle: [31, 5] },
-  awp_dragon_lore: { grip: [14, 12], muzzle: [31, 5] },
+  awp_dragon_lore: { grip: [14, 11], muzzle: [31, 5] },
   ak47_wild_lotus: { grip: [14, 13], muzzle: [31, 6] },
 
   minishark: { grip: [10, 12], muzzle: [29, 8] },

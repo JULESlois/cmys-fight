@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { WEAPONS } from "../src/game/data/weapons";
 import {
+  LEFT_FACING_REFERENCE_SPRITES,
   WEAPON_ART_ANCHORS,
   WEAPON_PALETTES,
   WEAPON_SPRITES,
@@ -14,6 +15,42 @@ const weaponIds = Object.keys(WEAPONS).sort();
 assert.deepEqual(Object.keys(WEAPON_SPRITES).sort(), weaponIds, "every weapon must use the authored art registry");
 assert.deepEqual(Object.keys(WEAPON_PALETTES).sort(), weaponIds, "every weapon must use an independent palette");
 assert.deepEqual(Object.keys(WEAPON_ART_ANCHORS).sort(), weaponIds, "every weapon must define grip and muzzle anchors");
+
+const expectedLeftFacingReferences = [
+  "ak47_wild_lotus",
+  "awp_dragon_lore",
+  "ksg_12",
+  "olympia",
+  "r9_0",
+  "scavenger",
+];
+assert.deepEqual(
+  [...LEFT_FACING_REFERENCE_SPRITES].sort(),
+  expectedLeftFacingReferences,
+  "all left-facing source references must be mirrored exactly once",
+);
+assert.equal(
+  (LEFT_FACING_REFERENCE_SPRITES as readonly string[]).includes("minishark"),
+  false,
+  "Minishark source art already faces right and must not be mirrored",
+);
+
+for (const id of ["r9_0", "minishark", "awp_dragon_lore", "ak47_wild_lotus"]) {
+  const rows = WEAPON_SPRITES[id];
+  const anchor = WEAPON_ART_ANCHORS[id];
+  assert.notEqual(rows[anchor.grip[1]][anchor.grip[0]], ".", `${id} grip must touch the authored weapon`);
+  let nearestMuzzlePixel = Number.POSITIVE_INFINITY;
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < rows[y].length; x++) {
+      if (rows[y][x] === ".") continue;
+      nearestMuzzlePixel = Math.min(
+        nearestMuzzlePixel,
+        Math.hypot(x - anchor.muzzle[0], y - anchor.muzzle[1]),
+      );
+    }
+  }
+  assert.ok(nearestMuzzlePixel <= 1, `${id} muzzle must terminate at the right-facing barrel edge`);
+}
 
 const signatures = new Set<string>();
 const dimensions = new Set<string>();
@@ -111,6 +148,7 @@ console.log(JSON.stringify({
   sourceDriven: sourceDriven.length,
   independentPalettes: Object.keys(WEAPON_PALETTES).length,
   authoredAnchors: Object.keys(WEAPON_ART_ANCHORS).length,
+  rightFacingReferenceAudit: "ok",
   multicolorFinalWeapons: "ok",
   runtimePaletteRouting: "ok",
 }));
