@@ -141,6 +141,7 @@ export class UIRenderer {
     ctx.strokeRect(5, 202, 190, 33);
 
     const rarityColor = (rarity: string) => {
+      if (rarity === "myth") return "#D66BFF";
       if (rarity === "legendary") return "#FFB347";
       if (rarity === "rare") return "#00F2FE";
       if (rarity === "uncommon") return "#2ECC71";

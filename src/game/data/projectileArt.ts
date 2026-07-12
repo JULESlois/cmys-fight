@@ -72,6 +72,11 @@ export const PROJECTILE_WEAPON_PALETTES: Record<string, Partial<ProjectilePalett
   mg42: { shadow: "#4B351D", base: "#E4B85D", highlight: "#FFF0B0", accent: "#8E969D", glow: "rgba(228,184,93,0.25)" },
   na_45: { shadow: "#433A20", base: "#E1D06B", highlight: "#FFF7C5", accent: "#FF7043", glow: "rgba(225,208,107,0.3)" },
 
+  so_14: { shadow: "#2A2035", base: "#CFA7FF", highlight: "#FFF4C2", accent: "#F4D35E", glow: "rgba(207,167,255,0.34)" },
+  aa_12: { shadow: "#3A3024", base: "#D8C89A", highlight: "#FFF0C5", accent: "#AEB7BE", glow: "rgba(216,200,154,0.22)" },
+  awp_dragon_lore: { shadow: "#4A2917", base: "#F4C95D", highlight: "#FFF4C2", accent: "#6FA34B", glow: "rgba(244,201,93,0.38)" },
+  ak47_wild_lotus: { shadow: "#18382A", base: "#65D69A", highlight: "#F6C4DA", accent: "#E75A92", glow: "rgba(101,214,154,0.32)" },
+
   minishark: { shadow: "#77531E", base: "#E0B95D", highlight: "#FFF0AD", accent: "#AAB8C1", glow: "rgba(224,185,93,0.22)" },
   ballistic_knife: { shadow: "#303941", base: "#A9B4BD", highlight: "#F7FBFD", accent: "#69747D", glow: "rgba(169,180,189,0.2)" },
 };

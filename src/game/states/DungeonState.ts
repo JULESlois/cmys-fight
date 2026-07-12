@@ -1929,7 +1929,11 @@ export class DungeonState extends GameState {
           const hitY = e.y;
           p.x = p.previousX + (p.x - p.previousX) * closestHitT;
           p.y = p.previousY + (p.y - p.previousY) * closestHitT;
-          const result = DamageSystem.damageEnemy(e, p.damage);
+          const healthRatioBeforeHit = e.maxHp > 0 ? e.hp / e.maxHp : 0;
+          const directDamage = p.highHealthDamageThreshold > 0 && healthRatioBeforeHit >= p.highHealthDamageThreshold
+            ? p.damage * p.highHealthDamageMultiplier
+            : p.damage;
+          const result = DamageSystem.damageEnemy(e, directDamage);
           p.hitEnemyIds.add(e.id);
           directEnemyId = e.id;
           if (result.applied) {
@@ -1947,6 +1951,14 @@ export class DungeonState extends GameState {
           }
           if (result.applied && p.chainCount > 0 && p.chainRange > 0) {
             this.applyProjectileChain(p, hitX, hitY);
+          }
+          if (result.applied && p.critical && p.criticalExplosionRadius > 0) {
+            const hadBaseExplosion = p.explosionRadius > 0;
+            p.explosionRadius = Math.max(p.explosionRadius, p.criticalExplosionRadius);
+            p.explosionDamageMultiplier = hadBaseExplosion
+              ? Math.max(p.explosionDamageMultiplier, p.criticalExplosionDamageMultiplier)
+              : p.criticalExplosionDamageMultiplier;
+            entityHit = true;
           }
           if (p.linkedShotMode === "primer") {
             this.stickLinkedPrimer(p);

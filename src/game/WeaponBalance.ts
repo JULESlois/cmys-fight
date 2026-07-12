@@ -71,6 +71,9 @@ export function hasWeaponUtility(weapon: WeaponData): boolean {
     weapon.linkedShot === true ||
     (weapon.maxHeat ?? 0) > 0 ||
     (weapon.burstSize ?? 0) > 1 ||
+    (weapon.highHealthDamageMultiplier ?? 1) > 1 ||
+    (weapon.criticalExplosionRadius ?? 0) > 0 ||
+    Boolean(weapon.burstDamagePattern?.length) ||
     weapon.statusEffect ||
     weapon.projectileStyle === "beam" ||
     weapon.projectileStyle === "flame" ||

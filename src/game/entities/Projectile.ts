@@ -57,6 +57,10 @@ export class Projectile {
   public linkedTriggerRange = 0;
   public linkedMarkerLife = 0;
   public stuck = false;
+  public highHealthDamageThreshold = 0;
+  public highHealthDamageMultiplier = 1;
+  public criticalExplosionRadius = 0;
+  public criticalExplosionDamageMultiplier = 0.5;
 
   private static nextId = 0;
 
@@ -147,6 +151,10 @@ export class Projectile {
     this.linkedTriggerRange = profile?.linkedTriggerRange ?? 0;
     this.linkedMarkerLife = profile?.linkedMarkerLife ?? 0;
     this.stuck = false;
+    this.highHealthDamageThreshold = profile?.highHealthDamageThreshold ?? 0;
+    this.highHealthDamageMultiplier = profile?.highHealthDamageMultiplier ?? 1;
+    this.criticalExplosionRadius = profile?.criticalExplosionRadius ?? 0;
+    this.criticalExplosionDamageMultiplier = profile?.criticalExplosionDamageMultiplier ?? 0.5;
     this.hitEnemyIds.clear();
     return this;
   }

@@ -85,13 +85,16 @@ const boss = EnemyFactory.create(stage, { x: 80, y: 80, type: "boss", enemyId: b
 assert.ok(boss.radius < bossDef.radius);
 
 const legendaryWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "legendary");
-assert.equal(Object.keys(WEAPONS).length, 42);
-assert.equal(legendaryWeapons.length, 12);
+const mythWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "myth");
+assert.equal(Object.keys(WEAPONS).length, 46);
+assert.equal(legendaryWeapons.length, 13);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "phoenix").length, 2);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 12);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 13);
+assert.equal(mythWeapons.length, 2);
+assert.deepEqual(mythWeapons.map(weapon => weapon.id).sort(), ["awp_dragon_lore", "so_14"]);
 assert.deepEqual(
   getAvailableWeapons(1).map(weapon => weapon.id),
   getAvailableWeapons(20).map(weapon => weapon.id),
@@ -128,6 +131,7 @@ assert.equal(foundLegendaryStock, true);
 
 let shopWeaponTotal = 0;
 let shopWeaponHighTier = 0;
+let shopWeaponMyth = 0;
 let shopBuffTotal = 0;
 let shopBuffHighTier = 0;
 for (let seed = 1; seed <= 2000; seed++) {
@@ -145,10 +149,11 @@ for (let seed = 1; seed <= 2000; seed++) {
     4,
   );
   for (const item of stock) {
-    const highTier = item.rarity === "rare" || item.rarity === "legendary";
+    const highTier = item.rarity === "rare" || item.rarity === "legendary" || item.rarity === "myth";
     if (item.kind === "weapon") {
       shopWeaponTotal++;
       if (highTier) shopWeaponHighTier++;
+      if (item.rarity === "myth") shopWeaponMyth++;
     } else {
       shopBuffTotal++;
       if (highTier) shopBuffHighTier++;
@@ -156,10 +161,15 @@ for (let seed = 1; seed <= 2000; seed++) {
   }
 }
 const shopWeaponHighTierRate = shopWeaponHighTier / shopWeaponTotal;
+const shopWeaponMythRate = shopWeaponMyth / shopWeaponTotal;
 const shopBuffHighTierRate = shopBuffHighTier / shopBuffTotal;
 assert.ok(
   shopWeaponHighTierRate >= 0.4 && shopWeaponHighTierRate <= 0.46,
   `shop weapon high-tier rate ${shopWeaponHighTierRate}`,
+);
+assert.ok(
+  shopWeaponMythRate >= 0.001 && shopWeaponMythRate <= 0.015,
+  `shop weapon myth rate ${shopWeaponMythRate}`,
 );
 assert.ok(
   shopBuffHighTierRate >= 0.53 && shopBuffHighTierRate <= 0.59,
@@ -224,11 +234,13 @@ console.log(JSON.stringify({
   shopPauseCapture: "ok",
   smallerEnemyBodies: "ok",
   legendaryWeapons: legendaryWeapons.length,
+  mythWeapons: mythWeapons.length,
   legendaryTalents: legendaryBuffs.length,
   powerSeries: 3,
   allStageWeaponPool: "ok",
   bossWeaponChest: "ok",
   shopStock: "weapons-and-talents-only",
   shopWeaponHighTierRate: Number(shopWeaponHighTierRate.toFixed(3)),
+  shopWeaponMythRate: Number(shopWeaponMythRate.toFixed(3)),
   shopTalentHighTierRate: Number(shopBuffHighTierRate.toFixed(3)),
 }));

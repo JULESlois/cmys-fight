@@ -1,6 +1,6 @@
 # Weapon Art Reference Register
 
-This register documents the visual reference selected for the weapon-art pass introduced in version 0.18.0 and expanded in version 0.19.0. External images are used only as temporary study references. The repository contains newly authored low-resolution sprites and palettes, not the downloaded source images.
+This register documents the visual reference selected for the weapon-art pass introduced in version 0.18.0 and expanded in versions 0.19.0 and 0.20.0. External images are used only as temporary study references. The repository contains newly authored low-resolution sprites and palettes, not the downloaded source images.
 
 ## Reference-driven licensed designs
 
@@ -20,6 +20,10 @@ This register documents the visual reference selected for the weapon-art pass in
 | `mg42` | MG42 | Call of Duty: World at War menu profile | https://callofduty.fandom.com/wiki/MG42 |
 | `bp50` | BP50 | Call of Duty: Modern Warfare III HUD profile | https://callofduty.fandom.com/wiki/F2000 |
 | `na_45` | NA-45 | Call of Duty: Advanced Warfare menu profile | https://callofduty.fandom.com/wiki/NA-45 |
+| `so_14` | SO-14 | Call of Duty: Modern Warfare II HUD profile | https://callofduty.fandom.com/wiki/M14 |
+| `aa_12` | AA-12 | Call of Duty: Modern Warfare 2 menu profile | https://callofduty.fandom.com/wiki/AA-12 |
+| `awp_dragon_lore` | AWP &#124; Dragon Lore | Counter-Strike: Global Offensive inventory/market profile | https://counterstrike.fandom.com/wiki/AWP/Gallery |
+| `ak47_wild_lotus` | AK-47 &#124; Wild Lotus | Counter-Strike: Global Offensive inventory profile | https://counterstrike.fandom.com/wiki/AK-47/Gallery |
 | `minishark` | Minishark | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Minishark |
 | `water_bolt` | Water Bolt | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Water_Bolt |
 | `stardust_dragon_staff` | Stardust Dragon Staff | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Stardust_Dragon_Staff |

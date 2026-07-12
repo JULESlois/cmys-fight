@@ -43,14 +43,15 @@ const createRandom = (seed: number) => {
 };
 const sampleRarityRates = (context: WeaponRollContext) => {
   const random = createRandom(context === "shop" ? 17 : context === "treasure" ? 31 : 47);
-  const counts = { common: 0, uncommon: 0, rare: 0, legendary: 0 };
+  const counts = { common: 0, uncommon: 0, rare: 0, legendary: 0, myth: 0 };
   const samples = 12000;
   for (let index = 0; index < samples; index++) {
     counts[rollAvailableWeapon(1, random, context).rarity]++;
   }
   return {
-    highTier: (counts.rare + counts.legendary) / samples,
+    highTier: (counts.rare + counts.legendary + counts.myth) / samples,
     legendary: counts.legendary / samples,
+    myth: counts.myth / samples,
   };
 };
 const shopRates = sampleRarityRates("shop");
@@ -58,10 +59,12 @@ const treasureRates = sampleRarityRates("treasure");
 const bossRates = sampleRarityRates("boss");
 assert.ok(treasureRates.highTier > shopRates.highTier);
 assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.highTier}`);
-assert.ok(bossRates.legendary >= 0.24, `Boss chest legendary rate ${bossRates.legendary}`);
+assert.ok(bossRates.legendary >= 0.22, `Boss chest legendary rate ${bossRates.legendary}`);
+assert.ok(bossRates.myth >= 0.015, `Boss chest myth rate ${bossRates.myth}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 12);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 13);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 2);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
 
@@ -218,6 +221,59 @@ const catalystVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(catalystVolley.fired, true);
 assert.equal(catalystVolley.projectiles[0].linkedShotMode, "catalyst");
 
+const so14Player = new Player(160, 120);
+so14Player.maxMana = 80;
+so14Player.mana = 80;
+so14Player.setWeaponLoadout(["so_14"], 0);
+const so14Lead = WeaponController.fire(so14Player, 0, () => 0.99);
+assert.equal(so14Lead.fired, true);
+assert.equal(so14Lead.projectiles[0].damage, 14);
+assert.equal(so14Lead.projectiles[0].pierceRemaining, 2);
+assert.equal(so14Lead.projectiles[0].color, "#F4D35E");
+assert.equal(so14Lead.recoil, 1.05);
+assert.ok(Math.abs(so14Player.fireCooldown - 0.09) < 1e-9);
+for (const projectile of so14Lead.projectiles) releaseProjectile(projectile);
+so14Player.fireCooldown = 0;
+const so14FollowA = WeaponController.fire(so14Player, 0, () => 0.99);
+assert.equal(so14FollowA.projectiles[0].damage, 6);
+assert.equal(so14FollowA.projectiles[0].pierceRemaining, 0);
+assert.equal(so14FollowA.projectiles[0].color, "#CFA7FF");
+assert.equal(so14FollowA.recoil, 0.28);
+for (const projectile of so14FollowA.projectiles) releaseProjectile(projectile);
+so14Player.fireCooldown = 0;
+const so14FollowB = WeaponController.fire(so14Player, 0, () => 0.99);
+assert.equal(so14FollowB.projectiles[0].damage, 6);
+assert.equal(so14FollowB.projectiles[0].color, "#8FD9FF");
+assert.ok(Math.abs(so14Player.fireCooldown - 0.52) < 1e-9);
+assert.equal(so14Player.mana, 71);
+for (const projectile of so14FollowB.projectiles) releaseProjectile(projectile);
+
+const aa12 = fire("aa_12");
+assert.equal(WEAPONS.aa_12.pelletCount, 6);
+assert.equal(WEAPONS.aa_12.fireRate, 3.6);
+assert.equal(aa12.style, "bullet");
+releaseProjectile(aa12);
+
+const awpPlayer = new Player(160, 120);
+awpPlayer.maxMana = 80;
+awpPlayer.mana = 80;
+awpPlayer.setWeaponLoadout(["awp_dragon_lore"], 0);
+const awpVolley = WeaponController.fire(awpPlayer, 0, () => 0.99);
+assert.equal(awpVolley.fired, true);
+assert.equal(awpVolley.projectiles[0].highHealthDamageThreshold, 0.75);
+assert.equal(awpVolley.projectiles[0].highHealthDamageMultiplier, 1.75);
+assert.equal(awpVolley.projectiles[0].pierceRemaining, 3);
+
+const lotusPlayer = new Player(160, 120);
+lotusPlayer.maxMana = 80;
+lotusPlayer.mana = 80;
+lotusPlayer.setWeaponLoadout(["ak47_wild_lotus"], 0);
+const lotusVolley = WeaponController.fire(lotusPlayer, 0, () => 0);
+assert.equal(lotusVolley.fired, true);
+assert.equal(lotusVolley.projectiles[0].critical, true);
+assert.equal(lotusVolley.projectiles[0].criticalExplosionRadius, 18);
+assert.equal(lotusVolley.projectiles[0].criticalExplosionDamageMultiplier, 0.45);
+
 const rocket = fire("micro_rocket");
 const rocketSpeed = Math.hypot(rocket.vx, rocket.vy);
 rocket.update(0.25);
@@ -348,6 +404,36 @@ assert.equal(linkedPrimer.detonated, true);
 assert.equal(dungeon.projectiles.length, 0, "NA-45 linked rounds must be released after detonation");
 assert.ok(linkedBlastTarget.hp < 30, "NA-45 Catalyst must detonate the nearby Primer");
 
+const awpShot = awpVolley.projectiles[0];
+awpShot.x = 40;
+awpShot.y = 40;
+awpShot.vx = 100;
+awpShot.vy = 0;
+const awpTarget = new Enemy(50, 40, "melee");
+awpTarget.hp = awpTarget.maxHp = 100;
+dungeon.projectiles = [awpShot];
+dungeon.enemies = [awpTarget];
+dungeon.updateProjectiles(0.1);
+assert.equal(awpTarget.hp, 51, "Dragon Lore must apply its 1.75x opening-shot multiplier");
+for (const projectile of dungeon.projectiles) releaseProjectile(projectile);
+dungeon.projectiles = [];
+
+const lotusShot = lotusVolley.projectiles[0];
+lotusShot.x = 40;
+lotusShot.y = 40;
+lotusShot.vx = 100;
+lotusShot.vy = 0;
+const lotusDirect = new Enemy(50, 40, "melee");
+const lotusNearby = new Enemy(56, 40, "melee");
+lotusDirect.hp = lotusDirect.maxHp = 50;
+lotusNearby.hp = lotusNearby.maxHp = 50;
+dungeon.projectiles = [lotusShot];
+dungeon.enemies = [lotusDirect, lotusNearby];
+dungeon.updateProjectiles(0.1);
+assert.equal(dungeon.projectiles.length, 0, "Wild Lotus critical shot must detonate");
+assert.equal(lotusShot.explosionDamageMultiplier, 0.45, "Wild Lotus must retain its authored critical-bloom multiplier");
+assert.ok(lotusNearby.hp < 50, "Wild Lotus critical bloom must damage nearby enemies");
+
 const chainA = new Enemy(20, 20, "melee");
 const chainB = new Enemy(50, 20, "melee");
 const chainFar = new Enemy(150, 20, "melee");
@@ -386,6 +472,9 @@ assert.equal(pooledProjectile.homingStrength, 0);
 assert.equal(pooledProjectile.weaponId, "");
 assert.equal(pooledProjectile.linkedShotMode, "none");
 assert.equal(pooledProjectile.stuck, false);
+assert.equal(pooledProjectile.highHealthDamageThreshold, 0);
+assert.equal(pooledProjectile.highHealthDamageMultiplier, 1);
+assert.equal(pooledProjectile.criticalExplosionRadius, 0);
 releaseProjectile(pooledProjectile);
 
 const homingTarget = new Enemy(0, 90, "melee");
@@ -410,6 +499,8 @@ assert.match(dungeonSource, /applyProjectileChain[\s\S]*calculateChainDamage/);
 assert.match(dungeonSource, /detonateProjectile[\s\S]*calculateExplosionDamage/);
 assert.match(dungeonSource, /stickLinkedPrimer[\s\S]*triggerLinkedPrimer/);
 assert.match(dungeonSource, /WeaponController\.updateRuntime\(this\.player, dt, fireHeld\)/);
+assert.match(dungeonSource, /highHealthDamageThreshold[\s\S]*highHealthDamageMultiplier/);
+assert.match(dungeonSource, /criticalExplosionRadius[\s\S]*criticalExplosionDamageMultiplier/);
 assert.match(rendererSource, /ProjectileArtRenderer\.draw/);
 assert.match(projectileRendererSource, /p\.style === "beam"[\s\S]*p\.style === "prism"/);
 assert.match(projectileRendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
@@ -425,9 +516,12 @@ console.log(JSON.stringify({
   chainLightning: "ok",
   radialExplosion: "ok",
   codBurstHeatAndLink: "ok",
+  mythAdaptiveAndOpeningShots: "ok",
+  wildLotusCriticalBloom: "ok",
   allStageWeaponPool: getAvailableWeapons(1).length,
   bossHighTierRate: Number(bossRates.highTier.toFixed(3)),
   bossLegendaryRate: Number(bossRates.legendary.toFixed(3)),
+  bossMythRate: Number(bossRates.myth.toFixed(3)),
   bossChestPersistence: "ok",
   weightedDrops: "ok",
   weaponAudio: "ok",

@@ -14,6 +14,7 @@ import {
   getMetaUpgradeText,
   getWeaponMechanic,
   normalizeLanguage,
+  rarityLabel,
   t,
   wrapLocalized,
 } from "../src/game/i18n";
@@ -32,6 +33,8 @@ assert.equal(t("zh-CN", "title.newRun"), "新游戏");
 assert.equal(t("zh-CN", "title.stats", { shards: 3, stage: "1-2", wins: 1, best: "9:00" }), "碎片 3  关卡 1-2  胜场 1  最佳 9:00");
 assert.equal(actionLabel("fire", "zh-CN"), "射击");
 assert.equal(t("en", "title.newRun"), "NEW RUN");
+assert.equal(rarityLabel("myth", "en"), "MYTH");
+assert.equal(rarityLabel("myth", "zh-CN"), "神话");
 
 for (const buff of Object.values(BUFFS)) {
   const localized = getBuffText(buff.id, buff, "zh-CN");
@@ -74,11 +77,14 @@ const buffSource = fs.readFileSync("src/game/render/BuffSelectionRenderer.ts", "
 const shopSource = fs.readFileSync("src/game/render/ShopRenderer.ts", "utf8");
 const recordsSource = fs.readFileSync("src/game/states/RecordsState.ts", "utf8");
 const pauseSource = fs.readFileSync("src/game/render/PauseOverlayRenderer.ts", "utf8");
+const hudSource = fs.readFileSync("src/game/render/UIRenderer.ts", "utf8");
 assert.match(settingsSource, /"language"/);
 assert.match(settingsSource, /settings\.language/);
 assert.match(titleSource, /title\.newRun|title\.\$\{option\}/);
 assert.match(buffSource, /getBuffText/);
 assert.match(shopSource, /getWeaponMechanic/);
+assert.match(shopSource, /myth: "#D66BFF"/);
+assert.match(hudSource, /rarity === "myth"[\s\S]*#D66BFF/);
 assert.match(recordsSource, /getAchievementText/);
 assert.match(pauseSource, /projectileLabel/);
 

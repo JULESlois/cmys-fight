@@ -188,12 +188,14 @@ export class WeaponController {
     }
 
     let nextFireCooldown = 1 / weapon.fireRate;
+    let burstStep = 0;
     if ((weapon.burstSize ?? 0) > 1) {
       if (player.weaponBurstWeaponId !== weapon.id) {
         player.weaponBurstWeaponId = weapon.id;
         player.weaponBurstIndex = 0;
       }
       const burstSize = Math.max(2, Math.floor(weapon.burstSize ?? 2));
+      burstStep = Math.max(0, Math.min(burstSize - 1, player.weaponBurstIndex));
       player.weaponBurstIndex += 1;
       if (player.weaponBurstIndex < burstSize) {
         nextFireCooldown = Math.max(0.03, weapon.burstInterval ?? nextFireCooldown);
@@ -256,6 +258,11 @@ export class WeaponController {
     const extraPierce = mageOverdriveActive ? SkillController.MAGE_OVERDRIVE_PIERCE : 0;
     const heatRatio = WeaponController.getHeatRatio(player, weapon.id);
     const heatSpreadMultiplier = 1 + heatRatio * Math.max(0, weapon.heatSpreadMultiplier ?? 0);
+    const burstDamageMultiplier = Math.max(0.1, weapon.burstDamagePattern?.[burstStep] ?? 1);
+    const burstPierceBonus = Math.max(0, Math.floor(weapon.burstPiercePattern?.[burstStep] ?? 0));
+    const burstCritBonus = Math.max(0, weapon.burstCritBonusPattern?.[burstStep] ?? 0);
+    const burstColor = weapon.burstColorPattern?.[burstStep];
+    const burstRecoil = Math.max(0, weapon.burstRecoilPattern?.[burstStep] ?? weapon.recoil ?? 0.35);
     const rogueCritBonus = player.characterId === "rogue" && player.rogueCritTimer > 0
       ? SkillController.ROGUE_CRIT_BONUS
       : 0;
@@ -287,9 +294,9 @@ export class WeaponController {
           spreadOffset = (random() - 0.5) * weapon.spread * modifiers.spreadMultiplier * heatSpreadMultiplier;
         }
         const angle = aimAngle + volley.offset + spreadOffset;
-        const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus + modifiers.critChanceBonus);
+        const critical = random() < Math.min(1, weapon.critChance + burstCritBonus + rogueCritBonus + modifiers.critChanceBonus);
         const channelDamageMultiplier = weapon.attackMode === "channel" ? 1 + channelRatio * 1.5 : 1;
-        const baseDamage = Math.max(1, Math.round(weapon.damage * channelDamageMultiplier));
+        const baseDamage = Math.max(1, Math.round(weapon.damage * channelDamageMultiplier * burstDamageMultiplier));
         const criticalMultiplier = Math.max(1, (weapon.critMultiplier ?? 2) + modifiers.critDamageBonus);
         const fullDamage = critical ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
         const damage = volley.echo
@@ -312,10 +319,10 @@ export class WeaponController {
                 ? "#FF6B4A"
                 : weapon.attackMode === "channel"
                   ? prismColors[i % prismColors.length]
-                  : weapon.color,
+                  : burstColor ?? weapon.color,
           weapon.knockback + modifiers.knockbackBonus,
           critical,
-          modifiers.pierce + (weapon.pierce ?? 0) + extraPierce,
+          modifiers.pierce + (weapon.pierce ?? 0) + burstPierceBonus + extraPierce,
           modifiers.wallBounces + (weapon.wallBounces ?? 0),
           projectileStatus?.id,
           projectileStatus?.duration ?? 0,
@@ -332,7 +339,7 @@ export class WeaponController {
     return {
       fired: true,
       projectiles,
-      recoil: Math.max(0, weapon.recoil ?? 0.35),
+      recoil: burstRecoil,
       echoTriggered,
     };
   }

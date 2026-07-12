@@ -18,6 +18,7 @@ const RARITY_COLORS: Record<string, string> = {
   uncommon: "#2ECC71",
   rare: "#00F2FE",
   legendary: "#FFB347",
+  myth: "#D66BFF",
 };
 
 function getItemText(item: ShopItem, language: Language): { name: string; description: string; kind: string } {

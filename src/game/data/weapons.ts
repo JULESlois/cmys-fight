@@ -4,7 +4,7 @@ import type { StatusEffectId } from "../combat/StatusEffectSystem";
 import type { PowerSeries } from "../PowerSeries";
 
 export type WeaponCategory = "sidearm" | "shotgun" | "energy" | "rifle" | "smg" | "launcher" | "special" | "sword" | "yoyo" | "magic" | "summon";
-export type WeaponRarity = "common" | "uncommon" | "rare" | "legendary";
+export type WeaponRarity = "common" | "uncommon" | "rare" | "legendary" | "myth";
 export type WeaponSlots = [string, string?];
 
 export type ProjectileStyle =
@@ -53,6 +53,10 @@ export interface ProjectileProfile {
   linkedExplosionDamageMultiplier: number;
   linkedTriggerRange: number;
   linkedMarkerLife: number;
+  highHealthDamageThreshold: number;
+  highHealthDamageMultiplier: number;
+  criticalExplosionRadius: number;
+  criticalExplosionDamageMultiplier: number;
 }
 
 export interface WeaponData {
@@ -116,6 +120,15 @@ export interface WeaponData {
   linkedExplosionDamageMultiplier?: number;
   linkedTriggerRange?: number;
   linkedMarkerLife?: number;
+  burstDamagePattern?: number[];
+  burstPiercePattern?: number[];
+  burstCritBonusPattern?: number[];
+  burstColorPattern?: string[];
+  burstRecoilPattern?: number[];
+  highHealthDamageThreshold?: number;
+  highHealthDamageMultiplier?: number;
+  criticalExplosionRadius?: number;
+  criticalExplosionDamageMultiplier?: number;
 }
 
 export const WEAPONS: Record<string, WeaponData> = {
@@ -391,6 +404,45 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileStyle: "tracer", trailLength: 22, muzzleEffect: "electric", impactEffect: "spark", recoil: 1.4,
   },
 
+  so_14: {
+    id: "so_14", name: "SO-14", category: "rifle", rarity: "myth",
+    damage: 8, fireRate: 2.4, bulletSpeed: 315, manaCost: 3, spread: 0.022,
+    pelletCount: 1, knockback: 6, critChance: 0.14, critMultiplier: 2.2, color: "#D9DDE2",
+    projectileLife: 2.3, burstSize: 3, burstInterval: 0.09, burstRecovery: 0.52,
+    burstDamagePattern: [1.75, 0.8, 0.8], burstPiercePattern: [2, 0, 0],
+    burstCritBonusPattern: [0.2, 0, 0],
+    burstColorPattern: ["#F4D35E", "#CFA7FF", "#8FD9FF"],
+    burstRecoilPattern: [1.05, 0.28, 0.28],
+    mechanic: "Adaptive three-shot cycle opens with a mythic overmatch round, then delivers two rapid controlled follow-ups.",
+    projectileStyle: "tracer", trailLength: 24, muzzleEffect: "flash", recoil: 0.45,
+  },
+  aa_12: {
+    id: "aa_12", name: "AA-12", category: "shotgun", rarity: "rare",
+    damage: 1, fireRate: 3.6, bulletSpeed: 138, manaCost: 3, spread: 0.94,
+    pelletCount: 6, knockback: 5, critChance: 0.03, color: "#D8C89A",
+    projectileLife: 0.82,
+    mechanic: "Fully automatic combat shotgun sustains a dense six-pellet close-range barrage.",
+    projectileStyle: "bullet", trailLength: 4, muzzleEffect: "smoke", recoil: 0.82,
+  },
+  awp_dragon_lore: {
+    id: "awp_dragon_lore", name: "AWP | Dragon Lore", category: "rifle", rarity: "myth",
+    damage: 28, fireRate: 0.55, bulletSpeed: 400, manaCost: 7, spread: 0,
+    pelletCount: 1, knockback: 18, critChance: 0.25, critMultiplier: 2.6, color: "#F4C95D",
+    projectileRadius: 3, projectileLife: 3, pierce: 3,
+    highHealthDamageThreshold: 0.75, highHealthDamageMultiplier: 1.75,
+    mechanic: "Mythic opening shot deals 75% more damage to targets above 75% health and pierces four bodies.",
+    projectileStyle: "tracer", trailLength: 34, muzzleEffect: "smoke", impactEffect: "spark", recoil: 1.85,
+  },
+  ak47_wild_lotus: {
+    id: "ak47_wild_lotus", name: "AK-47 | Wild Lotus", category: "rifle", rarity: "legendary",
+    damage: 4, fireRate: 5.5, bulletSpeed: 290, manaCost: 2, spread: 0.055,
+    pelletCount: 1, knockback: 4, critChance: 0.16, critMultiplier: 2.2, color: "#65D69A",
+    projectileLife: 1.95, pierce: 1,
+    criticalExplosionRadius: 18, criticalExplosionDamageMultiplier: 0.45,
+    mechanic: "Accurate lotus-pattern rifle; critical hits bloom into a short-range petal burst.",
+    projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", impactEffect: "plasma", recoil: 0.38,
+  },
+
   minishark: {
     id: "minishark", name: "Minishark", category: "rifle", rarity: "common",
     damage: 1, fireRate: 11.5, bulletSpeed: 235, manaCost: 0, spread: 0.17,
@@ -478,6 +530,10 @@ export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
     linkedExplosionDamageMultiplier: Math.max(0, weapon.linkedExplosionDamageMultiplier ?? 1),
     linkedTriggerRange: Math.max(0, weapon.linkedTriggerRange ?? 0),
     linkedMarkerLife: Math.max(0, weapon.linkedMarkerLife ?? 0),
+    highHealthDamageThreshold: Math.max(0, Math.min(1, weapon.highHealthDamageThreshold ?? 0)),
+    highHealthDamageMultiplier: Math.max(1, weapon.highHealthDamageMultiplier ?? 1),
+    criticalExplosionRadius: Math.max(0, weapon.criticalExplosionRadius ?? 0),
+    criticalExplosionDamageMultiplier: Math.max(0, weapon.criticalExplosionDamageMultiplier ?? 0.5),
   };
 }
 
@@ -488,9 +544,9 @@ export function getAvailableWeapons(_globalStageIndex = 1): WeaponData[] {
 export type WeaponRollContext = "shop" | "treasure" | "boss";
 
 const WEAPON_ROLL_WEIGHTS: Record<WeaponRollContext, Record<WeaponRarity, number>> = {
-  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.48 },
-  treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.72 },
-  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 3.2 },
+  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.48, myth: 0.06 },
+  treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.72, myth: 0.16 },
+  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 3.2, myth: 1.2 },
 };
 
 export function rollAvailableWeapon(
@@ -507,8 +563,9 @@ export function rollAvailableWeapon(
   const stage = Math.max(1, Math.floor(globalStageIndex || 1));
   const weights = pool.map(weapon => {
     const base = WEAPON_ROLL_WEIGHTS[context][weapon.rarity];
-    if (weapon.rarity !== "legendary") return base;
-    return base * (1 + Math.max(0, stage - 10) * 0.07);
+    if (weapon.rarity === "myth") return base * (1 + Math.max(0, stage - 12) * 0.1);
+    if (weapon.rarity === "legendary") return base * (1 + Math.max(0, stage - 10) * 0.07);
+    return base;
   });
   const total = weights.reduce((sum, weight) => sum + weight, 0);
   let roll = Math.max(0, Math.min(0.999999, random())) * total;

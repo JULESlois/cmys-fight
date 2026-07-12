@@ -193,6 +193,7 @@ const EN = {
   "rarity.uncommon": "UNCOMMON",
   "rarity.rare": "RARE",
   "rarity.legendary": "LEGENDARY",
+  "rarity.myth": "MYTH",
   "category.weapon": "WEAPON",
   "category.defense": "DEFENSE",
   "category.skill": "SKILL",
@@ -416,6 +417,7 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "rarity.uncommon": "优秀",
   "rarity.rare": "稀有",
   "rarity.legendary": "传奇",
+  "rarity.myth": "神话",
   "category.weapon": "武器",
   "category.defense": "防御",
   "category.skill": "技能",
@@ -519,6 +521,10 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   mx_guardian: "全自动霰弹枪，可持续喷射五弹丸近距离火力。",
   mg42: "极高射速机枪会持续升温并扩大散布，过热后必须强制冷却。",
   na_45: "首发 Primer 会留在命中位置，下一发 Catalyst 靠近后引发大范围爆炸。",
+  so_14: "神话级自适应三连射：首发为高伤高穿透压制弹，后两发快速稳定跟进。",
+  aa_12: "全自动战斗霰弹枪，持续喷射六枚弹丸形成近距离压制。",
+  awp_dragon_lore: "神话级重型狙击步枪，对生命高于 75% 的目标造成额外 75% 伤害，并穿透四个目标。",
+  ak47_wild_lotus: "传奇突击步枪，暴击命中时绽放短距离莲花爆破。",
 };
 
 const ACHIEVEMENT_ZH: Record<string, { name: string; description: string }> = {

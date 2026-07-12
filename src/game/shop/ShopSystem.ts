@@ -42,6 +42,7 @@ const WEAPON_PRICE: Record<WeaponRarity, number> = {
   uncommon: 46,
   rare: 72,
   legendary: 118,
+  myth: 188,
 };
 
 const BUFF_PRICE: Record<BuffRarity, number> = {
