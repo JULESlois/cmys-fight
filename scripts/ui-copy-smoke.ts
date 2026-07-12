@@ -38,6 +38,9 @@ assert.doesNotMatch(shop, /PURCHASES ARE SAVED IMMEDIATELY|1-4 OR/);
 assert.match(shop, /shop\.footer/);
 
 assert.doesNotMatch(hub, /RUN BONUS HP\+|ENTER BUY \| SPACE START/);
+assert.match(hub, /wasActionPressed\("interact"\)/);
+assert.match(hub, /getPrompt\("interact"\)/);
+assert.match(hub, /getPrompt\("fire"\)/);
 assert.doesNotMatch(character, /ARMORY: SHOTGUN|\[PASSIVE\]/);
 assert.match(character, /this\.engine\.switchState\(this\.backState\)/);
 assert.match(records, /common\.hidden/);

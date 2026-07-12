@@ -49,10 +49,19 @@ export class HubState extends GameState {
       this.refundArmed = false;
       audio.playShoot();
     }
-    if (this.engine.input.wasPressed("enter")) {
+    const purchasePressed =
+      this.engine.input.wasActionPressed("interact") ||
+      this.engine.input.wasPressed("enter");
+    if (purchasePressed) {
       this.purchaseSelected();
+      return;
     }
-    if (this.engine.input.wasPressed(" ")) {
+
+    const keyboardRunPressed =
+      this.engine.input.getLastDevice() === "keyboard" &&
+      this.engine.input.wasPressed(" ");
+    const actionRunPressed = this.engine.input.wasActionPressed("fire");
+    if (keyboardRunPressed || actionRunPressed) {
       this.engine.switchState("character_select", { backState: "hub" });
       return;
     }
@@ -85,7 +94,10 @@ export class HubState extends GameState {
         audio.playPickup();
       }
     }
-    if (this.engine.input.wasPressed("a")) {
+    const archivePressed =
+      this.engine.input.wasPressed("a") ||
+      (this.engine.input.getLastDevice() !== "keyboard" && this.engine.input.wasActionPressed("swapWeapon"));
+    if (archivePressed) {
       this.engine.switchState("records");
       return;
     }
@@ -196,7 +208,18 @@ export class HubState extends GameState {
     ctx.fillText(this.message, 160, 226);
     ctx.fillStyle = "#BDC3C7";
     ctx.font = uiFont(language, 6);
-    ctx.fillText(t(language, "hub.footer"), 160, 238);
+    const device = this.engine.input.getLastDevice();
+    const interactPrompt = this.engine.input.getPrompt("interact");
+    const buyPrompt = device === "keyboard" && interactPrompt !== "ENTER"
+      ? `${interactPrompt}/ENTER`
+      : interactPrompt;
+    const runPrompt = device === "keyboard" ? "SPACE" : this.engine.input.getPrompt("fire");
+    const archivePrompt = device === "keyboard" ? "A" : this.engine.input.getPrompt("swapWeapon");
+    ctx.fillText(t(language, "hub.footer", {
+      buy: buyPrompt,
+      run: runPrompt,
+      archive: archivePrompt,
+    }), 160, 238);
     ctx.textAlign = "left";
   }
 }

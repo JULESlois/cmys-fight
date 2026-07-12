@@ -43,6 +43,7 @@ const { Input } = await import("../src/game/Input");
 const { CharacterSelectState } = await import("../src/game/states/CharacterSelectState");
 const { DungeonState } = await import("../src/game/states/DungeonState");
 const { MenuState } = await import("../src/game/states/MenuState");
+const { HubState } = await import("../src/game/states/HubState");
 
 function keyboardPulse(input: InstanceType<typeof Input>, key: string) {
   windowTarget.dispatch("keydown", { key, preventDefault() {} });
@@ -58,12 +59,16 @@ function touchPulse(input: InstanceType<typeof Input>) {
   input.setTouchAction("interact", false);
 }
 
-function createPad(aPressed: boolean, bPressed = false) {
+function createPad(aPressed: boolean, bPressed = false, xPressed = false, yPressed = false) {
   return {
     connected: true,
     axes: [0, 0, 0, 0],
     buttons: Array.from({ length: 16 }, (_, index) => {
-      const active = (index === 0 && aPressed) || (index === 1 && bPressed);
+      const active =
+        (index === 0 && aPressed) ||
+        (index === 1 && bPressed) ||
+        (index === 2 && xPressed) ||
+        (index === 3 && yPressed);
       return { pressed: active, value: active ? 1 : 0 };
     }),
   };
@@ -159,6 +164,77 @@ shopState.updateShop(0);
 assert.equal(shopState.shopOpen, false, "gamepad B closes the shop before gameplay skill handling");
 shopInput.cleanup();
 
+const createHubEngine = (input: InstanceType<typeof Input>) => {
+  let purchases = 0;
+  let switchedState = "";
+  const engine = {
+    input,
+    data: {
+      settings: { language: "en" },
+      meta: {
+        hardModeUnlocked: false,
+        preferredHardMode: false,
+        preferredChallengeId: undefined,
+      },
+      purchaseMetaUpgrade() {
+        purchases++;
+        return { success: true, cost: 30 };
+      },
+    },
+    switchState(state: string) { switchedState = state; },
+  } as any;
+  return {
+    engine,
+    getPurchases: () => purchases,
+    getSwitchedState: () => switchedState,
+  };
+};
+
+const hubKeyboardInput = new Input();
+const hubKeyboard = createHubEngine(hubKeyboardInput);
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+new HubState(hubKeyboard.engine).update();
+assert.equal(hubKeyboard.getPurchases(), 1, "default K interact binding purchases a meta upgrade");
+assert.equal(hubKeyboard.getSwitchedState(), "", "buy input must not start a run");
+hubKeyboardInput.update();
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+new HubState(hubKeyboard.engine).update();
+assert.equal(hubKeyboard.getPurchases(), 2, "Enter remains a purchase fallback");
+hubKeyboardInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+hubKeyboardInput.cleanup();
+
+const hubGamepadInput = new Input();
+const hubGamepad = createHubEngine(hubGamepadInput);
+gamepads = [createPad(true)];
+hubGamepadInput.beginFrame();
+new HubState(hubGamepad.engine).update();
+assert.equal(hubGamepad.getPurchases(), 1, "gamepad A purchases a meta upgrade");
+assert.equal(hubGamepad.getSwitchedState(), "", "gamepad A must not purchase and launch simultaneously");
+hubGamepadInput.update();
+gamepads = [createPad(false)];
+hubGamepadInput.beginFrame();
+hubGamepadInput.update();
+gamepads = [createPad(false, false, true)];
+hubGamepadInput.beginFrame();
+new HubState(hubGamepad.engine).update();
+assert.equal(hubGamepad.getSwitchedState(), "character_select", "gamepad X starts run preparation");
+hubGamepadInput.cleanup();
+
+const hubTouchInput = new Input();
+const hubTouch = createHubEngine(hubTouchInput);
+hubTouchInput.setTouchAction("interact", true);
+new HubState(hubTouch.engine).update();
+assert.equal(hubTouch.getPurchases(), 1, "touch A purchases a meta upgrade");
+assert.equal(hubTouch.getSwitchedState(), "", "touch A must not purchase and launch simultaneously");
+hubTouchInput.update();
+hubTouchInput.setTouchAction("interact", false);
+hubTouchInput.setTouchAction("fire", true);
+new HubState(hubTouch.engine).update();
+assert.equal(hubTouch.getSwitchedState(), "character_select", "touch X starts run preparation");
+hubTouchInput.cleanup();
+
 const touchMenuInput = new Input();
 touchMenuInput.setTouchPromptMode("gamepad");
 let touchMenuClosed = 0;
@@ -181,4 +257,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok", hubPurchaseControls: "ok" }));
