@@ -41,6 +41,14 @@ export class Projectile {
   public detonated = false;
   public muzzleEffect: MuzzleEffect = "flash";
   public impactEffect: ImpactEffect = "spark";
+  public ignoreWalls = false;
+  public repeatHitDelay = 0;
+  public repeatHitTimer = 0;
+  public tetherRange = 0;
+  public returnStrength = 0;
+  public anchorX = 0;
+  public anchorY = 0;
+  public summonLevel = 1;
 
   private static nextId = 0;
 
@@ -117,6 +125,14 @@ export class Projectile {
     this.detonated = false;
     this.muzzleEffect = profile?.muzzleEffect ?? "flash";
     this.impactEffect = profile?.impactEffect ?? "spark";
+    this.ignoreWalls = profile?.ignoreWalls ?? false;
+    this.repeatHitDelay = profile?.repeatHitDelay ?? 0;
+    this.repeatHitTimer = 0;
+    this.tetherRange = profile?.tetherRange ?? 0;
+    this.returnStrength = profile?.returnStrength ?? 0;
+    this.anchorX = x;
+    this.anchorY = y;
+    this.summonLevel = 1;
     this.hitEnemyIds.clear();
     return this;
   }
@@ -124,6 +140,17 @@ export class Projectile {
   update(dt: number) {
     this.previousX = this.x;
     this.previousY = this.y;
+
+    if (this.repeatHitDelay > 0 && this.hitEnemyIds.size > 0) {
+      if (this.repeatHitTimer <= 0) this.repeatHitTimer = this.repeatHitDelay;
+      else {
+        this.repeatHitTimer -= dt;
+        if (this.repeatHitTimer <= 0) {
+          this.hitEnemyIds.clear();
+          this.repeatHitTimer = 0;
+        }
+      }
+    }
 
     const speed = Math.hypot(this.vx, this.vy);
     if (speed > 0 && this.acceleration !== 0) {

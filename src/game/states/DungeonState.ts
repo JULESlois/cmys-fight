@@ -798,6 +798,28 @@ export class DungeonState extends GameState {
       }
     }
 
+    const canFireWeapon = ["combat", "cleared", "reward", "exiting", "exploration"].includes(this.roomPhase);
+    const fireHeld = this.engine.input.isActionDown("fire");
+    const activeWeapon = WEAPONS[this.player.currentWeaponId];
+    const heldYoyo = activeWeapon?.attackMode === "yoyo"
+      ? this.projectiles.find(projectile =>
+          projectile.faction === "player" &&
+          projectile.weaponId === activeWeapon.id &&
+          projectile.style === "yoyo"
+        )
+      : undefined;
+    if (heldYoyo && fireHeld && canFireWeapon && this.transitionState === "none") {
+      heldYoyo.life = Math.max(heldYoyo.life, 0.3);
+    }
+    if (activeWeapon?.attackMode === "channel" && fireHeld && canFireWeapon && this.transitionState === "none") {
+      this.player.weaponChannelTime = Math.min(
+        activeWeapon.channelTime ?? 3.2,
+        this.player.weaponChannelTime + dt,
+      );
+    } else {
+      this.player.weaponChannelTime = 0;
+    }
+
     // Interactive objects
     const interactTarget = this.getInteractTarget();
     if (this.portal && this.portal.state !== "spawning" && this.portal.state !== "activating") {
@@ -812,9 +834,10 @@ export class DungeonState extends GameState {
     if (interactTarget && this.engine.input.wasActionPressed("interact")) {
       this.handleInteract(interactTarget);
     } else if (
-      this.engine.input.isActionDown("fire") &&
+      fireHeld &&
       this.player.fireCooldown <= 0 &&
-      (this.roomPhase === "combat" || this.roomPhase === "cleared" || this.roomPhase === "exiting" || this.roomPhase === "reward" || this.roomPhase === "exploration")
+      canFireWeapon &&
+      !heldYoyo
     ) {
       this.fireWeapon();
     }
@@ -1324,16 +1347,37 @@ export class DungeonState extends GameState {
   // TODO: Move to PlayerController
   private fireWeapon() {
     const baseAngle = this.getPlayerAimAngle();
+    const weaponId = this.player.currentWeaponId;
     const result = WeaponController.fire(this.player, baseAngle);
-    if (result.fired) {
-      this.projectiles.push(...result.projectiles);
-      if (result.projectiles[0]) this.fx.emitMuzzle(result.projectiles[0], this.engine.isPerformanceDegraded());
-      if (result.recoil >= 0.7) {
-        this.engine.triggerScreenShake(Math.min(1.8, result.recoil), 0.055 + result.recoil * 0.015);
+    if (!result.fired) return;
+
+    let effectProjectile = result.projectiles[0];
+    if (weaponId === "stardust_dragon_staff") {
+      const existingDragon = this.projectiles.find(projectile =>
+        projectile.faction === "player" && projectile.weaponId === weaponId && projectile.style === "dragon"
+      );
+      if (existingDragon) {
+        existingDragon.life = Math.max(existingDragon.life, 8);
+        existingDragon.maxLife = Math.max(existingDragon.maxLife, 8);
+        existingDragon.summonLevel = Math.min(6, existingDragon.summonLevel + 1);
+        existingDragon.damage = Math.min(11, existingDragon.damage + 1);
+        existingDragon.radius = Math.min(8, 4 + Math.ceil(existingDragon.summonLevel / 2));
+        existingDragon.hitEnemyIds.clear();
+        for (const projectile of result.projectiles) releaseProjectile(projectile);
+        effectProjectile = existingDragon;
+      } else {
+        this.projectiles.push(...result.projectiles);
       }
-      this.engine.data.recordWeaponUsed(this.player.currentWeaponId);
-      audio.playWeaponShot(result.projectiles[0]?.style ?? "bullet", result.recoil);
+    } else {
+      this.projectiles.push(...result.projectiles);
     }
+
+    if (effectProjectile) this.fx.emitMuzzle(effectProjectile, this.engine.isPerformanceDegraded());
+    if (result.recoil >= 0.7) {
+      this.engine.triggerScreenShake(Math.min(1.8, result.recoil), 0.055 + result.recoil * 0.015);
+    }
+    this.engine.data.recordWeaponUsed(weaponId);
+    audio.playWeaponShot(effectProjectile?.style ?? "bullet", result.recoil);
   }
 
   // TODO: Move to PlayerController
@@ -1838,9 +1882,11 @@ export class DungeonState extends GameState {
   private updateProjectiles(dt: number) {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
+      p.anchorX = this.player.x;
+      p.anchorY = this.player.y;
       this.updateProjectileHoming(p, dt);
       p.update(dt);
-      let environmentHitT = this.getProjectileEnvironmentHitT(p);
+      let environmentHitT = p.ignoreWalls ? null : this.getProjectileEnvironmentHitT(p);
       let entityHit = false;
       let directEnemyId: number | undefined;
 
@@ -1954,25 +2000,92 @@ export class DungeonState extends GameState {
   }
 
   private updateProjectileHoming(projectile: Projectile, dt: number) {
-    if (projectile.faction !== "player" || projectile.homingStrength <= 0 || this.enemies.length === 0) return;
-    let target: Enemy | null = null;
-    let closestDistance = 150;
-    for (const enemy of this.enemies) {
-      if (enemy.hp <= 0 || projectile.hitEnemyIds.has(enemy.id)) continue;
-      const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
-      if (distance < closestDistance) {
-        target = enemy;
-        closestDistance = distance;
+    if (projectile.faction !== "player") return;
+
+    const playerDistance = Math.hypot(projectile.x - this.player.x, projectile.y - this.player.y);
+    let targetX: number | null = null;
+    let targetY: number | null = null;
+    let turnStrength = projectile.homingStrength;
+
+    if (projectile.style === "yoyo") {
+      const tether = Math.max(48, projectile.tetherRange || 108);
+      if (playerDistance >= tether * 0.92) {
+        targetX = this.player.x;
+        targetY = this.player.y;
+        turnStrength = Math.max(turnStrength, projectile.returnStrength || 10);
+      } else {
+        let target: Enemy | null = null;
+        let closestDistance = tether;
+        for (const enemy of this.enemies) {
+          if (enemy.hp <= 0) continue;
+          const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+          if (distance < closestDistance) {
+            target = enemy;
+            closestDistance = distance;
+          }
+        }
+        if (target) {
+          targetX = target.x;
+          targetY = target.y;
+        } else {
+          targetX = this.player.x + Math.cos(this.player.aimAngle) * tether * 0.72;
+          targetY = this.player.y + Math.sin(this.player.aimAngle) * tether * 0.72;
+        }
+      }
+    } else if (projectile.style === "dragon") {
+      const tether = Math.max(96, projectile.tetherRange || 150);
+      if (playerDistance > tether) {
+        targetX = this.player.x;
+        targetY = this.player.y;
+        turnStrength = Math.max(turnStrength, projectile.returnStrength || 7);
+      } else {
+        let target: Enemy | null = null;
+        let closestDistance = 240;
+        for (const enemy of this.enemies) {
+          if (enemy.hp <= 0) continue;
+          const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+          if (distance < closestDistance) {
+            target = enemy;
+            closestDistance = distance;
+          }
+        }
+        if (target) {
+          targetX = target.x;
+          targetY = target.y;
+        } else {
+          const orbitAngle = projectile.age * 2.2 + projectile.id * 0.73;
+          targetX = this.player.x + Math.cos(orbitAngle) * 54;
+          targetY = this.player.y + Math.sin(orbitAngle) * 36;
+        }
+      }
+    } else if (projectile.style === "sword" && projectile.age > projectile.maxLife * 0.52) {
+      targetX = this.player.x;
+      targetY = this.player.y;
+      turnStrength = Math.max(turnStrength, projectile.returnStrength || 3.4);
+    } else if (projectile.homingStrength > 0 && this.enemies.length > 0) {
+      let target: Enemy | null = null;
+      let closestDistance = projectile.style === "sword" ? 220 : 150;
+      for (const enemy of this.enemies) {
+        if (enemy.hp <= 0 || projectile.hitEnemyIds.has(enemy.id)) continue;
+        const distance = Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y);
+        if (distance < closestDistance) {
+          target = enemy;
+          closestDistance = distance;
+        }
+      }
+      if (target) {
+        targetX = target.x;
+        targetY = target.y;
       }
     }
-    if (!target) return;
 
-    const targetAngle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
+    if (targetX === null || targetY === null || turnStrength <= 0) return;
+    const targetAngle = Math.atan2(targetY - projectile.y, targetX - projectile.x);
     const velocity = rotateVelocityToward(
       projectile.vx,
       projectile.vy,
       targetAngle,
-      projectile.homingStrength * dt,
+      turnStrength * dt,
     );
     projectile.vx = velocity.vx;
     projectile.vy = velocity.vy;

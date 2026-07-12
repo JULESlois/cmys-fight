@@ -362,8 +362,16 @@ export class AudioManager {
       this.playBeep(210, "sawtooth", 0.085, volume * 0.9, 72);
     } else if (style === "rocket") {
       this.playBeep(118, "sawtooth", 0.17, volume, 44);
-    } else if (style === "disc") {
-      this.playBeep(680, "triangle", 0.11, volume * 0.85, 210);
+    } else if (style === "disc" || style === "yoyo") {
+      this.playBeep(style === "yoyo" ? 740 : 680, "triangle", 0.11, volume * 0.85, 210);
+    } else if (style === "water") {
+      this.playBeep(360, "sine", 0.16, volume * 0.82, 640);
+    } else if (style === "sword") {
+      this.playBeep(820, "triangle", 0.12, volume, 250);
+    } else if (style === "prism") {
+      this.playBeep(1040, "sawtooth", 0.075, volume * 0.78, 520);
+    } else if (style === "dragon") {
+      this.playBeep(290, "triangle", 0.18, volume * 0.9, 860);
     } else {
       this.playBeep(520, "square", 0.075, volume, 260);
     }

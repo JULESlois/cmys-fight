@@ -33,6 +33,7 @@ export class Player {
   public weaponSlots: WeaponSlots = ["pistol"];
   public activeWeaponSlot: 0 | 1 = 0;
   public fireCooldown: number = 0;
+  public weaponChannelTime: number = 0;
   public aimAngle: number = 0;
   
   public facingLeft: boolean = false;

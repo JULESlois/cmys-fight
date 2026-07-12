@@ -210,6 +210,10 @@ const EN = {
   "category.smg": "SMG",
   "category.launcher": "LAUNCHER",
   "category.special": "SPECIAL",
+  "category.sword": "SWORD",
+  "category.yoyo": "YOYO",
+  "category.magic": "MAGIC",
+  "category.summon": "SUMMON",
   "series.vanguard": "VANGUARD",
   "series.aether": "AETHER",
   "series.phoenix": "PHOENIX",
@@ -221,6 +225,11 @@ const EN = {
   "projectile.flame": "FLAME",
   "projectile.rocket": "ROCKET",
   "projectile.disc": "DISC",
+  "projectile.water": "WATER ORB",
+  "projectile.sword": "SPECTRAL SWORD",
+  "projectile.yoyo": "YOYO",
+  "projectile.prism": "PRISM BEAM",
+  "projectile.dragon": "MINION",
 } as const;
 
 type TranslationKey = keyof typeof EN;
@@ -431,6 +440,10 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "category.smg": "冲锋枪",
   "category.launcher": "发射器",
   "category.special": "特殊武器",
+  "category.sword": "剑",
+  "category.yoyo": "悠悠球",
+  "category.magic": "魔法武器",
+  "category.summon": "召唤武器",
   "series.vanguard": "先锋",
   "series.aether": "以太",
   "series.phoenix": "凤凰",
@@ -442,6 +455,11 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "projectile.flame": "火焰",
   "projectile.rocket": "火箭",
   "projectile.disc": "圆盘",
+  "projectile.water": "水球",
+  "projectile.sword": "幻影剑",
+  "projectile.yoyo": "悠悠球",
+  "projectile.prism": "棱镜光束",
+  "projectile.dragon": "召唤物",
 };
 
 const BUFF_ZH: Record<string, { name: string; description: string }> = {
@@ -495,6 +513,12 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   void_rail: "贯穿房间的轨道射线，可连续穿透六个目标。",
   dragon_breath: "喷射十二枚附带燃烧的火焰粒子。",
   siege_breaker: "大型攻城火箭反弹后会产生范围爆炸。",
+  minishark: "鲨鱼外形的旋转机枪，以极低单发伤害换取超高自动射速。",
+  water_bolt: "缓慢发光的水球可穿透敌人，并从墙壁反弹五次。",
+  stardust_dragon_staff: "召唤可穿墙追敌的星尘龙；重复施法会强化现有召唤物。",
+  terrarian: "流明质悠悠球受绳长限制，可持续贴近并反复切割目标。",
+  last_prism: "六束旋转光线会在持续施法时逐渐汇聚，伤害与能耗同步提高。",
+  zenith: "三把幻影剑穿墙追敌，并在返程时再次造成伤害。",
   ballistic_knife: "投掷刀刃可穿透多个敌人。",
   olympia: "经典双管散弹枪，近距离爆发极高。",
   ksg_12: "精确独头弹霰弹枪，拥有强大穿透力。",

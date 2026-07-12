@@ -28,6 +28,7 @@ assert.equal(calculateExplosionFalloff(30, 30), 0.45);
 
 const expectedStyles = new Set<ProjectileStyle>([
   "bullet", "tracer", "beam", "lightning", "plasma", "flame", "rocket", "disc",
+  "water", "sword", "yoyo", "prism", "dragon",
 ]);
 const actualStyles = new Set(Object.values(WEAPONS).map(weapon => weapon.projectileStyle ?? "bullet"));
 assert.deepEqual(actualStyles, expectedStyles);
@@ -59,7 +60,7 @@ assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.hig
 assert.ok(bossRates.legendary >= 0.24, `Boss chest legendary rate ${bossRates.legendary}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 8);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 11);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
 
@@ -140,16 +141,92 @@ assert.equal(beam.style, "beam");
 assert.equal(beam.beamWidth, 3);
 assert.equal(beam.trailLength, 54);
 
+const minishark = fire("minishark");
+assert.equal(minishark.style, "tracer");
+assert.equal(WEAPONS.minishark.manaCost, 0);
+assert.ok(WEAPONS.minishark.fireRate >= 11);
+
+const waterBolt = fire("water_bolt");
+assert.equal(waterBolt.style, "water");
+assert.equal(waterBolt.wallBouncesRemaining, 5);
+assert.equal(waterBolt.pierceRemaining, 9);
+assert.equal(waterBolt.repeatHitDelay, 0.45);
+waterBolt.hitEnemyIds.add(77);
+waterBolt.update(0.01);
+waterBolt.update(0.46);
+assert.equal(waterBolt.hitEnemyIds.size, 0, "repeat-hit projectiles must clear their hit lock");
+
+const terrarian = fire("terrarian");
+assert.equal(terrarian.style, "yoyo");
+assert.equal(terrarian.tetherRange, 108);
+assert.equal(terrarian.repeatHitDelay, 0.35);
+assert.equal(terrarian.maxLife, 0.35);
+
+player.fireCooldown = 0;
+player.weaponChannelTime = 0;
+player.setWeaponLoadout(["last_prism"], 0);
+player.mana = 80;
+const prismOpen = WeaponController.fire(player, 0, () => 0.5);
+assert.equal(prismOpen.fired, true);
+assert.equal(prismOpen.projectiles.length, 6);
+const openAngles = prismOpen.projectiles.map(projectile => Math.atan2(projectile.vy, projectile.vx));
+const openSpread = Math.max(...openAngles) - Math.min(...openAngles);
+const openDamage = prismOpen.projectiles[0].damage;
+const openCost = 80 - player.mana;
+
+player.fireCooldown = 0;
+player.weaponChannelTime = WEAPONS.last_prism.channelTime ?? 3.2;
+player.mana = 80;
+const prismFocused = WeaponController.fire(player, 0, () => 0.5);
+assert.equal(prismFocused.fired, true);
+const focusedAngles = prismFocused.projectiles.map(projectile => Math.atan2(projectile.vy, projectile.vx));
+const focusedSpread = Math.max(...focusedAngles) - Math.min(...focusedAngles);
+assert.ok(focusedSpread < openSpread * 0.12, "Last Prism rays must converge while held");
+assert.ok(prismFocused.projectiles[0].damage > openDamage);
+assert.ok(80 - player.mana > openCost);
+assert.equal(prismFocused.projectiles[0].beamWidth, 4);
+
+player.fireCooldown = 0;
+player.weaponChannelTime = 0;
+player.setWeaponLoadout(["zenith"], 0);
+player.mana = 80;
+const zenithVolley = WeaponController.fire(player, 0, () => 0.5);
+assert.equal(zenithVolley.fired, true);
+assert.equal(zenithVolley.projectiles.length, 3);
+assert.ok(zenithVolley.projectiles.every(projectile => projectile.style === "sword" && projectile.ignoreWalls));
+
+player.fireCooldown = 0;
+player.setWeaponLoadout(["stardust_dragon_staff"], 0);
+player.mana = 80;
+const dragon = WeaponController.fire(player, 0, () => 0.5);
+assert.equal(dragon.fired, true);
+assert.equal(dragon.projectiles.length, 1);
+assert.equal(dragon.projectiles[0].style, "dragon");
+assert.equal(dragon.projectiles[0].ignoreWalls, true);
+assert.equal(dragon.projectiles[0].repeatHitDelay, 0.6);
+
 const fakeEngine = {
   data: {
     settings: { reducedFlashing: false },
     recordEnemyKill() {},
+    recordWeaponUsed() {},
   },
   isPerformanceDegraded: () => false,
   triggerScreenShake() {},
 };
 const dungeon = new DungeonState(fakeEngine as any) as any;
 dungeon.isCollidingWithMap = () => false;
+dungeon.player.mana = 80;
+dungeon.player.setWeaponLoadout(["stardust_dragon_staff"], 0);
+dungeon.getPlayerAimAngle = () => 0;
+dungeon.fireWeapon();
+dungeon.player.fireCooldown = 0;
+dungeon.fireWeapon();
+assert.equal(dungeon.projectiles.length, 1, "recasting the staff must strengthen the existing dragon");
+assert.equal(dungeon.projectiles[0].summonLevel, 2);
+assert.equal(dungeon.projectiles[0].damage, 7);
+for (const projectile of dungeon.projectiles) releaseProjectile(projectile);
+dungeon.projectiles = [];
 
 const chainA = new Enemy(20, 20, "melee");
 const chainB = new Enemy(50, 20, "melee");
@@ -204,13 +281,15 @@ const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8")
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const fxSource = fs.readFileSync("src/game/render/PixelFxSystem.ts", "utf8");
 const audioSource = fs.readFileSync("src/game/audio/AudioManager.ts", "utf8");
+assert.match(dungeonSource, /heldYoyo[\s\S]*heldYoyo\.life = Math\.max\(heldYoyo\.life, 0\.3\)/);
 assert.match(dungeonSource, /updateProjectileHoming[\s\S]*rotateVelocityToward/);
 assert.match(dungeonSource, /applyProjectileChain[\s\S]*calculateChainDamage/);
 assert.match(dungeonSource, /detonateProjectile[\s\S]*calculateExplosionDamage/);
-assert.match(rendererSource, /p\.style === "beam"[\s\S]*p\.style === "lightning"/);
+assert.match(rendererSource, /p\.style === "beam"[\s\S]*p\.style === "lightning"[\s\S]*p\.style === "prism"/);
+assert.match(rendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "water"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
 assert.match(rendererSource, /p\.style === "plasma"[\s\S]*p\.style === "flame"[\s\S]*p\.style === "rocket"[\s\S]*p\.style === "disc"/);
 assert.match(fxSource, /emitProjectileImpact[\s\S]*emitExplosion/);
-assert.match(audioSource, /playWeaponShot[\s\S]*style === "beam"[\s\S]*style === "lightning"[\s\S]*style === "rocket"/);
+assert.match(audioSource, /playWeaponShot[\s\S]*style === "beam"[\s\S]*style === "lightning"[\s\S]*style === "rocket"[\s\S]*style === "water"[\s\S]*style === "sword"[\s\S]*style === "prism"[\s\S]*style === "dragon"/);
 
 console.log(JSON.stringify({
   projectileStyles: actualStyles.size,
@@ -225,5 +304,6 @@ console.log(JSON.stringify({
   bossChestPersistence: "ok",
   weightedDrops: "ok",
   weaponAudio: "ok",
+  terrariaArchetypes: ["gun", "spellbook", "yoyo", "channel", "summon", "melee"],
   dedicatedRendering: "ok",
 }));

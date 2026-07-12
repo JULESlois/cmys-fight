@@ -241,15 +241,37 @@ export class EntityRenderer {
   }
 
   public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile, reducedFlashing = false) {
-    if (p.faction === "player" && (p.style === "beam" || p.style === "lightning")) {
+    if (p.faction === "player" && p.style === "yoyo") {
+      ctx.save();
+      ctx.strokeStyle = "rgba(184, 242, 232, 0.72)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(p.anchorX), Math.round(p.anchorY - 2));
+      ctx.lineTo(Math.round(p.x), Math.round(p.y));
+      ctx.stroke();
+      ctx.translate(Math.round(p.x), Math.round(p.y));
+      ctx.rotate(p.spinAngle);
+      ctx.fillStyle = "#123C4A";
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.fillStyle = "#52D6C6";
+      ctx.fillRect(-5, -5, 10, 10);
+      ctx.fillStyle = "#D8FFF7";
+      ctx.fillRect(-2, -2, 4, 4);
+      ctx.fillStyle = "#7BFFF0";
+      ctx.fillRect(4, -1, 3, 2);
+      ctx.restore();
+      return;
+    }
+
+    if (p.faction === "player" && (p.style === "beam" || p.style === "lightning" || p.style === "prism")) {
       const speed = Math.hypot(p.vx, p.vy) || 1;
       const ux = p.vx / speed;
       const uy = p.vy / speed;
       const startX = p.x - ux * p.trailLength;
       const startY = p.y - uy * p.trailLength;
       ctx.save();
-      ctx.globalAlpha = reducedFlashing ? 0.46 : p.style === "beam" ? 0.78 : 0.9;
-      if (p.style === "beam") {
+      ctx.globalAlpha = reducedFlashing ? 0.46 : p.style === "lightning" ? 0.9 : 0.78;
+      if (p.style === "beam" || p.style === "prism") {
         ctx.strokeStyle = p.color;
         ctx.lineWidth = Math.max(1, p.beamWidth + 1);
         ctx.beginPath();
@@ -257,7 +279,7 @@ export class EntityRenderer {
         ctx.lineTo(Math.round(p.x), Math.round(p.y));
         ctx.stroke();
         if (!reducedFlashing) {
-          ctx.strokeStyle = "#FFFFFF";
+          ctx.strokeStyle = p.style === "prism" ? "rgba(255,255,255,0.88)" : "#FFFFFF";
           ctx.lineWidth = Math.max(1, p.beamWidth - 1);
           ctx.beginPath();
           ctx.moveTo(Math.round(startX + ux * 4), Math.round(startY + uy * 4));
@@ -283,7 +305,35 @@ export class EntityRenderer {
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(Math.atan2(p.vy, p.vx));
     if (p.faction === "player") {
-      if (p.style === "tracer") {
+      if (p.style === "water") {
+        const pulse = 1 + Math.floor((Math.sin(p.age * 12) + 1) * 0.5);
+        ctx.fillStyle = "rgba(105, 200, 255, 0.24)";
+        ctx.fillRect(-p.radius - pulse - 2, -p.radius - pulse - 2, (p.radius + pulse + 2) * 2, (p.radius + pulse + 2) * 2);
+        ctx.fillStyle = "#2471A3";
+        ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
+        ctx.fillStyle = "#69C8FF";
+        ctx.fillRect(-p.radius + 2, -p.radius + 1, Math.max(2, p.radius), Math.max(2, p.radius));
+        ctx.fillStyle = "#E9FAFF";
+        ctx.fillRect(0, -2, 2, 2);
+      } else if (p.style === "sword") {
+        ctx.rotate(Math.sin(p.age * 15 + p.id) * 0.22);
+        SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1, { outlineColor: "#07101A" });
+      } else if (p.style === "dragon") {
+        const segments = Math.max(3, 2 + p.summonLevel);
+        for (let index = segments - 1; index >= 0; index--) {
+          const x = -index * 5;
+          const wave = Math.round(Math.sin(p.age * 9 - index * 0.8) * 2);
+          ctx.fillStyle = index === 0 ? "#D8FFF7" : index % 2 === 0 ? "#5DADE2" : "#2E86C1";
+          const size = index === 0 ? 7 : Math.max(3, 6 - Math.floor(index / 3));
+          ctx.fillRect(x - Math.floor(size / 2), wave - Math.floor(size / 2), size, size);
+          if (index === 0) {
+            ctx.fillStyle = "#123C4A";
+            ctx.fillRect(x + 2, wave - 2, 2, 2);
+            ctx.fillStyle = "#8DF6FF";
+            ctx.fillRect(x + 4, wave, 3, 2);
+          }
+        }
+      } else if (p.style === "tracer") {
         ctx.fillStyle = reducedFlashing
           ? "rgba(255,255,255,0.18)"
           : p.critical ? "rgba(255,240,160,0.65)" : "rgba(255,255,255,0.35)";

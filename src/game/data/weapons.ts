@@ -1,7 +1,7 @@
 import type { StatusEffectId } from "../combat/StatusEffectSystem";
 import type { PowerSeries } from "../PowerSeries";
 
-export type WeaponCategory = "sidearm" | "shotgun" | "energy" | "rifle" | "smg" | "launcher" | "special";
+export type WeaponCategory = "sidearm" | "shotgun" | "energy" | "rifle" | "smg" | "launcher" | "special" | "sword" | "yoyo" | "magic" | "summon";
 export type WeaponRarity = "common" | "uncommon" | "rare" | "legendary";
 export type WeaponSlots = [string, string?];
 
@@ -13,7 +13,14 @@ export type ProjectileStyle =
   | "plasma"
   | "flame"
   | "rocket"
-  | "disc";
+  | "disc"
+  | "water"
+  | "sword"
+  | "yoyo"
+  | "prism"
+  | "dragon";
+
+export type WeaponAttackMode = "projectile" | "melee" | "yoyo" | "channel" | "summon";
 
 export type MuzzleEffect = "flash" | "smoke" | "electric" | "beam" | "flame" | "rocket";
 export type ImpactEffect = "spark" | "electric" | "plasma" | "flame" | "explosion" | "slash";
@@ -34,6 +41,11 @@ export interface ProjectileProfile {
   spinRate: number;
   muzzleEffect: MuzzleEffect;
   impactEffect: ImpactEffect;
+  attackMode: WeaponAttackMode;
+  ignoreWalls: boolean;
+  repeatHitDelay: number;
+  tetherRange: number;
+  returnStrength: number;
 }
 
 export interface WeaponData {
@@ -78,6 +90,12 @@ export interface WeaponData {
   renderOffsetY?: number;
   muzzleOffsetX?: number;
   muzzleOffsetY?: number;
+  attackMode?: WeaponAttackMode;
+  channelTime?: number;
+  ignoreWalls?: boolean;
+  repeatHitDelay?: number;
+  tetherRange?: number;
+  returnStrength?: number;
 }
 
 export const WEAPONS: Record<string, WeaponData> = {
@@ -283,14 +301,14 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   ballistic_knife: {
     id: "ballistic_knife", name: "Ballistic Knife", category: "special", rarity: "uncommon",
-    damage: 14, fireRate: 1.1, bulletSpeed: 320, manaCost: 0, spread: 0, pelletCount: 1, knockback: 5, critChance: 0.15, color: "#BDC3C7",
+    damage: 9, fireRate: 1.1, bulletSpeed: 320, manaCost: 0, spread: 0, pelletCount: 1, knockback: 5, critChance: 0.15, color: "#BDC3C7",
     projectileRadius: 3, projectileLife: 1.2, pierce: 3,
     mechanic: "Thrown blade silently pierces multiple enemies.", projectileStyle: "disc", trailLength: 5, spinRate: 20,
     renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -3,
   },
   olympia: {
     id: "olympia", name: "Olympia", category: "shotgun", rarity: "common",
-    damage: 5, fireRate: 0.8, bulletSpeed: 160, manaCost: 0, spread: 0.9, pelletCount: 12, knockback: 8, critChance: 0.08, color: "#E67E22",
+    damage: 1, fireRate: 0.8, bulletSpeed: 160, manaCost: 0, spread: 0.9, pelletCount: 12, knockback: 8, critChance: 0.08, color: "#E67E22",
     projectileLife: 1, mechanic: "Classic double barrel burst with devastating close range spread.", projectileStyle: "bullet", trailLength: 4,
     renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 24, muzzleOffsetY: -4,
   },
@@ -302,7 +320,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   akimbo_scorpion: {
     id: "akimbo_scorpion", name: "Akimbo Scorpion", category: "smg", rarity: "rare",
-    damage: 1, fireRate: 14, bulletSpeed: 240, manaCost: 0, spread: 0.3, pelletCount: 2, knockback: 1, critChance: 0.05, color: "#27AE60",
+    damage: 1, fireRate: 5.5, bulletSpeed: 240, manaCost: 0, spread: 0.3, pelletCount: 2, knockback: 1, critChance: 0.05, color: "#27AE60",
     projectileLife: 1.5, mechanic: "Twin machine pistols unleash an uncontrollable bullet storm.", projectileStyle: "tracer", trailLength: 10,
     renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
   },
@@ -326,10 +344,69 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   wunderwaffe: {
     id: "wunderwaffe", name: "Wunderwaffe DG-2", category: "energy", rarity: "legendary",
-    damage: 16, fireRate: 0.75, bulletSpeed: 280, manaCost: 9, spread: 0, pelletCount: 1, knockback: 12, critChance: 0.2, color: "#8DF6FF",
+    damage: 16, fireRate: 0.75, bulletSpeed: 280, manaCost: 8, spread: 0, pelletCount: 1, knockback: 12, critChance: 0.2, color: "#8DF6FF",
     projectileLife: 2, chainCount: 5, chainRange: 80, chainDamageMultiplier: 0.65, mechanic: "Lightning bolt jumps between groups of enemies.", projectileStyle: "lightning", trailLength: 35,
     impactEffect: "electric", muzzleEffect: "electric", renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
   },
+  minishark: {
+    id: "minishark", name: "Minishark", category: "rifle", rarity: "common",
+    damage: 1, fireRate: 11.5, bulletSpeed: 235, manaCost: 0, spread: 0.17,
+    pelletCount: 1, knockback: 0, critChance: 0.05, color: "#D6A14D",
+    projectileLife: 1.55,
+    mechanic: "Shark-bodied rotary gun trades per-shot damage for extreme automatic fire.",
+    projectileStyle: "tracer", trailLength: 9, recoil: 0.12,
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
+  },
+  water_bolt: {
+    id: "water_bolt", name: "Water Bolt", category: "magic", rarity: "uncommon",
+    damage: 6, fireRate: 1.5, bulletSpeed: 92, manaCost: 3, spread: 0,
+    pelletCount: 1, knockback: 4, critChance: 0.08, color: "#4FC3F7",
+    projectileRadius: 5, projectileLife: 6, pierce: 9, wallBounces: 5,
+    mechanic: "A slow luminous water sphere pierces enemies and ricochets five times.",
+    projectileStyle: "water", trailLength: 12, repeatHitDelay: 0.45, impactEffect: "plasma",
+    renderOffsetX: 10, renderOffsetY: -1, muzzleOffsetX: 18, muzzleOffsetY: -4,
+  },
+  stardust_dragon_staff: {
+    id: "stardust_dragon_staff", name: "Stardust Dragon Staff", category: "summon", rarity: "rare",
+    damage: 6, fireRate: 0.4, bulletSpeed: 135, manaCost: 8, spread: 0,
+    pelletCount: 1, knockback: 2, critChance: 0, color: "#5DADE2",
+    projectileRadius: 5, projectileLife: 8, pierce: 99, homingStrength: 5.4,
+    mechanic: "Summons a wall-phasing dragon; recasting lengthens and strengthens the existing summon.",
+    projectileStyle: "dragon", trailLength: 18, attackMode: "summon", ignoreWalls: true, repeatHitDelay: 0.6, tetherRange: 150, returnStrength: 7,
+    muzzleEffect: "electric", impactEffect: "plasma", recoil: 0.2,
+    renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
+  },
+  terrarian: {
+    id: "terrarian", name: "Terrarian", category: "yoyo", rarity: "legendary",
+    damage: 8, fireRate: 0.9, bulletSpeed: 190, manaCost: 4, spread: 0,
+    pelletCount: 1, knockback: 6, critChance: 0.18, color: "#52D6C6",
+    projectileRadius: 6, projectileLife: 0.35, pierce: 99, homingStrength: 6.2,
+    mechanic: "A luminite yoyo remains tethered to the wielder and repeatedly grinds nearby targets.",
+    projectileStyle: "yoyo", attackMode: "yoyo", repeatHitDelay: 0.35, tetherRange: 108, returnStrength: 10,
+    impactEffect: "plasma", recoil: 0.15,
+    renderOffsetX: 9, renderOffsetY: -1, muzzleOffsetX: 17, muzzleOffsetY: -3,
+  },
+  last_prism: {
+    id: "last_prism", name: "Last Prism", category: "magic", rarity: "legendary",
+    damage: 1, fireRate: 4, bulletSpeed: 360, manaCost: 1.5, spread: 0.52,
+    pelletCount: 6, knockback: 2, critChance: 0.12, color: "#FFFFFF",
+    projectileRadius: 2, projectileLife: 0.42, pierce: 4,
+    mechanic: "Six rotating rays converge while held, becoming a thicker, stronger and more costly beam.",
+    projectileStyle: "prism", trailLength: 58, beamWidth: 1, attackMode: "channel", channelTime: 3.2,
+    muzzleEffect: "beam", impactEffect: "plasma", recoil: 0.15,
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
+  },
+  zenith: {
+    id: "zenith", name: "Zenith", category: "sword", rarity: "legendary",
+    damage: 6, fireRate: 1.4, bulletSpeed: 225, manaCost: 6, spread: 1.7,
+    pelletCount: 3, knockback: 7, critChance: 0.2, color: "#66F7C5",
+    projectileRadius: 6, projectileLife: 1.9, pierce: 99, homingStrength: 4.2,
+    mechanic: "Three spectral swords arc through walls, seek enemies and strike again on their return path.",
+    projectileStyle: "sword", attackMode: "melee", ignoreWalls: true, repeatHitDelay: 0.22, tetherRange: 210, returnStrength: 3.4,
+    muzzleEffect: "electric", impactEffect: "slash", recoil: 0.7,
+    renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
+  },
+
 };
 
 export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
@@ -349,6 +426,11 @@ export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
     spinRate: weapon.spinRate ?? 0,
     muzzleEffect: weapon.muzzleEffect ?? "flash",
     impactEffect: weapon.impactEffect ?? "spark",
+    attackMode: weapon.attackMode ?? "projectile",
+    ignoreWalls: weapon.ignoreWalls === true,
+    repeatHitDelay: Math.max(0, weapon.repeatHitDelay ?? 0),
+    tetherRange: Math.max(0, weapon.tetherRange ?? 0),
+    returnStrength: Math.max(0, weapon.returnStrength ?? 0),
   };
 }
 
