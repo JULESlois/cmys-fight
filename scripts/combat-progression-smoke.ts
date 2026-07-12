@@ -10,6 +10,7 @@ import { DamageSystem } from "../src/game/combat/DamageSystem";
 import { WeaponController } from "../src/game/combat/WeaponController";
 import { BuffSystem, BUFFS, type BuffId } from "../src/game/combat/BuffSystem";
 import { WEAPONS, getAvailableWeapons } from "../src/game/data/weapons";
+import { WEAPON_PALETTES, WEAPON_SPRITES } from "../src/game/data/weaponArt";
 import { EnemyFactory } from "../src/game/EnemyFactory";
 import { getEnemyDefinition } from "../src/game/data/enemies";
 import { ShopSystem } from "../src/game/shop/ShopSystem";
@@ -204,7 +205,6 @@ assert.equal(
 const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
-const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput/);
 assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
 assert.match(dungeonSource, /kind === "boss" \? "boss" : "treasure"/);
@@ -213,7 +213,8 @@ assert.match(dungeonSource, /currentRoom\.weaponChest = \{ \.\.\.this\.chest \}/
 assert.match(rendererSource, /enemy\.isElite \? 1\.62 : 1\.42/);
 assert.match(rendererSource, /enemy\.type === "boss"\) scale = 2\.15/);
 for (const weapon of legendaryWeapons) {
-  assert.match(spriteSource, new RegExp(`weapon_${weapon.id}:`));
+  assert.ok(WEAPON_SPRITES[weapon.id], `${weapon.id} dedicated model`);
+  assert.ok(WEAPON_PALETTES[weapon.id], `${weapon.id} dedicated palette`);
 }
 
 console.log(JSON.stringify({

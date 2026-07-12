@@ -344,11 +344,9 @@ assert.match(dungeonSource, /dist <= e\.attackRange/);
 assert.match(dungeonSource, /hasLineOfSight/);
 assert.match(dungeonSource, /p\.type === "mana" && this\.player\.mana >= this\.player\.maxMana/);
 
-const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 const spriteSignatures = new Set<string>();
 for (const weapon of Object.values(WEAPONS)) {
   const id = weapon.id;
-  assert.match(spriteSource, new RegExp(`weapon_${id}:`));
   const sprite = SPRITES[`weapon_${id}`];
   assert.ok(sprite, `${id} model exists`);
   assert.ok(sprite.length >= 16, `${id} has a full-height model`);

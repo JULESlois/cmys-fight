@@ -110,7 +110,7 @@ export class EntityRenderer {
     const weapon = WEAPONS[player.currentWeaponId];
     const renderX = weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X;
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
-    SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1, { outlineColor: "#02060A" });
+    SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
@@ -322,7 +322,7 @@ export class EntityRenderer {
         ctx.fillRect(0, -2, 2, 2);
       } else if (p.style === "sword") {
         ctx.rotate(Math.sin(p.age * 15 + p.id) * 0.22);
-        SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1, { outlineColor: "#07101A" });
+        SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1);
       } else if (p.style === "dragon") {
         const segments = Math.max(3, 2 + p.summonLevel);
         for (let index = segments - 1; index >= 0; index--) {
@@ -398,7 +398,7 @@ export class EntityRenderer {
     ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(-6, 5, 12, 3);
     ctx.translate(0, Math.round(Math.sin(time * 4) * 2));
     if (p.type === "weapon" && p.weaponId) {
-      SpriteRenderer.drawPixelSprite(ctx, `weapon_${p.weaponId}`, 0, -4, 1, { outlineColor: "#09101A" });
+      SpriteRenderer.drawPixelSprite(ctx, `weapon_${p.weaponId}`, 0, -4, 1);
     } else {
       SpriteRenderer.drawPixelSprite(ctx, `pickup_${p.type}`, 0, -4, 1);
     }

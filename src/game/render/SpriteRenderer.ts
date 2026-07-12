@@ -1,4 +1,4 @@
-import { SPRITES, DEFAULT_PALETTE } from "../data/sprites";
+import { SPRITES, DEFAULT_PALETTE, SPRITE_PALETTES } from "../data/sprites";
 
 export interface SpriteOptions {
   flipX?: boolean;
@@ -8,6 +8,11 @@ export interface SpriteOptions {
 }
 
 export class SpriteRenderer {
+  static getSpriteSize(spriteName: string): { width: number; height: number } {
+    const sprite = SPRITES[spriteName] ?? SPRITES.weapon_pistol;
+    return { width: sprite?.[0]?.length ?? 0, height: sprite?.length ?? 0 };
+  }
+
   static drawPixelSprite(
     ctx: CanvasRenderingContext2D,
     spriteName: string,
@@ -16,15 +21,26 @@ export class SpriteRenderer {
     scale: number = 1,
     options: SpriteOptions = {}
   ) {
-    let spriteData = SPRITES[spriteName];
+    let resolvedSpriteName = spriteName;
+    let spriteData = SPRITES[resolvedSpriteName];
     if (!spriteData) {
        // Fallback logic
        if (spriteName.startsWith("player_")) {
-           spriteData = SPRITES["player_main_side_idle"];
+           resolvedSpriteName = "player_main_side_idle";
+           spriteData = SPRITES[resolvedSpriteName];
        }
-       else if (spriteName.startsWith("weapon_")) spriteData = SPRITES["weapon_pistol"];
-       else if (spriteName.startsWith("enemy_")) spriteData = SPRITES["enemy_melee_idle"];
-       else if (spriteName.startsWith("pickup_")) spriteData = SPRITES["pickup_weapon"] || SPRITES["pickup_pistol"];
+       else if (spriteName.startsWith("weapon_")) {
+         resolvedSpriteName = "weapon_pistol";
+         spriteData = SPRITES[resolvedSpriteName];
+       }
+       else if (spriteName.startsWith("enemy_")) {
+         resolvedSpriteName = "enemy_melee_idle";
+         spriteData = SPRITES[resolvedSpriteName];
+       }
+       else if (spriteName.startsWith("pickup_")) {
+         resolvedSpriteName = SPRITES["pickup_weapon"] ? "pickup_weapon" : "pickup_pistol";
+         spriteData = SPRITES[resolvedSpriteName];
+       }
        
        // Global fallback box if still nothing
        if (!spriteData) {
@@ -77,10 +93,9 @@ export class SpriteRenderer {
         const char = spriteData[row][col];
         if (char === '.') continue;
         
-        let color = DEFAULT_PALETTE[char] || "#FF00FF";
-        if (options.paletteOverride && options.paletteOverride[char]) {
-          color = options.paletteOverride[char];
-        }
+        const spritePalette = SPRITE_PALETTES[resolvedSpriteName] ?? DEFAULT_PALETTE;
+        let color = spritePalette[char] ?? DEFAULT_PALETTE[char] ?? "#FF00FF";
+        if (options.paletteOverride?.[char]) color = options.paletteOverride[char];
         
         if (options.hitFlash && char !== '.') {
           color = "#FFFFFF";
