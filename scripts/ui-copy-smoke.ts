@@ -10,6 +10,7 @@ const tutorial = read("src/game/TutorialSystem.ts");
 const pause = read("src/game/render/PauseOverlayRenderer.ts");
 const buff = read("src/game/render/BuffSelectionRenderer.ts");
 const shop = read("src/game/render/ShopRenderer.ts");
+const shopSystem = read("src/game/shop/ShopSystem.ts");
 const hub = read("src/game/states/HubState.ts");
 const character = read("src/game/states/CharacterSelectState.ts");
 const records = read("src/game/states/RecordsState.ts");
@@ -36,6 +37,9 @@ assert.doesNotMatch(buff, /SELECT A BUFF|1 \/ 2 \/ 3 OR/);
 assert.match(buff, /buff\.footer/);
 assert.doesNotMatch(shop, /PURCHASES ARE SAVED IMMEDIATELY|1-4 OR/);
 assert.match(shop, /shop\.footer/);
+assert.doesNotMatch(shop, /shop\.medkit|shop\.armorPatch|shop\.heal|shop\.armor/);
+assert.match(shopSystem, /ShopItemKind = "weapon" \| "buff"/);
+assert.doesNotMatch(shopSystem, /kind: "heal"|kind: "armor"|full_hp|full_armor/);
 
 assert.doesNotMatch(hub, /RUN BONUS HP\+|ENTER BUY \| SPACE START/);
 assert.match(hub, /wasActionPressed\("interact"\)/);

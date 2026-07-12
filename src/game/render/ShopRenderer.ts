@@ -39,18 +39,7 @@ function getItemText(item: ShopItem, language: Language): { name: string; descri
       kind: t(language, "shop.weapon"),
     };
   }
-  if (item.kind === "heal") {
-    return {
-      name: t(language, "shop.medkit"),
-      description: t(language, "shop.medkitDesc", { amount: item.amount ?? 0 }),
-      kind: t(language, "shop.heal"),
-    };
-  }
-  return {
-    name: t(language, "shop.armorPatch"),
-    description: t(language, "shop.armorPatchDesc", { amount: item.amount ?? 0 }),
-    kind: t(language, "shop.armor"),
-  };
+  return { name: item.name, description: item.description, kind: item.kind.toUpperCase() };
 }
 
 export class ShopRenderer {

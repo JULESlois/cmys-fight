@@ -125,6 +125,82 @@ for (let seed = 1; seed <= 200 && !foundLegendaryStock; seed++) {
 }
 assert.equal(foundLegendaryStock, true);
 
+let shopWeaponTotal = 0;
+let shopWeaponHighTier = 0;
+let shopBuffTotal = 0;
+let shopBuffHighTier = 0;
+for (let seed = 1; seed <= 2000; seed++) {
+  const stock = ShopSystem.generateStock(
+    { seed, globalStageIndex: 20, chapterIndex: 4 } as any,
+    { id: `quality-shop-${seed}`, shopSeed: seed } as any,
+    { buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+  );
+  assert.equal(stock.length, 4);
+  assert.equal(stock.filter(item => item.kind === "weapon").length, 2);
+  assert.equal(stock.filter(item => item.kind === "buff").length, 2);
+  assert.equal(new Set(stock.map(item => item.id)).size, 4);
+  assert.equal(
+    new Set(stock.map(item => item.weaponId ? `weapon:${item.weaponId}` : `buff:${item.buffId}`)).size,
+    4,
+  );
+  for (const item of stock) {
+    const highTier = item.rarity === "rare" || item.rarity === "legendary";
+    if (item.kind === "weapon") {
+      shopWeaponTotal++;
+      if (highTier) shopWeaponHighTier++;
+    } else {
+      shopBuffTotal++;
+      if (highTier) shopBuffHighTier++;
+    }
+  }
+}
+const shopWeaponHighTierRate = shopWeaponHighTier / shopWeaponTotal;
+const shopBuffHighTierRate = shopBuffHighTier / shopBuffTotal;
+assert.ok(
+  shopWeaponHighTierRate >= 0.4 && shopWeaponHighTierRate <= 0.46,
+  `shop weapon high-tier rate ${shopWeaponHighTierRate}`,
+);
+assert.ok(
+  shopBuffHighTierRate >= 0.53 && shopBuffHighTierRate <= 0.59,
+  `shop talent high-tier rate ${shopBuffHighTierRate}`,
+);
+
+const fullBuffStock = ShopSystem.generateStock(
+  { seed: 0xF011, globalStageIndex: 20, chapterIndex: 4 } as any,
+  { id: "full-buff-shop", shopSeed: 0xF011 } as any,
+  {
+    buffs: (Object.keys(BUFFS) as BuffId[]).slice(0, BuffSystem.MAX_BUFFS),
+    weaponSlots: ["pistol"],
+    shopDiscount: 0,
+  } as any,
+);
+assert.equal(fullBuffStock.length, 4);
+assert.equal(fullBuffStock.every(item => item.kind === "weapon"), true);
+
+const legacyShopRoom = {
+  id: "legacy-supply-shop",
+  shopSeed: 0x51A,
+  shopStock: [
+    { id: "legacy:heal", kind: "heal", name: "FIELD MEDKIT", description: "", price: 14, purchased: false, amount: 3 },
+    { id: "legacy:armor", kind: "armor", name: "ARMOR PATCH", description: "", price: 16, purchased: false, amount: 3 },
+    { id: "legacy:weapon", kind: "weapon", name: WEAPONS.laser.name, description: "", price: 72, purchased: false, weaponId: "laser", rarity: "rare" },
+    { id: "legacy:buff", kind: "buff", name: BUFFS.critical_focus.name, description: "", price: 52, purchased: false, buffId: "critical_focus", rarity: "uncommon" },
+  ],
+} as any;
+const migratedShopStock = ShopSystem.reconcileStock(
+  { seed: 0x51A, globalStageIndex: 20, chapterIndex: 4 } as any,
+  legacyShopRoom,
+  { buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+);
+assert.equal(migratedShopStock.length, 4);
+assert.equal(migratedShopStock.every(item => item.kind === "weapon" || item.kind === "buff"), true);
+assert.equal(migratedShopStock.some(item => item.weaponId === "laser"), true);
+assert.equal(migratedShopStock.some(item => item.buffId === "critical_focus"), true);
+assert.equal(
+  new Set(migratedShopStock.map(item => item.weaponId ? `weapon:${item.weaponId}` : `buff:${item.buffId}`)).size,
+  4,
+);
+
 const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
@@ -151,4 +227,7 @@ console.log(JSON.stringify({
   powerSeries: 3,
   allStageWeaponPool: "ok",
   bossWeaponChest: "ok",
+  shopStock: "weapons-and-talents-only",
+  shopWeaponHighTierRate: Number(shopWeaponHighTierRate.toFixed(3)),
+  shopTalentHighTierRate: Number(shopBuffHighTierRate.toFixed(3)),
 }));

@@ -5,7 +5,7 @@ import type { Room, StageData } from "../FloorGenerator";
 import { createSeededRandom, hashSeed, normalizeSeed } from "../Random";
 import { WeaponController } from "../combat/WeaponController";
 
-export type ShopItemKind = "heal" | "armor" | "weapon" | "buff";
+export type ShopItemKind = "weapon" | "buff";
 
 export interface ShopItem {
   id: string;
@@ -14,7 +14,6 @@ export interface ShopItem {
   description: string;
   price: number;
   purchased: boolean;
-  amount?: number;
   weaponId?: string;
   buffId?: BuffId;
   rarity?: WeaponRarity | BuffRarity;
@@ -23,8 +22,6 @@ export interface ShopItem {
 export type ShopPurchaseFailure =
   | "sold"
   | "coins"
-  | "full_hp"
-  | "full_armor"
   | "owned_weapon"
   | "owned_buff"
   | "buff_limit"
@@ -36,6 +33,9 @@ export interface ShopPurchaseResult {
   reason?: ShopPurchaseFailure;
   droppedWeaponId?: string;
 }
+
+const SHOP_STOCK_SIZE = 4;
+const BASE_BUFF_SLOTS = 2;
 
 const WEAPON_PRICE: Record<WeaponRarity, number> = {
   common: 28,
@@ -51,15 +51,73 @@ const BUFF_PRICE: Record<BuffRarity, number> = {
   legendary: 116,
 };
 
+// Shop talents remain broadly accessible while receiving a small high-tier bias.
+const SHOP_BUFF_RARITY_WEIGHT: Record<BuffRarity, number> = {
+  common: 1,
+  uncommon: 1.05,
+  rare: 1.2,
+  legendary: 1.15,
+};
+
 function stagePrice(base: number, stage: StageData, discount = 0): number {
   const multiplier = 1 + Math.max(0, stage.globalStageIndex - 1) * 0.07;
   const safeDiscount = Math.max(0, Math.min(0.5, discount));
   return Math.max(1, Math.round(base * multiplier * (1 - safeDiscount)));
 }
 
-function choose<T>(values: T[], random: () => number): T | undefined {
-  if (values.length === 0) return undefined;
-  return values[Math.min(values.length - 1, Math.floor(random() * values.length))];
+function rollBuff(candidates: BuffId[], random: () => number): BuffId | undefined {
+  if (candidates.length === 0) return undefined;
+  const total = candidates.reduce((sum, id) => sum + SHOP_BUFF_RARITY_WEIGHT[BUFFS[id].rarity], 0);
+  let roll = Math.max(0, Math.min(0.999999, random())) * total;
+  let selectedIndex = candidates.length - 1;
+  for (let index = 0; index < candidates.length; index++) {
+    roll -= SHOP_BUFF_RARITY_WEIGHT[BUFFS[candidates[index]].rarity];
+    if (roll <= 0) {
+      selectedIndex = index;
+      break;
+    }
+  }
+  return candidates.splice(selectedIndex, 1)[0];
+}
+
+function createWeaponItem(
+  seed: number,
+  slot: number,
+  weaponId: string,
+  stage: StageData,
+  discount: number,
+): ShopItem {
+  const weapon = WEAPONS[weaponId];
+  return {
+    id: `${seed}:weapon:${slot}:${weapon.id}`,
+    kind: "weapon",
+    name: weapon.name.toUpperCase(),
+    description: `${weapon.series ? `${weapon.series.toUpperCase()} ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}. ${weapon.mechanic}`,
+    price: stagePrice(WEAPON_PRICE[weapon.rarity], stage, discount),
+    weaponId: weapon.id,
+    rarity: weapon.rarity,
+    purchased: false,
+  };
+}
+
+function createBuffItem(
+  seed: number,
+  slot: number,
+  buffId: BuffId,
+  stage: StageData,
+  discount: number,
+): ShopItem {
+  const buff = BUFFS[buffId];
+  return {
+    id: `${seed}:buff:${slot}:${buff.id}`,
+    kind: "buff",
+    name: buff.name,
+    description: buff.description,
+    price: stagePrice(BUFF_PRICE[buff.rarity], stage, discount),
+    buffId,
+    rarity: buff.rarity,
+    purchased: false,
+  };
 }
 
 export class ShopSystem {
@@ -71,62 +129,49 @@ export class ShopSystem {
     const seed = ShopSystem.getSeed(stage, room);
     room.shopSeed = seed;
     const random = createSeededRandom(seed);
-    const supplyScale = 1 + Math.floor((stage.globalStageIndex - 1) / 5);
 
-    const ownedWeapons = new Set(player.weaponSlots.filter(Boolean));
-    const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", ownedWeapons);
-
+    const availableBuffSlots = Math.max(0, BuffSystem.MAX_BUFFS - player.buffs.length);
     const buffPool = (Object.keys(BUFFS) as BuffId[]).filter(id =>
       !player.buffs.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= stage.globalStageIndex
     );
-    const buffId = choose(buffPool, random);
+    const desiredBuffCount = Math.min(BASE_BUFF_SLOTS, availableBuffSlots, buffPool.length);
+    const desiredWeaponCount = SHOP_STOCK_SIZE - desiredBuffCount;
 
-    const stock: ShopItem[] = [
-      {
-        id: `${seed}:heal`,
-        kind: "heal",
-        name: "FIELD MEDKIT",
-        description: `Restore ${2 + supplyScale} HP.`,
-        price: stagePrice(14, stage, player.shopDiscount),
-        amount: 2 + supplyScale,
-        purchased: false,
-      },
-      {
-        id: `${seed}:armor`,
-        kind: "armor",
-        name: "ARMOR PATCH",
-        description: `Restore ${2 + supplyScale} Armor.`,
-        price: stagePrice(16, stage, player.shopDiscount),
-        amount: 2 + supplyScale,
-        purchased: false,
-      },
-      {
-        id: `${seed}:weapon:${weapon.id}`,
-        kind: "weapon",
-        name: weapon.name.toUpperCase(),
-        description: `${weapon.series ? `${weapon.series.toUpperCase()} ` : ""}${weapon.rarity.toUpperCase()} ${weapon.category.toUpperCase()}. ${weapon.mechanic}`,
-        price: stagePrice(WEAPON_PRICE[weapon.rarity], stage, player.shopDiscount),
-        weaponId: weapon.id,
-        rarity: weapon.rarity,
-        purchased: false,
-      },
-    ];
-
-    if (buffId && player.buffs.length < BuffSystem.MAX_BUFFS) {
-      const buff = BUFFS[buffId];
-      stock.push({
-        id: `${seed}:buff:${buff.id}`,
-        kind: "buff",
-        name: buff.name,
-        description: buff.description,
-        price: stagePrice(BUFF_PRICE[buff.rarity], stage, player.shopDiscount),
-        buffId,
-        rarity: buff.rarity,
-        purchased: false,
-      });
+    const weaponItems: ShopItem[] = [];
+    const excludedWeapons = new Set(player.weaponSlots.filter((id): id is string => Boolean(id)));
+    for (let slot = 0; slot < desiredWeaponCount && excludedWeapons.size < Object.keys(WEAPONS).length; slot++) {
+      const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons);
+      if (excludedWeapons.has(weapon.id)) break;
+      excludedWeapons.add(weapon.id);
+      weaponItems.push(createWeaponItem(seed, slot, weapon.id, stage, player.shopDiscount));
     }
 
-    return stock;
+    const buffItems: ShopItem[] = [];
+    for (let slot = 0; slot < desiredBuffCount; slot++) {
+      const buffId = rollBuff(buffPool, random);
+      if (!buffId) break;
+      buffItems.push(createBuffItem(seed, slot, buffId, stage, player.shopDiscount));
+    }
+
+    // Interleave the two item classes so the four-card layout is easy to scan.
+    const stock: ShopItem[] = [];
+    const rows = Math.max(weaponItems.length, buffItems.length);
+    for (let index = 0; index < rows && stock.length < SHOP_STOCK_SIZE; index++) {
+      if (weaponItems[index]) stock.push(weaponItems[index]);
+      if (buffItems[index] && stock.length < SHOP_STOCK_SIZE) stock.push(buffItems[index]);
+    }
+
+    // Weapon stock is the fallback whenever there are too few eligible talents.
+    while (stock.length < SHOP_STOCK_SIZE && excludedWeapons.size < Object.keys(WEAPONS).length) {
+      const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons);
+      if (excludedWeapons.has(weapon.id)) break;
+      excludedWeapons.add(weapon.id);
+      const item = createWeaponItem(seed, weaponItems.length, weapon.id, stage, player.shopDiscount);
+      weaponItems.push(item);
+      stock.push(item);
+    }
+
+    return stock.slice(0, SHOP_STOCK_SIZE);
   }
 
   static reconcileStock(
@@ -137,30 +182,42 @@ export class ShopSystem {
     const existing = ShopSystem.normalizeStock(room.shopStock);
     if (!existing) return ShopSystem.generateStock(stage, room, player);
 
-    const replacements = ShopSystem.generateStock(stage, room, player);
-    const replacementByKind = new Map(replacements.map(item => [item.kind, item]));
+    const generated = ShopSystem.generateStock(stage, room, player);
     const reconciled: ShopItem[] = [];
-    for (const item of existing) {
-      if (item.purchased) {
-        reconciled.push(item);
-        continue;
-      }
+    const retainedIds = new Set<string>();
+    const retainedWeaponIds = new Set<string>();
+    const retainedBuffIds = new Set<BuffId>();
 
-      const invalidBuff = item.kind === "buff" && (
+    for (const item of existing) {
+      if (retainedIds.has(item.id)) continue;
+      if (item.weaponId && retainedWeaponIds.has(item.weaponId)) continue;
+      if (item.buffId && retainedBuffIds.has(item.buffId)) continue;
+      const invalidBuff = item.kind === "buff" && !item.purchased && (
         !item.buffId || player.buffs.includes(item.buffId) || player.buffs.length >= BuffSystem.MAX_BUFFS
       );
-      const invalidWeapon = item.kind === "weapon" && (
+      const invalidWeapon = item.kind === "weapon" && !item.purchased && (
         !item.weaponId || player.weaponSlots.includes(item.weaponId)
       );
-      if (!invalidBuff && !invalidWeapon) {
-        reconciled.push(item);
-        continue;
-      }
-
-      const replacement = replacementByKind.get(item.kind);
-      if (replacement) reconciled.push(replacement);
+      if (invalidBuff || invalidWeapon) continue;
+      retainedIds.add(item.id);
+      if (item.weaponId) retainedWeaponIds.add(item.weaponId);
+      if (item.buffId) retainedBuffIds.add(item.buffId);
+      reconciled.push(item);
+      if (reconciled.length >= SHOP_STOCK_SIZE) break;
     }
-    return ShopSystem.normalizeStock(reconciled.slice(0, 4)) ?? [];
+
+    for (const item of generated) {
+      if (reconciled.length >= SHOP_STOCK_SIZE) break;
+      if (retainedIds.has(item.id)) continue;
+      if (item.weaponId && retainedWeaponIds.has(item.weaponId)) continue;
+      if (item.buffId && retainedBuffIds.has(item.buffId)) continue;
+      retainedIds.add(item.id);
+      if (item.weaponId) retainedWeaponIds.add(item.weaponId);
+      if (item.buffId) retainedBuffIds.add(item.buffId);
+      reconciled.push(item);
+    }
+
+    return ShopSystem.normalizeStock(reconciled) ?? generated;
   }
 
   static normalizeStock(value: unknown): ShopItem[] | undefined {
@@ -168,11 +225,15 @@ export class ShopSystem {
     const normalized: ShopItem[] = [];
     for (const raw of value) {
       if (!raw || typeof raw !== "object") continue;
-      const item = raw as Partial<ShopItem>;
+      const item = raw as Partial<ShopItem> & { kind?: string };
       if (!item.id || !item.kind || !item.name || !Number.isFinite(Number(item.price))) continue;
-      if (!["heal", "armor", "weapon", "buff"].includes(item.kind)) continue;
+      // Legacy healing, armor and energy stock is intentionally discarded.
+      if (item.kind !== "weapon" && item.kind !== "buff") continue;
       if (item.kind === "weapon" && (!item.weaponId || !(item.weaponId in WEAPONS))) continue;
       if (item.kind === "buff" && (!item.buffId || !(item.buffId in BUFFS))) continue;
+      const rarity = item.kind === "weapon"
+        ? WEAPONS[item.weaponId!].rarity
+        : BUFFS[item.buffId!].rarity;
       normalized.push({
         id: String(item.id),
         kind: item.kind,
@@ -180,13 +241,12 @@ export class ShopSystem {
         description: String(item.description ?? ""),
         price: Math.max(0, Math.floor(Number(item.price))),
         purchased: item.purchased === true,
-        amount: Number.isFinite(Number(item.amount)) ? Math.max(0, Number(item.amount)) : undefined,
         weaponId: item.weaponId,
         buffId: item.buffId,
-        rarity: item.rarity,
+        rarity,
       });
     }
-    return normalized.length > 0 ? normalized.slice(0, 4) : undefined;
+    return normalized.length > 0 ? normalized.slice(0, SHOP_STOCK_SIZE) : undefined;
   }
 
   static purchase(player: Player, item: ShopItem, coins: number): ShopPurchaseResult {
@@ -194,13 +254,7 @@ export class ShopSystem {
     if (coins < item.price) return { success: false, coinsAfter: coins, reason: "coins" };
 
     let droppedWeaponId: string | undefined;
-    if (item.kind === "heal") {
-      if (player.hp >= player.maxHp) return { success: false, coinsAfter: coins, reason: "full_hp" };
-      player.hp = Math.min(player.maxHp, player.hp + (item.amount ?? 0));
-    } else if (item.kind === "armor") {
-      if (player.armor >= player.maxArmor) return { success: false, coinsAfter: coins, reason: "full_armor" };
-      player.armor = Math.min(player.maxArmor, player.armor + (item.amount ?? 0));
-    } else if (item.kind === "weapon") {
+    if (item.kind === "weapon") {
       if (!item.weaponId || !(item.weaponId in WEAPONS)) {
         return { success: false, coinsAfter: coins, reason: "invalid" };
       }

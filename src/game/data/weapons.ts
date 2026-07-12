@@ -441,7 +441,7 @@ export function getAvailableWeapons(_globalStageIndex = 1): WeaponData[] {
 export type WeaponRollContext = "shop" | "treasure" | "boss";
 
 const WEAPON_ROLL_WEIGHTS: Record<WeaponRollContext, Record<WeaponRarity, number>> = {
-  shop: { common: 5, uncommon: 3.2, rare: 1.35, legendary: 0.38 },
+  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.48 },
   treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.72 },
   boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 3.2 },
 };
