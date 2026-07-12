@@ -8,7 +8,7 @@ import {
   calculateExplosionFalloff,
   rotateVelocityToward,
 } from "../src/game/combat/ProjectileEffects";
-import { WEAPONS, rollAvailableWeapon, type ProjectileStyle, type WeaponRollContext } from "../src/game/data/weapons";
+import { WEAPONS, getAvailableWeapons, rollAvailableWeapon, type ProjectileStyle, type WeaponRollContext } from "../src/game/data/weapons";
 import { DungeonState } from "../src/game/states/DungeonState";
 import { Enemy } from "../src/game/entities/Enemy";
 import { acquireProjectile, releaseProjectile } from "../src/game/EntityPools";
@@ -39,18 +39,68 @@ const createRandom = (seed: number) => {
     return state / 0x100000000;
   };
 };
-const sampleHighTierRate = (context: WeaponRollContext) => {
-  const random = createRandom(context === "shop" ? 17 : 31);
-  let highTier = 0;
-  const samples = 4000;
+const sampleRarityRates = (context: WeaponRollContext) => {
+  const random = createRandom(context === "shop" ? 17 : context === "treasure" ? 31 : 47);
+  const counts = { common: 0, uncommon: 0, rare: 0, legendary: 0 };
+  const samples = 12000;
   for (let index = 0; index < samples; index++) {
-    const rarity = rollAvailableWeapon(20, random, context).rarity;
-    if (rarity === "rare" || rarity === "legendary") highTier++;
+    counts[rollAvailableWeapon(1, random, context).rarity]++;
   }
-  return highTier / samples;
+  return {
+    highTier: (counts.rare + counts.legendary) / samples,
+    legendary: counts.legendary / samples,
+  };
 };
-assert.ok(sampleHighTierRate("treasure") > sampleHighTierRate("shop"));
-assert.equal(rollAvailableWeapon(5, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
+const shopRates = sampleRarityRates("shop");
+const treasureRates = sampleRarityRates("treasure");
+const bossRates = sampleRarityRates("boss");
+assert.ok(treasureRates.highTier > shopRates.highTier);
+assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.highTier}`);
+assert.ok(bossRates.legendary >= 0.24, `Boss chest legendary rate ${bossRates.legendary}`);
+assert.ok(bossRates.highTier > treasureRates.highTier);
+assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 6);
+assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
+
+
+const bossRoom = {
+  id: "boss-reward-test",
+  x: 0,
+  y: 0,
+  type: "boss",
+  templateId: "boss_arena",
+  encounterSeed: 0xB055,
+  cleared: true,
+  combatCleared: true,
+  rewardGenerated: true,
+  interactionCompleted: false,
+  doors: { up: false, down: false, left: true, right: false },
+  pickups: [],
+  enemies: [],
+} as any;
+const chestEngine = {
+  data: {
+    data: {
+      floor: { globalStageIndex: 1, seed: 0xCAFE, rooms: [bossRoom], currentRoomX: 0, currentRoomY: 0 },
+    },
+  },
+} as any;
+const chestDungeon = new DungeonState(chestEngine) as any;
+chestDungeon.currentMapData = Array.from({ length: 20 * 15 }, () => 0);
+chestDungeon.player.setWeaponLoadout(["pistol", "laser"], 0);
+const bossChest = chestDungeon.createOrRestoreWeaponChest(bossRoom, "boss");
+assert.equal(bossChest.kind, "boss");
+assert.ok(bossChest.weaponId in WEAPONS);
+assert.notEqual(bossChest.weaponId, "pistol");
+assert.notEqual(bossChest.weaponId, "laser");
+assert.deepEqual(bossRoom.weaponChest, bossChest);
+const storedBossWeapon = bossChest.weaponId;
+chestDungeon.player.setWeaponLoadout(["void_rail", "siege_breaker"], 0);
+assert.equal(
+  chestDungeon.createOrRestoreWeaponChest(bossRoom, "boss").weaponId,
+  storedBossWeapon,
+  "persisted Boss chest content must not reroll after reload or loadout changes",
+);
 
 const player = new Player(160, 120);
 player.mana = 100;
@@ -169,6 +219,10 @@ console.log(JSON.stringify({
   accelerationAndDrag: "ok",
   chainLightning: "ok",
   radialExplosion: "ok",
+  allStageWeaponPool: getAvailableWeapons(1).length,
+  bossHighTierRate: Number(bossRates.highTier.toFixed(3)),
+  bossLegendaryRate: Number(bossRates.legendary.toFixed(3)),
+  bossChestPersistence: "ok",
   weightedDrops: "ok",
   weaponAudio: "ok",
   dedicatedRendering: "ok",

@@ -49,6 +49,13 @@ import { getEnemyDefinition } from "../data/enemies";
 import { t, uiFont } from "../i18n";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
+type WeaponChest = {
+  kind: "treasure" | "boss";
+  x: number;
+  y: number;
+  weaponId: string;
+  opened: boolean;
+};
 
 import { GameState } from "./GameState";
 export class DungeonState extends GameState {
@@ -60,7 +67,7 @@ export class DungeonState extends GameState {
   private enemies: Enemy[] = [];
   private pickups: Pickup[] = [];
   
-  private chest: { x: number, y: number, weaponId: string, opened: boolean } | null = null;
+  private chest: WeaponChest | null = null;
   
   private portal?: { x: number, y: number, state: PortalState, timer: number };
   
@@ -219,6 +226,7 @@ export class DungeonState extends GameState {
         weaponId: p.weaponId,
         blockedUntilPlayerLeaves: p.blockedUntilPlayerLeaves,
       }));
+      if (this.chest) r.weaponChest = { ...this.chest };
       if (isCombatRoom(r) && !isCombatCleared(r)) {
         r.enemies = this.enemies.map(e => ({
           x: e.x,
@@ -245,6 +253,39 @@ export class DungeonState extends GameState {
         r.encounterState = undefined;
       }
     }
+  }
+
+  private createOrRestoreWeaponChest(room: Room, kind: WeaponChest["kind"]): WeaponChest {
+    if (room.weaponChest && room.weaponChest.kind === kind) {
+      const restored = { ...room.weaponChest };
+      this.moveToNearestPassable(restored, 6);
+      room.weaponChest = { ...restored };
+      return restored;
+    }
+
+    const floor = this.engine.data.data.floor;
+    const template = getRoomTemplate(room);
+    const seedLabel = kind === "boss" ? "boss-weapon-chest" : "treasure-weapon";
+    const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, seedLabel));
+    const excluded = this.player.weaponSlots.filter((id): id is string => typeof id === "string");
+    const weapon = rollAvailableWeapon(floor.globalStageIndex, random, kind === "boss" ? "boss" : "treasure", excluded);
+
+    let x: number;
+    let y: number;
+    if (kind === "boss") {
+      const portalPoint = template.portalSpawnPoint ?? { x: 10, y: 7.5 };
+      x = portalPoint.x * 16 + 8 - 48;
+      y = portalPoint.y * 16 + 8;
+    } else {
+      const point = template.pickupSpawnPoints[0] ?? { x: 10, y: 7.5 };
+      x = point.x * 16 + 8;
+      y = point.y * 16 + 8;
+    }
+
+    const chest: WeaponChest = { kind, x, y, weaponId: weapon.id, opened: false };
+    this.moveToNearestPassable(chest, 6);
+    room.weaponChest = { ...chest };
+    return chest;
   }
 
   private loadRoom() {
@@ -315,11 +356,7 @@ export class DungeonState extends GameState {
 
     if (currentRoom.type === "treasure") {
       if (!currentRoom.interactionCompleted) {
-        const pts = template.pickupSpawnPoints;
-        const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-        const random = createSeededRandom(hashSeed(currentRoom.encounterSeed ?? floor.seed, "treasure-weapon"));
-        const weapon = rollAvailableWeapon(floor.globalStageIndex, random, "treasure", ["pistol"]);
-        this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: weapon.id, opened: false };
+        this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
       }
       this.setPhase("exploration");
       return;
@@ -357,6 +394,9 @@ export class DungeonState extends GameState {
             state: "idle",
             timer: 0
           };
+          if (!currentRoom.interactionCompleted) {
+            this.chest = this.createOrRestoreWeaponChest(currentRoom, "boss");
+          }
         }
 
         this.setPhase("exploration");
@@ -607,8 +647,9 @@ export class DungeonState extends GameState {
        if (template.portalSpawnPoint) {
          this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8, state: "spawning", timer: 0.6 };
        }
-       this.pickups.push(acquirePickup(160, 120, "hp", Math.round(20 * difficulty.rewardMultiplier)));
-       this.pickups.push(acquirePickup(140, 120, "coin", Math.round(50 * difficulty.rewardMultiplier)));
+       this.chest = this.createOrRestoreWeaponChest(currentRoom, "boss");
+       this.pickups.push(acquirePickup(216, 120, "hp", Math.round(20 * difficulty.rewardMultiplier)));
+       this.pickups.push(acquirePickup(152, 120, "coin", Math.round(50 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "combat") {
        this.pickups.push(acquirePickup(
          160,
@@ -618,11 +659,7 @@ export class DungeonState extends GameState {
        ));
        this.pickups.push(acquirePickup(150, 110, "coin", Math.round(20 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "treasure") {
-       const pts = template.pickupSpawnPoints;
-       const pt = pts.length > 0 ? pts[0] : { x: 10, y: 7.5 };
-       const random = createSeededRandom(hashSeed(currentRoom.encounterSeed ?? floor.seed, "treasure-weapon"));
-       const weapon = rollAvailableWeapon(floor.globalStageIndex, random, "treasure", ["pistol"]);
-       this.chest = { x: pt.x * 16 + 8, y: pt.y * 16 + 8, weaponId: weapon.id, opened: false };
+       this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
     }
     
     // Animate pickups (pop out)
@@ -633,6 +670,9 @@ export class DungeonState extends GameState {
       }
     }
     currentRoom.rewardGenerated = true;
+    this.syncPlayerState();
+    this.syncRoomState();
+    this.engine.data.save();
   }
 
   private syncMusicScene() {
@@ -1146,9 +1186,13 @@ export class DungeonState extends GameState {
        if (currentRoom) {
           currentRoom.interactionCompleted = true;
           currentRoom.rewardGenerated = true;
+          currentRoom.weaponChest = { ...this.chest };
        }
        this.pickups.push(acquirePickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
        this.engine.data.discoverWeapon(this.chest.weaponId);
+       this.syncPlayerState();
+       this.syncRoomState();
+       this.engine.data.save();
     } else if (target.type === "shop") {
        this.shopOpen = true;
        this.shopSelectionIndex = 0;
@@ -2172,10 +2216,15 @@ export class DungeonState extends GameState {
     }
 
     if (this.chest) {
-       ctx.fillStyle = this.chest.opened ? "#7f8c8d" : "#f1c40f";
-       ctx.fillRect(this.chest.x - 8, this.chest.y - 8, 16, 12);
-       ctx.fillStyle = "#e67e22";
-       ctx.fillRect(this.chest.x - 8, this.chest.y - 8, 16, 4);
+       const bossChest = this.chest.kind === "boss";
+       ctx.fillStyle = this.chest.opened ? "#7f8c8d" : bossChest ? "#8E44AD" : "#f1c40f";
+       ctx.fillRect(this.chest.x - 9, this.chest.y - 8, 18, 13);
+       ctx.fillStyle = this.chest.opened ? "#566573" : bossChest ? "#F9E79F" : "#e67e22";
+       ctx.fillRect(this.chest.x - 9, this.chest.y - 8, 18, 4);
+       if (bossChest && !this.chest.opened) {
+         ctx.fillStyle = "#00F2FE";
+         ctx.fillRect(this.chest.x - 2, this.chest.y - 2, 4, 4);
+       }
     }
 
     if (currentRoom?.type === "shop") {

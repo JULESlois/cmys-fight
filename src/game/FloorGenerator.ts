@@ -24,6 +24,13 @@ export interface Room {
   combatCleared?: boolean;
   rewardGenerated?: boolean;
   interactionCompleted?: boolean;
+  weaponChest?: {
+    kind: "treasure" | "boss";
+    x: number;
+    y: number;
+    weaponId: string;
+    opened: boolean;
+  };
   templateId?: string;
   visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };

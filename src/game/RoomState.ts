@@ -33,6 +33,11 @@ export function normalizeRoomState(room: Room): Room {
   room.cleared = combatCleared;
   room.rewardGenerated ??= false;
   room.interactionCompleted ??= false;
+  if (room.weaponChest) {
+    room.weaponChest.kind = room.weaponChest.kind === "boss" ? "boss" : "treasure";
+    room.weaponChest.opened = room.interactionCompleted || room.weaponChest.opened === true;
+    if (room.weaponChest.opened) room.interactionCompleted = true;
+  }
   room.enemies ??= [];
   room.pickups ??= [];
 

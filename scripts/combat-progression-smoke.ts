@@ -89,8 +89,12 @@ assert.equal(legendaryWeapons.length, 6);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "phoenix").length, 2);
-assert.equal(getAvailableWeapons(6).some(weapon => weapon.rarity === "legendary"), false);
-assert.equal(getAvailableWeapons(20).filter(weapon => weapon.rarity === "legendary").length, 6);
+assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 6);
+assert.deepEqual(
+  getAvailableWeapons(1).map(weapon => weapon.id),
+  getAvailableWeapons(20).map(weapon => weapon.id),
+);
 assert.ok(WEAPONS.void_rail.damage > WEAPONS.laser.damage * 2);
 assert.ok(WEAPONS.dragon_breath.pelletCount > WEAPONS.shotgun.pelletCount * 2);
 
@@ -127,7 +131,9 @@ const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf
 const spriteSource = fs.readFileSync("src/game/data/sprites.ts", "utf8");
 assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput/);
 assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
-assert.match(dungeonSource, /rollAvailableWeapon\(floor\.globalStageIndex, random, "treasure"/);
+assert.match(dungeonSource, /kind === "boss" \? "boss" : "treasure"/);
+assert.match(dungeonSource, /createOrRestoreWeaponChest\(currentRoom, "boss"\)/);
+assert.match(dungeonSource, /currentRoom\.weaponChest = \{ \.\.\.this\.chest \}/);
 assert.match(rendererSource, /enemy\.isElite \? 1\.62 : 1\.42/);
 assert.match(rendererSource, /enemy\.type === "boss"\) scale = 2\.15/);
 for (const weapon of legendaryWeapons) {
@@ -143,5 +149,6 @@ console.log(JSON.stringify({
   legendaryWeapons: legendaryWeapons.length,
   legendaryTalents: legendaryBuffs.length,
   powerSeries: 3,
-  stageGating: "ok",
+  allStageWeaponPool: "ok",
+  bossWeaponChest: "ok",
 }));

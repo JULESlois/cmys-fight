@@ -58,7 +58,6 @@ export interface WeaponData {
   statusEffect?: StatusEffectId;
   statusDuration?: number;
   series?: PowerSeries;
-  minGlobalStage?: number;
   mechanic: string;
   projectileStyle: ProjectileStyle;
   trailLength?: number;
@@ -101,7 +100,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "laser", name: "Energy Blaster", category: "energy", rarity: "rare",
     damage: 5, fireRate: 4.2, bulletSpeed: 300, manaCost: 1, spread: 0,
     pelletCount: 1, knockback: 3, critChance: 0.12, color: "#00F2FE",
-    mechanic: "Fast coherent beam with a long luminous trace.", projectileStyle: "beam", minGlobalStage: 5,
+    mechanic: "Fast coherent beam with a long luminous trace.", projectileStyle: "beam",
     trailLength: 34, beamWidth: 2, muzzleEffect: "beam", impactEffect: "plasma",
     renderOffsetX: 11, renderOffsetY: -2, muzzleOffsetX: 20, muzzleOffsetY: -4,
   },
@@ -109,7 +108,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "bell_repeater", name: "Ding-Dong Repeater", category: "rifle", rarity: "common",
     damage: 2, fireRate: 6.2, bulletSpeed: 185, manaCost: 1, spread: 0.14,
     pelletCount: 1, knockback: 2, critChance: 0.07, color: "#F1C40F",
-    projectileLife: 1.45, minGlobalStage: 2,
+    projectileLife: 1.45,
     mechanic: "Rapid ringing tracer rounds.", projectileStyle: "tracer", trailLength: 15,
     renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
   },
@@ -117,7 +116,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "mask_sprayer", name: "Mask Sprayer", category: "shotgun", rarity: "uncommon",
     damage: 1, fireRate: 2, bulletSpeed: 110, manaCost: 2, spread: 0.72,
     pelletCount: 8, knockback: 4, critChance: 0.03, color: "#ECF0F1",
-    projectileLife: 1.05, statusEffect: "slow", statusDuration: 1.2, minGlobalStage: 3,
+    projectileLife: 1.05, statusEffect: "slow", statusDuration: 1.2,
     mechanic: "Short-lived freezing particulate spray.", projectileStyle: "flame",
     drag: 1.5, muzzleEffect: "smoke", impactEffect: "plasma",
     renderOffsetX: 11, renderOffsetY: -1, muzzleOffsetX: 20, muzzleOffsetY: -4,
@@ -126,7 +125,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "code_scanner", name: "Code Scanner", category: "energy", rarity: "rare",
     damage: 5, fireRate: 2.8, bulletSpeed: 275, manaCost: 2, spread: 0.02,
     pelletCount: 1, knockback: 3, critChance: 0.14, color: "#2ECC71",
-    pierce: 2, projectileLife: 2.3, minGlobalStage: 6,
+    pierce: 2, projectileLife: 2.3,
     mechanic: "Scanning beam penetrates multiple targets.", projectileStyle: "beam",
     trailLength: 28, beamWidth: 1, muzzleEffect: "beam", impactEffect: "plasma",
     renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
@@ -135,7 +134,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "swab_lance", name: "Swab Lance", category: "launcher", rarity: "uncommon",
     damage: 12, fireRate: 0.95, bulletSpeed: 128, manaCost: 3, spread: 0.04,
     pelletCount: 1, knockback: 13, critChance: 0.1, color: "#D6EAF8",
-    projectileRadius: 4, projectileLife: 2.8, pierce: 1, minGlobalStage: 4,
+    projectileRadius: 4, projectileLife: 2.8, pierce: 1,
     mechanic: "Heavy lance accelerates after leaving the barrel.", projectileStyle: "tracer",
     trailLength: 18, acceleration: 75, muzzleEffect: "smoke", recoil: 1.25,
     renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
@@ -145,7 +144,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     damage: 5, fireRate: 1.2, bulletSpeed: 145, manaCost: 4, spread: 0.24,
     pelletCount: 3, knockback: 10, critChance: 0.08, color: "#FF8A65",
     projectileRadius: 4, projectileLife: 2.6, wallBounces: 1,
-    statusEffect: "burn", statusDuration: 2.1, minGlobalStage: 7,
+    statusEffect: "burn", statusDuration: 2.1,
     mechanic: "Three bouncing incendiary plasma shells.", projectileStyle: "plasma",
     trailLength: 10, spinRate: 7, muzzleEffect: "rocket", impactEffect: "flame", recoil: 1.4,
     renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
@@ -155,7 +154,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "service_revolver", name: "Service Revolver", category: "sidearm", rarity: "uncommon",
     damage: 6, fireRate: 1.55, bulletSpeed: 205, manaCost: 0, spread: 0.035,
     pelletCount: 1, knockback: 8, critChance: 0.18, critMultiplier: 2.25, color: "#F5C16C",
-    projectileLife: 2.1, minGlobalStage: 2,
+    projectileLife: 2.1,
     mechanic: "Zero-energy heavy round with strong critical hits.", projectileStyle: "bullet",
     trailLength: 8, muzzleEffect: "smoke", recoil: 0.9,
     renderOffsetX: 12, renderOffsetY: -2, muzzleOffsetX: 22, muzzleOffsetY: -4,
@@ -164,7 +163,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "nail_driver", name: "Nail Driver", category: "smg", rarity: "common",
     damage: 1, fireRate: 8, bulletSpeed: 175, manaCost: 0, spread: 0.12,
     pelletCount: 1, knockback: 3, critChance: 0.06, color: "#C7D3DD",
-    pierce: 1, projectileLife: 1.7, minGlobalStage: 3,
+    pierce: 1, projectileLife: 1.7,
     mechanic: "Free rapid nails that penetrate one target.", projectileStyle: "tracer", trailLength: 9,
     renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
   },
@@ -172,7 +171,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "liberator", name: "Liberator Pistol", category: "sidearm", rarity: "uncommon",
     damage: 13, fireRate: 0.5, bulletSpeed: 180, manaCost: 0, spread: 0.16,
     pelletCount: 1, knockback: 12, critChance: 0.3, critMultiplier: 2.5, color: "#D8C6A1",
-    projectileLife: 2.25, minGlobalStage: 4,
+    projectileLife: 2.25,
     mechanic: "Crude single-shot pistol: slow, inaccurate and brutally strong.", projectileStyle: "bullet",
     trailLength: 12, muzzleEffect: "smoke", recoil: 1.6,
     renderOffsetX: 11, renderOffsetY: -1, muzzleOffsetX: 20, muzzleOffsetY: -4,
@@ -181,7 +180,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "vector_9", name: "Vector-9", category: "smg", rarity: "rare",
     damage: 1, fireRate: 10, bulletSpeed: 220, manaCost: 0, spread: 0.16,
     pelletCount: 1, knockback: 1, critChance: 0.05, color: "#79D7FF",
-    projectileLife: 1.35, minGlobalStage: 5,
+    projectileLife: 1.35,
     mechanic: "Zero-energy hyper-burst SMG: extreme rate, low per-shot damage.", projectileStyle: "tracer",
     trailLength: 17, muzzleEffect: "flash", recoil: 0.15,
     renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 24, muzzleOffsetY: -4,
@@ -190,7 +189,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "plasma_caster", name: "Plasma Caster", category: "energy", rarity: "rare",
     damage: 7, fireRate: 2.2, bulletSpeed: 145, manaCost: 2, spread: 0.05,
     pelletCount: 1, knockback: 6, critChance: 0.1, color: "#7DFFB3",
-    projectileRadius: 4, projectileLife: 2.5, minGlobalStage: 6,
+    projectileRadius: 4, projectileLife: 2.5,
     mechanic: "Slow plasma sphere bends toward nearby enemies.", projectileStyle: "plasma",
     homingStrength: 2.8, trailLength: 10, muzzleEffect: "electric", impactEffect: "plasma",
     renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
@@ -199,7 +198,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "tesla_carbine", name: "Tesla Carbine", category: "special", rarity: "rare",
     damage: 5, fireRate: 3, bulletSpeed: 245, manaCost: 3, spread: 0.03,
     pelletCount: 1, knockback: 3, critChance: 0.12, color: "#8DF6FF",
-    projectileLife: 1.9, minGlobalStage: 7,
+    projectileLife: 1.9,
     mechanic: "Lightning bolt chains through two nearby targets.", projectileStyle: "lightning",
     trailLength: 24, chainCount: 2, chainRange: 58, chainDamageMultiplier: 0.72,
     muzzleEffect: "electric", impactEffect: "electric",
@@ -209,7 +208,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "ripper_disc", name: "Ripper Disc", category: "special", rarity: "rare",
     damage: 6, fireRate: 2, bulletSpeed: 165, manaCost: 3, spread: 0.02,
     pelletCount: 1, knockback: 7, critChance: 0.14, color: "#FF6B9A",
-    projectileRadius: 5, projectileLife: 3.2, pierce: 2, wallBounces: 3, minGlobalStage: 8,
+    projectileRadius: 5, projectileLife: 3.2, pierce: 2, wallBounces: 3,
     mechanic: "Spinning disc pierces enemies and ricochets three times.", projectileStyle: "disc",
     spinRate: 16, trailLength: 8, impactEffect: "slash",
     renderOffsetX: 11, renderOffsetY: -1, muzzleOffsetX: 20, muzzleOffsetY: -4,
@@ -218,7 +217,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "micro_rocket", name: "Micro-Rocket Pod", category: "launcher", rarity: "rare",
     damage: 10, fireRate: 1.25, bulletSpeed: 118, manaCost: 4, spread: 0.06,
     pelletCount: 1, knockback: 12, critChance: 0.1, color: "#FFB36B",
-    projectileRadius: 4, projectileLife: 3, minGlobalStage: 10,
+    projectileRadius: 4, projectileLife: 3,
     mechanic: "Homing rocket detonates in a damaging blast.", projectileStyle: "rocket",
     homingStrength: 1.45, acceleration: 42, explosionRadius: 30, explosionDamageMultiplier: 0.8,
     muzzleEffect: "rocket", impactEffect: "explosion", recoil: 1.2,
@@ -229,7 +228,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "kingmaker", name: "Kingmaker", category: "sidearm", rarity: "legendary",
     damage: 7, fireRate: 3, bulletSpeed: 225, manaCost: 2, spread: 0.04,
     pelletCount: 1, knockback: 7, critChance: 0.3, critMultiplier: 2.25, color: "#F9E79F",
-    pierce: 1, projectileLife: 2.2, series: "vanguard", minGlobalStage: 7,
+    pierce: 1, projectileLife: 2.2, series: "vanguard",
     mechanic: "Royal high-caliber beam round pierces one target.", projectileStyle: "tracer",
     trailLength: 20, muzzleEffect: "smoke", recoil: 0.85,
     renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
@@ -238,7 +237,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "storm_repeater", name: "Storm Repeater", category: "rifle", rarity: "legendary",
     damage: 3, fireRate: 4.5, bulletSpeed: 230, manaCost: 3, spread: 0.18,
     pelletCount: 2, knockback: 4, critChance: 0.14, color: "#F4D03F",
-    wallBounces: 1, projectileLife: 1.9, series: "vanguard", minGlobalStage: 9,
+    wallBounces: 1, projectileLife: 1.9, series: "vanguard",
     mechanic: "Twin storm tracers ricochet from walls.", projectileStyle: "lightning",
     trailLength: 20, muzzleEffect: "electric", impactEffect: "electric",
     renderOffsetX: 13, renderOffsetY: -1, muzzleOffsetX: 23, muzzleOffsetY: -4,
@@ -247,7 +246,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "starfall_array", name: "Starfall Array", category: "energy", rarity: "legendary",
     damage: 3, fireRate: 1.8, bulletSpeed: 245, manaCost: 5, spread: 0.48,
     pelletCount: 5, knockback: 4, critChance: 0.15, color: "#AF7AC5",
-    pierce: 1, projectileLife: 2.15, series: "aether", minGlobalStage: 10,
+    pierce: 1, projectileLife: 2.15, series: "aether",
     mechanic: "Five homing star-plasma shards spread across the room.", projectileStyle: "plasma",
     homingStrength: 1.25, trailLength: 14, spinRate: 5, muzzleEffect: "electric", impactEffect: "plasma",
     renderOffsetX: 12, renderOffsetY: -1, muzzleOffsetX: 22, muzzleOffsetY: -4,
@@ -256,7 +255,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     id: "void_rail", name: "Void Rail", category: "energy", rarity: "legendary",
     damage: 18, fireRate: 0.9, bulletSpeed: 360, manaCost: 7, spread: 0,
     pelletCount: 1, knockback: 16, critChance: 0.25, color: "#BB8FCE",
-    projectileRadius: 3, pierce: 5, projectileLife: 2.8, series: "aether", minGlobalStage: 12,
+    projectileRadius: 3, pierce: 5, projectileLife: 2.8, series: "aether",
     mechanic: "Room-cutting rail beam penetrates six targets.", projectileStyle: "beam",
     trailLength: 54, beamWidth: 3, muzzleEffect: "beam", impactEffect: "plasma", recoil: 1.5,
     renderOffsetX: 15, renderOffsetY: -1, muzzleOffsetX: 27, muzzleOffsetY: -4,
@@ -266,7 +265,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     damage: 2, fireRate: 1.1, bulletSpeed: 138, manaCost: 6, spread: 0.86,
     pelletCount: 12, knockback: 7, critChance: 0.08, color: "#FF7043",
     projectileLife: 1.15, statusEffect: "burn", statusDuration: 2.8,
-    series: "phoenix", minGlobalStage: 14,
+    series: "phoenix",
     mechanic: "Twelve-particle incendiary flame cone.", projectileStyle: "flame",
     drag: 1.25, muzzleEffect: "flame", impactEffect: "flame", recoil: 1.2,
     renderOffsetX: 14, renderOffsetY: -1, muzzleOffsetX: 25, muzzleOffsetY: -4,
@@ -276,7 +275,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     damage: 24, fireRate: 0.6, bulletSpeed: 112, manaCost: 8, spread: 0.02,
     pelletCount: 1, knockback: 20, critChance: 0.18, color: "#FF8C69",
     projectileRadius: 5, projectileLife: 3, wallBounces: 1,
-    statusEffect: "burn", statusDuration: 3, series: "phoenix", minGlobalStage: 16,
+    statusEffect: "burn", statusDuration: 3, series: "phoenix",
     mechanic: "Massive bouncing siege rocket explodes on impact.", projectileStyle: "rocket",
     explosionRadius: 40, explosionDamageMultiplier: 0.9, acceleration: 28,
     muzzleEffect: "rocket", impactEffect: "explosion", recoil: 1.8,
@@ -304,16 +303,16 @@ export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
   };
 }
 
-export function getAvailableWeapons(globalStageIndex: number): WeaponData[] {
-  const stage = Math.max(1, Math.floor(globalStageIndex || 1));
-  return Object.values(WEAPONS).filter(weapon => (weapon.minGlobalStage ?? 1) <= stage);
+export function getAvailableWeapons(_globalStageIndex = 1): WeaponData[] {
+  return Object.values(WEAPONS);
 }
 
-export type WeaponRollContext = "shop" | "treasure";
+export type WeaponRollContext = "shop" | "treasure" | "boss";
 
 const WEAPON_ROLL_WEIGHTS: Record<WeaponRollContext, Record<WeaponRarity, number>> = {
   shop: { common: 5, uncommon: 3.2, rare: 1.35, legendary: 0.38 },
   treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.72 },
+  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 3.2 },
 };
 
 export function rollAvailableWeapon(

@@ -44,10 +44,15 @@ assert.equal(WEAPONS.micro_rocket.projectileStyle, "rocket");
 assert.equal(WEAPONS.micro_rocket.explosionRadius, 30);
 assert.ok((WEAPONS.plasma_caster.homingStrength ?? 0) > 0);
 assert.equal(WEAPONS.ripper_disc.wallBounces, 3);
-assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "vector_9"), false);
-assert.equal(getAvailableWeapons(5).some(weapon => weapon.id === "vector_9"), true);
-assert.equal(getAvailableWeapons(9).some(weapon => weapon.id === "micro_rocket"), false);
-assert.equal(getAvailableWeapons(10).some(weapon => weapon.id === "micro_rocket"), true);
+assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
+assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "vector_9"), true);
+assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "micro_rocket"), true);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 6);
+assert.deepEqual(
+  getAvailableWeapons(1).map(weapon => weapon.id),
+  getAvailableWeapons(20).map(weapon => weapon.id),
+  "weapon availability must not depend on chapter or stage",
+);
 for (const weapon of Object.values(WEAPONS)) {
   assert.ok(weapon.mechanic.length >= 12, `${weapon.id} mechanic copy`);
   assert.ok(SPRITES[`weapon_${weapon.id}`], `${weapon.id} dedicated sprite`);
