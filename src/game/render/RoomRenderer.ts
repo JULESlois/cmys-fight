@@ -61,7 +61,7 @@ export class RoomRenderer {
         const tx = x * TILE_SIZE;
         const ty = y * TILE_SIZE;
 
-        if (tileId === 2) {
+        if (tileId === 0 || tileId === 2) {
           ctx.fillStyle = p.floor;
           ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
           
@@ -191,6 +191,21 @@ export class RoomRenderer {
         ctx.fillStyle = x % 16 === 0 ? "rgba(0,242,254,0.25)" : "rgba(241,196,15,0.2)";
         ctx.fillRect(x, 98, 4, 44);
       }
+    } else if (currentRoom?.type === "wish_fountain") {
+      ctx.fillStyle = "rgba(142, 68, 173, 0.18)";
+      ctx.fillRect(112, 80, 96, 80);
+      ctx.strokeStyle = "rgba(210, 180, 222, 0.62)";
+      ctx.strokeRect(120, 88, 80, 64);
+      ctx.strokeRect(136, 100, 48, 40);
+      ctx.fillStyle = "rgba(88, 211, 247, 0.16)";
+      ctx.fillRect(136, 112, 48, 20);
+    } else if (currentRoom?.type === "photo_booth") {
+      ctx.fillStyle = "rgba(142, 68, 173, 0.18)";
+      ctx.fillRect(112, 80, 96, 80);
+      ctx.strokeStyle = "rgba(217, 128, 250, 0.58)";
+      ctx.strokeRect(120, 88, 80, 64);
+      ctx.fillStyle = "rgba(240, 108, 168, 0.16)";
+      for (let x = 124; x <= 196; x += 12) ctx.fillRect(x, 92, 5, 56);
     } else if (currentRoom?.type === "treasure") {
       ctx.strokeStyle = "rgba(241, 196, 15, 0.3)";
       ctx.strokeRect(136, 96, 48, 48);

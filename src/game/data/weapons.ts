@@ -135,6 +135,9 @@ export interface WeaponData {
   closeRangeFalloffDistance?: number;
   exclusiveCharacterId?: string;
   markedTargetDamageMultiplier?: number;
+  dualWield?: boolean;
+  sustainEnergyPerSecond?: number;
+  linkedCatalystEnergyCost?: number;
 }
 
 export const SHOTGUN_CLOSE_RANGE_MULTIPLIER = 3;
@@ -143,13 +146,13 @@ export const SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE = 96;
 export const WEAPONS: Record<string, WeaponData> = {
   pistol: {
     id: "pistol", name: "Old Pistol", category: "sidearm", rarity: "common",
-    damage: 3, fireRate: 2.8, bulletSpeed: 150, manaCost: 0, spread: 0.1,
+    damage: 4, fireRate: 3.1, bulletSpeed: 190, manaCost: 0, spread: 0.08,
     pelletCount: 1, knockback: 5, critChance: 0.08, color: "#F39C12",
     mechanic: "Reliable zero-energy ballistic sidearm.", projectileStyle: "bullet",
   },
   shotgun: {
     id: "shotgun", name: "Rusty Shotgun", category: "shotgun", rarity: "uncommon",
-    damage: 2, fireRate: 1.25, bulletSpeed: 120, manaCost: 2, spread: 0.4,
+    damage: 2, fireRate: 1.35, bulletSpeed: 185, manaCost: 2, spread: 0.38,
     pelletCount: 5, knockback: 7, critChance: 0.05, color: "#E74C3C",
     mechanic: "Wide five-pellet close-range blast.", projectileStyle: "bullet",
     muzzleEffect: "smoke", recoil: 1.15,
@@ -163,14 +166,14 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   bell_repeater: {
     id: "bell_repeater", name: "Ding-Dong Repeater", category: "rifle", rarity: "common",
-    damage: 2, fireRate: 6.2, bulletSpeed: 185, manaCost: 1, spread: 0.14,
+    damage: 2, fireRate: 6.8, bulletSpeed: 220, manaCost: 1, spread: 0.12,
     pelletCount: 1, knockback: 2, critChance: 0.07, color: "#F1C40F",
     projectileLife: 1.45,
     mechanic: "Rapid ringing tracer rounds.", projectileStyle: "tracer", trailLength: 15,
   },
   mask_sprayer: {
     id: "mask_sprayer", name: "Mask Sprayer", category: "shotgun", rarity: "uncommon",
-    damage: 1, fireRate: 2, bulletSpeed: 110, manaCost: 2, spread: 0.72,
+    damage: 1, fireRate: 2.2, bulletSpeed: 170, manaCost: 2, spread: 0.68,
     pelletCount: 8, knockback: 4, critChance: 0.03, color: "#ECF0F1",
     projectileLife: 1.05, statusEffect: "slow", statusDuration: 1.2,
     mechanic: "Short-lived freezing particulate spray.", projectileStyle: "flame",
@@ -212,7 +215,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   nail_driver: {
     id: "nail_driver", name: "Nail Driver", category: "smg", rarity: "common",
-    damage: 1, fireRate: 8, bulletSpeed: 175, manaCost: 0, spread: 0.12,
+    damage: 1, fireRate: 9.2, bulletSpeed: 215, manaCost: 0, spread: 0.1,
     pelletCount: 1, knockback: 3, critChance: 0.06, color: "#C7D3DD",
     pierce: 1, projectileLife: 1.7,
     mechanic: "Free rapid nails that penetrate one target.", projectileStyle: "tracer", trailLength: 9,
@@ -227,8 +230,8 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   vector_9: {
     id: "vector_9", name: "Vector-9", category: "smg", rarity: "rare",
-    damage: 1, fireRate: 10, bulletSpeed: 220, manaCost: 0, spread: 0.16,
-    pelletCount: 1, knockback: 1, critChance: 0.05, color: "#79D7FF",
+    damage: 1, fireRate: 12, bulletSpeed: 260, manaCost: 0, spread: 0.11,
+    pelletCount: 1, knockback: 2, critChance: 0.08, color: "#79D7FF",
     projectileLife: 1.35,
     mechanic: "Zero-energy hyper-burst SMG: extreme rate, low per-shot damage.", projectileStyle: "tracer",
     trailLength: 17, muzzleEffect: "flash", recoil: 0.15,
@@ -302,7 +305,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   dragon_breath: {
     id: "dragon_breath", name: "Dragon Breath", category: "shotgun", rarity: "legendary",
-    damage: 2, fireRate: 1.1, bulletSpeed: 138, manaCost: 6, spread: 0.86,
+    damage: 2, fireRate: 1.1, bulletSpeed: 185, manaCost: 6, spread: 0.86,
     pelletCount: 12, knockback: 7, critChance: 0.08, color: "#FF7043",
     projectileLife: 1.15, statusEffect: "burn", statusDuration: 2.8,
     series: "phoenix",
@@ -327,7 +330,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   olympia: {
     id: "olympia", name: "Olympia", category: "shotgun", rarity: "common",
-    damage: 1, fireRate: 0.8, bulletSpeed: 160, manaCost: 0, spread: 0.9, pelletCount: 12, knockback: 8, critChance: 0.08, color: "#E67E22",
+    damage: 1, fireRate: 0.9, bulletSpeed: 215, manaCost: 0, spread: 0.84, pelletCount: 12, knockback: 8, critChance: 0.08, color: "#E67E22",
     projectileLife: 1, mechanic: "Classic double barrel burst with devastating close range spread.", projectileStyle: "bullet", trailLength: 4,
   },
   ksg_12: {
@@ -337,8 +340,8 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   akimbo_scorpion: {
     id: "akimbo_scorpion", name: "Akimbo Skorpion", category: "smg", rarity: "rare",
-    damage: 1, fireRate: 5.5, bulletSpeed: 240, manaCost: 0, spread: 0.3, pelletCount: 2, knockback: 1, critChance: 0.05, color: "#27AE60",
-    projectileLife: 1.5, mechanic: "Twin machine pistols unleash an uncontrollable bullet storm.", projectileStyle: "tracer", trailLength: 10,
+    damage: 1, fireRate: 6.2, bulletSpeed: 270, manaCost: 0, spread: 0.24, pelletCount: 2, knockback: 2, critChance: 0.07, color: "#27AE60",
+    projectileLife: 1.5, dualWield: true, mechanic: "Twin machine pistols unleash an uncontrollable bullet storm.", projectileStyle: "tracer", trailLength: 10, recoil: 0.3,
   },
   scavenger: {
     id: "scavenger", name: "Scavenger", category: "launcher", rarity: "rare",
@@ -363,15 +366,15 @@ export const WEAPONS: Record<string, WeaponData> = {
 
   cx_9: {
     id: "cx_9", name: "CX-9", category: "smg", rarity: "common",
-    damage: 1, fireRate: 8.7, bulletSpeed: 250, manaCost: 0, spread: 0.08,
-    pelletCount: 1, knockback: 1, critChance: 0.04, color: "#D7DEE3",
+    damage: 1, fireRate: 10.5, bulletSpeed: 285, manaCost: 0, spread: 0.06,
+    pelletCount: 1, knockback: 2, critChance: 0.07, color: "#D7DEE3",
     projectileLife: 1.45,
     mechanic: "Lightweight automatic SMG with a high fire rate, tight spread and manageable recoil.",
     projectileStyle: "tracer", trailLength: 14, muzzleEffect: "flash", recoil: 0.12,
   },
   r9_0: {
     id: "r9_0", name: "R9-0 Shotgun", category: "shotgun", rarity: "uncommon",
-    damage: 1, fireRate: 2.3, bulletSpeed: 155, manaCost: 1, spread: 0.76,
+    damage: 1, fireRate: 2.3, bulletSpeed: 220, manaCost: 1, spread: 0.72,
     pelletCount: 6, knockback: 8, critChance: 0.05, color: "#D8DEE3",
     projectileLife: 0.95, burstSize: 2, burstInterval: 0.12, burstRecovery: 0.72,
     mechanic: "Fires two rapid shotgun blasts before a longer pump-action recovery.",
@@ -387,7 +390,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   mx_guardian: {
     id: "mx_guardian", name: "MX Guardian", category: "shotgun", rarity: "rare",
-    damage: 1, fireRate: 3, bulletSpeed: 132, manaCost: 2, spread: 0.82,
+    damage: 1, fireRate: 3.2, bulletSpeed: 205, manaCost: 2, spread: 0.76,
     pelletCount: 5, knockback: 5, critChance: 0.04, color: "#D9DEE2",
     projectileLife: 0.82,
     mechanic: "Fully automatic shotgun floods close range with repeated five-pellet blasts.",
@@ -408,7 +411,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     pelletCount: 1, knockback: 10, critChance: 0.15, color: "#E1D06B",
     projectileRadius: 3, projectileLife: 3,
     linkedShot: true, linkedExplosionRadius: 42, linkedExplosionDamageMultiplier: 2.1,
-    linkedTriggerRange: 72, linkedMarkerLife: 4.5,
+    linkedTriggerRange: 82, linkedMarkerLife: 2, linkedCatalystEnergyCost: 0,
     mechanic: "Primer rounds stick to a surface; the following Catalyst detonates a nearby Primer in a wide blast.",
     projectileStyle: "tracer", trailLength: 22, muzzleEffect: "electric", impactEffect: "spark", recoil: 1.4,
   },
@@ -427,7 +430,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   aa_12: {
     id: "aa_12", name: "AA-12", category: "shotgun", rarity: "rare",
-    damage: 1, fireRate: 3.6, bulletSpeed: 138, manaCost: 3, spread: 0.94,
+    damage: 1, fireRate: 3.8, bulletSpeed: 210, manaCost: 3, spread: 0.86,
     pelletCount: 6, knockback: 5, critChance: 0.03, color: "#D8C89A",
     projectileLife: 0.82,
     mechanic: "Fully automatic combat shotgun sustains a dense six-pellet close-range barrage.",
@@ -499,10 +502,10 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   terrarian: {
     id: "terrarian", name: "Terrarian", category: "yoyo", rarity: "legendary",
-    damage: 8, fireRate: 0.9, bulletSpeed: 190, manaCost: 4, spread: 0,
+    damage: 10, fireRate: 0.9, bulletSpeed: 210, manaCost: 5, spread: 0,
     pelletCount: 1, knockback: 6, critChance: 0.18, color: "#52D6C6",
-    projectileRadius: 6, projectileLife: 0.35, pierce: 99, homingStrength: 6.2,
-    mechanic: "A luminite yoyo remains tethered to the wielder and repeatedly grinds nearby targets.",
+    projectileRadius: 6, projectileLife: 0.35, pierce: 99, homingStrength: 7.2, sustainEnergyPerSecond: 1.5,
+    mechanic: "A thrown luminite yoyo grinds targets and emits short-lived green homing orbs while sustained.",
     projectileStyle: "yoyo", attackMode: "yoyo", repeatHitDelay: 0.35, tetherRange: 108, returnStrength: 10,
     impactEffect: "plasma", recoil: 0.15,
   },

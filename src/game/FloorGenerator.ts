@@ -19,7 +19,7 @@ export interface Room {
   id: string;
   x: number;
   y: number;
-  type: "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
+  type: "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics" | "wish_fountain" | "photo_booth";
   cleared: boolean;
   combatCleared?: boolean;
   rewardGenerated?: boolean;
@@ -102,7 +102,7 @@ function createRoom(x: number, y: number, type: Room["type"]): Room {
     x,
     y,
     type,
-    cleared: type === "start" || type === "treasure" || type === "shop" || type === "exit" || type === "npc" || type === "legacy_rpg" || type === "legacy_tactics",
+    cleared: type === "start" || type === "treasure" || type === "shop" || type === "exit" || type === "npc" || type === "wish_fountain" || type === "photo_booth" || type === "legacy_rpg" || type === "legacy_tactics",
     doors: { up: false, down: false, left: false, right: false },
   };
 }
@@ -292,9 +292,9 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
   if (specialRoll < 0.28) {
     assignRoomType("npc", specialDeadEnds, remainingCombat, random);
   } else if (specialRoll < 0.64) {
-    assignRoomType("legacy_rpg", specialDeadEnds, remainingCombat, random);
+    assignRoomType("wish_fountain", specialDeadEnds, remainingCombat, random);
   } else {
-    assignRoomType("legacy_tactics", specialDeadEnds, remainingCombat, random);
+    assignRoomType("photo_booth", specialDeadEnds, remainingCombat, random);
   }
 
   const stage: StageData = {

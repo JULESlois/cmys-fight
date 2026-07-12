@@ -1,4 +1,4 @@
-export type RoomType = "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics";
+export type RoomType = "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics" | "wish_fountain" | "photo_booth";
 
 export interface DoorMask {
   up: boolean;
@@ -92,7 +92,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "legacy_room",
-    allowedRoomTypes: ["legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"],
     doorMask: "any",
     tiles: [1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1],
     enemySpawnPoints: [],
@@ -174,7 +174,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_up",
-    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: false, right: false, up: true, down: false },
     tiles: [
       1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,
@@ -200,7 +200,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_down",
-    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: false, right: false, up: false, down: true },
     tiles: [
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -226,7 +226,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_left",
-    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: true, right: false, up: false, down: false },
     tiles: [
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -252,7 +252,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   },
   {
     id: "dead_end_right",
-    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "legacy_rpg", "legacy_tactics"],
+    allowedRoomTypes: ["combat", "treasure", "shop", "boss", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"],
     doorMask: { left: false, right: true, up: false, down: false },
     tiles: [
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,

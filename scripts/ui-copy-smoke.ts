@@ -58,6 +58,11 @@ assert.match(dungeon, /dungeon\.retry/);
 
 assert.match(hud, /drawPixelSprite\(ctx, `weapon_\$\{weapon\.id\}`/);
 assert.doesNotMatch(hud, /drawPixelSprite\(ctx, `pickup_\$\{weapon\.id\}`/);
+assert.match(hud, /splitWeaponName\(weapon\.name\)/);
+assert.doesNotMatch(hud, /weapon\.name\.toUpperCase\(\)\.slice/);
+assert.match(hud, /skillReady[\s\S]*SKILL READY/);
+assert.match(hud, /index < BuffSystem\.MAX_BUFFS/);
+assert.match(dungeon, /ACTIVE_REWARD_BUFF_LIMIT/);
 
 console.log(JSON.stringify({
   streamlinedTitleFlow: "ok",
@@ -69,4 +74,7 @@ console.log(JSON.stringify({
   cmysIdentityAndForms: "ok",
   reducedMenuCopy: "ok",
   distinctWeaponHudModels: "ok",
+  adaptiveWeaponNames: "ok",
+  visibleSkillRecovery: "ok",
+  twelveTalentSlots: "ok",
 }));

@@ -108,13 +108,13 @@ const originalLog = console.log;
 console.log = () => {};
 let hazardsChecked = 0;
 let obstacleVariants = new Set<string>();
-const specialRooms = { npc: 0, legacy_rpg: 0, legacy_tactics: 0 };
+const specialRooms = { npc: 0, wish_fountain: 0, photo_booth: 0 };
 const encountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [theme, new Set()]));
 const bossesEncountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [theme, new Set()]));
 for (let globalStage = 1; globalStage <= 20; globalStage++) {
   const stage = generateStage(createRunProgressFromGlobalStage(globalStage), seeded(globalStage * 97));
   for (const room of stage.rooms) {
-    if (room.type === "npc" || room.type === "legacy_rpg" || room.type === "legacy_tactics") specialRooms[room.type]++;
+    if (room.type === "npc" || room.type === "wish_fountain" || room.type === "photo_booth") specialRooms[room.type]++;
     const first = getMapData(room, stage.theme);
     const second = getMapData(room, stage.theme);
     assert.deepEqual(first, second, `map determinism ${room.id}`);
@@ -167,12 +167,12 @@ assert.ok(obstacleVariants.size > 40);
 for (let sample = 1; sample <= 300; sample++) {
   const stage = generateStage(createRunProgressFromGlobalStage(3), seeded(sample * 13007));
   for (const room of stage.rooms) {
-    if (room.type === "npc" || room.type === "legacy_rpg" || room.type === "legacy_tactics") specialRooms[room.type]++;
+    if (room.type === "npc" || room.type === "wish_fountain" || room.type === "photo_booth") specialRooms[room.type]++;
   }
 }
 assert.ok(specialRooms.npc > 25);
-assert.ok(specialRooms.legacy_rpg > 25);
-assert.ok(specialRooms.legacy_tactics > 25);
+assert.ok(specialRooms.wish_fountain > 25);
+assert.ok(specialRooms.photo_booth > 25);
 console.log = originalLog;
 
 for (const file of [
@@ -184,8 +184,19 @@ for (const file of [
   assert.doesNotMatch(source, /\.arc\(/, `${file} should use pixel geometry`);
 }
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
+const floorSource = fs.readFileSync("src/game/FloorGenerator.ts", "utf8");
+const roomRendererSource = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
+const minimapSource = fs.readFileSync("src/game/render/MinimapRenderer.ts", "utf8");
+const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
 assert.doesNotMatch(dungeonSource, /ctx\.arc\(t\.x/);
 assert.match(dungeonSource, /treasure-weapon/);
+assert.doesNotMatch(floorSource, /assignRoomType\("legacy_rpg"|assignRoomType\("legacy_tactics"/);
+assert.match(floorSource, /assignRoomType\("wish_fountain"/);
+assert.match(floorSource, /assignRoomType\("photo_booth"/);
+assert.match(roomRendererSource, /tileId === 0 \|\| tileId === 2/);
+assert.match(minimapSource, /room\.doors\.right[\s\S]*room\.doors\.down/);
+assert.match(gameDataSource, /room\.type === "legacy_rpg"[\s\S]*room\.type = "wish_fountain"/);
+assert.match(gameDataSource, /room\.type === "legacy_tactics"[\s\S]*room\.type = "photo_booth"/);
 
 console.log(JSON.stringify({
   enemies: Object.keys(ENEMIES).length,
@@ -198,4 +209,7 @@ console.log(JSON.stringify({
   encounterCoverage: Object.fromEntries([...encountered].map(([theme, ids]) => [theme, ids.size])),
   bossCoverage: Object.fromEntries([...bossesEncountered].map(([theme, ids]) => [theme, ids.size])),
   pixelTelegraphs: "ok",
+  specialRoomReplacement: "wish-fountain-and-photo-booth",
+  minimapLinks: "continuous-and-scaled",
+  floorTileRendering: "zero-and-bridge-tiles",
 }));

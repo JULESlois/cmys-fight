@@ -1,62 +1,78 @@
-import { FloorData, Room } from "../FloorGenerator";
+import { FloorData } from "../FloorGenerator";
 
 export class MinimapRenderer {
   static draw(ctx: CanvasRenderingContext2D, floor: FloorData) {
-    const mmSize = 6;
-    const padding = 2;
-    
-    // Find bounds to center minimap
-    let minX = 999, maxX = -999, minY = 999, maxY = -999;
-    for (const r of floor.rooms) {
-      if (r.x < minX) minX = r.x;
-      if (r.x > maxX) maxX = r.x;
-      if (r.y < minY) minY = r.y;
-      if (r.y > maxY) maxY = r.y;
+    if (floor.rooms.length === 0) return;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const room of floor.rooms) {
+      minX = Math.min(minX, room.x);
+      maxX = Math.max(maxX, room.x);
+      minY = Math.min(minY, room.y);
+      maxY = Math.max(maxY, room.y);
     }
-    
-    const w = (maxX - minX + 1);
-    const h = (maxY - minY + 1);
-    
-    // Top right position
-    const startX = 320 - (w * mmSize) - 10;
-    const startY = 10;
-    
-    // Background for minimap
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(startX - padding, startY - padding, w * mmSize + padding*2, h * mmSize + padding*2);
-    
-    for (const r of floor.rooms) {
-       const rx = startX + (r.x - minX) * mmSize;
-       const ry = startY + (r.y - minY) * mmSize;
-       
-       const isCurrent = (r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-       
-       if (isCurrent) {
-         ctx.fillStyle = "#FFF"; // Current
-       } else if (r.type === "boss") {
-         ctx.fillStyle = r.cleared ? "#C0392B" : "#E74C3C"; 
-       } else if (r.type === "exit") {
-         ctx.fillStyle = "#00F2FE";
-       } else if (r.type === "shop") {
-         ctx.fillStyle = "#F1C40F";
-       } else if (r.type === "treasure") {
-         ctx.fillStyle = r.cleared ? "#F39C12" : "#F1C40F";
-       } else if (r.type === "npc") {
-         ctx.fillStyle = r.interactionCompleted ? "#566573" : "#D980FA";
-       } else if (r.type === "legacy_rpg" || r.type === "legacy_tactics") {
-         ctx.fillStyle = r.cleared ? "#8E44AD" : "#9B59B6";
-       } else {
-         ctx.fillStyle = r.cleared ? "#7F8C8D" : "#34495E";
-       }
-       
-       ctx.fillRect(rx, ry, mmSize - 1, mmSize - 1);
-       
-       // Draw doors on minimap
-       ctx.fillStyle = "rgba(255,255,255,0.3)";
-       if (r.doors.up) ctx.fillRect(rx + 2, ry, 1, 1);
-       if (r.doors.down) ctx.fillRect(rx + 2, ry + mmSize - 2, 1, 1);
-       if (r.doors.left) ctx.fillRect(rx, ry + 2, 1, 1);
-       if (r.doors.right) ctx.fillRect(rx + mmSize - 2, ry + 2, 1, 1);
+
+    const columns = maxX - minX + 1;
+    const rows = maxY - minY + 1;
+    const maxPanelWidth = 112;
+    const maxPanelHeight = 78;
+    const cellSize = Math.max(6, Math.min(9, Math.floor(Math.min(
+      (maxPanelWidth - 8) / columns,
+      (maxPanelHeight - 8) / rows,
+    ))));
+    const mapWidth = columns * cellSize;
+    const mapHeight = rows * cellSize;
+    const panelX = 316 - mapWidth - 6;
+    const panelY = 22;
+
+    ctx.fillStyle = "rgba(5, 9, 17, 0.82)";
+    ctx.fillRect(panelX - 4, panelY - 4, mapWidth + 8, mapHeight + 8);
+    ctx.strokeStyle = "rgba(0, 242, 254, 0.48)";
+    ctx.strokeRect(panelX - 4, panelY - 4, mapWidth + 8, mapHeight + 8);
+
+    const position = (x: number, y: number) => ({
+      x: panelX + (x - minX) * cellSize,
+      y: panelY + (y - minY) * cellSize,
+    });
+
+    // Draw continuous links behind room cells. The old one-pixel edge marks made
+    // connected rooms look detached, especially on wider generated layouts.
+    ctx.fillStyle = "rgba(189, 195, 199, 0.48)";
+    for (const room of floor.rooms) {
+      const point = position(room.x, room.y);
+      const centerX = point.x + Math.floor((cellSize - 1) / 2);
+      const centerY = point.y + Math.floor((cellSize - 1) / 2);
+      if (room.doors.right) ctx.fillRect(centerX, centerY, cellSize + 1, 1);
+      if (room.doors.down) ctx.fillRect(centerX, centerY, 1, cellSize + 1);
+    }
+
+    for (const room of floor.rooms) {
+      const point = position(room.x, room.y);
+      const isCurrent = room.x === floor.currentRoomX && room.y === floor.currentRoomY;
+      if (isCurrent) ctx.fillStyle = "#FFFFFF";
+      else if (room.type === "boss") ctx.fillStyle = room.cleared ? "#922B21" : "#E74C3C";
+      else if (room.type === "exit") ctx.fillStyle = "#00F2FE";
+      else if (room.type === "shop") ctx.fillStyle = "#F1C40F";
+      else if (room.type === "treasure") ctx.fillStyle = room.interactionCompleted ? "#7F8C8D" : "#F39C12";
+      else if (room.type === "npc") ctx.fillStyle = room.interactionCompleted ? "#566573" : "#D980FA";
+      else if (room.type === "wish_fountain" || room.type === "photo_booth") {
+        ctx.fillStyle = room.interactionCompleted ? "#5B3A6E" : "#A569BD";
+      } else ctx.fillStyle = room.cleared ? "#7F8C8D" : "#34495E";
+
+      const inset = isCurrent ? 0 : 1;
+      ctx.fillRect(
+        point.x + inset,
+        point.y + inset,
+        Math.max(2, cellSize - 1 - inset * 2),
+        Math.max(2, cellSize - 1 - inset * 2),
+      );
+      if (isCurrent) {
+        ctx.fillStyle = "#00F2FE";
+        ctx.fillRect(point.x + 2, point.y + 2, Math.max(2, cellSize - 5), Math.max(2, cellSize - 5));
+      }
     }
   }
 }

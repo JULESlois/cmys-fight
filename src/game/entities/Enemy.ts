@@ -46,6 +46,7 @@ export class Enemy {
   public attackAnimationDuration: number = 0.4;
   public attackTargetX: number = 0;
   public attackTargetY: number = 0;
+  public attackTargetKind: "player" | "michele_turret" = "player";
   public chargeDistance: number = 48;
   public areaRadius: number = 30;
   public summonEnemyId?: string;
@@ -98,6 +99,7 @@ export class Enemy {
     this.attackAnimationDuration = 0.4;
     this.attackTargetX = 0;
     this.attackTargetY = 0;
+    this.attackTargetKind = "player";
     this.chargeDistance = 48;
     this.areaRadius = 30;
     this.summonEnemyId = undefined;

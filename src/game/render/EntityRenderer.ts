@@ -74,7 +74,13 @@ export class EntityRenderer {
     ctx.restore();
   }
 
-  public static drawMicheleTurret(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+  public static drawMicheleTurret(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    time: number,
+    hitsRemaining = 6,
+  ): void {
     const blink = Math.floor(time * 8) % 2 === 0;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
@@ -99,6 +105,10 @@ export class EntityRenderer {
     ctx.fillStyle = "#263B55";
     ctx.fillRect(-7, 8, 4, 4);
     ctx.fillRect(3, 8, 4, 4);
+    for (let hit = 0; hit < 6; hit++) {
+      ctx.fillStyle = hit < hitsRemaining ? "#70D7FF" : "#263B55";
+      ctx.fillRect(-8 + hit * 3, 13, 2, 2);
+    }
     ctx.restore();
   }
 
@@ -201,25 +211,37 @@ export class EntityRenderer {
         : PLAYER_PALETTE;
     let spriteName = `${playerSpritePrefix}_idle`;
     if (player.animState === "walk") spriteName = `${playerSpritePrefix}_walk_${player.animFrame}`;
+    const activeWeapon = WEAPONS[player.currentWeaponId];
+    const yoyoDeployed = activeWeapon?.attackMode === "yoyo" && player.activeYoyoWeaponId === activeWeapon.id;
+    if (activeWeapon?.dualWield && !yoyoDeployed) {
+      EntityRenderer.drawPlayerWeapon(ctx, player, "back");
+    }
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX: player.facing === "left",
       paletteOverride: playerPalette,
       outlineColor: "#09101A",
     });
-    // Weapon and muzzle effects are always drawn after the body so the authored
-    // silhouette remains readable at every aim angle.
-    EntityRenderer.drawPlayerWeapon(ctx, player);
+    // Normal weapons are drawn in front of the body. Akimbo weapons split the
+    // pair across the body layers, while a deployed yoyo hides its held copy.
+    if (!yoyoDeployed) EntityRenderer.drawPlayerWeapon(ctx, player);
     ctx.restore();
   }
 
-  private static drawPlayerWeapon(ctx: CanvasRenderingContext2D, player: Player) {
+  private static drawPlayerWeapon(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    layer: "front" | "back" = "front",
+  ) {
     ctx.save();
     ctx.translate(0, PLAYER_HAND_OFFSET_Y);
     ctx.rotate(player.aimAngle);
     if (Math.abs(player.aimAngle) > Math.PI / 2) ctx.scale(1, -1);
     const weapon = WEAPONS[player.currentWeaponId];
-    const renderX = weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X;
+    const recoilOffset = Math.max(0, player.weaponRecoilVisual) * (layer === "back" ? 0.75 : 1);
+    ctx.translate(-recoilOffset, layer === "back" ? -3 : weapon?.dualWield ? 2 : 0);
+    if (layer === "back") ctx.globalAlpha *= 0.82;
+    const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
     if (player.muzzleFlash > 0) {

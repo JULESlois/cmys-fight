@@ -2,9 +2,29 @@ import { Player } from "../entities/Player";
 import { WEAPONS } from "../data/weapons";
 import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
-import { BUFFS } from "../combat/BuffSystem";
+import { BUFFS, BuffSystem } from "../combat/BuffSystem";
 import { WeaponController } from "../combat/WeaponController";
 import { SkillController } from "../combat/SkillController";
+
+function splitWeaponName(name: string): string[] {
+  const normalized = name.toUpperCase();
+  if (normalized.length <= 10) return [normalized];
+  const words = normalized.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return [normalized];
+
+  let best = [normalized];
+  let bestScore = Infinity;
+  for (let split = 1; split < words.length; split++) {
+    const first = words.slice(0, split).join(" ");
+    const second = words.slice(split).join(" ");
+    const score = Math.max(first.length, second.length) * 10 + Math.abs(first.length - second.length);
+    if (score < bestScore) {
+      best = [first, second];
+      bestScore = score;
+    }
+  }
+  return best;
+}
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
@@ -14,15 +34,15 @@ export class UIRenderer {
     ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
     ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
     ctx.lineWidth = 1;
-    ctx.fillRect(5, 5, 120, 45);
-    ctx.strokeRect(5, 5, 120, 45);
+    ctx.fillRect(5, 5, 132, 50);
+    ctx.strokeRect(5, 5, 132, 50);
     
     // Pixel corners
     ctx.fillStyle = "#00F2FE";
     ctx.fillRect(4, 4, 3, 3);
-    ctx.fillRect(123, 4, 3, 3);
-    ctx.fillRect(4, 48, 3, 3);
-    ctx.fillRect(123, 48, 3, 3);
+    ctx.fillRect(135, 4, 3, 3);
+    ctx.fillRect(4, 53, 3, 3);
+    ctx.fillRect(135, 53, 3, 3);
     
     // Pixel UI Layout for Stats
     
@@ -92,19 +112,36 @@ export class UIRenderer {
       ctx.fillText(`TRACE ${player.micheleMarkTimer.toFixed(1)}S`, 67, 42);
     }
 
+    const skill = SkillController.getConfig(player.characterId);
+    const skillCooldownTotal = Math.max(0.01, skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player));
+    const skillReady = Math.max(0, Math.min(1, 1 - player.skillCooldown / skillCooldownTotal));
+    ctx.fillStyle = "#1A1C2C";
+    ctx.fillRect(67, 46, 63, 5);
+    ctx.fillStyle = player.skillCooldown <= 0 ? "#2ECC71" : "#C792EA";
+    ctx.fillRect(68, 47, Math.round(61 * skillReady), 3);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 5px monospace";
+    ctx.fillText(player.skillCooldown <= 0 ? "SKILL READY" : `SKILL ${player.skillCooldown.toFixed(1)}S`, 8, 51);
+
     // Compact buff strip. Detailed skill and swap information lives on the pause screen.
     if (player.buffs.length > 0) {
       ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
-      ctx.fillRect(120, 5, 112, 12);
+      ctx.fillRect(143, 5, 172, 12);
       ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
-      ctx.strokeRect(120, 5, 112, 12);
-      player.buffs.forEach((id, index) => {
+      ctx.strokeRect(143, 5, 172, 12);
+      for (let index = 0; index < BuffSystem.MAX_BUFFS; index++) {
+        const x = 146 + index * 14;
+        ctx.fillStyle = "#1A1C2C";
+        ctx.fillRect(x - 1, 7, 12, 8);
+        ctx.strokeStyle = "#34495E";
+        ctx.strokeRect(x - 1, 7, 12, 8);
+        const id = player.buffs[index];
+        if (!id) continue;
         const buff = BUFFS[id];
-        const x = 123 + index * 17;
         ctx.fillStyle = buff.rarity === "legendary" ? "#FFB347" : buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
         ctx.font = "bold 5px monospace";
         ctx.fillText(buff.shortCode, x, 13);
-      });
+      }
     }
 
     if (player.statusEffects.length > 0) {
@@ -177,11 +214,20 @@ export class UIRenderer {
       // contains legacy icons for a few starter weapons and otherwise falls back to one generic icon.
       SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, x + 20, 218, 1);
       ctx.fillStyle = active ? "#FFF" : "#BDC3C7";
-      ctx.font = "bold 7px monospace";
-      ctx.fillText(weapon.name.toUpperCase().slice(0, 10), x + 40, 215);
+      const nameLines = splitWeaponName(weapon.name);
+      const longestNameLine = Math.max(...nameLines.map(line => line.length));
+      const nameFontSize = longestNameLine <= 8 ? 6 : longestNameLine <= 10 ? 5 : 4;
+      ctx.font = `bold ${nameFontSize}px monospace`;
+      if (nameLines.length === 1) {
+        ctx.fillText(nameLines[0], x + 39, 215);
+      } else {
+        ctx.fillText(nameLines[0], x + 39, 212);
+        ctx.fillText(nameLines[1], x + 39, 218);
+      }
       ctx.fillStyle = rarityColor(weapon.rarity);
-      ctx.font = "6px monospace";
-      ctx.fillText(`EN ${WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, weapon.id))} DMG ${weapon.damage}`, x + 40, 225);
+      ctx.font = "5px monospace";
+      const sustain = weapon.sustainEnergyPerSecond ? `+${weapon.sustainEnergyPerSecond}/S` : "";
+      ctx.fillText(`EN ${WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, weapon.id))}${sustain} D${weapon.damage}`, x + 39, 226);
       if (active && weapon.maxHeat) {
         const heatRatio = WeaponController.getHeatRatio(player, weapon.id);
         const overheated = player.weaponOverheatTimer > 0;
@@ -229,6 +275,12 @@ export class UIRenderer {
       } else if (currentRoom.type === "npc") {
          statusColor = "#8E44AD";
          statusText = currentRoom.interactionCompleted ? "SILENT" : "BROADCAST";
+      } else if (currentRoom.type === "wish_fountain") {
+         statusColor = "#8E44AD";
+         statusText = currentRoom.interactionCompleted ? "SPENT" : "WISH";
+      } else if (currentRoom.type === "photo_booth") {
+         statusColor = "#A569BD";
+         statusText = currentRoom.interactionCompleted ? "PRINTED" : "PHOTO";
       } else if (currentRoom.type === "exit") {
          statusColor = "#16A085";
          statusText = "PORTAL";

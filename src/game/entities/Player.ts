@@ -50,6 +50,9 @@ export class Player {
   public animFrame: number = 0;
 
   public muzzleFlash: number = 0;
+  public weaponRecoilVisual: number = 0;
+  public activeYoyoWeaponId: string = "";
+  public terrarianOrbCooldown: number = 0;
   public hitFlash: number = 0;
   public invulnerabilityTimer: number = 0;
   public armorRechargeTimer: number = 3;
@@ -68,6 +71,7 @@ export class Player {
   public micheleTurretY: number = 0;
   public micheleTurretFireCooldown: number = 0;
   public micheleTurretActive: boolean = false;
+  public micheleTurretHitsRemaining: number = 0;
   public kanamiBeaconX: number = 0;
   public kanamiBeaconY: number = 0;
   public kanamiBeaconVx: number = 0;

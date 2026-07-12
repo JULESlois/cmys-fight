@@ -163,7 +163,7 @@ mageYoyo.mageArcaneCharge = 11;
 const deferredEcho = WeaponController.fire(mageYoyo, 0, () => 0.99);
 assert.equal(deferredEcho.echoTriggered, false, "persistent weapon entities must not be duplicated by Arcane Echo");
 assert.equal(deferredEcho.projectiles.length, 1);
-assert.equal(mageYoyo.mageArcaneCharge, 15);
+assert.equal(mageYoyo.mageArcaneCharge, 16);
 for (const projectile of deferredEcho.projectiles) releaseProjectile(projectile);
 
 const mageOverdrive = new Player(160, 120);
@@ -238,10 +238,13 @@ const primerVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(primerVolley.fired, true);
 assert.equal(primerVolley.projectiles[0].linkedShotMode, "primer");
 assert.equal(primerVolley.projectiles[0].linkedExplosionRadius, 42);
+assert.equal(primerVolley.projectiles[0].life, 2, "NA-45 Primer fuse must begin when fired");
+assert.equal(na45Player.mana, 76);
 na45Player.fireCooldown = 0;
 const catalystVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(catalystVolley.fired, true);
 assert.equal(catalystVolley.projectiles[0].linkedShotMode, "catalyst");
+assert.equal(na45Player.mana, 76, "NA-45 Catalyst must not consume energy");
 
 const so14Player = new Player(160, 120);
 so14Player.maxMana = 80;
@@ -272,7 +275,7 @@ for (const projectile of so14FollowB.projectiles) releaseProjectile(projectile);
 
 const aa12 = fire("aa_12");
 assert.equal(WEAPONS.aa_12.pelletCount, 6);
-assert.equal(WEAPONS.aa_12.fireRate, 3.6);
+assert.equal(WEAPONS.aa_12.fireRate, 3.8);
 assert.equal(aa12.style, "bullet");
 releaseProjectile(aa12);
 
@@ -445,6 +448,46 @@ assert.equal(dungeon.projectiles[0].damage, 7);
 for (const projectile of dungeon.projectiles) releaseProjectile(projectile);
 dungeon.projectiles = [];
 
+dungeon.player.mana = 80;
+dungeon.player.setWeaponLoadout(["terrarian"], 0);
+dungeon.player.fireCooldown = 0;
+dungeon.fireWeapon();
+assert.equal(dungeon.player.activeYoyoWeaponId, "terrarian", "deployed yoyo must replace the held weapon model");
+const manaAfterYoyoLaunch = dungeon.player.mana;
+const terrarianTarget = new Enemy(120, 100, "melee");
+terrarianTarget.hp = terrarianTarget.maxHp = 30;
+dungeon.enemies = [terrarianTarget];
+dungeon.updateTerrarianYoyo(0.4, true);
+assert.ok(dungeon.player.mana < manaAfterYoyoLaunch, "sustaining Terrarian must consume additional energy");
+assert.equal(
+  dungeon.projectiles.some((projectile: any) => projectile.weaponId === "terrarian_orb" && projectile.homingStrength > 0),
+  true,
+  "spinning Terrarian must emit a green homing orb",
+);
+for (const projectile of dungeon.projectiles) releaseProjectile(projectile);
+dungeon.projectiles = [];
+
+const timedPrimerPlayer = new Player(80, 80);
+timedPrimerPlayer.maxMana = 80;
+timedPrimerPlayer.mana = 80;
+timedPrimerPlayer.setWeaponLoadout(["na_45"], 0);
+const timedPrimerVolley = WeaponController.fire(timedPrimerPlayer, 0, () => 0.5);
+const timedPrimer = timedPrimerVolley.projectiles[0];
+timedPrimer.x = 80;
+timedPrimer.y = 80;
+timedPrimer.previousX = 80;
+timedPrimer.previousY = 80;
+timedPrimer.vx = 0;
+timedPrimer.vy = 0;
+const timedBlastTarget = new Enemy(110, 80, "melee");
+timedBlastTarget.hp = timedBlastTarget.maxHp = 30;
+dungeon.projectiles = [timedPrimer];
+dungeon.enemies = [timedBlastTarget];
+dungeon.updateProjectiles(2.01);
+assert.equal(timedPrimer.detonated, true, "NA-45 Primer must auto-detonate after two seconds");
+assert.ok(timedBlastTarget.hp < 30, "NA-45 timed fuse must deal blast damage");
+assert.equal(dungeon.projectiles.length, 0);
+
 const linkedPrimer = primerVolley.projectiles[0];
 const linkedCatalyst = catalystVolley.projectiles[0];
 linkedPrimer.x = linkedPrimer.y = 40;
@@ -459,6 +502,18 @@ dungeon.updateProjectiles(0.016);
 assert.equal(linkedPrimer.detonated, true);
 assert.equal(dungeon.projectiles.length, 0, "NA-45 linked rounds must be released after detonation");
 assert.ok(linkedBlastTarget.hp < 30, "NA-45 Catalyst must detonate the nearby Primer");
+
+na45Player.fireCooldown = 0;
+const autoPrimer = WeaponController.fire(na45Player, 0, () => 0.5).projectiles[0];
+autoPrimer.x = autoPrimer.y = 40;
+dungeon.projectiles = [autoPrimer];
+dungeon.stickLinkedPrimer(autoPrimer);
+const autoBlastTarget = new Enemy(48, 40, "melee");
+autoBlastTarget.hp = autoBlastTarget.maxHp = 30;
+dungeon.enemies = [autoBlastTarget];
+dungeon.updateProjectiles(2.01);
+assert.equal(dungeon.projectiles.length, 0, "NA-45 Primer must expire after two seconds");
+assert.ok(autoBlastTarget.hp < 30, "expired NA-45 Primer must automatically explode");
 
 const awpShot = awpVolley.projectiles[0];
 awpShot.x = 40;
@@ -527,6 +582,7 @@ assert.equal(pooledProjectile.chainCount, 0);
 assert.equal(pooledProjectile.homingStrength, 0);
 assert.equal(pooledProjectile.weaponId, "");
 assert.equal(pooledProjectile.linkedShotMode, "none");
+assert.equal(pooledProjectile.targetsMicheleTurret, false);
 assert.equal(pooledProjectile.stuck, false);
 assert.equal(pooledProjectile.highHealthDamageThreshold, 0);
 assert.equal(pooledProjectile.highHealthDamageMultiplier, 1);
@@ -549,7 +605,9 @@ const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf
 const projectileRendererSource = fs.readFileSync("src/game/render/ProjectileArtRenderer.ts", "utf8");
 const fxSource = fs.readFileSync("src/game/render/PixelFxSystem.ts", "utf8");
 const audioSource = fs.readFileSync("src/game/audio/AudioManager.ts", "utf8");
-assert.match(dungeonSource, /heldYoyo[\s\S]*heldYoyo\.life = Math\.max\(heldYoyo\.life, 0\.3\)/);
+assert.match(dungeonSource, /heldYoyo[\s\S]*updateTerrarianYoyo[\s\S]*terrarian_orb/);
+assert.match(rendererSource, /dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back"\)[\s\S]*drawPlayerWeapon\(ctx, player\)/);
+assert.match(rendererSource, /activeYoyoWeaponId[\s\S]*!yoyoDeployed/);
 assert.match(dungeonSource, /updateProjectileHoming[\s\S]*rotateVelocityToward/);
 assert.match(dungeonSource, /applyProjectileChain[\s\S]*calculateChainDamage/);
 assert.match(dungeonSource, /detonateProjectile[\s\S]*calculateExplosionDamage/);
@@ -557,7 +615,10 @@ assert.match(dungeonSource, /stickLinkedPrimer[\s\S]*triggerLinkedPrimer/);
 assert.match(dungeonSource, /WeaponController\.updateRuntime\(this\.player, dt, fireHeld\)/);
 assert.match(dungeonSource, /highHealthDamageThreshold[\s\S]*highHealthDamageMultiplier/);
 assert.match(dungeonSource, /criticalExplosionRadius[\s\S]*criticalExplosionDamageMultiplier/);
+assert.match(dungeonSource, /weaponRecoilVisual = Math\.min/);
 assert.match(rendererSource, /ProjectileArtRenderer\.draw/);
+assert.match(rendererSource, /activeWeapon\?\.dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back"\)/);
+assert.match(rendererSource, /weaponRecoilVisual/);
 assert.match(projectileRendererSource, /p\.style === "beam"[\s\S]*p\.style === "prism"/);
 assert.match(projectileRendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
 assert.match(projectileRendererSource, /p\.style === "bullet"[\s\S]*p\.style === "tracer"[\s\S]*p\.style === "plasma"[\s\S]*p\.style === "flame"[\s\S]*p\.style === "rocket"[\s\S]*p\.style === "disc"[\s\S]*p\.style === "water"/);
@@ -587,4 +648,6 @@ console.log(JSON.stringify({
   mageArcaneOverdrive: "ok",
   mageArcaneEcho: "ok",
   dedicatedRendering: "ok",
+  dualWieldLayering: "front-and-back",
+  weaponBodyRecoil: "ok",
 }));

@@ -15,6 +15,8 @@ export class PromptRenderer {
     else if (target.type === "treasure") action = t(language, "prompt.open");
     else if (target.type === "shop") action = t(language, "prompt.shop");
     else if (target.type === "broadcast") action = t(language, "prompt.tuneIn");
+    else if (target.type === "wish_fountain") action = t(language, "prompt.makeWish");
+    else if (target.type === "photo_booth") action = t(language, "prompt.takePhoto");
     const msg = action ? `[${interactPrompt}] ${action}` : "";
 
     if (msg) {

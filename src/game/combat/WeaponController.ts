@@ -37,7 +37,13 @@ export class WeaponController {
     if (SkillController.isMageOverdriveActive(player)) return 0;
     const multiplier = BuffSystem.getWeaponModifiers(player).energyCostMultiplier;
     const channelMultiplier = 1 + WeaponController.getChannelRatio(player, weaponId);
-    return WeaponController.calculateEnergyCost(weapon.manaCost * channelMultiplier, multiplier);
+    const catalystShot = weapon.linkedShot === true &&
+      player.linkedShotWeaponId === weapon.id &&
+      player.linkedShotStep === 1;
+    const baseCost = catalystShot
+      ? Math.max(0, weapon.linkedCatalystEnergyCost ?? weapon.manaCost)
+      : weapon.manaCost;
+    return WeaponController.calculateEnergyCost(baseCost * channelMultiplier, multiplier);
   }
 
   static formatEnergyCost(value: number): string {
@@ -332,6 +338,10 @@ export class WeaponController {
         projectile.anchorX = player.x;
         projectile.anchorY = player.y;
         projectile.linkedShotMode = linkedShotMode;
+        if (linkedShotMode === "primer" && projectile.linkedMarkerLife > 0) {
+          projectile.life = Math.min(projectile.life, projectile.linkedMarkerLife);
+          projectile.maxLife = projectile.life;
+        }
         projectiles.push(projectile);
       }
     }

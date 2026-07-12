@@ -321,6 +321,7 @@ export class DungeonState extends GameState {
     if (this.player.characterId === "michele") {
       this.player.skillActiveTimer = 0;
       this.player.micheleTurretActive = false;
+      this.player.micheleTurretHitsRemaining = 0;
       this.player.micheleTurretFireCooldown = 0;
       this.player.micheleTurretX = this.player.x;
       this.player.micheleTurretY = this.player.y;
@@ -423,7 +424,12 @@ export class DungeonState extends GameState {
       return;
     }
 
-    if (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") {
+    if (
+      currentRoom.type === "legacy_rpg" ||
+      currentRoom.type === "legacy_tactics" ||
+      currentRoom.type === "wish_fountain" ||
+      currentRoom.type === "photo_booth"
+    ) {
       this.setPhase("exploration");
       return;
     }
@@ -541,7 +547,7 @@ export class DungeonState extends GameState {
   
   private prepareBuffChoice(floor: typeof this.engine.data.data.floor, currentRoom: Room) {
     if (floor.buffChoiceCompleted || floor.buffChoiceOptions?.length) return;
-    if (this.player.buffs.length >= BuffSystem.MAX_BUFFS) {
+    if (this.player.buffs.length >= BuffSystem.ACTIVE_REWARD_BUFF_LIMIT) {
       floor.buffChoiceCompleted = true;
       return;
     }
@@ -821,6 +827,7 @@ export class DungeonState extends GameState {
       this.player.muzzleFlash -= dt * 10;
       if (this.player.muzzleFlash < 0) this.player.muzzleFlash = 0;
     }
+    this.player.weaponRecoilVisual = Math.max(0, this.player.weaponRecoilVisual - dt * 18);
     if (this.player.hitFlash > 0) {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
@@ -859,9 +866,11 @@ export class DungeonState extends GameState {
           projectile.style === "yoyo"
         )
       : undefined;
-    if (heldYoyo && fireHeld && canFireWeapon && this.transitionState === "none") {
-      heldYoyo.life = Math.max(heldYoyo.life, 0.3);
-    }
+    this.player.activeYoyoWeaponId = heldYoyo?.weaponId ?? "";
+    this.updateTerrarianYoyo(
+      dt,
+      Boolean(heldYoyo && fireHeld && canFireWeapon && this.transitionState === "none"),
+    );
     if (activeWeapon?.attackMode === "channel" && fireHeld && canFireWeapon && this.transitionState === "none") {
       this.player.weaponChannelTime = Math.min(
         activeWeapon.channelTime ?? 3.2,
@@ -1213,9 +1222,12 @@ export class DungeonState extends GameState {
   }
 
   private getBroadcastPosition(room: Room): { x: number; y: number } {
-    const template = getRoomTemplate(room);
-    const point = template.pickupSpawnPoints[0] ?? template.legacySpawnPoint ?? { x: 10, y: 7.5 };
-    return { x: point.x * 16 + 8, y: point.y * 16 + 8 };
+    // NPC-room carpet is authored around the exact world-space center.
+    return { x: 160, y: 120 };
+  }
+
+  private getSpecialRoomPosition(_room: Room): { x: number; y: number } {
+    return { x: 160, y: 120 };
   }
 
   private handleInteract(target: any) {
@@ -1226,6 +1238,28 @@ export class DungeonState extends GameState {
     } else if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
        this.engine.input.clear();
        this.engine.switchState(target.type, { sourceRoomId: target.roomId });
+    } else if (target.type === "wish_fountain" || target.type === "photo_booth") {
+       const floor = this.engine.data.data.floor;
+       const room = floor.rooms.find((candidate: Room) => candidate.id === target.roomId);
+       if (!room || room.interactionCompleted) return;
+       const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, target.type));
+       if (target.type === "wish_fountain") {
+         const reward = Math.floor(random() * 4);
+         if (reward === 0) this.player.hp = Math.min(this.player.maxHp, this.player.hp + 3);
+         else if (reward === 1) this.player.mana = Math.min(this.player.maxMana, this.player.mana + 16);
+         else if (reward === 2) this.pickups.push(acquirePickup(target.x, target.y + 18, "coin", 32));
+         else this.player.buffRerollsRemaining += 1;
+       } else {
+         this.player.buffRerollsRemaining += 1;
+         this.pickups.push(acquirePickup(target.x, target.y + 18, "coin", 18));
+       }
+       room.interactionCompleted = true;
+       room.rewardGenerated = true;
+       audio.playClearRoom();
+       this.fx.emitRoomClear(target.x, target.y, this.engine.isPerformanceDegraded());
+       this.syncRoomState();
+       this.syncPlayerState();
+       this.engine.data.save();
     } else if (target.type === "broadcast") {
        const floor = this.engine.data.data.floor;
        const room = floor.rooms.find((candidate: Room) => candidate.id === target.roomId);
@@ -1285,6 +1319,17 @@ export class DungeonState extends GameState {
       const broadcast = this.getBroadcastPosition(currentRoom);
       if (Math.hypot(this.player.x - broadcast.x, this.player.y - broadcast.y) < 30) {
         return { type: "broadcast", x: broadcast.x, y: broadcast.y, roomId: currentRoom.id };
+      }
+    }
+
+    if (
+      currentRoom &&
+      (currentRoom.type === "wish_fountain" || currentRoom.type === "photo_booth") &&
+      !currentRoom.interactionCompleted
+    ) {
+      const special = this.getSpecialRoomPosition(currentRoom);
+      if (Math.hypot(this.player.x - special.x, this.player.y - special.y) < 30) {
+        return { type: currentRoom.type, x: special.x, y: special.y, roomId: currentRoom.id };
       }
     }
 
@@ -1396,11 +1441,72 @@ export class DungeonState extends GameState {
   }
 
   // TODO: Move to PlayerController
+  private updateTerrarianYoyo(dt: number, sustaining: boolean): void {
+    const yoyo = this.projectiles.find(projectile =>
+      projectile.faction === "player" &&
+      projectile.weaponId === "terrarian" &&
+      projectile.style === "yoyo"
+    );
+    if (!yoyo) {
+      this.player.terrarianOrbCooldown = 0;
+      return;
+    }
+    if (!sustaining) return;
+
+    const weapon = WEAPONS.terrarian;
+    const sustainCost = Math.max(0, weapon.sustainEnergyPerSecond ?? 0) * dt;
+    if (this.player.mana + 1e-9 < sustainCost) return;
+    this.player.mana = Math.max(0, this.player.mana - sustainCost);
+    if (sustainCost > 0) this.player.manaRechargeTimer = this.player.manaRechargeDelay;
+    yoyo.life = Math.max(yoyo.life, 0.3);
+
+    this.player.terrarianOrbCooldown -= dt;
+    if (this.player.terrarianOrbCooldown > 0 || this.enemies.length === 0) return;
+    this.player.terrarianOrbCooldown = 0.38;
+
+    let target: Enemy | undefined;
+    let closest = 180;
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0) continue;
+      const distance = Math.hypot(enemy.hitboxX - yoyo.x, enemy.hitboxY - yoyo.y);
+      if (distance < closest) {
+        closest = distance;
+        target = enemy;
+      }
+    }
+    const angle = target
+      ? Math.atan2(target.hitboxY - yoyo.y, target.hitboxX - yoyo.x)
+      : this.player.aimAngle;
+    const orb = acquireProjectile(
+      yoyo.x,
+      yoyo.y,
+      Math.cos(angle) * 165,
+      Math.sin(angle) * 165,
+      3,
+      5,
+      "player",
+      1.7,
+      "#64F58D",
+      2,
+      false,
+      0,
+      1,
+    );
+    orb.weaponId = "terrarian_orb";
+    orb.style = "plasma";
+    orb.trailLength = 12;
+    orb.homingStrength = 9;
+    orb.impactEffect = "plasma";
+    this.projectiles.push(orb);
+    this.fx.emitMuzzle(orb, this.engine.isPerformanceDegraded());
+  }
+
   private fireWeapon() {
     const baseAngle = this.getPlayerAimAngle();
     const weaponId = this.player.currentWeaponId;
     const result = WeaponController.fire(this.player, baseAngle);
     if (!result.fired) return;
+    this.player.weaponRecoilVisual = Math.min(6, 1.2 + result.recoil * 2.6);
 
     let effectProjectile = result.projectiles[0];
     if (weaponId === "stardust_dragon_staff") {
@@ -1421,6 +1527,9 @@ export class DungeonState extends GameState {
       }
     } else {
       this.projectiles.push(...result.projectiles);
+    }
+    if (WEAPONS[weaponId]?.attackMode === "yoyo") {
+      this.player.activeYoyoWeaponId = weaponId;
     }
 
     if (effectProjectile) this.fx.emitMuzzle(effectProjectile, this.engine.isPerformanceDegraded());
@@ -1554,13 +1663,58 @@ export class DungeonState extends GameState {
     return closest;
   }
 
+  private isMicheleTurretAvailable(): boolean {
+    return this.player.characterId === "michele" &&
+      this.player.micheleTurretActive &&
+      this.player.skillActiveTimer > 0 &&
+      this.player.micheleTurretHitsRemaining > 0;
+  }
+
+  private getEnemyCombatTarget(): {
+    kind: "player" | "michele_turret";
+    x: number;
+    y: number;
+    radius: number;
+  } {
+    if (this.isMicheleTurretAvailable()) {
+      return {
+        kind: "michele_turret",
+        x: this.player.micheleTurretX,
+        y: this.player.micheleTurretY,
+        radius: 8,
+      };
+    }
+    return { kind: "player", x: this.player.x, y: this.player.y, radius: this.player.radius };
+  }
+
+  private damageMicheleTurret(): boolean {
+    if (!this.isMicheleTurretAvailable()) return false;
+    this.player.micheleTurretHitsRemaining = Math.max(0, this.player.micheleTurretHitsRemaining - 1);
+    this.fx.emitImpact(
+      this.player.micheleTurretX,
+      this.player.micheleTurretY - 5,
+      "#70D7FF",
+      false,
+      this.engine.isPerformanceDegraded(),
+    );
+    audio.playHurt();
+    if (this.player.micheleTurretHitsRemaining <= 0) {
+      this.player.micheleTurretActive = false;
+      this.player.skillActiveTimer = 0;
+      this.player.micheleTurretFireCooldown = 0;
+    }
+    return true;
+  }
+
   private updateEnemies(dt: number) {
     if (this.player.hp <= 0) return;
+    const normalMode = this.engine.data.data.floor?.hardMode !== true;
     
     for (const e of this.enemies) {
       const previousX = e.x;
       const previousY = e.y;
-      const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
+      const combatTarget = this.getEnemyCombatTarget();
+      const dist = Math.hypot(combatTarget.x - e.x, combatTarget.y - e.y);
       if (e.type === "boss") this.updateBossPhase(e);
       
       let nextX = e.x;
@@ -1603,7 +1757,7 @@ export class DungeonState extends GameState {
         if (e.attackTimer <= 0) {
           this.resolveEnemyAttack(e);
         }
-        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
         continue;
       }
 
@@ -1613,63 +1767,66 @@ export class DungeonState extends GameState {
           e.attackState = "idle";
           e.attackTimer = 0;
         }
-        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+        updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
         continue;
       }
 
       if (e.type === "melee" && e.behavior === "charge") {
-        if (dist <= 110 && e.attackCooldown <= 0) {
+        const chargeAttackRange = normalMode ? 92 : 110;
+        if (dist <= chargeAttackRange && e.attackCooldown <= 0) {
           this.beginEnemyAttack(e, e.attackWindup);
-          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
           continue;
         }
 
         if (dist > 28) {
-          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          const angle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
       } else if (e.type === "melee") {
-        const attackRange = e.radius + this.player.radius + 8;
+        const attackRange = e.radius + combatTarget.radius + 8;
         if (dist <= attackRange && e.attackCooldown <= 0) {
           this.beginEnemyAttack(e, e.attackWindup);
-          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
           continue;
         }
 
         if (dist > attackRange - 2) {
-          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          const angle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
       } else if (e.type === "ranged") {
-        const hasAttackLine = !e.requiresLineOfSight || this.hasLineOfSight(e.x, e.y, this.player.x, this.player.y);
+        const hasAttackLine = !e.requiresLineOfSight || this.hasLineOfSight(e.x, e.y, combatTarget.x, combatTarget.y);
         const canAttack = (e.behavior !== "summon" || this.enemies.length < 7) && hasAttackLine;
-        if (canAttack && e.attackCooldown <= 0 && dist <= e.attackRange) {
+        const rangedAttackRange = normalMode ? Math.min(e.attackRange, 128) : e.attackRange;
+        if (canAttack && e.attackCooldown <= 0 && dist <= rangedAttackRange) {
           this.beginEnemyAttack(e, e.attackWindup);
-          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
           continue;
         }
 
         if (dist > 112 || !hasAttackLine) {
-          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          const angle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         } else if (dist < 78) {
-          const angle = Math.atan2(e.y - this.player.y, e.x - this.player.x);
+          const angle = Math.atan2(e.y - combatTarget.y, e.x - combatTarget.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
       } else if (e.type === "boss") {
-        if (e.attackCooldown <= 0) {
+        const bossAttackRange = normalMode ? 150 : 220;
+        if (e.attackCooldown <= 0 && dist <= bossAttackRange) {
           const phaseWindup = e.attackWindup * (e.bossPhase === 1 ? 1 : e.bossPhase === 2 ? 0.88 : 0.76);
           this.beginEnemyAttack(e, phaseWindup);
-          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+          updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
           continue;
         }
 
         if (dist > (e.bossPhase === 3 ? 48 : 60)) {
-          const angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+          const angle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
@@ -1680,7 +1837,7 @@ export class DungeonState extends GameState {
       
       e.x = Math.max(16, Math.min(320 - 16, e.x));
       e.y = Math.max(16, Math.min(240 - 16, e.y));
-      updateEnemyAnimation(e, { dt, previousX, previousY, targetX: this.player.x });
+      updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
     }
 
     this.separateEnemies();
@@ -1742,18 +1899,24 @@ export class DungeonState extends GameState {
   }
 
   private beginEnemyAttack(enemy: Enemy, windup: number) {
+    const target = this.getEnemyCombatTarget();
     enemy.attackState = "windup";
     enemy.attackTimer = windup;
     enemy.attackAnimationDuration = windup;
-    enemy.attackAngle = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x);
-    enemy.attackTargetX = this.player.x;
-    enemy.attackTargetY = this.player.y;
+    enemy.attackTargetKind = target.kind;
+    enemy.attackAngle = Math.atan2(target.y - enemy.y, target.x - enemy.x);
+    enemy.attackTargetX = target.x;
+    enemy.attackTargetY = target.y;
   }
 
   private resolveEnemyAttack(enemy: Enemy) {
     if (enemy.behavior === "melee") {
-      const dx = this.player.x - enemy.x;
-      const dy = this.player.y - enemy.y;
+      const attackingTurret = enemy.attackTargetKind === "michele_turret" && this.isMicheleTurretAvailable();
+      const targetX = attackingTurret ? this.player.micheleTurretX : this.player.x;
+      const targetY = attackingTurret ? this.player.micheleTurretY : this.player.y;
+      const targetRadius = attackingTurret ? 8 : this.player.radius;
+      const dx = targetX - enemy.x;
+      const dy = targetY - enemy.y;
       const distance = Math.hypot(dx, dy);
       const targetAngle = Math.atan2(dy, dx);
       const angleDelta = Math.atan2(
@@ -1761,7 +1924,15 @@ export class DungeonState extends GameState {
         Math.cos(targetAngle - enemy.attackAngle)
       );
 
-      if (distance <= enemy.radius + this.player.radius + 11 && Math.abs(angleDelta) <= Math.PI * 0.42) {
+      if (distance <= enemy.radius + targetRadius + 11 && Math.abs(angleDelta) <= Math.PI * 0.42) {
+        if (attackingTurret) {
+          this.damageMicheleTurret();
+          enemy.attackCooldown = enemy.attackInterval;
+          enemy.attackSequence++;
+          enemy.attackState = "recover";
+          enemy.attackTimer = 0.16;
+          return;
+        }
         const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
         if (result.applied) {
           this.engine.data.recordPlayerDamage(
@@ -1793,6 +1964,18 @@ export class DungeonState extends GameState {
       this.spawnSummonedEnemy(enemy);
       enemy.attackCooldown = enemy.attackInterval;
     } else if (enemy.behavior === "area") {
+      if (enemy.attackTargetKind === "michele_turret" && this.isMicheleTurretAvailable()) {
+        const turretDistance = Math.hypot(
+          this.player.micheleTurretX - enemy.attackTargetX,
+          this.player.micheleTurretY - enemy.attackTargetY,
+        );
+        if (turretDistance <= enemy.areaRadius + 8) this.damageMicheleTurret();
+        enemy.attackCooldown = enemy.attackInterval;
+        enemy.attackSequence++;
+        enemy.attackState = "recover";
+        enemy.attackTimer = 0.16;
+        return;
+      }
       const distance = Math.hypot(
         this.player.x - enemy.attackTargetX,
         this.player.y - enemy.attackTargetY,
@@ -1843,6 +2026,7 @@ export class DungeonState extends GameState {
       enemy.type === "boss",
     );
     projectile.sourceEnemyId = enemy.id;
+    projectile.targetsMicheleTurret = enemy.attackTargetKind === "michele_turret";
     this.projectiles.push(projectile);
   }
 
@@ -1859,16 +2043,24 @@ export class DungeonState extends GameState {
       enemy.y = Math.max(16, Math.min(224, nextY));
     }
 
+    const attackingTurret = enemy.attackTargetKind === "michele_turret" && this.isMicheleTurretAvailable();
+    const targetX = attackingTurret ? this.player.micheleTurretX : this.player.x;
+    const targetY = attackingTurret ? this.player.micheleTurretY : this.player.y;
+    const targetRadius = attackingTurret ? 8 : this.player.radius;
     const hit = segmentCircleHit(
       startX,
       startY,
       enemy.x,
       enemy.y,
-      this.player.x,
-      this.player.y,
-      enemy.radius + this.player.radius + 2,
+      targetX,
+      targetY,
+      enemy.radius + targetRadius + 2,
     );
     if (hit) {
+      if (attackingTurret) {
+        this.damageMicheleTurret();
+        return;
+      }
       const result = DamageSystem.damagePlayer(this.player, enemy.attackDamage);
       if (result.applied) {
         this.engine.data.recordPlayerDamage(
@@ -2063,6 +2255,12 @@ export class DungeonState extends GameState {
       if (p.stuck) {
         p.update(dt);
         if (p.life <= 0) {
+          if (p.linkedShotMode === "primer" && !p.detonated) {
+            p.explosionRadius = Math.max(8, p.linkedExplosionRadius || 42);
+            p.explosionDamageMultiplier = Math.max(0.1, p.linkedExplosionDamageMultiplier || 1);
+            p.color = "#FF7043";
+            this.detonateProjectile(p);
+          }
           this.projectiles.splice(i, 1);
           releaseProjectile(p);
         }
@@ -2161,32 +2359,52 @@ export class DungeonState extends GameState {
           }
         }
       } else if (p.faction === "enemy" && this.player.hp > 0) {
-        const hit = segmentCircleHit(
-          p.previousX, p.previousY, p.x, p.y,
-          this.player.x, this.player.y, p.radius + this.player.radius,
-        );
-        if (hit && (environmentHitT === null || hit.t <= environmentHitT)) {
-          p.x = hit.x;
-          p.y = hit.y;
-          const result = DamageSystem.damagePlayer(this.player, p.damage);
-          if (result.applied) {
-            this.engine.data.recordPlayerDamage(
-              result.armorDamage + result.hpDamage,
-              p.sourceBoss,
-            );
-            this.engine.triggerScreenShake(2.2, 0.12);
-            this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
-            this.markMicheleAttacker(p.sourceEnemyId);
-            if (
-              result.armorDamage + result.hpDamage > 0 &&
-              p.statusEffect &&
-              p.statusDuration > 0
-            ) {
-              StatusEffectSystem.applyPlayer(this.player, p.statusEffect, p.statusDuration);
-            }
-            audio.playHurt();
+        if (p.targetsMicheleTurret && this.isMicheleTurretAvailable()) {
+          const turretHit = segmentCircleHit(
+            p.previousX,
+            p.previousY,
+            p.x,
+            p.y,
+            this.player.micheleTurretX,
+            this.player.micheleTurretY,
+            p.radius + 8,
+          );
+          if (turretHit && (environmentHitT === null || turretHit.t <= environmentHitT)) {
+            p.x = turretHit.x;
+            p.y = turretHit.y;
+            this.damageMicheleTurret();
+            entityHit = true;
           }
-          entityHit = true;
+        }
+        const committedToTurret = p.targetsMicheleTurret && this.isMicheleTurretAvailable();
+        if (!entityHit && !committedToTurret) {
+          const hit = segmentCircleHit(
+            p.previousX, p.previousY, p.x, p.y,
+            this.player.x, this.player.y, p.radius + this.player.radius,
+          );
+          if (hit && (environmentHitT === null || hit.t <= environmentHitT)) {
+            p.x = hit.x;
+            p.y = hit.y;
+            const result = DamageSystem.damagePlayer(this.player, p.damage);
+            if (result.applied) {
+              this.engine.data.recordPlayerDamage(
+                result.armorDamage + result.hpDamage,
+                p.sourceBoss,
+              );
+              this.engine.triggerScreenShake(2.2, 0.12);
+              this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
+              this.markMicheleAttacker(p.sourceEnemyId);
+              if (
+                result.armorDamage + result.hpDamage > 0 &&
+                p.statusEffect &&
+                p.statusDuration > 0
+              ) {
+                StatusEffectSystem.applyPlayer(this.player, p.statusEffect, p.statusDuration);
+              }
+              audio.playHurt();
+            }
+            entityHit = true;
+          }
         }
       }
 
@@ -2217,6 +2435,11 @@ export class DungeonState extends GameState {
       }
 
       if (entityHit || environmentHitT !== null || p.life <= 0) {
+        if (p.life <= 0 && p.linkedShotMode === "primer" && !p.detonated) {
+          p.explosionRadius = Math.max(8, p.linkedExplosionRadius || 42);
+          p.explosionDamageMultiplier = Math.max(0.1, p.linkedExplosionDamageMultiplier || 1);
+          p.color = "#FF7043";
+        }
         if (p.explosionRadius > 0 && !p.detonated) {
           this.detonateProjectile(p, directEnemyId);
         }
@@ -2377,8 +2600,9 @@ export class DungeonState extends GameState {
     projectile.vy = 0;
     projectile.previousX = projectile.x;
     projectile.previousY = projectile.y;
-    projectile.life = Math.max(0.5, projectile.linkedMarkerLife || 4);
-    projectile.maxLife = projectile.life;
+    const fuse = Math.max(0.1, projectile.linkedMarkerLife || 2);
+    projectile.life = Math.max(0.1, Math.min(projectile.life, fuse));
+    projectile.maxLife = fuse;
     projectile.hitEnemyIds.clear();
   }
 
@@ -2600,6 +2824,7 @@ export class DungeonState extends GameState {
         this.player.micheleTurretX,
         this.player.micheleTurretY,
         time,
+        this.player.micheleTurretHitsRemaining,
       );
     }
     if (this.player.characterId === "kanami" && this.player.skillActiveTimer > 0) {
@@ -2651,6 +2876,48 @@ export class DungeonState extends GameState {
       ctx.fillStyle = "#09101A";
       ctx.fillRect(-8, 10, 4, 5);
       ctx.fillRect(4, 10, 4, 5);
+      ctx.restore();
+    }
+
+    if (currentRoom?.type === "wish_fountain") {
+      const special = this.getSpecialRoomPosition(currentRoom);
+      const pulse = Math.floor(time * 6) % 3;
+      ctx.save();
+      ctx.translate(special.x, special.y);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(-18, 10, 36, 5);
+      ctx.fillStyle = currentRoom.interactionCompleted ? "#5B3A6E" : "#8E44AD";
+      ctx.fillRect(-16, 2, 32, 10);
+      ctx.fillRect(-11, -6, 22, 10);
+      ctx.fillStyle = "#D2B4DE";
+      ctx.fillRect(-9, -4, 18, 5);
+      ctx.fillStyle = currentRoom.interactionCompleted ? "#566573" : "#58D3F7";
+      ctx.fillRect(-7, -3, 14, 3);
+      if (!currentRoom.interactionCompleted) {
+        ctx.fillStyle = pulse === 0 ? "#FFFFFF" : "#F4D35E";
+        ctx.fillRect(-1, -12 - pulse, 2, 4);
+        ctx.fillRect(-7, -8 + pulse, 2, 2);
+        ctx.fillRect(5, -9 + (2 - pulse), 2, 2);
+      }
+      ctx.restore();
+    } else if (currentRoom?.type === "photo_booth") {
+      const special = this.getSpecialRoomPosition(currentRoom);
+      const flash = !currentRoom.interactionCompleted && Math.floor(time * 2.5) % 4 === 0;
+      ctx.save();
+      ctx.translate(special.x, special.y);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(-16, 12, 32, 5);
+      ctx.fillStyle = currentRoom.interactionCompleted ? "#4D5656" : "#8E44AD";
+      ctx.fillRect(-14, -18, 28, 31);
+      ctx.fillStyle = "#17202A";
+      ctx.fillRect(-10, -14, 20, 15);
+      ctx.fillStyle = flash ? "#FFFFFF" : "#D980FA";
+      ctx.fillRect(-6, -11, 12, 9);
+      ctx.fillStyle = "#F06CA8";
+      ctx.fillRect(-10, 4, 20, 5);
+      ctx.fillStyle = "#09101A";
+      ctx.fillRect(-11, 13, 5, 4);
+      ctx.fillRect(6, 13, 5, 4);
       ctx.restore();
     }
 

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { BUFFS, BuffSystem, type BuffId } from "../src/game/combat/BuffSystem";
 import { StatusEffectSystem } from "../src/game/combat/StatusEffectSystem";
 import { WeaponController } from "../src/game/combat/WeaponController";
+import { ENEMY_ATTACK_RATE_MULTIPLIER, getStageDifficulty } from "../src/game/combat/StageDifficulty";
 import { CHARACTERS } from "../src/game/data/characters";
 import { ENEMIES, getEnemyDefinition } from "../src/game/data/enemies";
 import { ROOM_TEMPLATES } from "../src/game/data/roomTemplates";
@@ -126,7 +127,7 @@ function loadLegacyCombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 22);
+  assert.equal(persisted.saveVersion, 23);
   return loaded.data.player;
 }
 
@@ -220,16 +221,18 @@ assert.equal(resourceShot.fired, true);
 assert.equal(resourcePlayer.mana, 0);
 assert.equal(WeaponController.formatEnergyCost(0.8), "0.8");
 assert.equal(WeaponController.formatEnergyCost(2), "2");
+assert.equal(ENEMY_ATTACK_RATE_MULTIPLIER, 0.7);
+assert.ok(Math.abs(getStageDifficulty({ globalStageIndex: 1, chapterIndex: 1 }).attackCooldownMultiplier - 1 / 0.7) < 1e-9);
 
 const metrics = Object.fromEntries(
   Object.values(WEAPONS).map(weapon => [weapon.id, getWeaponBalanceMetrics(weapon, MAX_PLAYER_MANA)]),
 );
 const zeroEnergy = Object.values(WEAPONS).filter(weapon => weapon.manaCost === 0);
 for (const weapon of zeroEnergy) {
-  const ceiling = weapon.maxHeat ? 15 : 12.5;
+  const ceiling = weapon.maxHeat ? 15.5 : 15;
   assert.ok(metrics[weapon.id].directDps <= ceiling, `${weapon.id} free DPS ${metrics[weapon.id].directDps}`);
 }
-assert.ok(metrics.vector_9.directDps <= metrics.laser.directDps * 0.55);
+assert.ok(metrics.vector_9.directDps <= metrics.laser.directDps * 0.65);
 assert.ok(metrics.nail_driver.directDps < metrics.plasma_caster.directDps);
 assert.ok(metrics.service_revolver.directDps < metrics.kingmaker.directDps);
 assert.ok(metrics.liberator.directDps < metrics.void_rail.directDps);
@@ -343,7 +346,7 @@ assert.match(renderer, /enemy\.isElite \? 1\.62 : 1\.42/);
 assert.match(renderer, /enemy\.type === "boss"\) scale = 2\.15/);
 assert.match(renderer, /weapon\?\.renderOffsetX/);
 assert.match(renderer, /weapon\?\.muzzleOffsetX/);
-assert.match(dungeonSource, /dist <= e\.attackRange/);
+assert.match(dungeonSource, /rangedAttackRange = normalMode \? Math\.min\(e\.attackRange, 128\) : e\.attackRange/);
 assert.match(dungeonSource, /hasLineOfSight/);
 assert.match(dungeonSource, /p\.type === "mana" && this\.player\.mana >= this\.player\.maxMana/);
 
@@ -407,7 +410,7 @@ const characterSustain = Object.fromEntries(
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v17-v22-ratio-preserved",
+  runMigration: "v17-v23-ratio-preserved",
   manaCap: MAX_PLAYER_MANA,
   characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
     character.maxMana,

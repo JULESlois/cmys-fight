@@ -74,6 +74,7 @@ assert.equal(skillUser.skillActiveTimer, 8);
 assert.equal(skillUser.skillCooldown, 12);
 assert.equal(skillUser.micheleTurretX, 80);
 assert.equal(skillUser.micheleTurretY, 90);
+assert.equal(skillUser.micheleTurretHitsRemaining, 6);
 SkillController.update(skillUser, 0.5);
 assert.equal(skillUser.skillActiveTimer, 7.5);
 
@@ -88,6 +89,7 @@ roomResetDungeon.clearRoomScopedSkillEntities();
 assert.equal(roomResetDungeon.player.skillActiveTimer, 0, "Pawtector must despawn on room transition");
 assert.equal(roomResetDungeon.player.micheleTurretFireCooldown, 0);
 assert.equal(roomResetDungeon.player.micheleTurretActive, false);
+assert.equal(roomResetDungeon.player.micheleTurretHitsRemaining, 0);
 assert.equal(roomResetDungeon.player.micheleMarkedEnemyId, -1);
 assert.equal(roomResetDungeon.player.micheleMarkTimer, 0);
 
@@ -109,6 +111,7 @@ turretDungeon.player.characterId = "michele";
 turretDungeon.player.x = 80;
 turretDungeon.player.y = 90;
 SkillController.activate(turretDungeon.player, [], { x: 0, y: 0 }, 0);
+assert.equal(turretDungeon.getEnemyCombatTarget().kind, "michele_turret");
 const turretTarget = new Enemy(110, 90, "melee");
 turretTarget.hp = turretTarget.maxHp = 20;
 turretDungeon.enemies = [turretTarget];
@@ -121,6 +124,13 @@ assert.equal(turretDungeon.projectiles[0].statusDuration, SkillController.MICHEL
 assert.equal(turretDungeon.player.micheleTurretFireCooldown, SkillController.MICHELE_TURRET_FIRE_INTERVAL);
 for (const projectile of turretDungeon.projectiles) releaseProjectile(projectile);
 turretDungeon.projectiles = [];
+for (let hit = 0; hit < 5; hit++) assert.equal(turretDungeon.damageMicheleTurret(), true);
+assert.equal(turretDungeon.player.micheleTurretHitsRemaining, 1);
+assert.equal(turretDungeon.player.micheleTurretActive, true);
+assert.equal(turretDungeon.damageMicheleTurret(), true);
+assert.equal(turretDungeon.player.micheleTurretHitsRemaining, 0);
+assert.equal(turretDungeon.player.micheleTurretActive, false);
+assert.equal(turretDungeon.getEnemyCombatTarget().kind, "player");
 
 const passiveDungeon = new DungeonState(fakeEngine) as any;
 passiveDungeon.isCollidingWithMap = () => false;
@@ -193,6 +203,7 @@ console.log(JSON.stringify({
   character: "michele",
   exclusiveWeapon: "inspector",
   pawtector: "8s-auto-slow-turret",
+  pawtectorDurability: "six-hits-and-priority-taunt",
   catTrace: "2s-attacker-mark",
   markedInspectorMultiplier: 1.35,
   dedicatedCharacterSprite: "ok",

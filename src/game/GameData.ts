@@ -73,7 +73,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 22;
+const CURRENT_SAVE_VERSION = 23;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -933,6 +933,19 @@ export class GameData {
     stage.challengeId = run.challengeId;
     stage.challengeKey = run.challengeKey;
     stage.buffChoiceRerollCount = Math.max(0, Math.floor(Number(stage.buffChoiceRerollCount) || 0));
+    for (const room of stage.rooms) {
+      if (room.type === "legacy_rpg") {
+        room.type = "wish_fountain";
+        room.templateId = "legacy_room";
+        room.interactionCompleted = false;
+        room.rewardGenerated = false;
+      } else if (room.type === "legacy_tactics") {
+        room.type = "photo_booth";
+        room.templateId = "legacy_room";
+        room.interactionCompleted = false;
+        room.rewardGenerated = false;
+      }
+    }
     const roomSignature = stage.rooms
       .map(room => `${room.id}:${room.type}`)
       .sort()

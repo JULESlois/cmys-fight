@@ -71,7 +71,8 @@ type ManaRuntimePlayer = Pick<
 type RuntimePlayer = ManaRuntimePlayer & Pick<Player, "armorRechargeDelay" | "armorRechargeRate">;
 
 export class BuffSystem {
-  static readonly MAX_BUFFS = 6;
+  static readonly MAX_BUFFS = 12;
+  static readonly ACTIVE_REWARD_BUFF_LIMIT = 6;
 
   static normalizeBuffs(value: unknown): BuffId[] {
     if (!Array.isArray(value)) return [];

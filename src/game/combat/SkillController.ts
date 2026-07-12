@@ -97,7 +97,10 @@ export class SkillController {
     if (player.micheleMarkTimer <= 0) player.micheleMarkedEnemyId = -1;
 
     if (player.skillActiveTimer <= 0) {
-      if (player.characterId === "michele") player.micheleTurretActive = false;
+      if (player.characterId === "michele") {
+        player.micheleTurretActive = false;
+        player.micheleTurretHitsRemaining = 0;
+      }
       if (player.characterId === "kanami") {
         player.kanamiBeaconDeployed = false;
         player.kanamiBeaconFlightTimer = 0;
@@ -110,7 +113,10 @@ export class SkillController {
     const wasActive = player.skillActiveTimer > 0;
     player.skillActiveTimer = Math.max(0, player.skillActiveTimer - dt);
     if (player.skillActiveTimer <= 0) {
-      if (player.characterId === "michele") player.micheleTurretActive = false;
+      if (player.characterId === "michele") {
+        player.micheleTurretActive = false;
+        player.micheleTurretHitsRemaining = 0;
+      }
       if (player.characterId === "kanami") {
         player.kanamiBeaconDeployed = false;
         player.kanamiBeaconFlightTimer = 0;
@@ -164,6 +170,7 @@ export class SkillController {
       player.micheleTurretY = player.y;
       player.micheleTurretFireCooldown = 0;
       player.micheleTurretActive = true;
+      player.micheleTurretHitsRemaining = 6;
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }

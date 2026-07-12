@@ -2,6 +2,8 @@ import type { StageData } from "../FloorGenerator";
 import type { Enemy } from "../entities/Enemy";
 import { getChallengeDifficulty } from "../ChallengeSystem";
 
+export const ENEMY_ATTACK_RATE_MULTIPLIER = 0.7;
+
 export interface StageDifficulty {
   globalStageIndex: number;
   chapterIndex: number;
@@ -40,7 +42,8 @@ export function getStageDifficulty(
     speedMultiplier: (1 + Math.min(0.35, progress * 0.025)) * speedScale * challenge.speedMultiplier,
     enemyDamage: 2 + Math.floor(progress / 5) + (hard ? 1 : 0),
     rangedProjectileSpeed: (90 + Math.min(54, progress * 4)) * (hard ? 1.12 : 1),
-    attackCooldownMultiplier: Math.max(0.62, (1 - progress * 0.025) * cooldownScale),
+    attackCooldownMultiplier: Math.max(0.62, (1 - progress * 0.025) * cooldownScale) /
+      ENEMY_ATTACK_RATE_MULTIPLIER,
     normalWaveCount: Math.min(4, 1 + (globalStageIndex >= 3 ? 1 : 0) + (globalStageIndex >= 8 ? 1 : 0) + (hard ? 1 : 0)),
     enemiesPerWave: Math.min(4, 2 + Math.floor(progress / 3)),
     rangedChance: Math.min(0.65, 0.25 + progress * 0.035),
