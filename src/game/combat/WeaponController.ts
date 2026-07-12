@@ -1,4 +1,4 @@
-import { WEAPONS, getProjectileProfile, isWeaponId } from "../data/weapons";
+import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, isWeaponId } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
 import { acquireProjectile } from "../EntityPools";
@@ -102,7 +102,7 @@ export class WeaponController {
   }
 
   static equipWeapon(player: Player, weaponId: string): EquipWeaponResult {
-    if (!isWeaponId(weaponId)) {
+    if (!isWeaponId(weaponId) || !isWeaponAvailableForCharacter(WEAPONS[weaponId], player.characterId)) {
       return {
         consumed: false,
         changed: false,
@@ -153,7 +153,7 @@ export class WeaponController {
     random: () => number = Math.random,
   ): FireWeaponResult {
     const weapon = WEAPONS[player.currentWeaponId];
-    if (!weapon) {
+    if (!weapon || !isWeaponAvailableForCharacter(weapon, player.characterId)) {
       return { fired: false, projectiles: [], recoil: 0, reason: "invalid_weapon" };
     }
     if (player.fireCooldown > 0) {

@@ -42,6 +42,21 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     starterWeapon: "laser",
     passive: "Spending 12 Energy echoes the triggering attack at 50% damage"
   },
+
+  michele: {
+    id: "michele",
+    name: "Michele",
+    title: "The Rookie Inspector",
+    color: "#4FC3F7",
+    maxHp: 6,
+    maxArmor: 7,
+    maxMana: 42,
+    manaRechargeDelay: 1.1,
+    manaRechargeRate: 10,
+    speed: 96,
+    starterWeapon: "inspector",
+    passive: "Taking damage marks the attacker for 2 seconds; Inspector deals +35% damage to marked targets"
+  },
   rogue: {
     id: "rogue",
     name: "Rogue",

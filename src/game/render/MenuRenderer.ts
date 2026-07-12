@@ -47,12 +47,12 @@ export class MenuRenderer {
     }
   }
 
-  static drawStatBar(ctx: CanvasRenderingContext2D, label: string, val: number, max: number, x: number, y: number, color: string) {
+  static drawStatBar(ctx: CanvasRenderingContext2D, label: string, val: number, max: number, x: number, y: number, color: string, width = 50) {
     ctx.fillStyle = "#FFF";
     ctx.font = "8px monospace";
     ctx.fillText(label, x, y);
     
-    const w = 50;
+    const w = width;
     const h = 4;
     ctx.fillStyle = "rgba(255,255,255,0.2)";
     ctx.fillRect(x + 30, y - 6, w, h);

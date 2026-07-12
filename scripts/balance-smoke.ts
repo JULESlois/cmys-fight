@@ -55,6 +55,7 @@ assert.deepEqual(
   {
     knight: { maxMana: 25, rate: 10, delay: 0.85 },
     mage: { maxMana: 60, rate: 12, delay: 1.1 },
+    michele: { maxMana: 42, rate: 10, delay: 1.1 },
     rogue: { maxMana: 40, rate: 9, delay: 1.35 },
   },
 );
@@ -124,7 +125,7 @@ function loadLegacyCombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 19);
+  assert.equal(persisted.saveVersion, 20);
   return loaded.data.player;
 }
 
@@ -404,7 +405,7 @@ const characterSustain = Object.fromEntries(
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v17-v19-ratio-preserved",
+  runMigration: "v17-v20-ratio-preserved",
   manaCap: MAX_PLAYER_MANA,
   characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
     character.maxMana,

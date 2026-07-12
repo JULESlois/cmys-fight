@@ -77,6 +77,8 @@ export const PROJECTILE_WEAPON_PALETTES: Record<string, Partial<ProjectilePalett
   awp_dragon_lore: { shadow: "#4A2917", base: "#F4C95D", highlight: "#FFF4C2", accent: "#6FA34B", glow: "rgba(244,201,93,0.38)" },
   ak47_wild_lotus: { shadow: "#18382A", base: "#65D69A", highlight: "#F6C4DA", accent: "#E75A92", glow: "rgba(101,214,154,0.32)" },
 
+  inspector: { shadow: "#183047", base: "#70D7FF", highlight: "#F2FCFF", accent: "#3D8FB7", glow: "rgba(112,215,255,0.3)" },
+
   minishark: { shadow: "#77531E", base: "#E0B95D", highlight: "#FFF0AD", accent: "#AAB8C1", glow: "rgba(224,185,93,0.22)" },
   ballistic_knife: { shadow: "#303941", base: "#A9B4BD", highlight: "#F7FBFD", accent: "#69747D", glow: "rgba(169,180,189,0.2)" },
 };

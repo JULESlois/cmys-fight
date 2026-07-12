@@ -1,7 +1,7 @@
 {
   "name": "cmys-fight",
   "private": true,
-  "version": "0.20.2",
+  "version": "0.21.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -11,7 +11,7 @@
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
-    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:i18n && npm run test:content && npm run test:weapons && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
+    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:i18n && npm run test:content && npm run test:weapons && npm run test:michele && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
     "test:http": "node scripts/http-smoke.mjs",
     "test:input": "node --import tsx scripts/input-smoke.ts",
     "test:art": "node --import tsx scripts/art-audio-smoke.ts",
@@ -26,7 +26,8 @@
     "test:ui": "node --import tsx scripts/ui-copy-smoke.ts",
     "test:progression": "node --import tsx scripts/combat-progression-smoke.ts",
     "test:i18n": "node --import tsx scripts/i18n-smoke.ts",
-    "test:balance": "node --import tsx scripts/balance-smoke.ts"
+    "test:balance": "node --import tsx scripts/balance-smoke.ts",
+    "test:michele": "node --import tsx scripts/michele-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

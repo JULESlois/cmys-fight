@@ -27,7 +27,7 @@ export interface MetaProgress {
   codex: CodexProgress;
 }
 
-export const META_SAVE_VERSION = 3;
+export const META_SAVE_VERSION = 4;
 
 export function createDefaultMetaProgress(): MetaProgress {
   return {
@@ -37,8 +37,8 @@ export function createDefaultMetaProgress(): MetaProgress {
     bestVictoryTime: null,
     totalRuns: 0,
     victories: 0,
-    unlockedCharacters: ["knight"],
-    unlockedStarterWeapons: ["pistol"],
+    unlockedCharacters: ["knight", "michele"],
+    unlockedStarterWeapons: ["pistol", "inspector"],
     claimedRunIds: [],
     upgrades: createDefaultMetaUpgrades(),
     hardModeUnlocked: false,
@@ -60,8 +60,8 @@ function uniqueStrings(value: unknown): string[] {
   return [...new Set(value.filter(entry => typeof entry === "string" && entry.length > 0))];
 }
 
-const CHARACTER_IDS = new Set(["knight", "mage", "rogue"]);
-const STARTER_WEAPON_IDS = new Set(["pistol", "shotgun", "laser"]);
+const CHARACTER_IDS = new Set(["knight", "mage", "rogue", "michele"]);
+const STARTER_WEAPON_IDS = new Set(["pistol", "shotgun", "laser", "inspector"]);
 
 export function normalizeMetaProgress(value: unknown): MetaProgress {
   const fallback = createDefaultMetaProgress();
@@ -106,6 +106,9 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
     collection.push(id);
     unlocks.push(label);
   };
+
+  unlock(meta.unlockedCharacters, "michele", "Michele");
+  unlock(meta.unlockedStarterWeapons, "inspector", "Inspector");
 
   if (meta.highestStage >= 5 || meta.currency >= 30) {
     unlock(meta.unlockedStarterWeapons, "shotgun", "Rusty Shotgun");

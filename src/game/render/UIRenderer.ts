@@ -86,6 +86,10 @@ export class UIRenderer {
       ctx.fillStyle = charge >= threshold ? "#F5D0FF" : "#C792EA";
       ctx.font = "bold 6px monospace";
       ctx.fillText(`ECHO ${charge}/${threshold}`, 67, 42);
+    } else if (player.characterId === "michele" && player.micheleMarkTimer > 0) {
+      ctx.fillStyle = "#F4D35E";
+      ctx.font = "bold 6px monospace";
+      ctx.fillText(`TRACE ${player.micheleMarkTimer.toFixed(1)}S`, 67, 42);
     }
 
     // Compact buff strip. Detailed skill and swap information lives on the pause screen.

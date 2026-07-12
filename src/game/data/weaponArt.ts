@@ -587,7 +587,28 @@ const SOURCE_DERIVED_SPRITES: Record<string, string[]> = {
     "................112511..........",
     ".................1111...........",
     "................................"
+  ],
+  "inspector": [
+    "................................",
+    "................................",
+    ".................111............",
+    ".......1111.....1141111.........",
+    "11111111331111111254421111111111",
+    "13444445665555555555554333333321",
+    "12333455555555555555555455555541",
+    "12222344443345333355454246433531",
+    "11111222222225322354355134434521",
+    "....1111111114211253136312223321",
+    "............12211353124311112211",
+    "............1111146211221..1111.",
+    "................123111111.......",
+    "................1221............",
+    "................1111............",
+    "................................",
+    "................................",
+    "................................",
   ]
+
 };
 
 // Runtime weapon art always faces right. These imported reference silhouettes
@@ -603,6 +624,7 @@ export const LEFT_FACING_REFERENCE_SPRITES = [
   "na_45",
   "so_14",
   "aa_12",
+  "inspector",
   "awp_dragon_lore",
   "ak47_wild_lotus",
 ] as const;
@@ -818,6 +840,7 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   awp_dragon_lore: { ...BASE_OUTLINE, "2":"#18130E","3":"#392817","4":"#B53A24","5":"#D89A2B","6":"#5E7F3A","7":"#F0D27A" },
   ak47_wild_lotus: { ...BASE_OUTLINE, "2":"#102B20","3":"#1E5A42","4":"#D7A348","5":"#2D7A54","6":"#4FB77A","7":"#E75A92","8":"#F0A6C0" },
 
+  inspector: { ...BASE_OUTLINE, "2":"#101820","3":"#263A52","4":"#3D6D91","5":"#70D7FF","6":"#E8F5FF" },
   minishark: { ...BASE_OUTLINE, "2":"#30363A","3":"#657079","4":"#8A5A2E","5":"#B9C3C8" },
   water_bolt: { ...BASE_OUTLINE, "2":"#5A1E22","3":"#A42E35","4":"#E5C98E" },
   stardust_dragon_staff: { ...BASE_OUTLINE, "2":"#9B6827","3":"#273B9E","4":"#3E87D0","5":"#77CBE8","6":"#DFF8FF" },
@@ -876,6 +899,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   awp_dragon_lore: { grip: [14, 11], muzzle: [31, 5] },
   ak47_wild_lotus: { grip: [14, 13], muzzle: [31, 6] },
 
+  inspector: { grip: [15, 12], muzzle: [31, 6] },
   minishark: { grip: [10, 12], muzzle: [29, 8] },
   water_bolt: { grip: [8, 13], muzzle: [19, 7] },
   stardust_dragon_staff: { grip: [8, 11], muzzle: [29, 5] },

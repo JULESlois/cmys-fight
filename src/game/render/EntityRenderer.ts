@@ -2,7 +2,7 @@ import { Player, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, PLAYER_MUZZLE_O
 import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
-import { PLAYER_PALETTE } from "../data/sprites";
+import { MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
@@ -59,6 +59,49 @@ export class EntityRenderer {
     ctx.restore();
   }
 
+  public static drawMicheleMark(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number): void {
+    const pulse = Math.floor(time * 10) % 2;
+    const half = enemy.radius + 7 + pulse;
+    ctx.save();
+    ctx.translate(Math.round(enemy.x), Math.round(enemy.y));
+    EntityRenderer.drawCornerFrame(ctx, half, "rgba(244, 211, 94, 0.95)", 5);
+    ctx.fillStyle = "rgba(112, 215, 255, 0.95)";
+    ctx.fillRect(-5, -half - 4, 3, 3);
+    ctx.fillRect(2, -half - 4, 3, 3);
+    ctx.fillRect(-3, -half - 2, 6, 2);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(-1, -half - 1, 2, 2);
+    ctx.restore();
+  }
+
+  public static drawMicheleTurret(ctx: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+    const blink = Math.floor(time * 8) % 2 === 0;
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.fillStyle = "rgba(0,0,0,0.32)";
+    ctx.fillRect(-9, 7, 18, 4);
+    ctx.fillStyle = "#101827";
+    ctx.fillRect(-8, -6, 16, 14);
+    ctx.fillStyle = "#E8F5FF";
+    ctx.fillRect(-6, -4, 12, 8);
+    ctx.fillStyle = "#4C8FD1";
+    ctx.fillRect(-5, -3, 10, 6);
+    ctx.fillStyle = "#70D7FF";
+    ctx.fillRect(-3, -1, 6, 3);
+    ctx.fillStyle = blink ? "#F4D35E" : "#FFFFFF";
+    ctx.fillRect(-1, 0, 2, 2);
+    ctx.fillStyle = "#101827";
+    ctx.fillRect(-7, -9, 4, 4);
+    ctx.fillRect(3, -9, 4, 4);
+    ctx.fillStyle = "#70D7FF";
+    ctx.fillRect(-6, -8, 2, 2);
+    ctx.fillRect(4, -8, 2, 2);
+    ctx.fillStyle = "#263B55";
+    ctx.fillRect(-7, 8, 4, 4);
+    ctx.fillRect(3, 8, 4, 4);
+    ctx.restore();
+  }
+
   public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
     if (player.hp <= 0) return;
     ctx.save();
@@ -76,6 +119,11 @@ export class EntityRenderer {
     } else if (player.characterId === "rogue" && player.skillActiveTimer > 0) {
       ctx.fillStyle = "rgba(46, 204, 113, 0.25)";
       ctx.fillRect(Math.round(-player.skillDirectionX * 18) - 7, Math.round(-player.skillDirectionY * 18) - 14, 14, 22);
+    } else if (player.characterId === "michele" && player.skillActiveTimer > 0) {
+      EntityRenderer.drawCornerFrame(ctx, 13, "rgba(112, 215, 255, 0.85)", 5);
+      ctx.fillStyle = "rgba(244, 211, 94, 0.8)";
+      ctx.fillRect(-5, -23, 3, 3);
+      ctx.fillRect(2, -23, 3, 3);
     }
 
     if (player.characterId === "knight" && player.knightGuardReady) {
@@ -88,12 +136,13 @@ export class EntityRenderer {
     ctx.fillRect(-7, 11, 14, 2);
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
-    let spriteName = "player_main_side_idle";
-    if (player.animState === "walk") spriteName = `player_main_side_walk_${player.animFrame}`;
+    const playerSpritePrefix = player.characterId === "michele" ? "player_michele_side" : "player_main_side";
+    let spriteName = `${playerSpritePrefix}_idle`;
+    if (player.animState === "walk") spriteName = `${playerSpritePrefix}_walk_${player.animFrame}`;
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX: player.facing === "left",
-      paletteOverride: PLAYER_PALETTE,
+      paletteOverride: player.characterId === "michele" ? MICHELE_PLAYER_PALETTE : PLAYER_PALETTE,
       outlineColor: "#09101A",
     });
     // Weapon and muzzle effects are always drawn after the body so the authored

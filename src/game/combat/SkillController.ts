@@ -2,7 +2,7 @@ import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 
-export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash";
+export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash" | "pawtector";
 
 export interface SkillConfig {
   id: SkillId;
@@ -46,6 +46,12 @@ const SKILLS: Record<string, SkillConfig> = {
     cooldown: 4,
     duration: 0.22,
   },
+  michele: {
+    id: "pawtector",
+    name: "PAWTECTOR",
+    cooldown: 12,
+    duration: 8,
+  },
 };
 
 const EMPTY_RESULT: SkillActivationResult = {
@@ -62,6 +68,11 @@ export class SkillController {
   static readonly MAGE_ECHO_DAMAGE_MULTIPLIER = 0.5;
   static readonly MAGE_OVERDRIVE_PROJECTILE_SPEED = 1.2;
   static readonly MAGE_OVERDRIVE_PIERCE = 1;
+  static readonly MICHELE_MARK_DURATION = 2;
+  static readonly MICHELE_TURRET_RANGE = 88;
+  static readonly MICHELE_TURRET_FIRE_INTERVAL = 0.35;
+  static readonly MICHELE_TURRET_DAMAGE = 2;
+  static readonly MICHELE_TURRET_SLOW_DURATION = 1.2;
 
   static getConfig(characterId: string): SkillConfig {
     return SKILLS[characterId] ?? SKILLS.knight;
@@ -70,6 +81,9 @@ export class SkillController {
   static update(player: Player, dt: number): void {
     player.skillCooldown = Math.max(0, player.skillCooldown - dt);
     player.rogueCritTimer = Math.max(0, player.rogueCritTimer - dt);
+    player.micheleMarkTimer = Math.max(0, player.micheleMarkTimer - dt);
+    player.micheleTurretFireCooldown = Math.max(0, player.micheleTurretFireCooldown - dt);
+    if (player.micheleMarkTimer <= 0) player.micheleMarkedEnemyId = -1;
 
     if (player.skillActiveTimer <= 0) return;
 
@@ -110,6 +124,16 @@ export class SkillController {
     if (config.id === "dual_fire") {
       player.skillActiveTimer = config.duration;
       player.skillCooldown = cooldown;
+      restoreEnergy();
+      return { activated: true, killedEnemyIds: [], lightningArcs: [] };
+    }
+
+    if (config.id === "pawtector") {
+      player.skillActiveTimer = config.duration;
+      player.skillCooldown = cooldown;
+      player.micheleTurretX = player.x;
+      player.micheleTurretY = player.y;
+      player.micheleTurretFireCooldown = 0;
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }

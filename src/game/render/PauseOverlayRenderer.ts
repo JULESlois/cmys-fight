@@ -70,6 +70,12 @@ export class PauseOverlayRenderer {
           charge: Math.min(SkillController.MAGE_ECHO_THRESHOLD, Math.floor(player.mageArcaneCharge * 10) / 10),
           threshold: SkillController.MAGE_ECHO_THRESHOLD,
         }), 163, 102);
+      } else if (player.characterId === "michele" && player.micheleMarkTimer > 0) {
+        ctx.fillStyle = "#F4D35E";
+        ctx.font = uiFont(language, 5, true);
+        ctx.fillText(t(language, "pause.micheleMark", {
+          seconds: player.micheleMarkTimer.toFixed(1),
+        }), 163, 102);
       }
 
       ctx.fillStyle = "#00F2FE";

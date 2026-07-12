@@ -129,6 +129,8 @@ export interface WeaponData {
   highHealthDamageMultiplier?: number;
   criticalExplosionRadius?: number;
   criticalExplosionDamageMultiplier?: number;
+  exclusiveCharacterId?: string;
+  markedTargetDamageMultiplier?: number;
 }
 
 export const WEAPONS: Record<string, WeaponData> = {
@@ -443,6 +445,15 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", impactEffect: "plasma", recoil: 0.38,
   },
 
+
+  inspector: {
+    id: "inspector", name: "Inspector", category: "rifle", rarity: "rare",
+    damage: 3, fireRate: 5.6, bulletSpeed: 285, manaCost: 1, spread: 0.045,
+    pelletCount: 1, knockback: 2, critChance: 0.1, critMultiplier: 2, color: "#70D7FF",
+    projectileLife: 1.9, exclusiveCharacterId: "michele", markedTargetDamageMultiplier: 1.35,
+    mechanic: "Michele-exclusive balanced automatic rifle; marked attackers take 35% more damage.",
+    projectileStyle: "tracer", trailLength: 19, muzzleEffect: "flash", impactEffect: "spark", recoil: 0.24,
+  },
   minishark: {
     id: "minishark", name: "Minishark", category: "rifle", rarity: "common",
     damage: 1, fireRate: 11.5, bulletSpeed: 235, manaCost: 0, spread: 0.17,
@@ -537,8 +548,12 @@ export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
   };
 }
 
-export function getAvailableWeapons(_globalStageIndex = 1): WeaponData[] {
-  return Object.values(WEAPONS);
+export function isWeaponAvailableForCharacter(weapon: WeaponData, characterId?: string): boolean {
+  return !characterId || !weapon.exclusiveCharacterId || weapon.exclusiveCharacterId === characterId;
+}
+
+export function getAvailableWeapons(_globalStageIndex = 1, characterId?: string): WeaponData[] {
+  return Object.values(WEAPONS).filter(weapon => isWeaponAvailableForCharacter(weapon, characterId));
 }
 
 export type WeaponRollContext = "shop" | "treasure" | "boss";
@@ -554,10 +569,12 @@ export function rollAvailableWeapon(
   random: () => number = Math.random,
   context: WeaponRollContext = "shop",
   excludedIds: Iterable<string> = [],
+  characterId?: string,
 ): WeaponData {
   const excluded = new Set(excludedIds);
-  const pool = getAvailableWeapons(globalStageIndex).filter(weapon => !excluded.has(weapon.id));
-  const fallback = getAvailableWeapons(globalStageIndex)[0] ?? WEAPONS.pistol;
+  const available = getAvailableWeapons(globalStageIndex, characterId);
+  const pool = available.filter(weapon => !excluded.has(weapon.id));
+  const fallback = available[0] ?? WEAPONS.pistol;
   if (pool.length === 0) return fallback;
 
   const stage = Math.max(1, Math.floor(globalStageIndex || 1));

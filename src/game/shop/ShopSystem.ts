@@ -1,5 +1,5 @@
 import { BUFFS, BuffSystem, type BuffId, type BuffRarity } from "../combat/BuffSystem";
-import { WEAPONS, rollAvailableWeapon, type WeaponRarity } from "../data/weapons";
+import { WEAPONS, isWeaponAvailableForCharacter, rollAvailableWeapon, type WeaponRarity } from "../data/weapons";
 import type { Player } from "../entities/Player";
 import type { Room, StageData } from "../FloorGenerator";
 import { createSeededRandom, hashSeed, normalizeSeed } from "../Random";
@@ -126,7 +126,7 @@ export class ShopSystem {
     return normalizeSeed(room.shopSeed ?? hashSeed(stage.seed, `shop:${room.id}`));
   }
 
-  static generateStock(stage: StageData, room: Room, player: Pick<Player, "buffs" | "weaponSlots" | "shopDiscount">): ShopItem[] {
+  static generateStock(stage: StageData, room: Room, player: Pick<Player, "characterId" | "buffs" | "weaponSlots" | "shopDiscount">): ShopItem[] {
     const seed = ShopSystem.getSeed(stage, room);
     room.shopSeed = seed;
     const random = createSeededRandom(seed);
@@ -141,7 +141,7 @@ export class ShopSystem {
     const weaponItems: ShopItem[] = [];
     const excludedWeapons = new Set(player.weaponSlots.filter((id): id is string => Boolean(id)));
     for (let slot = 0; slot < desiredWeaponCount && excludedWeapons.size < Object.keys(WEAPONS).length; slot++) {
-      const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons);
+      const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons, player.characterId);
       if (excludedWeapons.has(weapon.id)) break;
       excludedWeapons.add(weapon.id);
       weaponItems.push(createWeaponItem(seed, slot, weapon.id, stage, player.shopDiscount));
@@ -164,7 +164,7 @@ export class ShopSystem {
 
     // Weapon stock is the fallback whenever there are too few eligible talents.
     while (stock.length < SHOP_STOCK_SIZE && excludedWeapons.size < Object.keys(WEAPONS).length) {
-      const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons);
+      const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons, player.characterId);
       if (excludedWeapons.has(weapon.id)) break;
       excludedWeapons.add(weapon.id);
       const item = createWeaponItem(seed, weaponItems.length, weapon.id, stage, player.shopDiscount);
@@ -178,7 +178,7 @@ export class ShopSystem {
   static reconcileStock(
     stage: StageData,
     room: Room,
-    player: Pick<Player, "buffs" | "weaponSlots" | "shopDiscount">,
+    player: Pick<Player, "characterId" | "buffs" | "weaponSlots" | "shopDiscount">,
   ): ShopItem[] {
     const existing = ShopSystem.normalizeStock(room.shopStock);
     if (!existing) return ShopSystem.generateStock(stage, room, player);
@@ -197,7 +197,8 @@ export class ShopSystem {
         !item.buffId || player.buffs.includes(item.buffId) || player.buffs.length >= BuffSystem.MAX_BUFFS
       );
       const invalidWeapon = item.kind === "weapon" && !item.purchased && (
-        !item.weaponId || player.weaponSlots.includes(item.weaponId)
+        !item.weaponId || player.weaponSlots.includes(item.weaponId) ||
+        !isWeaponAvailableForCharacter(WEAPONS[item.weaponId], player.characterId)
       );
       if (invalidBuff || invalidWeapon) continue;
       retainedIds.add(item.id);

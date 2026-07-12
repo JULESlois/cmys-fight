@@ -86,7 +86,7 @@ assert.ok(boss.radius < bossDef.radius);
 
 const legendaryWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "legendary");
 const mythWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "myth");
-assert.equal(Object.keys(WEAPONS).length, 46);
+assert.equal(Object.keys(WEAPONS).length, 47);
 assert.equal(legendaryWeapons.length, 13);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
@@ -123,7 +123,7 @@ for (let seed = 1; seed <= 200 && !foundLegendaryStock; seed++) {
   const stock = ShopSystem.generateStock(
     { seed, globalStageIndex: 20, chapterIndex: 4 } as any,
     { id: `shop-${seed}`, shopSeed: seed } as any,
-    { buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+    { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
   );
   foundLegendaryStock = stock.some(item => item.rarity === "legendary");
 }
@@ -138,7 +138,7 @@ for (let seed = 1; seed <= 2000; seed++) {
   const stock = ShopSystem.generateStock(
     { seed, globalStageIndex: 20, chapterIndex: 4 } as any,
     { id: `quality-shop-${seed}`, shopSeed: seed } as any,
-    { buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+    { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
   );
   assert.equal(stock.length, 4);
   assert.equal(stock.filter(item => item.kind === "weapon").length, 2);
@@ -201,7 +201,7 @@ const legacyShopRoom = {
 const migratedShopStock = ShopSystem.reconcileStock(
   { seed: 0x51A, globalStageIndex: 20, chapterIndex: 4 } as any,
   legacyShopRoom,
-  { buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+  { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
 );
 assert.equal(migratedShopStock.length, 4);
 assert.equal(migratedShopStock.every(item => item.kind === "weapon" || item.kind === "buff"), true);

@@ -13,9 +13,11 @@ import {
 } from "./RunProgress";
 import {
   createStarterWeaponSlots,
+  isWeaponAvailableForCharacter,
   isWeaponId,
   normalizeWeaponSlots,
   type WeaponSlots,
+  WEAPONS,
 } from "./data/weapons";
 import { hashSeed, normalizeSeed } from "./Random";
 import { BuffSystem, type BuffId } from "./combat/BuffSystem";
@@ -71,7 +73,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 19;
+const CURRENT_SAVE_VERSION = 20;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -103,6 +105,11 @@ export interface GameSave {
     rogueCritTimer: number;
     mageArcaneCharge: number;
     knightGuardReady: boolean;
+    micheleMarkedEnemyId: number;
+    micheleMarkTimer: number;
+    micheleTurretX: number;
+    micheleTurretY: number;
+    micheleTurretFireCooldown: number;
     buffs: BuffId[];
     emergencyBarrierReady: boolean;
     phoenixProtocolReady: boolean;
@@ -161,6 +168,11 @@ export const defaultSave: GameSave = {
     rogueCritTimer: 0,
     mageArcaneCharge: 0,
     knightGuardReady: true,
+    micheleMarkedEnemyId: -1,
+    micheleMarkTimer: 0,
+    micheleTurretX: 0,
+    micheleTurretY: 0,
+    micheleTurretFireCooldown: 0,
     buffs: [],
     emergencyBarrierReady: false,
     phoenixProtocolReady: false,
@@ -322,8 +334,11 @@ export class GameData {
     this.data.player.maxMana = char.maxMana;
     this.data.player.mana = char.maxMana;
     this.data.player.speed = char.speed;
-    const starterWeapon = starterWeaponId && this.isStarterWeaponUnlocked(starterWeaponId)
-      ? starterWeaponId
+    const requestedStarter = starterWeaponId && isWeaponId(starterWeaponId) ? WEAPONS[starterWeaponId] : undefined;
+    const starterWeapon = requestedStarter &&
+      this.isStarterWeaponUnlocked(requestedStarter.id) &&
+      isWeaponAvailableForCharacter(requestedStarter, char.id)
+      ? requestedStarter.id
       : this.getStarterWeaponForCharacter(char.id);
     this.setStarterWeapons(starterWeapon);
     this.resetSkillState(char.id);
@@ -788,6 +803,12 @@ export class GameData {
     const player = this.data.player;
     const fallback = isWeaponId(player.currentWeaponId) ? player.currentWeaponId : "pistol";
     player.weaponSlots = normalizeWeaponSlots(player.weaponSlots, fallback);
+    const eligibleSlots = player.weaponSlots.filter((weaponId): weaponId is string =>
+      Boolean(weaponId) && isWeaponAvailableForCharacter(WEAPONS[weaponId], player.characterId)
+    );
+    player.weaponSlots = eligibleSlots.length > 0
+      ? (eligibleSlots[1] ? [eligibleSlots[0], eligibleSlots[1]] : [eligibleSlots[0]])
+      : ["pistol"];
     player.activeWeaponSlot = player.activeWeaponSlot === 1 && player.weaponSlots[1] ? 1 : 0;
     player.currentWeaponId = player.weaponSlots[player.activeWeaponSlot] ?? player.weaponSlots[0];
   }
@@ -801,6 +822,11 @@ export class GameData {
     player.rogueCritTimer = 0;
     player.mageArcaneCharge = 0;
     player.knightGuardReady = characterId === "knight";
+    player.micheleMarkedEnemyId = -1;
+    player.micheleMarkTimer = 0;
+    player.micheleTurretX = 0;
+    player.micheleTurretY = 0;
+    player.micheleTurretFireCooldown = 0;
     player.manaRechargeTimer = 0;
     const character = CHARACTERS[characterId] ?? CHARACTERS.knight;
     player.manaRechargeDelay = character.manaRechargeDelay;
@@ -828,6 +854,18 @@ export class GameData {
     player.manaRechargeDelay = Math.max(0.2, Number(player.manaRechargeDelay) || DEFAULT_MANA_RECHARGE_DELAY);
     player.manaRechargeRate = Math.max(0, Number(player.manaRechargeRate) || DEFAULT_MANA_RECHARGE_RATE);
     player.knightGuardReady = player.characterId === "knight" && player.knightGuardReady === true;
+    const markedEnemyId = Number(player.micheleMarkedEnemyId);
+    player.micheleMarkedEnemyId = player.characterId === "michele" && Number.isFinite(markedEnemyId)
+      ? Math.floor(markedEnemyId)
+      : -1;
+    player.micheleMarkTimer = player.characterId === "michele"
+      ? finiteNonNegative(player.micheleMarkTimer)
+      : 0;
+    player.micheleTurretX = Number.isFinite(Number(player.micheleTurretX)) ? Number(player.micheleTurretX) : 0;
+    player.micheleTurretY = Number.isFinite(Number(player.micheleTurretY)) ? Number(player.micheleTurretY) : 0;
+    player.micheleTurretFireCooldown = player.characterId === "michele"
+      ? finiteNonNegative(player.micheleTurretFireCooldown)
+      : 0;
   }
 
   private resetBuffState() {

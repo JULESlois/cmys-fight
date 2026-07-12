@@ -21,7 +21,7 @@ for (const [style, profile] of Object.entries(PROJECTILE_ART)) {
 for (const id of [
   "ray_gun", "venom_x", "wunderwaffe", "water_bolt", "terrarian", "last_prism", "zenith",
   "r9_0", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
-  "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus",
+  "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus", "inspector",
 ]) {
   assert.ok(PROJECTILE_WEAPON_PALETTES[id], `${id} keeps its signature projectile palette`);
 }

@@ -22,6 +22,7 @@ const expectedLeftFacingReferences = [
   "awp_dragon_lore",
   "bp50",
   "cx_9",
+  "inspector",
   "ksg_12",
   "mx_guardian",
   "na_45",
@@ -138,7 +139,7 @@ const sourceDriven = [
   "ballistic_knife", "olympia", "ksg_12", "akimbo_scorpion", "scavenger", "venom_x", "ray_gun", "wunderwaffe",
   "minishark", "water_bolt", "stardust_dragon_staff", "terrarian", "last_prism", "zenith",
   "r9_0", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
-  "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus",
+  "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus", "inspector",
 ];
 for (const id of sourceDriven) assert.ok(WEAPON_SPRITES[id], `${id} source-derived model`);
 
@@ -154,6 +155,8 @@ assert.equal(WEAPON_PALETTES.awp_dragon_lore["6"], "#5E7F3A");
 assert.equal(WEAPON_PALETTES.awp_dragon_lore["7"], "#F0D27A");
 assert.equal(WEAPON_PALETTES.ak47_wild_lotus["7"], "#E75A92");
 assert.equal(WEAPON_PALETTES.ak47_wild_lotus["8"], "#F0A6C0");
+assert.equal(WEAPON_PALETTES.inspector["5"], "#70D7FF");
+assert.equal(WEAPON_PALETTES.inspector["6"], "#E8F5FF");
 
 const renderedColors = new Set<string>();
 const ctx = {

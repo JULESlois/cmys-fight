@@ -2,16 +2,16 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
-import { PLAYER_PALETTE } from "../data/sprites";
+import { MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
-import { WEAPONS } from "../data/weapons";
+import { WEAPONS, isWeaponAvailableForCharacter } from "../data/weapons";
 import { MAX_PLAYER_MANA } from "../entities/Player";
-import { getCharacterText, t, uiFont } from "../i18n";
+import { getCharacterText, t, uiFont, wrapLocalized } from "../i18n";
 import { SkillController } from "../combat/SkillController";
 
 export class CharacterSelectState extends GameState {
-    protected characters = Object.values(CHARACTERS);
+  protected characters = Object.values(CHARACTERS);
   protected selectedIndex = 0;
   protected selectedWeaponIndex = 0;
   private backState: "title" | "hub" = "hub";
@@ -22,12 +22,20 @@ export class CharacterSelectState extends GameState {
 
   enter(params?: { backState?: "title" | "hub" }) {
     this.backState = params?.backState === "title" ? "title" : "hub";
-    const unlockedWeapons = this.getUnlockedWeapons();
+    const unlockedWeapons = this.getUnlockedWeapons(this.characters[this.selectedIndex].id);
     const character = this.characters[this.selectedIndex];
     const preferred = this.engine.data.getStarterWeaponForCharacter(character.id);
     this.selectedWeaponIndex = Math.max(0, unlockedWeapons.findIndex(weapon => weapon.id === preferred));
   }
   exit() {}
+
+  private syncWeaponSelection(): void {
+    const character = this.characters[this.selectedIndex];
+    const unlockedWeapons = this.getUnlockedWeapons(character.id);
+    const preferred = this.engine.data.getStarterWeaponForCharacter(character.id);
+    const preferredIndex = unlockedWeapons.findIndex(weapon => weapon.id === preferred);
+    this.selectedWeaponIndex = preferredIndex >= 0 ? preferredIndex : 0;
+  }
 
   update(dt: number) {
     if (this.engine.input.wasPressed("escape")) {
@@ -37,14 +45,16 @@ export class CharacterSelectState extends GameState {
     
     if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a")) {
       this.selectedIndex = (this.selectedIndex - 1 + this.characters.length) % this.characters.length;
+      this.syncWeaponSelection();
       audio.playShoot();
     }
     if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d")) {
       this.selectedIndex = (this.selectedIndex + 1) % this.characters.length;
+      this.syncWeaponSelection();
       audio.playShoot();
     }
 
-    const unlockedWeapons = this.getUnlockedWeapons();
+    const unlockedWeapons = this.getUnlockedWeapons(this.characters[this.selectedIndex].id);
     if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
       this.selectedWeaponIndex = (this.selectedWeaponIndex - 1 + unlockedWeapons.length) % unlockedWeapons.length;
       audio.playShoot();
@@ -65,9 +75,10 @@ export class CharacterSelectState extends GameState {
     }
   }
 
-  private getUnlockedWeapons() {
+  private getUnlockedWeapons(characterId = this.characters[this.selectedIndex].id) {
     const weapons = Object.values(WEAPONS).filter(weapon =>
-      this.engine.data.isStarterWeaponUnlocked(weapon.id)
+      this.engine.data.isStarterWeaponUnlocked(weapon.id) &&
+      isWeaponAvailableForCharacter(weapon, characterId)
     );
     return weapons.length > 0 ? weapons : [WEAPONS.pistol];
   }
@@ -85,9 +96,9 @@ export class CharacterSelectState extends GameState {
       mode: t(language, this.engine.data.meta.preferredHardMode ? "common.hard" : "common.normal"),
     }), 160, 40);
 
-    const cardW = 85;
+    const cardW = 72;
     const cardH = 130;
-    const spacing = 15;
+    const spacing = 5;
     const totalW = this.characters.length * cardW + (this.characters.length - 1) * spacing;
     const startX = 160 - totalW / 2;
     const startY = 54;
@@ -113,8 +124,12 @@ export class CharacterSelectState extends GameState {
       if (!isUnlocked) ctx.globalAlpha = 0.35;
       
       // Character sprite
-      SpriteRenderer.drawPixelSprite(ctx, "player_main_side_idle", x + cardW / 2, startY + 20, 2, {
-        paletteOverride: { ...PLAYER_PALETTE, "2": char.color }
+      const characterSprite = char.id === "michele" ? "player_michele_side_idle" : "player_main_side_idle";
+      const characterPalette = char.id === "michele"
+        ? MICHELE_PLAYER_PALETTE
+        : { ...PLAYER_PALETTE, "2": char.color };
+      SpriteRenderer.drawPixelSprite(ctx, characterSprite, x + cardW / 2, startY + 20, 2, {
+        paletteOverride: characterPalette
       });
       
       // Name
@@ -125,17 +140,17 @@ export class CharacterSelectState extends GameState {
       
       // Stats
       ctx.textAlign = "left";
-      MenuRenderer.drawStatBar(ctx, "HP", char.maxHp, 10, x + 5, startY + 65, "#E74C3C");
-      MenuRenderer.drawStatBar(ctx, "AR", char.maxArmor, 10, x + 5, startY + 80, "#BDC3C7");
-      MenuRenderer.drawStatBar(ctx, "MP", char.maxMana, MAX_PLAYER_MANA, x + 5, startY + 95, "#3498DB");
-      MenuRenderer.drawStatBar(ctx, "SP", char.speed, 150, x + 5, startY + 110, "#F1C40F");
+      MenuRenderer.drawStatBar(ctx, "HP", char.maxHp, 10, x + 5, startY + 65, "#E74C3C", 36);
+      MenuRenderer.drawStatBar(ctx, "AR", char.maxArmor, 10, x + 5, startY + 80, "#BDC3C7", 36);
+      MenuRenderer.drawStatBar(ctx, "MP", char.maxMana, MAX_PLAYER_MANA, x + 5, startY + 95, "#3498DB", 36);
+      MenuRenderer.drawStatBar(ctx, "SP", char.speed, 150, x + 5, startY + 110, "#F1C40F", 36);
       
       // Weapon (small label)
       ctx.fillStyle = "#BDC3C7";
       ctx.font = uiFont(language, 8);
       const defaultUnlocked = this.engine.data.isStarterWeaponUnlocked(char.starterWeapon);
       ctx.fillText(t(language, "character.defaultWeapon", {
-        weapon: defaultUnlocked ? char.starterWeapon.toUpperCase() : t(language, "common.locked"),
+        weapon: defaultUnlocked ? (WEAPONS[char.starterWeapon]?.name ?? char.starterWeapon).toUpperCase() : t(language, "common.locked"),
       }), x + 5, startY + 122);
       ctx.globalAlpha = 1;
       if (!isUnlocked) {
@@ -154,24 +169,26 @@ export class CharacterSelectState extends GameState {
     const localizedCharacter = getCharacterText(selectedChar.id, selectedChar, language);
     ctx.fillStyle = selectedChar.color;
     ctx.font = uiFont(language, 10, true);
-    ctx.fillText(`${localizedCharacter.title} // ${SkillController.getConfig(selectedChar.id).name}`, 160, 202);
+    ctx.fillText(`${localizedCharacter.title} // ${SkillController.getConfig(selectedChar.id).name}`, 160, 197);
     
     ctx.fillStyle = selectedUnlocked ? "#F1C40F" : "#E74C3C";
-    ctx.font = uiFont(language, 9);
+    ctx.font = uiFont(language, 8);
     const detail = selectedUnlocked
       ? localizedCharacter.passive
       : selectedChar.id === "mage"
         ? t(language, "character.unlockMage")
         : t(language, "character.unlockRogue");
-    ctx.fillText(detail, 160, 214);
+    wrapLocalized(detail, language === "zh-CN" ? 34 : 48).slice(0, 2).forEach((line, index) => {
+      ctx.fillText(line, 160, 208 + index * 9);
+    });
 
-    const selectedWeapon = this.getUnlockedWeapons()[this.selectedWeaponIndex] ?? WEAPONS.pistol;
+    const selectedWeapon = this.getUnlockedWeapons(selectedChar.id)[this.selectedWeaponIndex] ?? WEAPONS.pistol;
     ctx.fillStyle = "#00F2FE";
     ctx.font = uiFont(language, 8, true);
-    ctx.fillText(`↑↓  ${selectedWeapon.name.toUpperCase()}`, 160, 225);
+    ctx.fillText(`↑↓  ${selectedWeapon.name.toUpperCase()}`, 160, 229);
     ctx.fillStyle = selectedUnlocked ? "#BDC3C7" : "#E74C3C";
     ctx.font = uiFont(language, 7);
-    ctx.fillText(selectedUnlocked ? t(language, "character.footer", { cancel: this.engine.input.getCancelPrompt() }) : t(language, "common.locked"), 160, 236);
+    ctx.fillText(selectedUnlocked ? t(language, "character.footer", { cancel: this.engine.input.getCancelPrompt() }) : t(language, "common.locked"), 160, 239);
     ctx.textAlign = "left";
   }
 }

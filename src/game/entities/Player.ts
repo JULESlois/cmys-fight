@@ -62,6 +62,11 @@ export class Player {
   public rogueCritTimer: number = 0;
   public mageArcaneCharge: number = 0;
   public knightGuardReady: boolean = false;
+  public micheleMarkedEnemyId: number = -1;
+  public micheleMarkTimer: number = 0;
+  public micheleTurretX: number = 0;
+  public micheleTurretY: number = 0;
+  public micheleTurretFireCooldown: number = 0;
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;
   public phoenixProtocolReady: boolean = false;

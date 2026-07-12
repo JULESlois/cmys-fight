@@ -23,6 +23,7 @@ export class Projectile {
   public statusEffect?: StatusEffectId;
   public statusDuration = 0;
   public sourceBoss = false;
+  public sourceEnemyId = -1;
   public hitEnemyIds: Set<number> = new Set();
   public weaponId = "";
   public style: ProjectileStyle = "bullet";
@@ -119,6 +120,7 @@ export class Projectile {
     this.statusEffect = statusEffect;
     this.statusDuration = statusDuration;
     this.sourceBoss = sourceBoss;
+    this.sourceEnemyId = -1;
     this.weaponId = profile?.weaponId ?? "";
     this.style = profile?.style ?? "bullet";
     this.trailLength = profile?.trailLength ?? 6;

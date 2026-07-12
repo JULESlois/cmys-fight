@@ -33,7 +33,7 @@ import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
 import { createSeededRandom, hashSeed } from "../Random";
-import { WEAPONS, rollAvailableWeapon } from "../data/weapons";
+import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, rollAvailableWeapon } from "../data/weapons";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
@@ -118,6 +118,11 @@ export class DungeonState extends GameState {
     player.rogueCritTimer = savedP.rogueCritTimer ?? 0;
     player.mageArcaneCharge = savedP.mageArcaneCharge ?? 0;
     player.knightGuardReady = savedP.knightGuardReady ?? player.characterId === "knight";
+    player.micheleMarkedEnemyId = savedP.micheleMarkedEnemyId ?? -1;
+    player.micheleMarkTimer = savedP.micheleMarkTimer ?? 0;
+    player.micheleTurretX = savedP.micheleTurretX ?? player.x;
+    player.micheleTurretY = savedP.micheleTurretY ?? player.y;
+    player.micheleTurretFireCooldown = savedP.micheleTurretFireCooldown ?? 0;
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
     player.phoenixProtocolReady = savedP.phoenixProtocolReady === true;
@@ -199,6 +204,11 @@ export class DungeonState extends GameState {
     savedP.rogueCritTimer = this.player.rogueCritTimer;
     savedP.mageArcaneCharge = this.player.mageArcaneCharge;
     savedP.knightGuardReady = this.player.knightGuardReady;
+    savedP.micheleMarkedEnemyId = this.player.micheleMarkedEnemyId;
+    savedP.micheleMarkTimer = this.player.micheleMarkTimer;
+    savedP.micheleTurretX = this.player.micheleTurretX;
+    savedP.micheleTurretY = this.player.micheleTurretY;
+    savedP.micheleTurretFireCooldown = this.player.micheleTurretFireCooldown;
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
     savedP.phoenixProtocolReady = this.player.phoenixProtocolReady;
@@ -259,10 +269,14 @@ export class DungeonState extends GameState {
 
   private createOrRestoreWeaponChest(room: Room, kind: WeaponChest["kind"]): WeaponChest {
     if (room.weaponChest && room.weaponChest.kind === kind) {
-      const restored = { ...room.weaponChest };
-      this.moveToNearestPassable(restored, 6);
-      room.weaponChest = { ...restored };
-      return restored;
+      const storedWeapon = WEAPONS[room.weaponChest.weaponId];
+      if (storedWeapon && isWeaponAvailableForCharacter(storedWeapon, this.player.characterId)) {
+        const restored = { ...room.weaponChest };
+        this.moveToNearestPassable(restored, 6);
+        room.weaponChest = { ...restored };
+        return restored;
+      }
+      room.weaponChest = undefined;
     }
 
     const floor = this.engine.data.data.floor;
@@ -270,7 +284,13 @@ export class DungeonState extends GameState {
     const seedLabel = kind === "boss" ? "boss-weapon-chest" : "treasure-weapon";
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, seedLabel));
     const excluded = this.player.weaponSlots.filter((id): id is string => typeof id === "string");
-    const weapon = rollAvailableWeapon(floor.globalStageIndex, random, kind === "boss" ? "boss" : "treasure", excluded);
+    const weapon = rollAvailableWeapon(
+      floor.globalStageIndex,
+      random,
+      kind === "boss" ? "boss" : "treasure",
+      excluded,
+      this.player.characterId,
+    );
 
     let x: number;
     let y: number;
@@ -776,6 +796,7 @@ export class DungeonState extends GameState {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
     SkillController.update(this.player, dt);
+    this.updateMicheleTurret(dt);
     this.updateLightningArcs(dt);
 
     const canUseSkill = ["combat", "cleared", "reward", "exiting", "exploration"].includes(this.roomPhase);
@@ -1396,7 +1417,68 @@ export class DungeonState extends GameState {
     return this.player.aimAngle;
   }
 
+  private markMicheleAttacker(enemyId: number): void {
+    if (this.player.characterId !== "michele" || enemyId < 0) return;
+    if (!this.enemies.some(enemy => enemy.id === enemyId && enemy.hp > 0)) return;
+    this.player.micheleMarkedEnemyId = enemyId;
+    this.player.micheleMarkTimer = SkillController.MICHELE_MARK_DURATION;
+  }
+
+  private updateMicheleTurret(_dt: number): void {
+    if (this.player.characterId !== "michele" || this.player.skillActiveTimer <= 0) return;
+    if (this.player.micheleTurretFireCooldown > 0) return;
+    const range = SkillController.MICHELE_TURRET_RANGE;
+    const marked = this.player.micheleMarkTimer > 0
+      ? this.enemies.find(enemy => enemy.id === this.player.micheleMarkedEnemyId && enemy.hp > 0)
+      : undefined;
+    let target = marked && Math.hypot(marked.x - this.player.micheleTurretX, marked.y - this.player.micheleTurretY) <= range
+      ? marked
+      : undefined;
+    if (!target) {
+      let closestDistance = range;
+      for (const enemy of this.enemies) {
+        if (enemy.hp <= 0) continue;
+        const distance = Math.hypot(enemy.x - this.player.micheleTurretX, enemy.y - this.player.micheleTurretY);
+        if (distance <= closestDistance) {
+          closestDistance = distance;
+          target = enemy;
+        }
+      }
+    }
+    if (!target) return;
+    const angle = Math.atan2(target.y - this.player.micheleTurretY, target.x - this.player.micheleTurretX);
+    const profile = getProjectileProfile(WEAPONS.inspector);
+    const projectile = acquireProjectile(
+      this.player.micheleTurretX,
+      this.player.micheleTurretY - 5,
+      Math.cos(angle) * 245,
+      Math.sin(angle) * 245,
+      2,
+      SkillController.MICHELE_TURRET_DAMAGE,
+      "player",
+      0.8,
+      "#70D7FF",
+      1,
+      false,
+      0,
+      0,
+      "slow",
+      SkillController.MICHELE_TURRET_SLOW_DURATION,
+      false,
+      profile,
+    );
+    projectile.weaponId = "michele_turret";
+    projectile.trailLength = 12;
+    this.projectiles.push(projectile);
+    this.player.micheleTurretFireCooldown = SkillController.MICHELE_TURRET_FIRE_INTERVAL;
+    this.fx.emitMuzzle(projectile, this.engine.isPerformanceDegraded());
+  }
+
   private getClosestEnemy(): Enemy | null {
+    if (this.player.characterId === "michele" && this.player.micheleMarkTimer > 0) {
+      const marked = this.enemies.find(enemy => enemy.id === this.player.micheleMarkedEnemyId && enemy.hp > 0);
+      if (marked) return marked;
+    }
     let closest = null;
     let minDist = Infinity;
     for (const e of this.enemies) {
@@ -1602,6 +1684,7 @@ export class DungeonState extends GameState {
           );
           this.engine.triggerScreenShake(2.2, 0.12);
           this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
+          this.markMicheleAttacker(enemy.id);
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1637,6 +1720,7 @@ export class DungeonState extends GameState {
           );
           this.engine.triggerScreenShake(2.2, 0.12);
           this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
+          this.markMicheleAttacker(enemy.id);
           this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
           audio.playHurt();
         }
@@ -1654,7 +1738,7 @@ export class DungeonState extends GameState {
   }
 
   private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3) {
-    this.projectiles.push(acquireProjectile(
+    const projectile = acquireProjectile(
       enemy.x,
       enemy.y,
       Math.cos(angle) * enemy.projectileSpeed,
@@ -1671,7 +1755,9 @@ export class DungeonState extends GameState {
       enemy.statusEffect,
       enemy.statusDuration,
       enemy.type === "boss",
-    ));
+    );
+    projectile.sourceEnemyId = enemy.id;
+    this.projectiles.push(projectile);
   }
 
   private resolveChargeAttack(enemy: Enemy) {
@@ -1705,6 +1791,7 @@ export class DungeonState extends GameState {
         );
         this.engine.triggerScreenShake(2.2, 0.12);
         this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
+        this.markMicheleAttacker(enemy.id);
         this.applyEnemyStatusToPlayer(enemy, result.armorDamage + result.hpDamage > 0);
         audio.playHurt();
       }
@@ -1930,9 +2017,18 @@ export class DungeonState extends GameState {
           p.x = p.previousX + (p.x - p.previousX) * closestHitT;
           p.y = p.previousY + (p.y - p.previousY) * closestHitT;
           const healthRatioBeforeHit = e.maxHp > 0 ? e.hp / e.maxHp : 0;
-          const directDamage = p.highHealthDamageThreshold > 0 && healthRatioBeforeHit >= p.highHealthDamageThreshold
+          let directDamage = p.highHealthDamageThreshold > 0 && healthRatioBeforeHit >= p.highHealthDamageThreshold
             ? p.damage * p.highHealthDamageMultiplier
             : p.damage;
+          const weapon = WEAPONS[p.weaponId];
+          if (
+            this.player.characterId === "michele" &&
+            weapon?.exclusiveCharacterId === "michele" &&
+            this.player.micheleMarkTimer > 0 &&
+            this.player.micheleMarkedEnemyId === e.id
+          ) {
+            directDamage *= Math.max(1, weapon.markedTargetDamageMultiplier ?? 1);
+          }
           const result = DamageSystem.damageEnemy(e, directDamage);
           p.hitEnemyIds.add(e.id);
           directEnemyId = e.id;
@@ -1988,6 +2084,7 @@ export class DungeonState extends GameState {
             );
             this.engine.triggerScreenShake(2.2, 0.12);
             this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
+            this.markMicheleAttacker(p.sourceEnemyId);
             if (
               result.armorDamage + result.hpDamage > 0 &&
               p.statusEffect &&
@@ -2399,6 +2496,18 @@ export class DungeonState extends GameState {
     const aimTarget = this.getClosestEnemy();
     if (this.player.hp > 0 && aimTarget) {
       EntityRenderer.drawTargetMarker(ctx, aimTarget, time);
+    }
+    if (this.player.characterId === "michele" && this.player.micheleMarkTimer > 0) {
+      const markedEnemy = this.enemies.find(enemy => enemy.id === this.player.micheleMarkedEnemyId);
+      if (markedEnemy) EntityRenderer.drawMicheleMark(ctx, markedEnemy, time);
+    }
+    if (this.player.characterId === "michele" && this.player.skillActiveTimer > 0) {
+      EntityRenderer.drawMicheleTurret(
+        ctx,
+        this.player.micheleTurretX,
+        this.player.micheleTurretY,
+        time,
+      );
     }
 
     if (this.chest) {
