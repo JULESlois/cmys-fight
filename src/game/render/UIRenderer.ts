@@ -4,6 +4,7 @@ import { FloorData, Room } from "../FloorGenerator";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { BUFFS } from "../combat/BuffSystem";
 import { WeaponController } from "../combat/WeaponController";
+import { SkillController } from "../combat/SkillController";
 
 export class UIRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, engine: any, floor: FloorData, roomPhase: string = "exploration") {
@@ -79,6 +80,13 @@ export class UIRenderer {
     ctx.fillStyle = "#FFF";
     ctx.font = "9px monospace";
     ctx.fillText(`x ${engine.data.data.player.coins}`, 22, 42);
+    if (player.characterId === "mage") {
+      const threshold = SkillController.MAGE_ECHO_THRESHOLD;
+      const charge = Math.min(threshold, Math.floor(player.mageArcaneCharge * 10) / 10);
+      ctx.fillStyle = charge >= threshold ? "#F5D0FF" : "#C792EA";
+      ctx.font = "bold 6px monospace";
+      ctx.fillText(`ECHO ${charge}/${threshold}`, 67, 42);
+    }
 
     // Compact buff strip. Detailed skill and swap information lives on the pause screen.
     if (player.buffs.length > 0) {

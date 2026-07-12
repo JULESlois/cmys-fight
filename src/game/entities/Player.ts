@@ -53,6 +53,7 @@ export class Player {
   public skillDirectionX: number = 0;
   public skillDirectionY: number = 0;
   public rogueCritTimer: number = 0;
+  public mageArcaneCharge: number = 0;
   public knightGuardReady: boolean = false;
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { Player } from "../src/game/entities/Player";
 import { WeaponController } from "../src/game/combat/WeaponController";
+import { SkillController } from "../src/game/combat/SkillController";
 import {
   calculateChainDamage,
   calculateExplosionDamage,
@@ -112,6 +113,53 @@ const fire = (weaponId: string) => {
   assert.equal(result.fired, true, weaponId);
   return result.projectiles[0];
 };
+
+const mageEcho = new Player(160, 120);
+mageEcho.characterId = "mage";
+mageEcho.setWeaponLoadout(["laser"], 0);
+mageEcho.maxMana = 60;
+mageEcho.mana = 60;
+mageEcho.mageArcaneCharge = 11;
+const echoVolley = WeaponController.fire(mageEcho, 0, () => 0.99);
+assert.equal(echoVolley.fired, true);
+assert.equal(echoVolley.echoTriggered, true);
+assert.equal(echoVolley.projectiles.length, 2);
+assert.deepEqual(echoVolley.projectiles.map(projectile => projectile.damage), [5, 2.5]);
+assert.equal(mageEcho.mana, 59);
+assert.equal(mageEcho.mageArcaneCharge, 0);
+for (const projectile of echoVolley.projectiles) releaseProjectile(projectile);
+
+const mageYoyo = new Player(160, 120);
+mageYoyo.characterId = "mage";
+mageYoyo.setWeaponLoadout(["terrarian"], 0);
+mageYoyo.maxMana = 60;
+mageYoyo.mana = 60;
+mageYoyo.mageArcaneCharge = 11;
+const deferredEcho = WeaponController.fire(mageYoyo, 0, () => 0.99);
+assert.equal(deferredEcho.echoTriggered, false, "persistent weapon entities must not be duplicated by Arcane Echo");
+assert.equal(deferredEcho.projectiles.length, 1);
+assert.equal(mageYoyo.mageArcaneCharge, 15);
+for (const projectile of deferredEcho.projectiles) releaseProjectile(projectile);
+
+const mageOverdrive = new Player(160, 120);
+mageOverdrive.characterId = "mage";
+mageOverdrive.setWeaponLoadout(["laser"], 0);
+mageOverdrive.maxMana = 60;
+mageOverdrive.mana = 1;
+const overdriveActivation = SkillController.activate(mageOverdrive, [], { x: 0, y: 0 }, 0);
+assert.equal(overdriveActivation.activated, true, "Arcane Overdrive must not require an enemy target");
+assert.equal(mageOverdrive.skillActiveTimer, 4);
+assert.equal(mageOverdrive.skillCooldown, 12);
+assert.ok(mageOverdrive.invulnerabilityTimer >= 0.35);
+assert.equal(mageOverdrive.manaRechargeTimer, 4);
+assert.equal(WeaponController.getEnergyCost(mageOverdrive, "laser"), 0);
+const overdriveShot = WeaponController.fire(mageOverdrive, 0, () => 0.99);
+assert.equal(overdriveShot.fired, true);
+assert.equal(mageOverdrive.mana, 1, "Arcane Overdrive must make weapon fire free");
+assert.equal(mageOverdrive.mageArcaneCharge, 0, "free Overdrive shots must not build Arcane Echo");
+assert.equal(overdriveShot.projectiles[0].pierceRemaining, 1);
+assert.ok(Math.abs(Math.hypot(overdriveShot.projectiles[0].vx, overdriveShot.projectiles[0].vy) - 360) < 0.001);
+for (const projectile of overdriveShot.projectiles) releaseProjectile(projectile);
 
 const rocket = fire("micro_rocket");
 const rocketSpeed = Math.hypot(rocket.vx, rocket.vy);
@@ -305,5 +353,7 @@ console.log(JSON.stringify({
   weightedDrops: "ok",
   weaponAudio: "ok",
   terrariaArchetypes: ["gun", "spellbook", "yoyo", "channel", "summon", "melee"],
+  mageArcaneOverdrive: "ok",
+  mageArcaneEcho: "ok",
   dedicatedRendering: "ok",
 }));

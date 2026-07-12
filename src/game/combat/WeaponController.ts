@@ -16,6 +16,7 @@ export interface FireWeaponResult {
   fired: boolean;
   projectiles: Projectile[];
   recoil: number;
+  echoTriggered?: boolean;
   reason?: "cooldown" | "energy" | "invalid_weapon";
 }
 
@@ -33,6 +34,7 @@ export class WeaponController {
   static getEnergyCost(player: Player, weaponId = player.currentWeaponId): number {
     const weapon = WEAPONS[weaponId];
     if (!weapon) return 0;
+    if (SkillController.isMageOverdriveActive(player)) return 0;
     const multiplier = BuffSystem.getWeaponModifiers(player).energyCostMultiplier;
     const channelMultiplier = 1 + WeaponController.getChannelRatio(player, weaponId);
     return WeaponController.calculateEnergyCost(weapon.manaCost * channelMultiplier, multiplier);
@@ -117,6 +119,18 @@ export class WeaponController {
       : buffProjectileStatus;
     player.mana = Math.max(0, player.mana - energyCost);
     if (energyCost > 0) player.manaRechargeTimer = player.manaRechargeDelay;
+
+    const attackMode = weapon.attackMode ?? "projectile";
+    const echoEligible = attackMode !== "summon" && attackMode !== "yoyo";
+    let echoTriggered = false;
+    if (player.characterId === "mage" && energyCost > 0) {
+      player.mageArcaneCharge += energyCost;
+      if (echoEligible && player.mageArcaneCharge + 1e-9 >= SkillController.MAGE_ECHO_THRESHOLD) {
+        player.mageArcaneCharge -= SkillController.MAGE_ECHO_THRESHOLD;
+        echoTriggered = true;
+      }
+    }
+
     player.fireCooldown = 1 / weapon.fireRate;
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;
@@ -134,13 +148,27 @@ export class WeaponController {
     const prismColors = ["#FF5C8A", "#FFB347", "#F8F16A", "#62F6A7", "#69C8FF", "#C792EA"];
 
     const dualFireActive = player.characterId === "knight" && player.skillActiveTimer > 0;
-    const volleyCount = dualFireActive ? 2 : 1;
+    const mageOverdriveActive = SkillController.isMageOverdriveActive(player);
+    const projectileSpeedMultiplier = modifiers.projectileSpeedMultiplier * (
+      mageOverdriveActive ? SkillController.MAGE_OVERDRIVE_PROJECTILE_SPEED : 1
+    );
+    const extraPierce = mageOverdriveActive ? SkillController.MAGE_OVERDRIVE_PIERCE : 0;
     const rogueCritBonus = player.characterId === "rogue" && player.rogueCritTimer > 0
       ? SkillController.ROGUE_CRIT_BONUS
       : 0;
+    const volleys = dualFireActive
+      ? [
+          { offset: -0.035, damageMultiplier: 1, echo: false },
+          { offset: 0.035, damageMultiplier: 1, echo: false },
+        ]
+      : echoTriggered
+        ? [
+            { offset: -0.025, damageMultiplier: 1, echo: false },
+            { offset: 0.045, damageMultiplier: SkillController.MAGE_ECHO_DAMAGE_MULTIPLIER, echo: true },
+          ]
+        : [{ offset: 0, damageMultiplier: 1, echo: false }];
 
-    for (let volley = 0; volley < volleyCount; volley++) {
-      const volleyOffset = dualFireActive ? (volley === 0 ? -0.035 : 0.035) : 0;
+    for (const volley of volleys) {
       for (let i = 0; i < weapon.pelletCount; i++) {
         const centeredIndex = i - (weapon.pelletCount - 1) / 2;
         const patternedSpread = weapon.pelletCount > 1
@@ -155,25 +183,28 @@ export class WeaponController {
         } else {
           spreadOffset = (random() - 0.5) * weapon.spread * modifiers.spreadMultiplier;
         }
-        const angle = aimAngle + volleyOffset + spreadOffset;
+        const angle = aimAngle + volley.offset + spreadOffset;
         const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus + modifiers.critChanceBonus);
         const channelDamageMultiplier = weapon.attackMode === "channel" ? 1 + channelRatio * 1.5 : 1;
         const baseDamage = Math.max(1, Math.round(weapon.damage * channelDamageMultiplier));
         const criticalMultiplier = Math.max(1, (weapon.critMultiplier ?? 2) + modifiers.critDamageBonus);
-        const damage = critical ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
+        const fullDamage = critical ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
+        const damage = volley.echo
+          ? Math.max(0.5, Math.round(fullDamage * volley.damageMultiplier * 2) / 2)
+          : fullDamage;
         const projectile = acquireProjectile(
           muzzle.x,
           muzzle.y,
-          Math.cos(angle) * weapon.bulletSpeed * modifiers.projectileSpeedMultiplier,
-          Math.sin(angle) * weapon.bulletSpeed * modifiers.projectileSpeedMultiplier,
+          Math.cos(angle) * weapon.bulletSpeed * projectileSpeedMultiplier,
+          Math.sin(angle) * weapon.bulletSpeed * projectileSpeedMultiplier,
           weapon.projectileRadius ?? 3,
           damage,
           "player",
           weapon.projectileLife ?? 2,
-          weapon.attackMode === "channel" ? prismColors[i % prismColors.length] : weapon.color,
+          volley.echo ? "#C792EA" : weapon.attackMode === "channel" ? prismColors[i % prismColors.length] : weapon.color,
           weapon.knockback + modifiers.knockbackBonus,
           critical,
-          modifiers.pierce + (weapon.pierce ?? 0),
+          modifiers.pierce + (weapon.pierce ?? 0) + extraPierce,
           modifiers.wallBounces + (weapon.wallBounces ?? 0),
           projectileStatus?.id,
           projectileStatus?.duration ?? 0,
@@ -186,6 +217,11 @@ export class WeaponController {
       }
     }
 
-    return { fired: true, projectiles, recoil: Math.max(0, weapon.recoil ?? 0.35) };
+    return {
+      fired: true,
+      projectiles,
+      recoil: Math.max(0, weapon.recoil ?? 0.35),
+      echoTriggered,
+    };
   }
 }

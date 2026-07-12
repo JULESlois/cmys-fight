@@ -67,6 +67,11 @@ export class EntityRenderer {
 
     if (player.characterId === "knight" && player.skillActiveTimer > 0) {
       EntityRenderer.drawCornerFrame(ctx, 13, "rgba(241, 196, 15, 0.9)", 7);
+    } else if (player.characterId === "mage" && player.skillActiveTimer > 0) {
+      ctx.fillStyle = "rgba(142, 68, 173, 0.2)";
+      ctx.fillRect(-13, -21, 26, 32);
+      EntityRenderer.drawCornerFrame(ctx, 14, "rgba(199, 146, 234, 0.92)", 6);
+      EntityRenderer.drawCornerFrame(ctx, 10, "rgba(0, 242, 254, 0.7)", 4);
     } else if (player.characterId === "rogue" && player.skillActiveTimer > 0) {
       ctx.fillStyle = "rgba(46, 204, 113, 0.25)";
       ctx.fillRect(Math.round(-player.skillDirectionX * 18) - 7, Math.round(-player.skillDirectionY * 18) - 14, 14, 22);

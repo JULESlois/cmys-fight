@@ -116,6 +116,7 @@ export class DungeonState extends GameState {
     player.skillDirectionX = savedP.skillDirectionX ?? 0;
     player.skillDirectionY = savedP.skillDirectionY ?? 0;
     player.rogueCritTimer = savedP.rogueCritTimer ?? 0;
+    player.mageArcaneCharge = savedP.mageArcaneCharge ?? 0;
     player.knightGuardReady = savedP.knightGuardReady ?? player.characterId === "knight";
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
@@ -196,6 +197,7 @@ export class DungeonState extends GameState {
     savedP.skillDirectionX = this.player.skillDirectionX;
     savedP.skillDirectionY = this.player.skillDirectionY;
     savedP.rogueCritTimer = this.player.rogueCritTimer;
+    savedP.mageArcaneCharge = this.player.mageArcaneCharge;
     savedP.knightGuardReady = this.player.knightGuardReady;
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
@@ -471,9 +473,6 @@ export class DungeonState extends GameState {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
       this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
-      if (this.player.characterId === "mage") {
-        this.player.mana = Math.min(this.player.maxMana, this.player.mana + 8);
-      }
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       if (currentRoom) {
@@ -1373,6 +1372,9 @@ export class DungeonState extends GameState {
     }
 
     if (effectProjectile) this.fx.emitMuzzle(effectProjectile, this.engine.isPerformanceDegraded());
+    if (result.echoTriggered) {
+      this.fx.emitImpact(this.player.x, this.player.y - 8, "#C792EA", false, this.engine.isPerformanceDegraded());
+    }
     if (result.recoil >= 0.7) {
       this.engine.triggerScreenShake(Math.min(1.8, result.recoil), 0.055 + result.recoil * 0.015);
     }

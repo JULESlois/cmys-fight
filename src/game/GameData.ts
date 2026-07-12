@@ -71,7 +71,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 18;
+const CURRENT_SAVE_VERSION = 19;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -101,6 +101,7 @@ export interface GameSave {
     skillDirectionX: number;
     skillDirectionY: number;
     rogueCritTimer: number;
+    mageArcaneCharge: number;
     knightGuardReady: boolean;
     buffs: BuffId[];
     emergencyBarrierReady: boolean;
@@ -158,6 +159,7 @@ export const defaultSave: GameSave = {
     skillDirectionX: 0,
     skillDirectionY: 0,
     rogueCritTimer: 0,
+    mageArcaneCharge: 0,
     knightGuardReady: true,
     buffs: [],
     emergencyBarrierReady: false,
@@ -797,6 +799,7 @@ export class GameData {
     player.skillDirectionX = 0;
     player.skillDirectionY = 0;
     player.rogueCritTimer = 0;
+    player.mageArcaneCharge = 0;
     player.knightGuardReady = characterId === "knight";
     player.manaRechargeTimer = 0;
     const character = CHARACTERS[characterId] ?? CHARACTERS.knight;
@@ -815,6 +818,9 @@ export class GameData {
     player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
     player.skillDirectionY = Number.isFinite(Number(player.skillDirectionY)) ? Number(player.skillDirectionY) : 0;
     player.rogueCritTimer = finiteNonNegative(player.rogueCritTimer);
+    player.mageArcaneCharge = player.characterId === "mage"
+      ? finiteNonNegative(player.mageArcaneCharge)
+      : 0;
     const character = CHARACTERS[player.characterId] ?? CHARACTERS.knight;
     player.maxMana = Math.max(1, Math.min(MAX_PLAYER_MANA, Number(player.maxMana) || character.maxMana));
     player.mana = Math.max(0, Math.min(player.maxMana, Number(player.mana) || 0));

@@ -2,7 +2,6 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
-import { SpriteRenderer } from "../render/SpriteRenderer";
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
 import { APP_VERSION } from "../../version";
 import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
@@ -73,22 +72,6 @@ export class TitleState extends GameState {
       ctx.fillRect(0, i, 320, 1);
     }
 
-    // A compact pixel diorama establishes the player-versus-depth composition.
-    ctx.save();
-    ctx.globalAlpha = 0.92;
-    SpriteRenderer.drawPixelSprite(ctx, "player_main_side_idle", 78, 91, 2, {
-      outlineColor: "#071018",
-      paletteOverride: { "1": "#F05D5E", "2": "#F7D794", "3": "#EAF2F8", "4": "#1B263B", "5": "#55B8FF" },
-    });
-    SpriteRenderer.drawPixelSprite(ctx, "weapon_pistol", 91, 92, 1, { outlineColor: "#071018" });
-    SpriteRenderer.drawPixelSprite(ctx, "enemy_boss_idle", 242, 91, 3, { outlineColor: "#24070D" });
-    const shotX = 106 + Math.floor((t * 28) % 94);
-    ctx.fillStyle = "rgba(0,242,254,0.35)";
-    ctx.fillRect(shotX - 8, 88, 12, 2);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(shotX, 88, 3, 2);
-    ctx.restore();
-
     // Pixel shadow/outline for Title
     ctx.textAlign = "center";
     ctx.font = "bold 24px monospace";
@@ -114,7 +97,7 @@ export class TitleState extends GameState {
     
     ctx.textAlign = "left";
 
-    const startY = 120;
+    const startY = 104;
     const language = this.engine.data.settings.language;
     const hasSave = this.engine.data.hasValidSave();
     for (let i = 0; i < this.options.length; i++) {

@@ -40,7 +40,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 12,
     speed: 90,
     starterWeapon: "laser",
-    passive: "Clearing a combat room restores 8 energy"
+    passive: "Spending 12 Energy echoes the triggering attack at 50% damage"
   },
   rogue: {
     id: "rogue",

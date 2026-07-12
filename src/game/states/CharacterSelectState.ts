@@ -8,6 +8,7 @@ import { SpriteRenderer } from "../render/SpriteRenderer";
 import { WEAPONS } from "../data/weapons";
 import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont } from "../i18n";
+import { SkillController } from "../combat/SkillController";
 
 export class CharacterSelectState extends GameState {
     protected characters = Object.values(CHARACTERS);
@@ -153,7 +154,7 @@ export class CharacterSelectState extends GameState {
     const localizedCharacter = getCharacterText(selectedChar.id, selectedChar, language);
     ctx.fillStyle = selectedChar.color;
     ctx.font = uiFont(language, 10, true);
-    ctx.fillText(localizedCharacter.title, 160, 202);
+    ctx.fillText(`${localizedCharacter.title} // ${SkillController.getConfig(selectedChar.id).name}`, 160, 202);
     
     ctx.fillStyle = selectedUnlocked ? "#F1C40F" : "#E74C3C";
     ctx.font = uiFont(language, 9);

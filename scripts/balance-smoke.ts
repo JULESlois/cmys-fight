@@ -124,7 +124,7 @@ function loadLegacyCombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 18);
+  assert.equal(persisted.saveVersion, 19);
   return loaded.data.player;
 }
 
@@ -178,6 +178,7 @@ assert.equal(migratedMage.maxMana, 60);
 assert.equal(migratedMage.mana, 15);
 assert.equal(migratedMage.manaRechargeDelay, 1.1);
 assert.equal(migratedMage.manaRechargeRate, 12);
+assert.equal(migratedMage.mageArcaneCharge, 0);
 
 const forbiddenTalentPhrases = [
   /fire rate/i,
@@ -405,7 +406,7 @@ const characterSustain = Object.fromEntries(
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v17-v18-ratio-preserved",
+  runMigration: "v17-v19-ratio-preserved",
   manaCap: MAX_PLAYER_MANA,
   characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
     character.maxMana,

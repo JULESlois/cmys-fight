@@ -63,6 +63,14 @@ export class PauseOverlayRenderer {
       ctx.fillStyle = player.skillCooldown <= 0 ? "#2ECC71" : "#F1C40F";
       ctx.font = uiFont(language, 6);
       ctx.fillText(skillState, 163, 92);
+      if (player.characterId === "mage") {
+        ctx.fillStyle = "#C792EA";
+        ctx.font = uiFont(language, 5, true);
+        ctx.fillText(t(language, "pause.mageEcho", {
+          charge: Math.min(SkillController.MAGE_ECHO_THRESHOLD, Math.floor(player.mageArcaneCharge * 10) / 10),
+          threshold: SkillController.MAGE_ECHO_THRESHOLD,
+        }), 163, 102);
+      }
 
       ctx.fillStyle = "#00F2FE";
       ctx.font = uiFont(language, 7, true);

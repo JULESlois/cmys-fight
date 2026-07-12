@@ -1,9 +1,8 @@
-import { DamageSystem } from "./DamageSystem";
 import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 
-export type SkillId = "dual_fire" | "chain_lightning" | "shadow_dash";
+export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash";
 
 export interface SkillConfig {
   id: SkillId;
@@ -36,10 +35,10 @@ const SKILLS: Record<string, SkillConfig> = {
     duration: 3,
   },
   mage: {
-    id: "chain_lightning",
-    name: "CHAIN BOLT",
-    cooldown: 7,
-    duration: 0,
+    id: "arcane_overdrive",
+    name: "ARCANE OVERDRIVE",
+    cooldown: 12,
+    duration: 4,
   },
   rogue: {
     id: "shadow_dash",
@@ -59,6 +58,10 @@ export class SkillController {
   static readonly ROGUE_DASH_SPEED = 360;
   static readonly ROGUE_CRIT_DURATION = 2;
   static readonly ROGUE_CRIT_BONUS = 0.25;
+  static readonly MAGE_ECHO_THRESHOLD = 12;
+  static readonly MAGE_ECHO_DAMAGE_MULTIPLIER = 0.5;
+  static readonly MAGE_OVERDRIVE_PROJECTILE_SPEED = 1.2;
+  static readonly MAGE_OVERDRIVE_PIERCE = 1;
 
   static getConfig(characterId: string): SkillConfig {
     return SKILLS[characterId] ?? SKILLS.knight;
@@ -85,9 +88,13 @@ export class SkillController {
     return player.characterId === "rogue" && player.skillActiveTimer > 0;
   }
 
+  static isMageOverdriveActive(player: Player): boolean {
+    return player.characterId === "mage" && player.skillActiveTimer > 0;
+  }
+
   static activate(
     player: Player,
-    enemies: Enemy[],
+    _enemies: Enemy[],
     movementAxis: { x: number; y: number },
     aimAngle: number,
   ): SkillActivationResult {
@@ -107,71 +114,25 @@ export class SkillController {
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
-    if (config.id === "shadow_dash") {
-      const hasMovement = Math.hypot(movementAxis.x, movementAxis.y) > 0.01;
-      player.skillDirectionX = hasMovement ? movementAxis.x : Math.cos(aimAngle);
-      player.skillDirectionY = hasMovement ? movementAxis.y : Math.sin(aimAngle);
-      const length = Math.hypot(player.skillDirectionX, player.skillDirectionY) || 1;
-      player.skillDirectionX /= length;
-      player.skillDirectionY /= length;
+    if (config.id === "arcane_overdrive") {
       player.skillActiveTimer = config.duration;
       player.skillCooldown = cooldown;
-      player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, config.duration + 0.08);
+      player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.35);
+      player.manaRechargeTimer = Math.max(player.manaRechargeTimer, config.duration);
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
-    const firstTarget = SkillController.findClosestEnemy(player.x, player.y, enemies, new Set());
-    if (!firstTarget) return { ...EMPTY_RESULT, reason: "no_target" };
-
-    const killedEnemyIds: number[] = [];
-    const lightningArcs: LightningArc[] = [];
-    const visited = new Set<number>();
-    let fromX = player.x;
-    let fromY = player.y;
-    let current: Enemy | null = firstTarget;
-    const damages = [5, 4, 3];
-
-    for (let i = 0; i < damages.length && current; i++) {
-      visited.add(current.id);
-      lightningArcs.push({
-        x1: fromX,
-        y1: fromY,
-        x2: current.x,
-        y2: current.y,
-        life: 0.24,
-        maxLife: 0.24,
-      });
-      const result = DamageSystem.damageEnemy(current, damages[i]);
-      if (result.killed) killedEnemyIds.push(current.id);
-
-      fromX = current.x;
-      fromY = current.y;
-      current = SkillController.findClosestEnemy(fromX, fromY, enemies, visited, 82);
-    }
-
+    const hasMovement = Math.hypot(movementAxis.x, movementAxis.y) > 0.01;
+    player.skillDirectionX = hasMovement ? movementAxis.x : Math.cos(aimAngle);
+    player.skillDirectionY = hasMovement ? movementAxis.y : Math.sin(aimAngle);
+    const length = Math.hypot(player.skillDirectionX, player.skillDirectionY) || 1;
+    player.skillDirectionX /= length;
+    player.skillDirectionY /= length;
+    player.skillActiveTimer = config.duration;
     player.skillCooldown = cooldown;
+    player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, config.duration + 0.08);
     restoreEnergy();
-    return { activated: true, killedEnemyIds, lightningArcs };
-  }
-
-  private static findClosestEnemy(
-    x: number,
-    y: number,
-    enemies: Enemy[],
-    excluded: Set<number>,
-    maxDistance = Infinity,
-  ): Enemy | null {
-    let closest: Enemy | null = null;
-    let closestDistance = maxDistance;
-    for (const enemy of enemies) {
-      if (enemy.hp <= 0 || excluded.has(enemy.id)) continue;
-      const distance = Math.hypot(enemy.x - x, enemy.y - y);
-      if (distance < closestDistance) {
-        closest = enemy;
-        closestDistance = distance;
-      }
-    }
-    return closest;
+    return { activated: true, killedEnemyIds: [], lightningArcs: [] };
   }
 }

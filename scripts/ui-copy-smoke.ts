@@ -25,6 +25,7 @@ assert.match(title, /opt === "newRun"[\s\S]*switchState\("character_select", \{ 
 assert.match(title, /opt === "hub"[\s\S]*switchState\("hub"\)/);
 assert.doesNotMatch(title, /newRun" \|\| opt === "hub/);
 assert.doesNotMatch(title, /BROWSER QA/);
+assert.doesNotMatch(title, /player_main_side_idle|enemy_boss_idle|weapon_pistol|shotX|SpriteRenderer/);
 
 assert.match(tutorial, /TutorialStepId\[\] = \["move", "fire", "skill", "interact", "swap"\]/);
 assert.match(tutorial, /tutorial\.\$\{step\}/);
@@ -55,6 +56,7 @@ assert.doesNotMatch(hud, /drawPixelSprite\(ctx, `pickup_\$\{weapon\.id\}`/);
 
 console.log(JSON.stringify({
   streamlinedTitleFlow: "ok",
+  staticTitleWithoutCombatDemo: "ok",
   symbolOnlyTouchButtons: "ok",
   compactTutorial: "ok",
   pauseAsControlReference: "ok",

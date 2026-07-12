@@ -119,6 +119,7 @@ const EN = {
   "pause.loadout": "LOADOUT",
   "pause.active": "ACTIVE {seconds}S",
   "pause.cooldown": "COOLDOWN {remaining} / {total}S",
+  "pause.mageEcho": "ARCANE ECHO {charge}/{threshold}",
   "pause.weaponStats": "{style} // DMG {damage} // EN {energy}",
   "pause.footer": "[{cancel}] BACK   [{menu}] MENU   [{pause}] RESUME",
   "buff.title": "TALENT",
@@ -341,6 +342,7 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "pause.loadout": "装备",
   "pause.active": "生效中 {seconds}秒",
   "pause.cooldown": "冷却 {remaining} / {total}秒",
+  "pause.mageEcho": "奥术回响 {charge}/{threshold}",
   "pause.weaponStats": "{style} // 伤害 {damage} // 能量 {energy}",
   "pause.footer": "[{cancel}] 返回   [{menu}] 菜单   [{pause}] 继续",
   "buff.title": "天赋",
@@ -539,7 +541,7 @@ const META_ZH: Record<string, { name: string; description: string }> = {
 
 const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
   knight: { title: "坚守者", passive: "护甲充满时获得守卫，使下一次受到的伤害减少 1 点。" },
-  mage: { title: "求知者", passive: "清理战斗房间后恢复 8 点能量。" },
+  mage: { title: "求知者", passive: "每累计消耗 12 点能量，触发一次 50% 伤害的奥术回响。" },
   rogue: { title: "迅捷者", passive: "冲刺后 2 秒内暴击率 +25%。" },
 };
 
