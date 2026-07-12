@@ -597,6 +597,12 @@ export const LEFT_FACING_REFERENCE_SPRITES = [
   "ksg_12",
   "scavenger",
   "r9_0",
+  "mx_guardian",
+  "cx_9",
+  "bp50",
+  "na_45",
+  "so_14",
+  "aa_12",
   "awp_dragon_lore",
   "ak47_wild_lotus",
 ] as const;
@@ -604,6 +610,25 @@ export const LEFT_FACING_REFERENCE_SPRITES = [
 for (const id of LEFT_FACING_REFERENCE_SPRITES) {
   SOURCE_DERIVED_SPRITES[id] = flipRows(SOURCE_DERIVED_SPRITES[id]);
 }
+
+// The World at War menu render is presented in perspective. Re-author the MG42
+// as a level side profile so horizontal aiming does not inherit that camera tilt.
+SOURCE_DERIVED_SPRITES.mg42 = drawWeapon(32, 16, canvas => {
+  canvas.polygon([[1,8],[4,5],[9,5],[11,7],[10,10],[6,12],[1,11]], "3");
+  canvas.polygon([[2,8],[5,6],[9,6],[9,9],[5,10],[2,10]], "4");
+  canvas.rect(9, 5, 10, 6, "4");
+  canvas.rect(10, 4, 8, 2, "5");
+  canvas.rect(10, 7, 8, 2, "3");
+  canvas.polygon([[10,10],[14,10],[13,15],[10,14]], "2");
+  canvas.rect(18, 5, 12, 4, "4");
+  canvas.rect(18, 6, 12, 1, "5");
+  for (const x of [19,22,25,28]) canvas.rect(x, 7, 2, 1, "2");
+  canvas.rect(29, 5, 3, 4, "3");
+  canvas.rect(30, 6, 2, 2, "5");
+  canvas.rect(16, 3, 2, 2, "3");
+  canvas.line(21, 9, 19, 14, "2");
+  canvas.line(25, 9, 27, 14, "2");
+});
 
 SOURCE_DERIVED_SPRITES.last_prism = recolorBands(
   SOURCE_DERIVED_SPRITES.last_prism,
@@ -840,14 +865,14 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   wunderwaffe: { grip: [11, 12], muzzle: [29, 6] },
 
   r9_0: { grip: [14, 13], muzzle: [31, 7] },
-  mx_guardian: { grip: [16, 13], muzzle: [31, 7] },
-  cx_9: { grip: [13, 13], muzzle: [29, 6] },
-  mg42: { grip: [11, 11], muzzle: [31, 5] },
-  bp50: { grip: [13, 13], muzzle: [31, 6] },
-  na_45: { grip: [17, 12], muzzle: [31, 7] },
+  mx_guardian: { grip: [15, 13], muzzle: [31, 7] },
+  cx_9: { grip: [16, 13], muzzle: [29, 6] },
+  mg42: { grip: [11, 13], muzzle: [31, 7] },
+  bp50: { grip: [11, 13], muzzle: [31, 6] },
+  na_45: { grip: [13, 11], muzzle: [31, 7] },
 
-  so_14: { grip: [15, 11], muzzle: [31, 7] },
-  aa_12: { grip: [13, 13], muzzle: [31, 5] },
+  so_14: { grip: [16, 11], muzzle: [31, 7] },
+  aa_12: { grip: [18, 13], muzzle: [31, 5] },
   awp_dragon_lore: { grip: [14, 11], muzzle: [31, 5] },
   ak47_wild_lotus: { grip: [14, 13], muzzle: [31, 6] },
 

@@ -17,12 +17,18 @@ assert.deepEqual(Object.keys(WEAPON_PALETTES).sort(), weaponIds, "every weapon m
 assert.deepEqual(Object.keys(WEAPON_ART_ANCHORS).sort(), weaponIds, "every weapon must define grip and muzzle anchors");
 
 const expectedLeftFacingReferences = [
+  "aa_12",
   "ak47_wild_lotus",
   "awp_dragon_lore",
+  "bp50",
+  "cx_9",
   "ksg_12",
+  "mx_guardian",
+  "na_45",
   "olympia",
   "r9_0",
   "scavenger",
+  "so_14",
 ];
 assert.deepEqual(
   [...LEFT_FACING_REFERENCE_SPRITES].sort(),
@@ -35,7 +41,10 @@ assert.equal(
   "Minishark source art already faces right and must not be mirrored",
 );
 
-for (const id of ["r9_0", "minishark", "awp_dragon_lore", "ak47_wild_lotus"]) {
+for (const id of [
+  "r9_0", "minishark", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
+  "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus",
+]) {
   const rows = WEAPON_SPRITES[id];
   const anchor = WEAPON_ART_ANCHORS[id];
   assert.notEqual(rows[anchor.grip[1]][anchor.grip[0]], ".", `${id} grip must touch the authored weapon`);
@@ -50,6 +59,29 @@ for (const id of ["r9_0", "minishark", "awp_dragon_lore", "ak47_wild_lotus"]) {
     }
   }
   assert.ok(nearestMuzzlePixel <= 1, `${id} muzzle must terminate at the right-facing barrel edge`);
+}
+
+const barrelAxisAudit: Record<string, { fromX: number; toX: number; axisY: number; tolerance: number }> = {
+  mg42: { fromX: 18, toX: 31, axisY: 7, tolerance: 1 },
+};
+for (const [id, audit] of Object.entries(barrelAxisAudit)) {
+  const rows = WEAPON_SPRITES[id];
+  const centers: Array<{ x: number; y: number }> = [];
+  for (let x = audit.fromX; x <= audit.toX; x++) {
+    const ys: number[] = [];
+    for (let y = 0; y < rows.length; y++) {
+      if (Math.abs(y - audit.axisY) <= audit.tolerance + 1 && rows[y][x] !== ".") ys.push(y);
+    }
+    if (ys.length > 0) centers.push({ x, y: ys.reduce((sum, y) => sum + y, 0) / ys.length });
+  }
+  assert.ok(centers.length >= audit.toX - audit.fromX - 1, `${id} barrel must remain continuous`);
+  const meanX = centers.reduce((sum, point) => sum + point.x, 0) / centers.length;
+  const meanY = centers.reduce((sum, point) => sum + point.y, 0) / centers.length;
+  const numerator = centers.reduce((sum, point) => sum + (point.x - meanX) * (point.y - meanY), 0);
+  const denominator = centers.reduce((sum, point) => sum + (point.x - meanX) ** 2, 0) || 1;
+  const slope = numerator / denominator;
+  assert.ok(Math.abs(slope) <= 0.08, `${id} barrel axis must be horizontal, got slope ${slope}`);
+  assert.ok(Math.abs(meanY - audit.axisY) <= audit.tolerance, `${id} barrel must stay on authored aim axis`);
 }
 
 const signatures = new Set<string>();
@@ -149,6 +181,7 @@ console.log(JSON.stringify({
   independentPalettes: Object.keys(WEAPON_PALETTES).length,
   authoredAnchors: Object.keys(WEAPON_ART_ANCHORS).length,
   rightFacingReferenceAudit: "ok",
+  levelBarrelAudit: "ok",
   multicolorFinalWeapons: "ok",
   runtimePaletteRouting: "ok",
 }));
