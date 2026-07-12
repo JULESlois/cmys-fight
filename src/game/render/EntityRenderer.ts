@@ -6,6 +6,7 @@ import { PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
+import { ProjectileArtRenderer } from "./ProjectileArtRenderer";
 
 export class EntityRenderer {
   private static adjustHex(color: string, amount: number): string {
@@ -87,9 +88,6 @@ export class EntityRenderer {
     ctx.fillRect(-7, 11, 14, 2);
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
-    const weaponBehindBody = Math.sin(player.aimAngle) < -0.35;
-    if (weaponBehindBody) EntityRenderer.drawPlayerWeapon(ctx, player);
-
     let spriteName = "player_main_side_idle";
     if (player.animState === "walk") spriteName = `player_main_side_walk_${player.animFrame}`;
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, {
@@ -98,7 +96,9 @@ export class EntityRenderer {
       paletteOverride: PLAYER_PALETTE,
       outlineColor: "#09101A",
     });
-    if (!weaponBehindBody) EntityRenderer.drawPlayerWeapon(ctx, player);
+    // Weapon and muzzle effects are always drawn after the body so the authored
+    // silhouette remains readable at every aim angle.
+    EntityRenderer.drawPlayerWeapon(ctx, player);
     ctx.restore();
   }
 
@@ -246,150 +246,7 @@ export class EntityRenderer {
   }
 
   public static drawProjectile(ctx: CanvasRenderingContext2D, p: Projectile, reducedFlashing = false) {
-    if (p.faction === "player" && p.style === "yoyo") {
-      ctx.save();
-      ctx.strokeStyle = "rgba(184, 242, 232, 0.72)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(Math.round(p.anchorX), Math.round(p.anchorY - 2));
-      ctx.lineTo(Math.round(p.x), Math.round(p.y));
-      ctx.stroke();
-      ctx.translate(Math.round(p.x), Math.round(p.y));
-      ctx.rotate(p.spinAngle);
-      ctx.fillStyle = "#123C4A";
-      ctx.fillRect(-7, -7, 14, 14);
-      ctx.fillStyle = "#52D6C6";
-      ctx.fillRect(-5, -5, 10, 10);
-      ctx.fillStyle = "#D8FFF7";
-      ctx.fillRect(-2, -2, 4, 4);
-      ctx.fillStyle = "#7BFFF0";
-      ctx.fillRect(4, -1, 3, 2);
-      ctx.restore();
-      return;
-    }
-
-    if (p.faction === "player" && (p.style === "beam" || p.style === "lightning" || p.style === "prism")) {
-      const speed = Math.hypot(p.vx, p.vy) || 1;
-      const ux = p.vx / speed;
-      const uy = p.vy / speed;
-      const startX = p.x - ux * p.trailLength;
-      const startY = p.y - uy * p.trailLength;
-      ctx.save();
-      ctx.globalAlpha = reducedFlashing ? 0.46 : p.style === "lightning" ? 0.9 : 0.78;
-      if (p.style === "beam" || p.style === "prism") {
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = Math.max(1, p.beamWidth + 1);
-        ctx.beginPath();
-        ctx.moveTo(Math.round(startX), Math.round(startY));
-        ctx.lineTo(Math.round(p.x), Math.round(p.y));
-        ctx.stroke();
-        if (!reducedFlashing) {
-          ctx.strokeStyle = p.style === "prism" ? "rgba(255,255,255,0.88)" : "#FFFFFF";
-          ctx.lineWidth = Math.max(1, p.beamWidth - 1);
-          ctx.beginPath();
-          ctx.moveTo(Math.round(startX + ux * 4), Math.round(startY + uy * 4));
-          ctx.lineTo(Math.round(p.x), Math.round(p.y));
-          ctx.stroke();
-        }
-      } else {
-        ctx.fillStyle = p.color;
-        const segments = 6;
-        for (let i = 0; i < segments; i++) {
-          const t = i / (segments - 1);
-          const jitter = Math.sin((p.id + i * 3 + p.age * 34) * 2.1) * 3;
-          const x = startX + (p.x - startX) * t - uy * jitter;
-          const y = startY + (p.y - startY) * t + ux * jitter;
-          ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
-        }
-      }
-      ctx.restore();
-      return;
-    }
-
-    ctx.save();
-    ctx.translate(Math.round(p.x), Math.round(p.y));
-    ctx.rotate(Math.atan2(p.vy, p.vx));
-    if (p.faction === "player") {
-      if (p.style === "water") {
-        const pulse = 1 + Math.floor((Math.sin(p.age * 12) + 1) * 0.5);
-        ctx.fillStyle = "rgba(105, 200, 255, 0.24)";
-        ctx.fillRect(-p.radius - pulse - 2, -p.radius - pulse - 2, (p.radius + pulse + 2) * 2, (p.radius + pulse + 2) * 2);
-        ctx.fillStyle = "#2471A3";
-        ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
-        ctx.fillStyle = "#69C8FF";
-        ctx.fillRect(-p.radius + 2, -p.radius + 1, Math.max(2, p.radius), Math.max(2, p.radius));
-        ctx.fillStyle = "#E9FAFF";
-        ctx.fillRect(0, -2, 2, 2);
-      } else if (p.style === "sword") {
-        ctx.rotate(Math.sin(p.age * 15 + p.id) * 0.22);
-        SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1);
-      } else if (p.style === "dragon") {
-        const segments = Math.max(3, 2 + p.summonLevel);
-        for (let index = segments - 1; index >= 0; index--) {
-          const x = -index * 5;
-          const wave = Math.round(Math.sin(p.age * 9 - index * 0.8) * 2);
-          ctx.fillStyle = index === 0 ? "#D8FFF7" : index % 2 === 0 ? "#5DADE2" : "#2E86C1";
-          const size = index === 0 ? 7 : Math.max(3, 6 - Math.floor(index / 3));
-          ctx.fillRect(x - Math.floor(size / 2), wave - Math.floor(size / 2), size, size);
-          if (index === 0) {
-            ctx.fillStyle = "#123C4A";
-            ctx.fillRect(x + 2, wave - 2, 2, 2);
-            ctx.fillStyle = "#8DF6FF";
-            ctx.fillRect(x + 4, wave, 3, 2);
-          }
-        }
-      } else if (p.style === "tracer") {
-        ctx.fillStyle = reducedFlashing
-          ? "rgba(255,255,255,0.18)"
-          : p.critical ? "rgba(255,240,160,0.65)" : "rgba(255,255,255,0.35)";
-        ctx.fillRect(-p.trailLength, -1, p.trailLength, 2);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-3, -p.radius / 2, 6, Math.max(2, p.radius));
-      } else if (p.style === "plasma") {
-        const pulse = 1 + Math.floor((Math.sin(p.age * 16) + 1) * 0.5);
-        ctx.fillStyle = reducedFlashing ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.35)";
-        ctx.fillRect(-p.radius - pulse, -p.radius - pulse, (p.radius + pulse) * 2, (p.radius + pulse) * 2);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(-1, -1, 2, 2);
-      } else if (p.style === "flame") {
-        ctx.fillStyle = "rgba(255,112,67,0.35)";
-        ctx.fillRect(-8, -3, 8, 6);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-3, -p.radius, 6, p.radius * 2);
-        ctx.fillStyle = "#FFF0A6";
-        ctx.fillRect(0, -1, 3, 2);
-      } else if (p.style === "rocket") {
-        ctx.fillStyle = "#8E9EAB";
-        ctx.fillRect(-8, -p.radius, 5, p.radius * 2);
-        ctx.fillStyle = "#FF7043";
-        ctx.fillRect(-11, -2, 4, 4);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-3, -p.radius, 7, p.radius * 2);
-        ctx.fillStyle = "#F7F9F9";
-        ctx.fillRect(3, -1, 3, 2);
-      } else if (p.style === "disc") {
-        ctx.rotate(p.spinAngle);
-        ctx.fillStyle = "rgba(255,255,255,0.28)";
-        ctx.fillRect(-p.radius - 2, -1, (p.radius + 2) * 2, 3);
-        ctx.fillRect(-1, -p.radius - 2, 3, (p.radius + 2) * 2);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.radius, -2, p.radius * 2, 4);
-        ctx.fillRect(-2, -p.radius, 4, p.radius * 2);
-      } else {
-        ctx.fillStyle = p.critical ? "rgba(255,215,0,0.55)" : "rgba(52,152,219,0.4)";
-        ctx.fillRect(p.critical ? -8 : -6, -p.radius, p.critical ? 16 : 12, p.radius * 2);
-        ctx.fillStyle = p.color; ctx.fillRect(-2, -p.radius / 2, 4, p.radius);
-        if (p.critical) { ctx.fillStyle = "#FFF"; ctx.fillRect(0, -1, 3, 2); }
-      }
-    } else if (p.damage >= 3) {
-      ctx.fillStyle = "rgba(241,196,15,0.6)"; ctx.fillRect(-p.radius * 1.5, -p.radius * 1.5, p.radius * 3, p.radius * 3);
-      ctx.fillStyle = p.color; ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
-    } else {
-      ctx.fillStyle = p.color; ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
-    }
-    ctx.restore();
+    ProjectileArtRenderer.draw(ctx, p, reducedFlashing);
   }
 
   public static drawPickup(ctx: CanvasRenderingContext2D, p: Pickup, time: number) {

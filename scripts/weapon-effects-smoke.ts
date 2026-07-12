@@ -327,15 +327,17 @@ assert.ok(homingShot.vx > 0);
 
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
+const projectileRendererSource = fs.readFileSync("src/game/render/ProjectileArtRenderer.ts", "utf8");
 const fxSource = fs.readFileSync("src/game/render/PixelFxSystem.ts", "utf8");
 const audioSource = fs.readFileSync("src/game/audio/AudioManager.ts", "utf8");
 assert.match(dungeonSource, /heldYoyo[\s\S]*heldYoyo\.life = Math\.max\(heldYoyo\.life, 0\.3\)/);
 assert.match(dungeonSource, /updateProjectileHoming[\s\S]*rotateVelocityToward/);
 assert.match(dungeonSource, /applyProjectileChain[\s\S]*calculateChainDamage/);
 assert.match(dungeonSource, /detonateProjectile[\s\S]*calculateExplosionDamage/);
-assert.match(rendererSource, /p\.style === "beam"[\s\S]*p\.style === "lightning"[\s\S]*p\.style === "prism"/);
-assert.match(rendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "water"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
-assert.match(rendererSource, /p\.style === "plasma"[\s\S]*p\.style === "flame"[\s\S]*p\.style === "rocket"[\s\S]*p\.style === "disc"/);
+assert.match(rendererSource, /ProjectileArtRenderer\.draw/);
+assert.match(projectileRendererSource, /p\.style === "beam"[\s\S]*p\.style === "prism"/);
+assert.match(projectileRendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
+assert.match(projectileRendererSource, /p\.style === "bullet"[\s\S]*p\.style === "tracer"[\s\S]*p\.style === "plasma"[\s\S]*p\.style === "flame"[\s\S]*p\.style === "rocket"[\s\S]*p\.style === "disc"[\s\S]*p\.style === "water"/);
 assert.match(fxSource, /emitProjectileImpact[\s\S]*emitExplosion/);
 assert.match(audioSource, /playWeaponShot[\s\S]*style === "beam"[\s\S]*style === "lightning"[\s\S]*style === "rocket"[\s\S]*style === "water"[\s\S]*style === "sword"[\s\S]*style === "prism"[\s\S]*style === "dragon"/);
 

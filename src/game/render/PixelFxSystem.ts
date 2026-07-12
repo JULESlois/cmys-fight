@@ -1,6 +1,9 @@
 import type { Pickup } from "../entities/Pickup";
 import type { Projectile } from "../entities/Projectile";
 
+type FxParticleShape = "pixel" | "streak" | "smoke";
+type FxPulseKind = "ring" | "cross";
+
 interface FxParticle {
   x: number;
   y: number;
@@ -12,16 +15,33 @@ interface FxParticle {
   color: string;
   gravity: number;
   glow: boolean;
+  shape: FxParticleShape;
+}
+
+interface FxPulse {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  radius: number;
+  color: string;
+  kind: FxPulseKind;
 }
 
 export class PixelFxSystem {
   private particles: FxParticle[] = [];
+  private pulses: FxPulse[] = [];
 
   getActiveCount(): number {
-    return this.particles.length;
+    return this.particles.length + this.pulses.length;
   }
 
   update(dt: number) {
+    for (let i = this.pulses.length - 1; i >= 0; i--) {
+      const pulse = this.pulses[i];
+      pulse.life -= dt;
+      if (pulse.life <= 0) this.pulses.splice(i, 1);
+    }
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
@@ -44,7 +64,7 @@ export class PixelFxSystem {
     color: string,
     speed: number,
     life: number,
-    options: { direction?: number; spread?: number; gravity?: number; glow?: boolean; size?: number } = {},
+    options: { direction?: number; spread?: number; gravity?: number; glow?: boolean; size?: number; shape?: FxParticleShape } = {},
   ) {
     const direction = options.direction;
     const spread = options.spread ?? Math.PI * 2;
@@ -64,9 +84,15 @@ export class PixelFxSystem {
         color,
         gravity: options.gravity ?? 0,
         glow: options.glow === true,
+        shape: options.shape ?? "pixel",
       });
     }
     if (this.particles.length > 220) this.particles.splice(0, this.particles.length - 220);
+  }
+
+  private emitPulse(x: number, y: number, radius: number, color: string, kind: FxPulseKind, life = 0.24): void {
+    this.pulses.push({ x, y, radius, color, kind, life, maxLife: life });
+    if (this.pulses.length > 28) this.pulses.splice(0, this.pulses.length - 28);
   }
 
   emitMuzzle(projectile: Projectile, lowFx = false) {
@@ -93,29 +119,55 @@ export class PixelFxSystem {
 
   emitProjectileImpact(projectile: Projectile, critical = false, lowFx = false) {
     const style = projectile.impactEffect;
-    const count = lowFx ? 4
-      : style === "explosion" ? 20
-        : style === "electric" ? 13
-          : style === "flame" ? 12
-            : style === "slash" ? 10
-              : critical ? 14 : 8;
-    const speed = style === "explosion" ? 96
-      : style === "electric" ? 78
-        : style === "slash" ? 88
-          : 62;
-    const color = style === "explosion" ? "#FFB347"
-      : style === "flame" ? "#FF7043"
-        : style === "electric" ? "#8DF6FF"
-          : style === "plasma" ? projectile.color
-            : critical ? "#FFF3B0" : projectile.color;
-    this.emit(projectile.x, projectile.y, count, color, speed, style === "explosion" ? 0.42 : 0.28, {
-      gravity: style === "electric" ? 0 : 35,
-      glow: style !== "slash" && style !== "spark",
-      size: style === "explosion" ? 3 : critical ? 3 : 2,
+    const x = projectile.x;
+    const y = projectile.y;
+    const direction = Math.atan2(projectile.vy, projectile.vx) + Math.PI;
+
+    if (style === "explosion") {
+      this.emitPulse(x, y, Math.max(8, projectile.explosionRadius * 0.45), "#FFB347", "ring", 0.32);
+      this.emit(x, y, lowFx ? 4 : 9, "#7C685C", 34, 0.42, { gravity: -10, size: 3, shape: "smoke" });
+      this.emit(x, y, lowFx ? 5 : 13, "#FFE0A3", 96, 0.3, { direction, spread: Math.PI * 1.7, gravity: 28, glow: true, size: 2, shape: "streak" });
+      return;
+    }
+
+    if (style === "electric") {
+      this.emitPulse(x, y, 9, "#8DF6FF", "cross", 0.2);
+      this.emit(x, y, lowFx ? 4 : 12, "#8DF6FF", 82, 0.24, { direction, spread: Math.PI * 1.5, glow: true, size: 2, shape: "streak" });
+      return;
+    }
+
+    if (style === "plasma") {
+      this.emitPulse(x, y, Math.max(6, projectile.radius * 2.5), projectile.color, "ring", 0.24);
+      this.emit(x, y, lowFx ? 4 : 10, projectile.color, 58, 0.3, { gravity: 8, glow: true, size: critical ? 3 : 2 });
+      return;
+    }
+
+    if (style === "flame") {
+      this.emit(x, y, lowFx ? 3 : 7, "#6D5148", 28, 0.38, { gravity: -18, size: 3, shape: "smoke" });
+      this.emit(x, y, lowFx ? 4 : 10, "#FF7043", 68, 0.27, { direction, spread: Math.PI * 1.4, gravity: 24, glow: true, size: 2, shape: "streak" });
+      return;
+    }
+
+    if (style === "slash") {
+      this.emitPulse(x, y, 8, critical ? "#FFF3B0" : projectile.color, "cross", 0.16);
+      this.emit(x, y, lowFx ? 4 : 10, critical ? "#FFF3B0" : projectile.color, 92, 0.2, { direction, spread: 1.25, gravity: 0, glow: critical, size: 2, shape: "streak" });
+      return;
+    }
+
+    this.emit(x, y, lowFx ? 4 : critical ? 14 : 8, critical ? "#FFF3B0" : projectile.color, critical ? 88 : 64, critical ? 0.34 : 0.24, {
+      direction,
+      spread: Math.PI * 1.35,
+      gravity: 38,
+      glow: critical,
+      size: critical ? 3 : 2,
+      shape: "streak",
     });
   }
 
   emitExplosion(x: number, y: number, radius: number, color: string, lowFx = false) {
+    this.emitPulse(x, y, radius * 0.45, color, "ring", 0.32);
+    if (!lowFx) this.emitPulse(x, y, radius * 0.72, "#FFE0A3", "ring", 0.42);
+    this.emit(x, y, lowFx ? 4 : 9, "#675B55", radius * 0.55, 0.5, { gravity: -16, size: 4, shape: "smoke" });
     const rings = lowFx ? 1 : 2;
     for (let ring = 0; ring < rings; ring++) {
       const count = lowFx ? 8 : 14;
@@ -127,6 +179,7 @@ export class PixelFxSystem {
           gravity: 20,
           glow: true,
           size: ring === 0 ? 3 : 2,
+          shape: "streak",
         });
       }
     }
@@ -171,6 +224,29 @@ export class PixelFxSystem {
 
   draw(ctx: CanvasRenderingContext2D, reducedFlashing = false) {
     ctx.save();
+    for (const pulse of this.pulses) {
+      const alpha = Math.max(0, pulse.life / pulse.maxLife);
+      const progress = 1 - alpha;
+      const radius = Math.max(2, Math.round(pulse.radius * (0.45 + progress * 0.75)));
+      ctx.globalAlpha = reducedFlashing ? alpha * 0.42 : alpha * 0.72;
+      ctx.fillStyle = pulse.color;
+      if (pulse.kind === "ring") {
+        const segment = Math.max(2, Math.round(radius * 0.38));
+        ctx.fillRect(pulse.x - radius, pulse.y - radius, segment, 2);
+        ctx.fillRect(pulse.x + radius - segment, pulse.y - radius, segment, 2);
+        ctx.fillRect(pulse.x - radius, pulse.y + radius - 2, segment, 2);
+        ctx.fillRect(pulse.x + radius - segment, pulse.y + radius - 2, segment, 2);
+        ctx.fillRect(pulse.x - radius, pulse.y - radius, 2, segment);
+        ctx.fillRect(pulse.x + radius - 2, pulse.y - radius, 2, segment);
+        ctx.fillRect(pulse.x - radius, pulse.y + radius - segment, 2, segment);
+        ctx.fillRect(pulse.x + radius - 2, pulse.y + radius - segment, 2, segment);
+      } else {
+        const arm = Math.max(3, Math.round(radius * 0.65));
+        ctx.fillRect(Math.round(pulse.x - arm), Math.round(pulse.y) - 1, arm * 2, 2);
+        ctx.fillRect(Math.round(pulse.x) - 1, Math.round(pulse.y - arm), 2, arm * 2);
+      }
+    }
+
     for (const p of this.particles) {
       const alpha = Math.max(0, p.life / p.maxLife);
       ctx.globalAlpha = reducedFlashing ? alpha * 0.65 : alpha;
@@ -182,8 +258,23 @@ export class PixelFxSystem {
       }
       ctx.fillStyle = p.color;
       const size = Math.max(1, Math.round(p.size * (0.45 + alpha * 0.55)));
-      ctx.fillRect(Math.round(p.x - size / 2), Math.round(p.y - size / 2), size, size);
+      if (p.shape === "streak") {
+        const speed = Math.hypot(p.vx, p.vy);
+        const length = Math.max(3, Math.min(8, Math.round(size + speed / 26)));
+        ctx.save();
+        ctx.translate(Math.round(p.x), Math.round(p.y));
+        ctx.rotate(Math.atan2(p.vy, p.vx));
+        ctx.fillRect(-length, -Math.max(1, Math.floor(size / 3)), length, Math.max(1, Math.ceil(size / 2)));
+        ctx.restore();
+      } else if (p.shape === "smoke") {
+        ctx.globalAlpha *= 0.56;
+        ctx.fillRect(Math.round(p.x - size / 2), Math.round(p.y - size / 2), size + 1, size + 1);
+        ctx.fillRect(Math.round(p.x - size), Math.round(p.y), Math.max(1, size - 1), Math.max(1, size - 1));
+      } else {
+        ctx.fillRect(Math.round(p.x - size / 2), Math.round(p.y - size / 2), size, size);
+      }
     }
     ctx.restore();
   }
+
 }
