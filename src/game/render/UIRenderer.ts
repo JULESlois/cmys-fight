@@ -160,13 +160,15 @@ export class UIRenderer {
         return;
       }
 
-      SpriteRenderer.drawPixelSprite(ctx, `pickup_${weapon.id}`, x + 17, 218, 1);
+      // Weapon slots must use the full weapon model namespace. The pickup namespace only
+      // contains legacy icons for a few starter weapons and otherwise falls back to one generic icon.
+      SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, x + 20, 218, 1, { outlineColor: "#09101A" });
       ctx.fillStyle = active ? "#FFF" : "#BDC3C7";
       ctx.font = "bold 7px monospace";
-      ctx.fillText(weapon.name.toUpperCase().slice(0, 11), x + 27, 215);
+      ctx.fillText(weapon.name.toUpperCase().slice(0, 11), x + 37, 215);
       ctx.fillStyle = rarityColor(weapon.rarity);
       ctx.font = "6px monospace";
-      ctx.fillText(`EN ${WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, weapon.id))}  DMG ${weapon.damage}`, x + 27, 225);
+      ctx.fillText(`EN ${WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, weapon.id))}  DMG ${weapon.damage}`, x + 37, 225);
     };
 
     drawWeaponSlot(0, 8);

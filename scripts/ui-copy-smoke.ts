@@ -14,6 +14,7 @@ const hub = read("src/game/states/HubState.ts");
 const character = read("src/game/states/CharacterSelectState.ts");
 const records = read("src/game/states/RecordsState.ts");
 const dungeon = read("src/game/states/DungeonState.ts");
+const hud = read("src/game/render/UIRenderer.ts");
 
 assert.doesNotMatch(canvas, /touch-face-caption/);
 assert.doesNotMatch(css, /\.touch-face-caption/);
@@ -42,6 +43,9 @@ assert.match(character, /this\.engine\.switchState\(this\.backState\)/);
 assert.match(records, /common\.hidden/);
 assert.match(dungeon, /dungeon\.retry/);
 
+assert.match(hud, /drawPixelSprite\(ctx, `weapon_\$\{weapon\.id\}`/);
+assert.doesNotMatch(hud, /drawPixelSprite\(ctx, `pickup_\$\{weapon\.id\}`/);
+
 console.log(JSON.stringify({
   streamlinedTitleFlow: "ok",
   symbolOnlyTouchButtons: "ok",
@@ -49,4 +53,5 @@ console.log(JSON.stringify({
   pauseAsControlReference: "ok",
   conciseSelectionOverlays: "ok",
   reducedMenuCopy: "ok",
+  distinctWeaponHudModels: "ok",
 }));
