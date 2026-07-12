@@ -17,7 +17,7 @@ export interface FireWeaponResult {
   projectiles: Projectile[];
   recoil: number;
   echoTriggered?: boolean;
-  reason?: "cooldown" | "energy" | "invalid_weapon";
+  reason?: "cooldown" | "energy" | "overheated" | "invalid_weapon";
 }
 
 export class WeaponController {
@@ -44,10 +44,60 @@ export class WeaponController {
     return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
   }
 
+  static getHeatRatio(player: Player, weaponId = player.currentWeaponId): number {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.maxHeat || player.weaponHeatWeaponId !== weapon.id) return 0;
+    return Math.max(0, Math.min(1, player.weaponHeat / weapon.maxHeat));
+  }
+
+  static updateRuntime(player: Player, dt: number, fireHeld: boolean): void {
+    const activeWeapon = WEAPONS[player.currentWeaponId];
+    const heatWeapon = activeWeapon?.maxHeat
+      ? activeWeapon
+      : player.weaponHeatWeaponId
+        ? WEAPONS[player.weaponHeatWeaponId]
+        : undefined;
+    if (!heatWeapon?.maxHeat) {
+      player.weaponHeat = 0;
+      player.weaponHeatWeaponId = "";
+      player.weaponOverheatTimer = 0;
+      return;
+    }
+    if (activeWeapon?.maxHeat && player.weaponHeatWeaponId !== activeWeapon.id) {
+      player.weaponHeatWeaponId = activeWeapon.id;
+      player.weaponHeat = 0;
+      player.weaponOverheatTimer = 0;
+    }
+    const decayRate = Math.max(0, heatWeapon.heatDecayRate ?? 0);
+    if (player.weaponOverheatTimer > 0) {
+      player.weaponOverheatTimer = Math.max(0, player.weaponOverheatTimer - dt);
+      player.weaponHeat = Math.max(0, player.weaponHeat - decayRate * 1.8 * dt);
+      if (player.weaponOverheatTimer <= 0) {
+        player.weaponHeat = Math.min(player.weaponHeat, heatWeapon.maxHeat * 0.35);
+      }
+    } else {
+      const firingHeatWeapon = activeWeapon?.id === heatWeapon.id && fireHeld;
+      player.weaponHeat = Math.max(0, player.weaponHeat - decayRate * (firingHeatWeapon ? 0.25 : 1) * dt);
+    }
+    if (player.weaponHeat <= 0 && activeWeapon?.id !== heatWeapon.id) {
+      player.weaponHeat = 0;
+      player.weaponHeatWeaponId = "";
+      player.weaponOverheatTimer = 0;
+    }
+  }
+
+  static resetWeaponRuntime(player: Player): void {
+    player.weaponBurstIndex = 0;
+    player.weaponBurstWeaponId = "";
+    player.linkedShotStep = 0;
+    player.linkedShotWeaponId = "";
+  }
+
   static switchWeapon(player: Player): boolean {
     if (!player.weaponSlots[1]) return false;
     player.activeWeaponSlot = player.activeWeaponSlot === 0 ? 1 : 0;
     player.weaponChannelTime = 0;
+    WeaponController.resetWeaponRuntime(player);
     return true;
   }
 
@@ -65,6 +115,7 @@ export class WeaponController {
       const changed = player.activeWeaponSlot !== existingSlot;
       player.activeWeaponSlot = existingSlot;
       player.weaponChannelTime = 0;
+      WeaponController.resetWeaponRuntime(player);
       return {
         consumed: true,
         changed,
@@ -76,6 +127,7 @@ export class WeaponController {
       player.weaponSlots[1] = weaponId;
       player.activeWeaponSlot = 1;
       player.weaponChannelTime = 0;
+      WeaponController.resetWeaponRuntime(player);
       return {
         consumed: true,
         changed: true,
@@ -86,6 +138,7 @@ export class WeaponController {
     const droppedWeaponId = player.currentWeaponId;
     player.weaponSlots[player.activeWeaponSlot] = weaponId;
     player.weaponChannelTime = 0;
+    WeaponController.resetWeaponRuntime(player);
     return {
       consumed: true,
       changed: true,
@@ -105,6 +158,9 @@ export class WeaponController {
     }
     if (player.fireCooldown > 0) {
       return { fired: false, projectiles: [], recoil: 0, reason: "cooldown" };
+    }
+    if (weapon.maxHeat && player.weaponHeatWeaponId === weapon.id && player.weaponOverheatTimer > 0) {
+      return { fired: false, projectiles: [], recoil: 0, reason: "overheated" };
     }
     const modifiers = BuffSystem.getWeaponModifiers(player);
     const channelRatio = WeaponController.getChannelRatio(player, weapon.id);
@@ -131,7 +187,52 @@ export class WeaponController {
       }
     }
 
-    player.fireCooldown = 1 / weapon.fireRate;
+    let nextFireCooldown = 1 / weapon.fireRate;
+    if ((weapon.burstSize ?? 0) > 1) {
+      if (player.weaponBurstWeaponId !== weapon.id) {
+        player.weaponBurstWeaponId = weapon.id;
+        player.weaponBurstIndex = 0;
+      }
+      const burstSize = Math.max(2, Math.floor(weapon.burstSize ?? 2));
+      player.weaponBurstIndex += 1;
+      if (player.weaponBurstIndex < burstSize) {
+        nextFireCooldown = Math.max(0.03, weapon.burstInterval ?? nextFireCooldown);
+      } else {
+        player.weaponBurstIndex = 0;
+        nextFireCooldown = Math.max(0.05, weapon.burstRecovery ?? nextFireCooldown);
+      }
+    } else {
+      player.weaponBurstIndex = 0;
+      player.weaponBurstWeaponId = weapon.id;
+    }
+
+    if (weapon.maxHeat) {
+      if (player.weaponHeatWeaponId !== weapon.id) {
+        player.weaponHeatWeaponId = weapon.id;
+        player.weaponHeat = 0;
+        player.weaponOverheatTimer = 0;
+      }
+      player.weaponHeat = Math.min(weapon.maxHeat, player.weaponHeat + Math.max(0, weapon.heatPerShot ?? 0));
+      if (player.weaponHeat >= weapon.maxHeat) {
+        player.weaponOverheatTimer = Math.max(0.1, weapon.overheatLockout ?? 1);
+        nextFireCooldown = Math.max(nextFireCooldown, player.weaponOverheatTimer);
+      }
+    }
+
+    let linkedShotMode: "none" | "primer" | "catalyst" = "none";
+    if (weapon.linkedShot) {
+      if (player.linkedShotWeaponId !== weapon.id) {
+        player.linkedShotWeaponId = weapon.id;
+        player.linkedShotStep = 0;
+      }
+      linkedShotMode = player.linkedShotStep === 0 ? "primer" : "catalyst";
+      player.linkedShotStep = player.linkedShotStep === 0 ? 1 : 0;
+    } else {
+      player.linkedShotStep = 0;
+      player.linkedShotWeaponId = weapon.id;
+    }
+
+    player.fireCooldown = nextFireCooldown;
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;
     player.facing = Math.cos(aimAngle) >= 0 ? "right" : "left";
@@ -153,6 +254,8 @@ export class WeaponController {
       mageOverdriveActive ? SkillController.MAGE_OVERDRIVE_PROJECTILE_SPEED : 1
     );
     const extraPierce = mageOverdriveActive ? SkillController.MAGE_OVERDRIVE_PIERCE : 0;
+    const heatRatio = WeaponController.getHeatRatio(player, weapon.id);
+    const heatSpreadMultiplier = 1 + heatRatio * Math.max(0, weapon.heatSpreadMultiplier ?? 0);
     const rogueCritBonus = player.characterId === "rogue" && player.rogueCritTimer > 0
       ? SkillController.ROGUE_CRIT_BONUS
       : 0;
@@ -181,7 +284,7 @@ export class WeaponController {
         } else if (weapon.attackMode === "melee") {
           spreadOffset = patternedSpread * weapon.spread;
         } else {
-          spreadOffset = (random() - 0.5) * weapon.spread * modifiers.spreadMultiplier;
+          spreadOffset = (random() - 0.5) * weapon.spread * modifiers.spreadMultiplier * heatSpreadMultiplier;
         }
         const angle = aimAngle + volley.offset + spreadOffset;
         const critical = random() < Math.min(1, weapon.critChance + rogueCritBonus + modifiers.critChanceBonus);
@@ -201,7 +304,15 @@ export class WeaponController {
           damage,
           "player",
           weapon.projectileLife ?? 2,
-          volley.echo ? "#C792EA" : weapon.attackMode === "channel" ? prismColors[i % prismColors.length] : weapon.color,
+          volley.echo
+            ? "#C792EA"
+            : linkedShotMode === "primer"
+              ? "#F2D45C"
+              : linkedShotMode === "catalyst"
+                ? "#FF6B4A"
+                : weapon.attackMode === "channel"
+                  ? prismColors[i % prismColors.length]
+                  : weapon.color,
           weapon.knockback + modifiers.knockbackBonus,
           critical,
           modifiers.pierce + (weapon.pierce ?? 0) + extraPierce,
@@ -213,6 +324,7 @@ export class WeaponController {
         );
         projectile.anchorX = player.x;
         projectile.anchorY = player.y;
+        projectile.linkedShotMode = linkedShotMode;
         projectiles.push(projectile);
       }
     }

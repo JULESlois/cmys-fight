@@ -61,7 +61,7 @@ assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.hig
 assert.ok(bossRates.legendary >= 0.24, `Boss chest legendary rate ${bossRates.legendary}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 11);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 12);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
 
@@ -160,6 +160,63 @@ assert.equal(mageOverdrive.mageArcaneCharge, 0, "free Overdrive shots must not b
 assert.equal(overdriveShot.projectiles[0].pierceRemaining, 1);
 assert.ok(Math.abs(Math.hypot(overdriveShot.projectiles[0].vx, overdriveShot.projectiles[0].vy) - 360) < 0.001);
 for (const projectile of overdriveShot.projectiles) releaseProjectile(projectile);
+
+const r90Player = new Player(160, 120);
+r90Player.mana = 25;
+r90Player.setWeaponLoadout(["r9_0"], 0);
+const r90First = WeaponController.fire(r90Player, 0, () => 0.5);
+assert.equal(r90First.fired, true);
+assert.equal(r90First.projectiles.length, 6);
+assert.ok(Math.abs(r90Player.fireCooldown - 0.12) < 1e-9, "R9-0 first blast must quickly chamber the second barrel");
+for (const projectile of r90First.projectiles) releaseProjectile(projectile);
+r90Player.fireCooldown = 0;
+const r90Second = WeaponController.fire(r90Player, 0, () => 0.5);
+assert.equal(r90Second.fired, true);
+assert.ok(Math.abs(r90Player.fireCooldown - 0.72) < 1e-9, "R9-0 second blast must enter pump recovery");
+for (const projectile of r90Second.projectiles) releaseProjectile(projectile);
+
+const mg42Player = new Player(160, 120);
+mg42Player.setWeaponLoadout(["mg42", "pistol"], 0);
+mg42Player.mana = 0;
+const coolShot = WeaponController.fire(mg42Player, 0, () => 0.99);
+assert.equal(coolShot.fired, true);
+assert.equal(mg42Player.weaponHeat, 9);
+const coolAngle = Math.abs(Math.atan2(coolShot.projectiles[0].vy, coolShot.projectiles[0].vx));
+for (const projectile of coolShot.projectiles) releaseProjectile(projectile);
+mg42Player.weaponHeat = 90;
+mg42Player.fireCooldown = 0;
+const hotShot = WeaponController.fire(mg42Player, 0, () => 0.99);
+assert.equal(hotShot.fired, true);
+const hotAngle = Math.abs(Math.atan2(hotShot.projectiles[0].vy, hotShot.projectiles[0].vx));
+assert.ok(hotAngle > coolAngle * 1.7, "MG42 spread must widen as heat rises");
+for (const projectile of hotShot.projectiles) releaseProjectile(projectile);
+mg42Player.fireCooldown = 0;
+const overheatShot = WeaponController.fire(mg42Player, 0, () => 0.5);
+assert.equal(overheatShot.fired, true);
+assert.ok(mg42Player.weaponOverheatTimer > 0);
+for (const projectile of overheatShot.projectiles) releaseProjectile(projectile);
+mg42Player.fireCooldown = 0;
+assert.equal(WeaponController.fire(mg42Player, 0, () => 0.5).reason, "overheated");
+const heatBeforeSwap = mg42Player.weaponHeat;
+assert.equal(WeaponController.switchWeapon(mg42Player), true);
+WeaponController.updateRuntime(mg42Player, 0.25, false);
+assert.ok(mg42Player.weaponHeat < heatBeforeSwap && mg42Player.weaponHeat > 0, "MG42 must cool instead of resetting when holstered");
+WeaponController.updateRuntime(mg42Player, 2, false);
+assert.equal(mg42Player.weaponOverheatTimer, 0);
+assert.ok(mg42Player.weaponHeat <= 35);
+
+const na45Player = new Player(160, 120);
+na45Player.maxMana = 80;
+na45Player.mana = 80;
+na45Player.setWeaponLoadout(["na_45"], 0);
+const primerVolley = WeaponController.fire(na45Player, 0, () => 0.5);
+assert.equal(primerVolley.fired, true);
+assert.equal(primerVolley.projectiles[0].linkedShotMode, "primer");
+assert.equal(primerVolley.projectiles[0].linkedExplosionRadius, 42);
+na45Player.fireCooldown = 0;
+const catalystVolley = WeaponController.fire(na45Player, 0, () => 0.5);
+assert.equal(catalystVolley.fired, true);
+assert.equal(catalystVolley.projectiles[0].linkedShotMode, "catalyst");
 
 const rocket = fire("micro_rocket");
 const rocketSpeed = Math.hypot(rocket.vx, rocket.vy);
@@ -276,6 +333,21 @@ assert.equal(dungeon.projectiles[0].damage, 7);
 for (const projectile of dungeon.projectiles) releaseProjectile(projectile);
 dungeon.projectiles = [];
 
+const linkedPrimer = primerVolley.projectiles[0];
+const linkedCatalyst = catalystVolley.projectiles[0];
+linkedPrimer.x = linkedPrimer.y = 40;
+linkedCatalyst.x = 52;
+linkedCatalyst.y = 40;
+dungeon.projectiles = [linkedPrimer, linkedCatalyst];
+dungeon.stickLinkedPrimer(linkedPrimer);
+const linkedBlastTarget = new Enemy(48, 40, "melee");
+linkedBlastTarget.hp = linkedBlastTarget.maxHp = 30;
+dungeon.enemies = [linkedBlastTarget];
+dungeon.updateProjectiles(0.016);
+assert.equal(linkedPrimer.detonated, true);
+assert.equal(dungeon.projectiles.length, 0, "NA-45 linked rounds must be released after detonation");
+assert.ok(linkedBlastTarget.hp < 30, "NA-45 Catalyst must detonate the nearby Primer");
+
 const chainA = new Enemy(20, 20, "melee");
 const chainB = new Enemy(50, 20, "melee");
 const chainFar = new Enemy(150, 20, "melee");
@@ -312,6 +384,8 @@ assert.equal(pooledProjectile.explosionRadius, 0);
 assert.equal(pooledProjectile.chainCount, 0);
 assert.equal(pooledProjectile.homingStrength, 0);
 assert.equal(pooledProjectile.weaponId, "");
+assert.equal(pooledProjectile.linkedShotMode, "none");
+assert.equal(pooledProjectile.stuck, false);
 releaseProjectile(pooledProjectile);
 
 const homingTarget = new Enemy(0, 90, "melee");
@@ -334,6 +408,8 @@ assert.match(dungeonSource, /heldYoyo[\s\S]*heldYoyo\.life = Math\.max\(heldYoyo
 assert.match(dungeonSource, /updateProjectileHoming[\s\S]*rotateVelocityToward/);
 assert.match(dungeonSource, /applyProjectileChain[\s\S]*calculateChainDamage/);
 assert.match(dungeonSource, /detonateProjectile[\s\S]*calculateExplosionDamage/);
+assert.match(dungeonSource, /stickLinkedPrimer[\s\S]*triggerLinkedPrimer/);
+assert.match(dungeonSource, /WeaponController\.updateRuntime\(this\.player, dt, fireHeld\)/);
 assert.match(rendererSource, /ProjectileArtRenderer\.draw/);
 assert.match(projectileRendererSource, /p\.style === "beam"[\s\S]*p\.style === "prism"/);
 assert.match(projectileRendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
@@ -348,6 +424,7 @@ console.log(JSON.stringify({
   accelerationAndDrag: "ok",
   chainLightning: "ok",
   radialExplosion: "ok",
+  codBurstHeatAndLink: "ok",
   allStageWeaponPool: getAvailableWeapons(1).length,
   bossHighTierRate: Number(bossRates.highTier.toFixed(3)),
   bossLegendaryRate: Number(bossRates.legendary.toFixed(3)),

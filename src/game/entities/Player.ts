@@ -34,6 +34,13 @@ export class Player {
   public activeWeaponSlot: 0 | 1 = 0;
   public fireCooldown: number = 0;
   public weaponChannelTime: number = 0;
+  public weaponBurstIndex: number = 0;
+  public weaponBurstWeaponId: string = "";
+  public weaponHeat: number = 0;
+  public weaponHeatWeaponId: string = "";
+  public weaponOverheatTimer: number = 0;
+  public linkedShotStep: 0 | 1 = 0;
+  public linkedShotWeaponId: string = "";
   public aimAngle: number = 0;
   
   public facingLeft: boolean = false;

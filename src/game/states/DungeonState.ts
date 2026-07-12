@@ -799,6 +799,7 @@ export class DungeonState extends GameState {
 
     const canFireWeapon = ["combat", "cleared", "reward", "exiting", "exploration"].includes(this.roomPhase);
     const fireHeld = this.engine.input.isActionDown("fire");
+    WeaponController.updateRuntime(this.player, dt, fireHeld);
     const activeWeapon = WEAPONS[this.player.currentWeaponId];
     const heldYoyo = activeWeapon?.attackMode === "yoyo"
       ? this.projectiles.find(projectile =>
@@ -1886,8 +1887,22 @@ export class DungeonState extends GameState {
       const p = this.projectiles[i];
       p.anchorX = this.player.x;
       p.anchorY = this.player.y;
+      if (p.stuck) {
+        p.update(dt);
+        if (p.life <= 0) {
+          this.projectiles.splice(i, 1);
+          releaseProjectile(p);
+        }
+        continue;
+      }
       this.updateProjectileHoming(p, dt);
       p.update(dt);
+      if (p.linkedShotMode === "catalyst" && this.triggerLinkedPrimer(p)) {
+        this.fx.emitProjectileImpact(p, false, this.engine.isPerformanceDegraded());
+        this.projectiles.splice(i, 1);
+        releaseProjectile(p);
+        continue;
+      }
       let environmentHitT = p.ignoreWalls ? null : this.getProjectileEnvironmentHitT(p);
       let entityHit = false;
       let directEnemyId: number | undefined;
@@ -1932,6 +1947,10 @@ export class DungeonState extends GameState {
           }
           if (result.applied && p.chainCount > 0 && p.chainRange > 0) {
             this.applyProjectileChain(p, hitX, hitY);
+          }
+          if (p.linkedShotMode === "primer") {
+            this.stickLinkedPrimer(p);
+            continue;
           }
           if (p.explosionRadius > 0) {
             entityHit = true;
@@ -1978,6 +1997,11 @@ export class DungeonState extends GameState {
         p.x = impactX;
         p.y = impactY;
         this.fx.emitProjectileImpact(p, p.critical, this.engine.isPerformanceDegraded());
+
+        if (p.linkedShotMode === "primer") {
+          this.stickLinkedPrimer(p);
+          continue;
+        }
 
         if (p.wallBouncesRemaining > 0) {
           const blockedX = proposedX < 0 || proposedX > 320 || this.isCollidingWithMap(proposedX, p.previousY, p.radius);
@@ -2144,6 +2168,41 @@ export class DungeonState extends GameState {
       fromX = targetX;
       fromY = targetY;
     }
+  }
+
+  private stickLinkedPrimer(projectile: Projectile): void {
+    projectile.stuck = true;
+    projectile.vx = 0;
+    projectile.vy = 0;
+    projectile.previousX = projectile.x;
+    projectile.previousY = projectile.y;
+    projectile.life = Math.max(0.5, projectile.linkedMarkerLife || 4);
+    projectile.maxLife = projectile.life;
+    projectile.hitEnemyIds.clear();
+  }
+
+  private triggerLinkedPrimer(catalyst: Projectile): boolean {
+    if (catalyst.linkedShotMode !== "catalyst") return false;
+    const triggerRange = Math.max(16, catalyst.linkedTriggerRange || 72);
+    let primer: Projectile | undefined;
+    let closestDistance = triggerRange;
+    for (const candidate of this.projectiles) {
+      if (candidate === catalyst || candidate.life <= 0 || candidate.detonated) continue;
+      if (candidate.faction !== "player" || candidate.weaponId !== catalyst.weaponId) continue;
+      if (candidate.linkedShotMode !== "primer" || !candidate.stuck) continue;
+      const distance = Math.hypot(candidate.x - catalyst.x, candidate.y - catalyst.y);
+      if (distance <= closestDistance) {
+        primer = candidate;
+        closestDistance = distance;
+      }
+    }
+    if (!primer) return false;
+    primer.explosionRadius = Math.max(8, primer.linkedExplosionRadius || catalyst.linkedExplosionRadius || 42);
+    primer.explosionDamageMultiplier = Math.max(0.1, primer.linkedExplosionDamageMultiplier || catalyst.linkedExplosionDamageMultiplier || 1);
+    primer.color = "#FF7043";
+    this.detonateProjectile(primer);
+    primer.life = 0;
+    return true;
   }
 
   private detonateProjectile(projectile: Projectile, directEnemyId?: number) {

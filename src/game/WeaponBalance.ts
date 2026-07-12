@@ -68,6 +68,9 @@ export function hasWeaponUtility(weapon: WeaponData): boolean {
     (weapon.chainCount ?? 0) > 0 ||
     (weapon.explosionRadius ?? 0) > 0 ||
     (weapon.homingStrength ?? 0) > 0 ||
+    weapon.linkedShot === true ||
+    (weapon.maxHeat ?? 0) > 0 ||
+    (weapon.burstSize ?? 0) > 1 ||
     weapon.statusEffect ||
     weapon.projectileStyle === "beam" ||
     weapon.projectileStyle === "flame" ||

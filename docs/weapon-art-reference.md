@@ -1,6 +1,6 @@
 # Weapon Art Reference Register
 
-This register documents the visual reference selected for the weapon-art pass introduced in version 0.18.0. External images are used only as temporary study references. The repository contains newly authored low-resolution sprites and palettes, not the downloaded source images.
+This register documents the visual reference selected for the weapon-art pass introduced in version 0.18.0 and expanded in version 0.19.0. External images are used only as temporary study references. The repository contains newly authored low-resolution sprites and palettes, not the downloaded source images.
 
 ## Reference-driven licensed designs
 
@@ -14,6 +14,12 @@ This register documents the visual reference selected for the weapon-art pass in
 | `venom_x` | Venom-X | Call of Duty: Ghosts Extinction model | https://callofduty.fandom.com/wiki/Venom-X |
 | `ray_gun` | Ray Gun | Call of Duty: World at War model and color layout | https://callofduty.fandom.com/wiki/Ray_Gun |
 | `wunderwaffe` | Wunderwaffe DG-2 | Call of Duty: World at War third-person profile | https://callofduty.fandom.com/wiki/Wunderwaffe_DG-2 |
+| `r9_0` | R9-0 Shotgun | Call of Duty: Modern Warfare (2019) HUD profile | https://callofduty.fandom.com/wiki/R9-0_Shotgun |
+| `mx_guardian` | MX Guardian | Call of Duty: Modern Warfare II HUD profile | https://callofduty.fandom.com/wiki/MX_Guardian |
+| `cx_9` | CX-9 | Call of Duty: Modern Warfare (2019) HUD profile | https://callofduty.fandom.com/wiki/Skorpion_EVO |
+| `mg42` | MG42 | Call of Duty: World at War menu profile | https://callofduty.fandom.com/wiki/MG42 |
+| `bp50` | BP50 | Call of Duty: Modern Warfare III HUD profile | https://callofduty.fandom.com/wiki/F2000 |
+| `na_45` | NA-45 | Call of Duty: Advanced Warfare menu profile | https://callofduty.fandom.com/wiki/NA-45 |
 | `minishark` | Minishark | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Minishark |
 | `water_bolt` | Water Bolt | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Water_Bolt |
 | `stardust_dragon_staff` | Stardust Dragon Staff | Official Terraria item sprite | https://terraria.wiki.gg/wiki/Stardust_Dragon_Staff |

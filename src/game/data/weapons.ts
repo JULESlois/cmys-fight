@@ -48,6 +48,11 @@ export interface ProjectileProfile {
   repeatHitDelay: number;
   tetherRange: number;
   returnStrength: number;
+  linkedShot: boolean;
+  linkedExplosionRadius: number;
+  linkedExplosionDamageMultiplier: number;
+  linkedTriggerRange: number;
+  linkedMarkerLife: number;
 }
 
 export interface WeaponData {
@@ -98,6 +103,19 @@ export interface WeaponData {
   repeatHitDelay?: number;
   tetherRange?: number;
   returnStrength?: number;
+  burstSize?: number;
+  burstInterval?: number;
+  burstRecovery?: number;
+  heatPerShot?: number;
+  heatDecayRate?: number;
+  maxHeat?: number;
+  overheatLockout?: number;
+  heatSpreadMultiplier?: number;
+  linkedShot?: boolean;
+  linkedExplosionRadius?: number;
+  linkedExplosionDamageMultiplier?: number;
+  linkedTriggerRange?: number;
+  linkedMarkerLife?: number;
 }
 
 export const WEAPONS: Record<string, WeaponData> = {
@@ -320,6 +338,59 @@ export const WEAPONS: Record<string, WeaponData> = {
     damage: 16, fireRate: 0.75, bulletSpeed: 280, manaCost: 8, spread: 0, pelletCount: 1, knockback: 12, critChance: 0.2, color: "#8DF6FF",
     projectileLife: 2, chainCount: 5, chainRange: 80, chainDamageMultiplier: 0.65, mechanic: "Lightning bolt jumps between groups of enemies.", projectileStyle: "lightning", trailLength: 35,
   },
+
+  cx_9: {
+    id: "cx_9", name: "CX-9", category: "smg", rarity: "common",
+    damage: 1, fireRate: 8.7, bulletSpeed: 250, manaCost: 0, spread: 0.08,
+    pelletCount: 1, knockback: 1, critChance: 0.04, color: "#D7DEE3",
+    projectileLife: 1.45,
+    mechanic: "Lightweight automatic SMG with a high fire rate, tight spread and manageable recoil.",
+    projectileStyle: "tracer", trailLength: 14, muzzleEffect: "flash", recoil: 0.12,
+  },
+  r9_0: {
+    id: "r9_0", name: "R9-0 Shotgun", category: "shotgun", rarity: "uncommon",
+    damage: 1, fireRate: 2.3, bulletSpeed: 155, manaCost: 1, spread: 0.76,
+    pelletCount: 6, knockback: 8, critChance: 0.05, color: "#D8DEE3",
+    projectileLife: 0.95, burstSize: 2, burstInterval: 0.12, burstRecovery: 0.72,
+    mechanic: "Fires two rapid shotgun blasts before a longer pump-action recovery.",
+    projectileStyle: "bullet", trailLength: 5, muzzleEffect: "smoke", recoil: 1.05,
+  },
+  bp50: {
+    id: "bp50", name: "BP50", category: "rifle", rarity: "rare",
+    damage: 2, fireRate: 7, bulletSpeed: 275, manaCost: 1.5, spread: 0.055,
+    pelletCount: 1, knockback: 2, critChance: 0.08, color: "#D7E0DD",
+    projectileLife: 1.8,
+    mechanic: "Fast-firing bullpup rifle combines exceptional accuracy with strong mid-range velocity.",
+    projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", recoil: 0.22,
+  },
+  mx_guardian: {
+    id: "mx_guardian", name: "MX Guardian", category: "shotgun", rarity: "rare",
+    damage: 1, fireRate: 3, bulletSpeed: 132, manaCost: 2, spread: 0.82,
+    pelletCount: 5, knockback: 5, critChance: 0.04, color: "#D9DEE2",
+    projectileLife: 0.82,
+    mechanic: "Fully automatic shotgun floods close range with repeated five-pellet blasts.",
+    projectileStyle: "bullet", trailLength: 4, muzzleEffect: "smoke", recoil: 0.72,
+  },
+  mg42: {
+    id: "mg42", name: "MG42", category: "rifle", rarity: "rare",
+    damage: 1, fireRate: 11.5, bulletSpeed: 245, manaCost: 0, spread: 0.13,
+    pelletCount: 1, knockback: 2, critChance: 0.04, color: "#F0C56A",
+    projectileLife: 1.7, pierce: 1,
+    heatPerShot: 9, heatDecayRate: 22, maxHeat: 100, overheatLockout: 1.35, heatSpreadMultiplier: 2.4,
+    mechanic: "Buzzsaw-rate machine gun builds heat and spread until an overheat lockout forces cooling.",
+    projectileStyle: "tracer", trailLength: 16, muzzleEffect: "smoke", recoil: 0.28,
+  },
+  na_45: {
+    id: "na_45", name: "NA-45", category: "launcher", rarity: "legendary",
+    damage: 6, fireRate: 1.55, bulletSpeed: 310, manaCost: 4, spread: 0.015,
+    pelletCount: 1, knockback: 10, critChance: 0.15, color: "#E1D06B",
+    projectileRadius: 3, projectileLife: 3,
+    linkedShot: true, linkedExplosionRadius: 42, linkedExplosionDamageMultiplier: 2.1,
+    linkedTriggerRange: 72, linkedMarkerLife: 4.5,
+    mechanic: "Primer rounds stick to a surface; the following Catalyst detonates a nearby Primer in a wide blast.",
+    projectileStyle: "tracer", trailLength: 22, muzzleEffect: "electric", impactEffect: "spark", recoil: 1.4,
+  },
+
   minishark: {
     id: "minishark", name: "Minishark", category: "rifle", rarity: "common",
     damage: 1, fireRate: 11.5, bulletSpeed: 235, manaCost: 0, spread: 0.17,
@@ -402,6 +473,11 @@ export function getProjectileProfile(weapon: WeaponData): ProjectileProfile {
     repeatHitDelay: Math.max(0, weapon.repeatHitDelay ?? 0),
     tetherRange: Math.max(0, weapon.tetherRange ?? 0),
     returnStrength: Math.max(0, weapon.returnStrength ?? 0),
+    linkedShot: weapon.linkedShot === true,
+    linkedExplosionRadius: Math.max(0, weapon.linkedExplosionRadius ?? 0),
+    linkedExplosionDamageMultiplier: Math.max(0, weapon.linkedExplosionDamageMultiplier ?? 1),
+    linkedTriggerRange: Math.max(0, weapon.linkedTriggerRange ?? 0),
+    linkedMarkerLife: Math.max(0, weapon.linkedMarkerLife ?? 0),
   };
 }
 

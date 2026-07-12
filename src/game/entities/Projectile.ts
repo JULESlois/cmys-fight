@@ -1,6 +1,8 @@
 import type { StatusEffectId } from "../combat/StatusEffectSystem";
 import type { ImpactEffect, MuzzleEffect, ProjectileProfile, ProjectileStyle } from "../data/weapons";
 
+export type LinkedShotMode = "none" | "primer" | "catalyst";
+
 export class Projectile {
   public id = 0;
   public x = 0;
@@ -49,6 +51,12 @@ export class Projectile {
   public anchorX = 0;
   public anchorY = 0;
   public summonLevel = 1;
+  public linkedShotMode: LinkedShotMode = "none";
+  public linkedExplosionRadius = 0;
+  public linkedExplosionDamageMultiplier = 1;
+  public linkedTriggerRange = 0;
+  public linkedMarkerLife = 0;
+  public stuck = false;
 
   private static nextId = 0;
 
@@ -133,6 +141,12 @@ export class Projectile {
     this.anchorX = x;
     this.anchorY = y;
     this.summonLevel = 1;
+    this.linkedShotMode = "none";
+    this.linkedExplosionRadius = profile?.linkedExplosionRadius ?? 0;
+    this.linkedExplosionDamageMultiplier = profile?.linkedExplosionDamageMultiplier ?? 1;
+    this.linkedTriggerRange = profile?.linkedTriggerRange ?? 0;
+    this.linkedMarkerLife = profile?.linkedMarkerLife ?? 0;
+    this.stuck = false;
     this.hitEnemyIds.clear();
     return this;
   }
@@ -140,6 +154,12 @@ export class Projectile {
   update(dt: number) {
     this.previousX = this.x;
     this.previousY = this.y;
+
+    if (this.stuck) {
+      this.life -= dt;
+      this.age += dt;
+      return;
+    }
 
     if (this.repeatHitDelay > 0 && this.hitEnemyIds.size > 0) {
       if (this.repeatHitTimer <= 0) this.repeatHitTimer = this.repeatHitDelay;

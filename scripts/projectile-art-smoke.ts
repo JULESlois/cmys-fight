@@ -18,7 +18,10 @@ for (const [style, profile] of Object.entries(PROJECTILE_ART)) {
   assert.ok(profile.trailSteps >= 0, `${style} trail steps`);
 }
 
-for (const id of ["ray_gun", "venom_x", "wunderwaffe", "water_bolt", "terrarian", "last_prism", "zenith"]) {
+for (const id of [
+  "ray_gun", "venom_x", "wunderwaffe", "water_bolt", "terrarian", "last_prism", "zenith",
+  "r9_0", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
+]) {
   assert.ok(PROJECTILE_WEAPON_PALETTES[id], `${id} keeps its signature projectile palette`);
 }
 assert.equal(resolveProjectilePalette("plasma", "ray_gun", "#000000").base, "#D7E53C");
@@ -128,6 +131,27 @@ ProjectileArtRenderer.draw(enemyRecording.ctx, enemyProjectile, false);
 assert.ok(enemyRecording.ops.some(operation => operation.color === "rgba(10,4,8,0.62)"), "enemy bullets need a dark danger outline");
 assert.ok(enemyRecording.ops.some(operation => operation.color === "#FFCB5C"), "boss bullets need a warning accent");
 
+const na45Weapon = WEAPONS.na_45;
+const linkedPrimer = new Projectile(
+  100, 100, 0, 0, 3, na45Weapon.damage, "player", 4.5, "#F2D45C", 0, false, 0, 0,
+  undefined, 0, false, getProjectileProfile(na45Weapon),
+);
+linkedPrimer.linkedShotMode = "primer";
+linkedPrimer.stuck = true;
+linkedPrimer.age = 0.5;
+const primerRecording = createRecordingContext();
+ProjectileArtRenderer.draw(primerRecording.ctx, linkedPrimer, false);
+assert.ok(primerRecording.ops.some(operation => operation.color === "#E8D34F"), "NA-45 Primer marker needs a yellow armed core");
+assert.ok(primerRecording.ops.length >= 12, "NA-45 Primer marker needs a segmented warning frame");
+const linkedCatalyst = new Projectile(
+  100, 100, 180, 0, 3, na45Weapon.damage, "player", 3, "#FF6B4A", 0, false, 0, 0,
+  undefined, 0, false, getProjectileProfile(na45Weapon),
+);
+linkedCatalyst.linkedShotMode = "catalyst";
+const catalystRecording = createRecordingContext();
+ProjectileArtRenderer.draw(catalystRecording.ctx, linkedCatalyst, false);
+assert.ok(catalystRecording.ops.some(operation => operation.color === "#FF6B43"), "NA-45 Catalyst needs an orange-red core");
+
 const impactEffects: ImpactEffect[] = ["spark", "electric", "plasma", "flame", "explosion", "slash"];
 const impactCounts = new Map<ImpactEffect, number>();
 for (const impactEffect of impactEffects) {
@@ -168,4 +192,5 @@ console.log(JSON.stringify({
   weaponAlwaysForeground: "ok",
   impactFamilies: impactEffects.length,
   pixelPulses: "ring-cross",
+  linkedAmmoVisuals: "primer-catalyst",
 }));

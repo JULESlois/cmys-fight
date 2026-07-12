@@ -178,9 +178,51 @@ export class ProjectileArtRenderer {
     ctx.restore();
   }
 
+
+  private static drawLinkedMarker(
+    ctx: CanvasRenderingContext2D,
+    p: Projectile,
+    palette: ProjectilePalette,
+    reducedFlashing: boolean,
+  ): void {
+    const pulse = reducedFlashing ? 0 : Math.floor((Math.sin(p.age * 10) + 1) * 1.5);
+    const radius = 6 + pulse;
+    ctx.save();
+    ctx.translate(Math.round(p.x), Math.round(p.y));
+    ctx.globalAlpha = reducedFlashing ? 0.72 : 0.92;
+    ctx.fillStyle = palette.shadow;
+    ctx.fillRect(-radius, -radius, 4, 2);
+    ctx.fillRect(radius - 3, -radius, 4, 2);
+    ctx.fillRect(-radius, radius - 1, 4, 2);
+    ctx.fillRect(radius - 3, radius - 1, 4, 2);
+    ctx.fillRect(-radius, -radius, 2, 4);
+    ctx.fillRect(radius - 1, -radius, 2, 4);
+    ctx.fillRect(-radius, radius - 3, 2, 4);
+    ctx.fillRect(radius - 1, radius - 3, 2, 4);
+    ctx.fillStyle = palette.base;
+    ctx.fillRect(-3, -1, 7, 3);
+    ctx.fillRect(-1, -3, 3, 7);
+    ctx.fillStyle = palette.highlight;
+    ctx.fillRect(0, 0, 2, 2);
+    ctx.fillStyle = palette.accent;
+    ctx.fillRect(-radius - 2, -1, 2, 2);
+    ctx.fillRect(radius + 1, -1, 2, 2);
+    ctx.restore();
+  }
+
   static draw(ctx: CanvasRenderingContext2D, p: Projectile, reducedFlashing = false): void {
     const art = PROJECTILE_ART[p.style];
-    const palette = resolveProjectilePalette(p.style, p.weaponId, p.color, p.critical, p.faction);
+    let palette = resolveProjectilePalette(p.style, p.weaponId, p.color, p.critical, p.faction);
+    if (p.linkedShotMode === "primer") {
+      palette = { shadow: "#4A3B16", base: "#E8D34F", highlight: "#FFF7B5", accent: "#69D6E8", glow: "rgba(232,211,79,0.34)" };
+    } else if (p.linkedShotMode === "catalyst") {
+      palette = { shadow: "#5A2418", base: "#FF6B43", highlight: "#FFE1B8", accent: "#F5C84B", glow: "rgba(255,107,67,0.36)" };
+    }
+
+    if (p.faction === "player" && p.linkedShotMode === "primer" && p.stuck) {
+      ProjectileArtRenderer.drawLinkedMarker(ctx, p, palette, reducedFlashing);
+      return;
+    }
 
     if (p.faction === "enemy") {
       ProjectileArtRenderer.drawEnemyProjectile(ctx, p, palette, reducedFlashing);

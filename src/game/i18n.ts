@@ -513,6 +513,12 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   venom_x: "毒性追踪弹会留下腐蚀效果。",
   ray_gun: "经典奇迹武器，发射爆炸等离子弹。",
   wunderwaffe: "闪电会在敌人之间连续跳跃。",
+  cx_9: "轻量全自动冲锋枪，拥有高射速、低散布和较低后坐。",
+  r9_0: "连续快速发射两次散弹，随后进入较长的泵动恢复。",
+  bp50: "高射速无托突击步枪，弹速快且中距离散布极低。",
+  mx_guardian: "全自动霰弹枪，可持续喷射五弹丸近距离火力。",
+  mg42: "极高射速机枪会持续升温并扩大散布，过热后必须强制冷却。",
+  na_45: "首发 Primer 会留在命中位置，下一发 Catalyst 靠近后引发大范围爆炸。",
 };
 
 const ACHIEVEMENT_ZH: Record<string, { name: string; description: string }> = {

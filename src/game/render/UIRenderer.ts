@@ -177,6 +177,19 @@ export class UIRenderer {
       ctx.fillStyle = rarityColor(weapon.rarity);
       ctx.font = "6px monospace";
       ctx.fillText(`EN ${WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, weapon.id))} DMG ${weapon.damage}`, x + 40, 225);
+      if (active && weapon.maxHeat) {
+        const heatRatio = WeaponController.getHeatRatio(player, weapon.id);
+        const overheated = player.weaponOverheatTimer > 0;
+        ctx.fillStyle = "#1A1C2C";
+        ctx.fillRect(x + 40, 227, 39, 3);
+        ctx.fillStyle = overheated ? "#FF4057" : heatRatio >= 0.7 ? "#FFB347" : "#F1C40F";
+        ctx.fillRect(x + 41, 228, Math.round(37 * heatRatio), 1);
+        if (overheated) {
+          ctx.fillStyle = "#FFF3B0";
+          ctx.font = "bold 5px monospace";
+          ctx.fillText("HOT", x + 68, 212);
+        }
+      }
     };
 
     drawWeaponSlot(0, 8);

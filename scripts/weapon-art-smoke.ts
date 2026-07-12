@@ -68,6 +68,7 @@ assert.ok(dimensions.size >= 10, "weapon art must use varied canvases instead of
 const sourceDriven = [
   "ballistic_knife", "olympia", "ksg_12", "akimbo_scorpion", "scavenger", "venom_x", "ray_gun", "wunderwaffe",
   "minishark", "water_bolt", "stardust_dragon_staff", "terrarian", "last_prism", "zenith",
+  "r9_0", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
 ];
 for (const id of sourceDriven) assert.ok(WEAPON_SPRITES[id], `${id} source-derived model`);
 
