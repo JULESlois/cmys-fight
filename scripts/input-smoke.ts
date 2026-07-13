@@ -59,7 +59,14 @@ function touchPulse(input: InstanceType<typeof Input>) {
   input.setTouchAction("interact", false);
 }
 
-function createPad(aPressed: boolean, bPressed = false, xPressed = false, yPressed = false) {
+function createPad(
+  aPressed: boolean,
+  bPressed = false,
+  xPressed = false,
+  yPressed = false,
+  lbPressed = false,
+  startPressed = false,
+) {
   return {
     connected: true,
     axes: [0, 0, 0, 0],
@@ -68,7 +75,9 @@ function createPad(aPressed: boolean, bPressed = false, xPressed = false, yPress
         (index === 0 && aPressed) ||
         (index === 1 && bPressed) ||
         (index === 2 && xPressed) ||
-        (index === 3 && yPressed);
+        (index === 3 && yPressed) ||
+        (index === 4 && lbPressed) ||
+        (index === 9 && startPressed);
       return { pressed: active, value: active ? 1 : 0 };
     }),
   };
@@ -107,7 +116,7 @@ promptInput.setBindings({ fire: "r", skill: "e", interact: " ", swapWeapon: "q",
 promptInput.setTouchAction("fire", true);
 promptInput.setTouchPromptMode("gamepad");
 assert.equal(promptInput.getPrompt("fire"), "X");
-assert.equal(promptInput.getPrompt("skill"), "B");
+assert.equal(promptInput.getPrompt("skill"), "LB");
 assert.equal(promptInput.getPrompt("interact"), "A");
 assert.equal(promptInput.getPrompt("swapWeapon"), "Y");
 assert.equal(promptInput.getPrompt("pause"), "START");
@@ -120,12 +129,21 @@ assert.equal(promptInput.getPrompt("pause"), "P");
 promptInput.setTouchAction("fire", false);
 gamepads = [createPad(false, true)];
 promptInput.beginFrame();
-assert.equal(promptInput.wasActionPressed("skill"), true);
-assert.equal(promptInput.wasPressed("escape"), true);
-assert.equal(promptInput.getPrompt("skill"), "B");
+assert.equal(promptInput.wasActionPressed("skill"), false, "gamepad B must never trigger the gameplay skill");
+assert.equal(promptInput.wasUiPressed("cancel"), true);
+assert.equal(promptInput.wasPressed("escape"), false, "gamepad buttons must not masquerade as keyboard keys");
+assert.equal(promptInput.getPrompt("skill"), "LB");
 assert.equal(promptInput.getCancelPrompt(), "B");
 promptInput.update();
 gamepads = [createPad(false, false)];
+promptInput.beginFrame();
+promptInput.update();
+gamepads = [createPad(false, false, false, false, true)];
+promptInput.beginFrame();
+assert.equal(promptInput.wasActionPressed("skill"), true, "LB is the dedicated gamepad skill button");
+assert.equal(promptInput.wasUiPressed("cancel"), false);
+promptInput.update();
+gamepads = [createPad(false)];
 promptInput.beginFrame();
 promptInput.update();
 promptInput.cleanup();
@@ -222,6 +240,7 @@ const menuInput = new Input();
 let menuClosed = 0;
 const menuEngine = {
   input: menuInput,
+  data: { settings: { language: "en" }, data: { player: { level: 1, hp: 5, maxHp: 5 } } },
   closeMenu() { menuClosed++; },
 } as any;
 gamepads = [createPad(false, true)];
@@ -229,6 +248,44 @@ menuInput.beginFrame();
 new MenuState(menuEngine).update(0);
 assert.equal(menuClosed, 1, "gamepad B closes the system menu");
 menuInput.cleanup();
+
+const destructiveMenuInput = new Input();
+let restoreCount = 0;
+let resetCount = 0;
+const destructiveMenuEngine = {
+  input: destructiveMenuInput,
+  data: { settings: { language: "en" }, data: { player: { level: 1, hp: 5, maxHp: 5 } } },
+  closeMenu() {},
+  saveFromMenu() {},
+  reloadSaveFromMenu() { restoreCount++; },
+  resetGameFromMenu() { resetCount++; },
+} as any;
+const destructiveMenu = new MenuState(destructiveMenuEngine) as any;
+destructiveMenu.enter();
+destructiveMenu.selection = 2;
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+destructiveMenu.update(0);
+assert.equal(restoreCount, 0, "restore requires a second confirmation");
+destructiveMenuInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+destructiveMenu.update(0);
+assert.equal(restoreCount, 1);
+destructiveMenuInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+destructiveMenu.enter();
+destructiveMenu.selection = 3;
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+destructiveMenu.update(0);
+assert.equal(resetCount, 0, "reset requires a second confirmation");
+destructiveMenuInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+destructiveMenu.update(0);
+assert.equal(resetCount, 1);
+destructiveMenuInput.update();
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+destructiveMenuInput.cleanup();
 
 const shopInput = new Input();
 const shopEngine = { input: shopInput } as any;
@@ -268,14 +325,16 @@ const createHubEngine = (input: InstanceType<typeof Input>) => {
 
 const hubKeyboardInput = new Input();
 const hubKeyboard = createHubEngine(hubKeyboardInput);
+const hubKeyboardState = new HubState(hubKeyboard.engine) as any;
+hubKeyboardState.selectedIndex = 0;
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-new HubState(hubKeyboard.engine).update();
+hubKeyboardState.update();
 assert.equal(hubKeyboard.getPurchases(), 1, "default K interact binding purchases a meta upgrade");
 assert.equal(hubKeyboard.getSwitchedState(), "", "buy input must not start a run");
 hubKeyboardInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
-new HubState(hubKeyboard.engine).update();
+hubKeyboardState.update();
 assert.equal(hubKeyboard.getPurchases(), 2, "Enter remains a purchase fallback");
 hubKeyboardInput.update();
 windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
@@ -286,29 +345,16 @@ const hubGamepad = createHubEngine(hubGamepadInput);
 gamepads = [createPad(true)];
 hubGamepadInput.beginFrame();
 new HubState(hubGamepad.engine).update();
-assert.equal(hubGamepad.getPurchases(), 1, "gamepad A purchases a meta upgrade");
-assert.equal(hubGamepad.getSwitchedState(), "", "gamepad A must not purchase and launch simultaneously");
-hubGamepadInput.update();
-gamepads = [createPad(false)];
-hubGamepadInput.beginFrame();
-hubGamepadInput.update();
-gamepads = [createPad(false, false, true)];
-hubGamepadInput.beginFrame();
-new HubState(hubGamepad.engine).update();
-assert.equal(hubGamepad.getSwitchedState(), "character_select", "gamepad X starts run preparation");
+assert.equal(hubGamepad.getPurchases(), 0);
+assert.equal(hubGamepad.getSwitchedState(), "character_select", "gamepad A activates the selected Start Run entry");
 hubGamepadInput.cleanup();
 
 const hubTouchInput = new Input();
 const hubTouch = createHubEngine(hubTouchInput);
 hubTouchInput.setTouchAction("interact", true);
 new HubState(hubTouch.engine).update();
-assert.equal(hubTouch.getPurchases(), 1, "touch A purchases a meta upgrade");
-assert.equal(hubTouch.getSwitchedState(), "", "touch A must not purchase and launch simultaneously");
-hubTouchInput.update();
-hubTouchInput.setTouchAction("interact", false);
-hubTouchInput.setTouchAction("fire", true);
-new HubState(hubTouch.engine).update();
-assert.equal(hubTouch.getSwitchedState(), "character_select", "touch X starts run preparation");
+assert.equal(hubTouch.getPurchases(), 0);
+assert.equal(hubTouch.getSwitchedState(), "character_select", "touch A activates the selected Start Run entry");
 hubTouchInput.cleanup();
 
 const touchMenuInput = new Input();
@@ -318,10 +364,10 @@ const touchMenuEngine = {
   input: touchMenuInput,
   closeMenu() { touchMenuClosed++; },
 } as any;
-touchMenuInput.setTouchAction("skill", true);
+touchMenuInput.setTouchUiAction("cancel", true);
 new MenuState(touchMenuEngine).update(0);
 assert.equal(touchMenuClosed, 1, "touch B closes menus in gamepad label mode");
-touchMenuInput.setTouchAction("skill", false);
+touchMenuInput.setTouchUiAction("cancel", false);
 touchMenuInput.setTouchPromptMode("keyboard");
 touchMenuInput.clearJustPressed();
 touchMenuInput.setTouchAction("skill", true);
@@ -329,8 +375,51 @@ assert.equal(touchMenuInput.wasActionPressed("skill"), true);
 assert.equal(touchMenuInput.wasPressed("escape"), false, "keyboard-labelled touch skill remains a gameplay action");
 touchMenuInput.cleanup();
 
+const transitionInput = new Input();
+gamepads = [createPad(true)];
+transitionInput.beginFrame();
+assert.equal(transitionInput.wasUiPressed("confirm"), true);
+transitionInput.suppressUntilReleased();
+transitionInput.update();
+transitionInput.beginFrame();
+assert.equal(transitionInput.wasUiPressed("confirm"), false, "held A is suppressed after a state transition");
+assert.equal(transitionInput.wasActionPressed("interact"), false);
+gamepads = [createPad(false)];
+transitionInput.beginFrame();
+transitionInput.update();
+gamepads = [createPad(true)];
+transitionInput.beginFrame();
+assert.equal(transitionInput.wasUiPressed("confirm"), true, "A works again after release");
+transitionInput.cleanup();
+
+const keyboardTransitionInput = new Input();
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), true);
+keyboardTransitionInput.suppressUntilReleased();
+keyboardTransitionInput.update();
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "held Enter is suppressed after a state transition");
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), true, "Enter works again after release");
+windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+keyboardTransitionInput.cleanup();
+
+const secondaryInput = new Input();
+windowTarget.dispatch("keydown", { key: "j", preventDefault() {} });
+assert.equal(secondaryInput.wasUiPressed("secondary"), false, "keyboard fire binding must not reset or reroll UI content");
+windowTarget.dispatch("keyup", { key: "j", preventDefault() {} });
+secondaryInput.update();
+windowTarget.dispatch("keydown", { key: "r", preventDefault() {} });
+assert.equal(secondaryInput.wasUiPressed("secondary"), true, "R is the keyboard secondary UI action");
+windowTarget.dispatch("keyup", { key: "r", preventDefault() {} });
+secondaryInput.update();
+secondaryInput.setTouchAction("fire", true);
+assert.equal(secondaryInput.wasUiPressed("secondary"), true, "touch X is the touch secondary UI action");
+secondaryInput.setTouchAction("fire", false);
+secondaryInput.cleanup();
+
 runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", touchPromptLabels: "ok", contextualCancel: "ok", hubPurchaseControls: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", dedicatedGamepadSkill: "LB", secondaryActionIsolation: "R-X-only", transitionReleaseGate: "keyboard-and-gamepad", destructiveMenuConfirmation: "ok", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));

@@ -16,12 +16,14 @@ function formatTime(seconds: number): string {
 
 export class RunResultState extends GameState {
   private summary: RunSummary | null = null;
+  private selection: "hub" | "title" = "hub";
 
   constructor(engine: Engine) {
     super(engine);
   }
 
   enter(params?: { summary?: RunSummary }) {
+    this.selection = "hub";
     this.summary = params?.summary ?? {
       ...this.engine.data.data.runStats,
       baseReward: 0,
@@ -40,11 +42,13 @@ export class RunResultState extends GameState {
   }
 
   update() {
-    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
-      this.engine.switchState("title");
-    } else if (this.engine.input.wasPressed("r")) {
-      this.engine.switchState("hub");
+    if (
+      this.engine.input.wasUiPressed("left") ||
+      this.engine.input.wasUiPressed("right")
+    ) {
+      this.selection = this.selection === "hub" ? "title" : "hub";
     }
+    if (this.engine.input.wasUiPressed("confirm")) this.engine.switchState(this.selection);
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -146,12 +150,26 @@ export class RunResultState extends GameState {
       if (secondLine) ctx.fillText(secondLine, 160, 209);
     }
 
-    ctx.fillStyle = "#00F2FE";
-    ctx.font = uiFont(language, 8, true);
-    ctx.fillText(t(language, "result.titleButton"), 160, 220);
+    const buttons: Array<["hub" | "title", Parameters<typeof t>[1], number]> = [
+      ["hub", "result.hubButton", 105],
+      ["title", "result.titleButton", 215],
+    ];
+    for (const [id, key, x] of buttons) {
+      const selected = this.selection === id;
+      ctx.fillStyle = selected ? "rgba(0,242,254,0.18)" : "rgba(10,15,25,0.85)";
+      ctx.fillRect(x - 50, 214, 100, 17);
+      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
+      ctx.strokeRect(x - 50, 214, 100, 17);
+      ctx.fillStyle = selected ? "#FFFFFF" : "#7F8C8D";
+      ctx.font = uiFont(language, 7, selected);
+      ctx.fillText(t(language, key), x, 226);
+    }
     ctx.fillStyle = "#7F8C8D";
-    ctx.font = uiFont(language, 7);
-    ctx.fillText(t(language, "result.hubButton"), 160, 233);
+    ctx.font = uiFont(language, 6);
+    ctx.fillText(t(language, "result.footer", {
+      horizontal: this.engine.input.getNavigationPrompt("horizontal"),
+      confirm: this.engine.input.getConfirmPrompt(),
+    }), 160, 238);
     ctx.textAlign = "left";
   }
 }

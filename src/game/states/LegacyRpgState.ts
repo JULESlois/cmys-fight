@@ -165,12 +165,6 @@ export class LegacyRpgState extends GameState {
       return;
     }
 
-    // Handle menu state change
-    if (this.engine.input.wasPressed("enter")) {
-      events.emit("state:change", "menu", { returnState: "legacy_rpg" });
-      return;
-    }
-
     const px = this.engine.data.data.legacyData.player.x;
     const py = this.engine.data.data.legacyData.player.y;
     const speed = 10 * dt;
@@ -194,10 +188,11 @@ export class LegacyRpgState extends GameState {
       let dx = 0;
       let dy = 0;
 
-      if (this.engine.input.isDown("arrowup") || this.engine.input.isDown("w")) dy = -1;
-      else if (this.engine.input.isDown("arrowdown") || this.engine.input.isDown("s")) dy = 1;
-      else if (this.engine.input.isDown("arrowleft") || this.engine.input.isDown("a")) dx = -1;
-      else if (this.engine.input.isDown("arrowright") || this.engine.input.isDown("d")) dx = 1;
+      const axis = this.engine.input.getAxis();
+      if (Math.abs(axis.y) >= Math.abs(axis.x) && axis.y < -0.55) dy = -1;
+      else if (Math.abs(axis.y) >= Math.abs(axis.x) && axis.y > 0.55) dy = 1;
+      else if (axis.x < -0.55) dx = -1;
+      else if (axis.x > 0.55) dx = 1;
 
       if (dx !== 0 || dy !== 0) {
         if (dx < 0) this.pDir = "left";
@@ -211,7 +206,7 @@ export class LegacyRpgState extends GameState {
     }
 
     // Check interaction
-    if (this.engine.input.wasPressed(" ")) {
+    if (this.engine.input.wasUiPressed("confirm")) {
       this.interact();
     }
 

@@ -92,33 +92,33 @@ export class SettingsState extends GameState {
       return;
     }
 
-    if (this.engine.input.wasPressed("escape")) {
+    if (this.engine.input.wasUiPressed("cancel")) {
       this.engine.switchState("title");
       return;
     }
-    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
+    if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + OPTIONS.length) % OPTIONS.length;
       audio.playShoot();
     }
-    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
+    if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % OPTIONS.length;
       audio.playShoot();
     }
 
     const option = OPTIONS[this.selectedIndex];
-    if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a")) {
+    if (this.engine.input.wasUiPressed("left")) {
       this.adjustSetting(option, -1);
     }
-    if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d")) {
+    if (this.engine.input.wasUiPressed("right")) {
       this.adjustSetting(option, 1);
     }
-    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
+    if (this.engine.input.wasUiPressed("confirm")) {
       const language = this.engine.data.settings.language;
       if (option === "back") {
         this.engine.switchState("title");
       } else if (option === "controls") {
         this.controlsOpen = true;
-        this.message = t(language, "settings.rebindHelp");
+        this.message = "";
         this.engine.input.clearJustPressed();
       } else if (option === "fullscreen") {
         document.dispatchEvent(new CustomEvent("game:fullscreen"));
@@ -141,7 +141,7 @@ export class SettingsState extends GameState {
   private updateControls() {
     const language = this.engine.data.settings.language;
     if (this.captureAction) {
-      if (this.engine.input.wasPressed("escape")) {
+      if (this.engine.input.wasUiPressed("cancel")) {
         this.captureAction = null;
         this.message = t(language, "settings.rebindCancelled");
         this.engine.input.clearJustPressed();
@@ -166,24 +166,24 @@ export class SettingsState extends GameState {
       return;
     }
 
-    if (this.engine.input.wasPressed("escape")) {
+    if (this.engine.input.wasUiPressed("cancel")) {
       this.controlsOpen = false;
       this.message = "";
       return;
     }
-    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
+    if (this.engine.input.wasUiPressed("up")) {
       this.controlIndex = (this.controlIndex - 1 + INPUT_ACTIONS.length) % INPUT_ACTIONS.length;
       audio.playShoot();
     }
-    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
+    if (this.engine.input.wasUiPressed("down")) {
       this.controlIndex = (this.controlIndex + 1) % INPUT_ACTIONS.length;
       audio.playShoot();
     }
-    if (this.engine.input.wasPressed("r")) {
+    if (this.engine.input.wasUiPressed("secondary")) {
       this.engine.data.settings.keyBindings = { ...DEFAULT_KEY_BINDINGS };
       this.saveSettings(t(language, "settings.keysReset"));
     }
-    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
+    if (this.engine.input.wasUiPressed("confirm")) {
       this.captureAction = this.currentAction();
       this.message = t(language, "settings.pressKey", {
         action: actionLabel(this.captureAction, language),
@@ -239,8 +239,7 @@ export class SettingsState extends GameState {
     } else {
       return;
     }
-    const language = settings.language;
-    this.saveSettings(t(language, "settings.updated", { option: t(language, OPTION_KEYS[option]) }));
+    this.saveSettings("");
   }
 
   private saveSettings(message: string) {
@@ -310,7 +309,12 @@ export class SettingsState extends GameState {
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = "#7F8C8D";
-    ctx.fillText(t(language, "settings.footer", { cancel: this.engine.input.getCancelPrompt() }), 160, 228);
+    ctx.fillText(t(language, "settings.footer", {
+      vertical: this.engine.input.getNavigationPrompt("vertical"),
+      horizontal: this.engine.input.getNavigationPrompt("horizontal"),
+      confirm: this.engine.input.getConfirmPrompt(),
+      cancel: this.engine.input.getCancelPrompt(),
+    }), 160, 228);
     ctx.textAlign = "left";
   }
 
@@ -334,7 +338,12 @@ export class SettingsState extends GameState {
     ctx.fillStyle = this.captureAction ? "#F1C40F" : "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 204);
-    ctx.fillText(t(language, "settings.controlsFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 228);
+    ctx.fillText(t(language, "settings.controlsFooter", {
+      vertical: this.engine.input.getNavigationPrompt("vertical"),
+      confirm: this.engine.input.getConfirmPrompt(),
+      reset: this.engine.input.getUiPrompt("secondary"),
+      cancel: this.engine.input.getCancelPrompt(),
+    }), 160, 228);
     ctx.textAlign = "left";
   }
 }

@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { Engine } from "../game/Engine";
+import type { UiAction } from "../game/Input";
 import { formatBinding, type InputAction, type TouchHandedness, type TouchLabelMode } from "../game/Settings";
 import { QaPanel } from "./QaPanel";
 import { installQaBridge, isQaMode } from "../game/qa/BrowserQa";
 import { calculateTouchViewportOffsets } from "../game/TouchLayout";
 import { t } from "../game/i18n";
 
-type TouchActionLabel = "fire" | "interact" | "skill" | "swapWeapon" | "pause";
+type TouchActionLabel = "fire" | "interact" | "cancel" | "skill" | "swapWeapon" | "pause";
 type TouchLabels = Record<TouchActionLabel, string>;
 
 const GAMEPAD_TOUCH_LABELS: TouchLabels = {
   fire: "X",
   interact: "A",
-  skill: "B",
+  cancel: "B",
+  skill: "LB",
   swapWeapon: "Y",
   pause: "START",
 };
@@ -25,6 +27,7 @@ function buildTouchLabels(
   return {
     fire: formatBinding(bindings.fire),
     interact: formatBinding(bindings.interact),
+    cancel: "ESC",
     skill: formatBinding(bindings.skill),
     swapWeapon: formatBinding(bindings.swapWeapon),
     pause: formatBinding(bindings.pause),
@@ -65,6 +68,7 @@ export function GameCanvas() {
     for (const action of ["fire", "skill", "interact", "swapWeapon", "pause"] as InputAction[]) {
       input?.setTouchAction(action, false);
     }
+    input?.setTouchUiAction("cancel", false);
   }, [touchEnabled]);
 
   useEffect(() => {
@@ -222,6 +226,25 @@ export function GameCanvas() {
     },
   });
 
+  const uiActionHandlers = (action: UiAction) => ({
+    draggable: false,
+    onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      pulseHaptics(7);
+      engineRef.current?.input.setTouchUiAction(action, true);
+    },
+    onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      engineRef.current?.input.setTouchUiAction(action, false);
+    },
+    onPointerCancel: () => engineRef.current?.input.setTouchUiAction(action, false),
+    onLostPointerCapture: () => engineRef.current?.input.setTouchUiAction(action, false),
+    onPointerLeave: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (event.buttons === 0) engineRef.current?.input.setTouchUiAction(action, false);
+    },
+  });
+
   return (
     <div ref={containerRef} className="game-shell relative w-full h-full bg-black flex items-center justify-center overflow-hidden focus:outline-none" tabIndex={0}>
       <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={importSave} />
@@ -294,11 +317,14 @@ export function GameCanvas() {
             <button type="button" aria-label={`${touchLabels.interact} button, interact`} data-gamepad-button="a" className="touch-button touch-face-button touch-face-a touch-use-button" {...actionHandlers("interact")}>
               <span className={`touch-face-letter ${touchLabels.interact.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.interact}</span>
             </button>
-            <button type="button" aria-label={`${touchLabels.skill} button, use skill`} data-gamepad-button="b" className="touch-button touch-face-button touch-face-b touch-skill-button" {...actionHandlers("skill")}>
-              <span className={`touch-face-letter ${touchLabels.skill.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.skill}</span>
+            <button type="button" aria-label={`${touchLabels.cancel} button, cancel or back`} data-gamepad-button="b" className="touch-button touch-face-button touch-face-b touch-cancel-button" {...uiActionHandlers("cancel")}>
+              <span className={`touch-face-letter ${touchLabels.cancel.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.cancel}</span>
             </button>
             <button type="button" aria-label={`${touchLabels.swapWeapon} button, swap weapon`} data-gamepad-button="y" className="touch-button touch-face-button touch-face-y touch-swap-button" {...actionHandlers("swapWeapon")}>
               <span className={`touch-face-letter ${touchLabels.swapWeapon.length > 2 ? "touch-label-long" : ""}`}>{touchLabels.swapWeapon}</span>
+            </button>
+            <button type="button" aria-label={`${touchLabels.skill} button, use skill`} data-gamepad-button="lb" className="touch-button touch-shoulder-button touch-skill-button" {...actionHandlers("skill")}>
+              <span className={touchLabels.skill.length > 3 ? "touch-label-long" : ""}>{touchLabels.skill}</span>
             </button>
           </div>
         </div>

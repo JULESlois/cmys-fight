@@ -1,6 +1,7 @@
 import { GameState } from "./GameState";
 import { events } from "../EventBus";
 import { generateFloor } from "../FloorGenerator";
+import { t, uiFont } from "../i18n";
 
 interface EnemyUnit {
   id: string;
@@ -29,7 +30,7 @@ export class LegacyTacticsState extends GameState {
   // Tactical phase & Selection state
   private phase: "player_turn" | "enemy_turn" | "end" = "player_turn";
   
-  private message = "TACTICAL BATTLE START!";
+  private message = "";
   private timer = 0;
   private params: any;
   private battleResult: "win" | "loss" | null = null;
@@ -42,7 +43,8 @@ export class LegacyTacticsState extends GameState {
     this.px = 2;
     this.py = 4;
     this.phase = "player_turn";
-    this.message = "Tactical combat: Predict & outmaneuver!";
+    const language = this.engine.data.settings.language;
+    this.message = t(language, "legacyTactics.start");
 
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -60,7 +62,7 @@ export class LegacyTacticsState extends GameState {
           actionDir: "down",
         }
       ];
-      this.message = "WARNING: BOSS ENCOUNTER!";
+      this.message = t(language, "legacyTactics.boss");
     } else {
       // Spawn 1 or 2 distinct high-readability anime enemies (Shogun Showdown style)
       this.enemies = [
@@ -108,7 +110,7 @@ export class LegacyTacticsState extends GameState {
 
   update(dt: number) {
     if (this.phase === "end") {
-      if (this.engine.input.wasPressed(" ") || this.engine.input.wasPressed("enter")) {
+      if (this.engine.input.wasUiPressed("confirm")) {
         events.emit("state:change", this.params?.returnState || "dungeon", {
           fromLegacy: true,
           legacyType: "legacy_tactics",
@@ -132,10 +134,10 @@ export class LegacyTacticsState extends GameState {
       let dx = 0;
       let dy = 0;
 
-      if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) dy = -1;
-      else if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) dy = 1;
-      else if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a")) dx = -1;
-      else if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d")) dx = 1;
+      if (this.engine.input.wasUiPressed("up")) dy = -1;
+      else if (this.engine.input.wasUiPressed("down")) dy = 1;
+      else if (this.engine.input.wasUiPressed("left")) dx = -1;
+      else if (this.engine.input.wasUiPressed("right")) dx = 1;
 
       if (dx !== 0 || dy !== 0) {
         this.handlePlayerAction(dx, dy);
@@ -148,7 +150,7 @@ export class LegacyTacticsState extends GameState {
     const targetY = this.py + dy;
 
     if (targetX < 0 || targetX > 4 || targetY < 0 || targetY > 4) {
-      this.message = "Cannot move outside the arena boundaries!";
+      this.message = t(this.engine.data.settings.language, "legacyTactics.outside");
       return;
     }
 
@@ -159,12 +161,18 @@ export class LegacyTacticsState extends GameState {
       // Melee strike
       const dmg = 4 + p.level;
       targetEnemy.hp -= dmg;
-      this.message = `Executed Slash on ${targetEnemy.name} for ${dmg} DMG!`;
+      this.message = t(this.engine.data.settings.language, "legacyTactics.slash", {
+        enemy: targetEnemy.name,
+        damage: dmg,
+      });
     } else {
       // Move
       this.px = targetX;
       this.py = targetY;
-      this.message = `Shifted position to ${targetX}, ${targetY}`;
+      this.message = t(this.engine.data.settings.language, "legacyTactics.moved", {
+        x: targetX,
+        y: targetY,
+      });
     }
 
     // Check if enemies are defeated
@@ -234,16 +242,16 @@ export class LegacyTacticsState extends GameState {
 
     if (hitCount > 0) {
       p.hp -= damageTaken;
-      this.message = `Adversaries strike! Sustained ${damageTaken} DMG!`;
+      this.message = t(this.engine.data.settings.language, "legacyTactics.hit", { damage: damageTaken });
     } else {
-      this.message = "You gracefully avoided all hostile incoming attacks!";
+      this.message = t(this.engine.data.settings.language, "legacyTactics.evaded");
     }
 
     // Check game over
     if (p.hp <= 0) {
       this.battleResult = "loss";
       p.hp = p.maxHp; // Auto revive for good game-loop flow
-      this.message = "Shattered! Revived at the shrine. Press SPACE to return.";
+      this.message = t(this.engine.data.settings.language, "legacyTactics.revived");
       this.phase = "end";
       this.engine.data.logEvent("Defeated in combat");
     } else {
@@ -257,7 +265,7 @@ export class LegacyTacticsState extends GameState {
     this.battleResult = "win";
     const p = this.engine.data.data.legacyData.player;
     p.exp += 8;
-    this.message = "VICTORY! Gained 8 EXP. Press SPACE to return.";
+    this.message = t(this.engine.data.settings.language, "legacyTactics.victory");
     this.phase = "end";
     this.engine.data.logEvent("Vanquished pixel ghosts");
 
@@ -266,11 +274,12 @@ export class LegacyTacticsState extends GameState {
       p.maxHp += 5;
       p.hp = p.maxHp;
       p.exp = 0;
-      this.message = "LEVEL UP! Health fully restored! Press SPACE to return.";
+      this.message = t(this.engine.data.settings.language, "legacyTactics.levelUp");
     }
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    const language = this.engine.data.settings.language;
     const floor = this.engine.data.data.floor;
     const theme = floor?.theme || "forest";
 
@@ -489,19 +498,19 @@ export class LegacyTacticsState extends GameState {
 
     // Text status description
     ctx.fillStyle = "#FFD700";
-    ctx.font = "7.5px monospace";
+    ctx.font = uiFont(language, 7);
     ctx.fillText(this.message, 18, 176);
 
     // Option columns based on the phase
     ctx.fillStyle = "#FFF";
     if (this.phase === "player_turn") {
-      ctx.fillText("YOUR TURN: MOVE OR ATTACK", 18, 192);
+      ctx.fillText(t(language, "legacyTactics.playerTurn"), 18, 192);
     } else if (this.phase === "enemy_turn") {
       ctx.fillStyle = "#E74C3C";
-      ctx.fillText("RESOLVING ENEMY ACTIONS... STAND BY!", 18, 196);
+      ctx.fillText(t(language, "legacyTactics.enemyTurn"), 18, 196);
     } else if (this.phase === "end") {
       ctx.fillStyle = "#2ECC71";
-      ctx.fillText("BATTLE CONCLUDED. PRESS SPACE OR ENTER.", 18, 196);
+      ctx.fillText(t(language, "legacyTactics.end", { confirm: this.engine.input.getConfirmPrompt() }), 18, 196);
     }
   }
 }

@@ -6,10 +6,11 @@ import {
 } from "./Settings";
 
 export type InputDevice = "keyboard" | "gamepad" | "touch";
+export type UiAction = "confirm" | "cancel" | "up" | "down" | "left" | "right" | "secondary";
 
 const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
   fire: [2, 7],
-  skill: [1],
+  skill: [4],
   interact: [0],
   swapWeapon: [3],
   pause: [9],
@@ -17,7 +18,7 @@ const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
 
 const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X/RT",
-  skill: "B",
+  skill: "LB",
   interact: "A",
   swapWeapon: "Y",
   pause: "START",
@@ -29,7 +30,7 @@ const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
 
 const TOUCH_GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X",
-  skill: "B",
+  skill: "LB",
   interact: "A",
   swapWeapon: "Y",
   pause: "START",
@@ -48,10 +49,12 @@ export class Input {
   private touchJustPressed: Partial<Record<InputAction, boolean>> = {};
   private gamepadActions: Partial<Record<InputAction, boolean>> = {};
   private gamepadJustPressed: Partial<Record<InputAction, boolean>> = {};
+  private touchUiActions: Partial<Record<UiAction, boolean>> = {};
+  private touchUiJustPressed: Partial<Record<UiAction, boolean>> = {};
+  private gamepadUiActions: Partial<Record<UiAction, boolean>> = {};
+  private gamepadUiJustPressed: Partial<Record<UiAction, boolean>> = {};
   private virtualKeys: Record<string, boolean> = {};
   private virtualKeyJustPressed: Record<string, boolean> = {};
-  private touchKeys: Record<string, boolean> = {};
-  private touchKeyJustPressed: Record<string, boolean> = {};
   private touchAxis = { x: 0, y: 0 };
   private gamepadAxis = { x: 0, y: 0 };
   private previousGamepadButtons: boolean[] = [];
@@ -59,6 +62,12 @@ export class Input {
   private physicalKeysThisFrame: string[] = [];
   private lastDevice: InputDevice = "keyboard";
   private touchPromptMode: TouchLabelMode = "gamepad";
+  private suppressedKeys = new Set<string>();
+  private suppressedGamepadButtons = new Set<number>();
+  private suppressedTouchActions = new Set<InputAction>();
+  private suppressedTouchUiActions = new Set<UiAction>();
+  private suppressGamepadAxisUntilNeutral = false;
+  private suppressTouchAxisUntilNeutral = false;
 
   private handleKeyDown: (e: KeyboardEvent) => void;
   private handleKeyUp: (e: KeyboardEvent) => void;
@@ -89,7 +98,7 @@ export class Input {
       e.preventDefault();
     }
     const nk = this.normalizeKey(e.key);
-    if (!this.keys[nk]) {
+    if (!this.keys[nk] && !this.suppressedKeys.has(nk)) {
       this.justPressed[nk] = true;
       this.physicalKeysThisFrame.push(nk);
     }
@@ -101,6 +110,7 @@ export class Input {
     const nk = this.normalizeKey(e.key);
     this.keys[nk] = false;
     this.justPressed[nk] = false;
+    this.suppressedKeys.delete(nk);
   }
 
   public setBindings(bindings: Partial<Record<InputAction, string>>) {
@@ -126,9 +136,36 @@ export class Input {
   }
 
   public getCancelPrompt(): string {
-    if (this.lastDevice === "gamepad") return "B";
-    if (this.lastDevice === "touch" && this.touchPromptMode === "gamepad") return "B";
-    return "ESC";
+    return this.getUiPrompt("cancel");
+  }
+
+  public getConfirmPrompt(): string {
+    return this.getUiPrompt("confirm");
+  }
+
+  public getUiPrompt(action: UiAction): string {
+    if (this.lastDevice === "gamepad" || (this.lastDevice === "touch" && this.touchPromptMode === "gamepad")) {
+      if (action === "confirm") return "A";
+      if (action === "cancel") return "B";
+      if (action === "secondary") return "X";
+      return "D-PAD";
+    }
+    if (action === "confirm") return "ENTER";
+    if (action === "cancel") return "ESC";
+    if (action === "secondary") return "R";
+    if (action === "up") return formatBinding(this.bindings.moveUp);
+    if (action === "down") return formatBinding(this.bindings.moveDown);
+    if (action === "left") return formatBinding(this.bindings.moveLeft);
+    return formatBinding(this.bindings.moveRight);
+  }
+
+  public getNavigationPrompt(axis: "horizontal" | "vertical"): string {
+    if (this.lastDevice === "gamepad" || (this.lastDevice === "touch" && this.touchPromptMode === "gamepad")) {
+      return "D-PAD";
+    }
+    return axis === "horizontal"
+      ? `${formatBinding(this.bindings.moveLeft)}/${formatBinding(this.bindings.moveRight)}`
+      : `${formatBinding(this.bindings.moveUp)}/${formatBinding(this.bindings.moveDown)}`;
   }
 
   public getLastDevice(): InputDevice {
@@ -147,8 +184,9 @@ export class Input {
     for (const key in this.justPressed) this.justPressed[key] = false;
     this.touchJustPressed = {};
     this.gamepadJustPressed = {};
+    this.touchUiJustPressed = {};
+    this.gamepadUiJustPressed = {};
     this.virtualKeyJustPressed = {};
-    this.touchKeyJustPressed = {};
     this.physicalKeysThisFrame = [];
   }
 
@@ -159,23 +197,32 @@ export class Input {
     this.touchJustPressed = {};
     this.gamepadActions = {};
     this.gamepadJustPressed = {};
+    this.touchUiActions = {};
+    this.touchUiJustPressed = {};
+    this.gamepadUiActions = {};
+    this.gamepadUiJustPressed = {};
     this.virtualKeys = {};
     this.virtualKeyJustPressed = {};
-    this.touchKeys = {};
-    this.touchKeyJustPressed = {};
     this.touchAxis = { x: 0, y: 0 };
     this.gamepadAxis = { x: 0, y: 0 };
     this.previousGamepadButtons = [];
     this.previousGamepadDirections = { up: false, down: false, left: false, right: false };
     this.physicalKeysThisFrame = [];
+    this.suppressedKeys.clear();
+    this.suppressedGamepadButtons.clear();
+    this.suppressedTouchActions.clear();
+    this.suppressedTouchUiActions.clear();
+    this.suppressGamepadAxisUntilNeutral = false;
+    this.suppressTouchAxisUntilNeutral = false;
   }
 
   public clearJustPressed() {
     this.justPressed = {};
     this.touchJustPressed = {};
     this.gamepadJustPressed = {};
+    this.touchUiJustPressed = {};
+    this.gamepadUiJustPressed = {};
     this.virtualKeyJustPressed = {};
-    this.touchKeyJustPressed = {};
     this.physicalKeysThisFrame = [];
   }
 
@@ -189,52 +236,73 @@ export class Input {
 
   public isDown(key: string): boolean {
     const normalized = this.normalizeKey(key);
-    return !!this.keys[normalized] || !!this.virtualKeys[normalized] || !!this.touchKeys[normalized];
+    if (this.suppressedKeys.has(normalized)) return false;
+    return !!this.keys[normalized] || !!this.virtualKeys[normalized];
   }
 
   public wasPressed(key: string): boolean {
     const normalized = this.normalizeKey(key);
-    return !!this.justPressed[normalized] || !!this.virtualKeyJustPressed[normalized] || !!this.touchKeyJustPressed[normalized];
+    if (this.suppressedKeys.has(normalized)) return false;
+    return !!this.justPressed[normalized] || !!this.virtualKeyJustPressed[normalized];
   }
 
   public isActionDown(action: InputAction): boolean {
-    return this.isDown(this.bindings[action]) || this.touchActions[action] === true || this.gamepadActions[action] === true;
+    const touchDown = this.touchActions[action] === true && !this.suppressedTouchActions.has(action);
+    return this.isDown(this.bindings[action]) || touchDown || this.gamepadActions[action] === true;
   }
 
   public wasActionPressed(action: InputAction): boolean {
-    return this.wasPressed(this.bindings[action]) || this.touchJustPressed[action] === true || this.gamepadJustPressed[action] === true;
+    const touchPressed = this.touchJustPressed[action] === true && !this.suppressedTouchActions.has(action);
+    return this.wasPressed(this.bindings[action]) || touchPressed || this.gamepadJustPressed[action] === true;
+  }
+
+  public wasUiPressed(action: UiAction): boolean {
+    if (this.gamepadUiJustPressed[action] || this.touchUiJustPressed[action]) return true;
+    if (action === "confirm") {
+      return this.wasPressed("enter") || this.wasPressed(" ") || this.wasActionPressed("interact");
+    }
+    if (action === "cancel") return this.wasPressed("escape");
+    if (action === "secondary") {
+      if (this.lastDevice === "touch") {
+        return this.touchJustPressed.fire === true && !this.suppressedTouchActions.has("fire");
+      }
+      return this.wasPressed("r");
+    }
+    if (action === "up") return this.wasPressed("arrowup") || this.wasPressed(this.bindings.moveUp);
+    if (action === "down") return this.wasPressed("arrowdown") || this.wasPressed(this.bindings.moveDown);
+    if (action === "left") return this.wasPressed("arrowleft") || this.wasPressed(this.bindings.moveLeft);
+    return this.wasPressed("arrowright") || this.wasPressed(this.bindings.moveRight);
   }
 
   public setTouchAxis(x: number, y: number) {
     const length = Math.hypot(x, y);
     this.touchAxis = length > 1 ? { x: x / length, y: y / length } : { x, y };
-    this.setTouchVirtualKey("arrowleft", this.touchAxis.x < -0.55);
-    this.setTouchVirtualKey("arrowright", this.touchAxis.x > 0.55);
-    this.setTouchVirtualKey("arrowup", this.touchAxis.y < -0.55);
-    this.setTouchVirtualKey("arrowdown", this.touchAxis.y > 0.55);
+    const active = Math.abs(this.touchAxis.x) > 0.55 || Math.abs(this.touchAxis.y) > 0.55;
+    if (this.suppressTouchAxisUntilNeutral) {
+      if (!active) this.suppressTouchAxisUntilNeutral = false;
+      this.touchAxis = { x: 0, y: 0 };
+    }
+    this.setVirtualKey("arrowleft", !this.suppressTouchAxisUntilNeutral && this.touchAxis.x < -0.55);
+    this.setVirtualKey("arrowright", !this.suppressTouchAxisUntilNeutral && this.touchAxis.x > 0.55);
+    this.setVirtualKey("arrowup", !this.suppressTouchAxisUntilNeutral && this.touchAxis.y < -0.55);
+    this.setVirtualKey("arrowdown", !this.suppressTouchAxisUntilNeutral && this.touchAxis.y > 0.55);
     if (Math.abs(x) > 0.05 || Math.abs(y) > 0.05) this.lastDevice = "touch";
   }
 
   public setTouchAction(action: InputAction, down: boolean) {
     const wasDown = this.touchActions[action] === true;
     this.touchActions[action] = down;
-    if (down && !wasDown) this.touchJustPressed[action] = true;
-    if (action === "interact") {
-      this.setTouchVirtualKey("enter", down);
-      this.setTouchVirtualKey(" ", down);
-    } else if (action === "skill" && this.touchPromptMode === "gamepad") {
-      this.setTouchVirtualKey("escape", down);
-    } else if (action === "pause") {
-      this.setTouchVirtualKey("escape", down);
-    }
+    if (down && !wasDown && !this.suppressedTouchActions.has(action)) this.touchJustPressed[action] = true;
+    if (!down) this.suppressedTouchActions.delete(action);
     if (down) this.lastDevice = "touch";
   }
 
-  private setTouchVirtualKey(key: string, down: boolean) {
-    const normalized = this.normalizeKey(key);
-    const wasDown = this.touchKeys[normalized] === true;
-    this.touchKeys[normalized] = down;
-    if (down && !wasDown) this.touchKeyJustPressed[normalized] = true;
+  public setTouchUiAction(action: UiAction, down: boolean) {
+    const wasDown = this.touchUiActions[action] === true;
+    this.touchUiActions[action] = down;
+    if (down && !wasDown && !this.suppressedTouchUiActions.has(action)) this.touchUiJustPressed[action] = true;
+    if (!down) this.suppressedTouchUiActions.delete(action);
+    if (down) this.lastDevice = "touch";
   }
 
   private setVirtualKey(key: string, down: boolean) {
@@ -253,8 +321,12 @@ export class Input {
       this.gamepadAxis = { x: 0, y: 0 };
       this.gamepadActions = {};
       this.gamepadJustPressed = {};
+      this.gamepadUiActions = {};
+      this.gamepadUiJustPressed = {};
       this.previousGamepadButtons = [];
-      for (const key of ["arrowup", "arrowdown", "arrowleft", "arrowright", "enter", " ", "escape", "q", "e", "p"]) this.setVirtualKey(key, false);
+      this.suppressedGamepadButtons.clear();
+      this.suppressGamepadAxisUntilNeutral = false;
+      for (const key of ["arrowup", "arrowdown", "arrowleft", "arrowright"]) this.setVirtualKey(key, false);
       return;
     }
 
@@ -272,19 +344,32 @@ export class Input {
       left: x < -0.55 || pad.buttons[14]?.pressed === true,
       right: x > 0.55 || pad.buttons[15]?.pressed === true,
     };
+    const anyDirection = directions.up || directions.down || directions.left || directions.right;
+    if (this.suppressGamepadAxisUntilNeutral) {
+      if (!anyDirection) this.suppressGamepadAxisUntilNeutral = false;
+      x = 0;
+      y = 0;
+    }
     const directionKeys: Array<[keyof typeof directions, string]> = [
       ["up", "arrowup"], ["down", "arrowdown"], ["left", "arrowleft"], ["right", "arrowright"],
     ];
     for (const [direction, key] of directionKeys) {
-      this.setVirtualKey(key, directions[direction]);
+      this.setVirtualKey(key, !this.suppressGamepadAxisUntilNeutral && directions[direction]);
     }
     if (x === 0) x = directions.left ? -1 : directions.right ? 1 : 0;
     if (y === 0) y = directions.up ? -1 : directions.down ? 1 : 0;
+    if (this.suppressGamepadAxisUntilNeutral) {
+      x = 0;
+      y = 0;
+    }
     this.gamepadAxis = { x, y };
     this.previousGamepadDirections = directions;
 
     const buttons = pad.buttons.map(button => button.pressed || button.value > 0.5);
-    const pressed = (index: number) => buttons[index] === true;
+    for (let index = 0; index < buttons.length; index++) {
+      if (!buttons[index]) this.suppressedGamepadButtons.delete(index);
+    }
+    const pressed = (index: number) => buttons[index] === true && !this.suppressedGamepadButtons.has(index);
     const just = (index: number) => pressed(index) && this.previousGamepadButtons[index] !== true;
     const actionEntries = Object.entries(GAMEPAD_BUTTONS) as Array<[InputAction, number[]]>;
     for (const [action, indices] of actionEntries) {
@@ -294,16 +379,17 @@ export class Input {
       if (newlyPressed) this.gamepadJustPressed[action] = true;
     }
 
-    this.setVirtualKey("enter", pressed(0));
-    this.setVirtualKey(" ", pressed(0));
-    this.setVirtualKey("escape", pressed(1));
-    this.setVirtualKey("q", pressed(3));
-    this.setVirtualKey("e", pressed(4));
-    this.setVirtualKey("p", pressed(9));
-
-    if (directions.up || directions.down || directions.left || directions.right || buttons.some(Boolean)) {
-      this.lastDevice = "gamepad";
+    const uiButtons: Array<[UiAction, number]> = [
+      ["confirm", 0],
+      ["cancel", 1],
+      ["secondary", 2],
+    ];
+    for (const [action, index] of uiButtons) {
+      this.gamepadUiActions[action] = pressed(index);
+      if (just(index)) this.gamepadUiJustPressed[action] = true;
     }
+
+    if (anyDirection || buttons.some(Boolean)) this.lastDevice = "gamepad";
     this.previousGamepadButtons = buttons;
   }
 
@@ -311,7 +397,7 @@ export class Input {
     let x = 0;
     let y = 0;
 
-    const physicalDown = (key: string) => this.keys[this.normalizeKey(key)] === true;
+    const physicalDown = (key: string) => this.keys[this.normalizeKey(key)] === true && !this.suppressedKeys.has(this.normalizeKey(key));
     if (physicalDown(this.bindings.moveLeft) || physicalDown("arrowleft")) x -= 1;
     if (physicalDown(this.bindings.moveRight) || physicalDown("arrowright")) x += 1;
     if (physicalDown(this.bindings.moveUp) || physicalDown("arrowup")) y -= 1;
@@ -325,5 +411,33 @@ export class Input {
       y /= length;
     }
     return { x, y };
+  }
+
+  public suppressUntilReleased(): void {
+    this.clearJustPressed();
+    for (const [key, down] of Object.entries(this.keys)) {
+      if (down) this.suppressedKeys.add(key);
+    }
+    this.previousGamepadButtons.forEach((down, index) => {
+      if (down) this.suppressedGamepadButtons.add(index);
+    });
+    for (const [action, down] of Object.entries(this.touchActions) as Array<[InputAction, boolean]>) {
+      if (down) this.suppressedTouchActions.add(action);
+    }
+    for (const [action, down] of Object.entries(this.touchUiActions) as Array<[UiAction, boolean]>) {
+      if (down) this.suppressedTouchUiActions.add(action);
+    }
+    const gamepadDirectionHeld = Object.values(this.previousGamepadDirections).some(Boolean) || Math.hypot(this.gamepadAxis.x, this.gamepadAxis.y) > 0.2;
+    const touchDirectionHeld = Math.hypot(this.touchAxis.x, this.touchAxis.y) > 0.2;
+    this.suppressGamepadAxisUntilNeutral ||= gamepadDirectionHeld;
+    this.suppressTouchAxisUntilNeutral ||= touchDirectionHeld;
+    if (gamepadDirectionHeld || touchDirectionHeld) {
+      this.gamepadAxis = { x: 0, y: 0 };
+      this.touchAxis = { x: 0, y: 0 };
+      for (const key of ["arrowup", "arrowdown", "arrowleft", "arrowright"]) {
+        this.virtualKeys[key] = false;
+        this.virtualKeyJustPressed[key] = false;
+      }
+    }
   }
 }

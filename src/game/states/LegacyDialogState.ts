@@ -1,5 +1,6 @@
 import { GameState } from "./GameState";
 import { events } from "../EventBus";
+import { t, uiFont } from "../i18n";
 
 export class LegacyDialogState extends GameState {
   private npc: any;
@@ -83,12 +84,12 @@ export class LegacyDialogState extends GameState {
           this.displayedText += targetText[this.displayedText.length];
           this.typeTimer = 0;
         }
-      } else if (this.engine.input.wasPressed(" ") || this.engine.input.wasPressed("enter")) {
+      } else if (this.engine.input.wasUiPressed("confirm")) {
         this.currentLine++;
         this.displayedText = "";
       }
     } else {
-      if (this.engine.input.wasPressed(" ") || this.engine.input.wasPressed("enter")) {
+      if (this.engine.input.wasUiPressed("confirm")) {
         events.emit("state:change", this.payload.returnState || "legacy_rpg", {
            sourceRoomId: this.payload.sourceRoomId,
            legacyType: this.payload.legacyType
@@ -98,6 +99,7 @@ export class LegacyDialogState extends GameState {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    const language = this.engine.data.settings.language;
     // Semi-transparent dark overlay
     ctx.fillStyle = "rgba(10, 15, 25, 0.4)";
     ctx.fillRect(0, 0, 320, 240);
@@ -132,13 +134,13 @@ export class LegacyDialogState extends GameState {
 
     // Dialog text
     ctx.fillStyle = "#FFF";
-    ctx.font = "8px monospace";
+    ctx.font = uiFont(language, 8);
     if (this.loading) {
       // Animated dot loading
       const dotCount = Math.floor(this.animTimer * 4) % 4;
       let dots = "";
       for (let i = 0; i < dotCount; i++) dots += ".";
-      ctx.fillText("Synchronizing psychic frequency" + dots, 20, 185);
+      ctx.fillText(t(language, "legacyDialog.loading") + dots, 20, 185);
     } else {
       if (this.currentLine < this.dialogLines.length) {
         ctx.fillText(this.displayedText, 20, 185);
@@ -153,7 +155,9 @@ export class LegacyDialogState extends GameState {
 
     // Secondary UI prompt instructions
     ctx.fillStyle = "rgba(0, 242, 254, 0.6)";
-    ctx.font = "6px monospace";
-    ctx.fillText("SPACE / ENTER TO ADVANCE", 220, 224);
+    ctx.font = uiFont(language, 6);
+    ctx.textAlign = "right";
+    ctx.fillText(t(language, "legacyDialog.advance", { confirm: this.engine.input.getConfirmPrompt() }), 302, 224);
+    ctx.textAlign = "left";
   }
 }

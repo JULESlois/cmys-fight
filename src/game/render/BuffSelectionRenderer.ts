@@ -15,7 +15,8 @@ export class BuffSelectionRenderer {
     rerollsRemaining = 0,
     selectedIndex = 0,
     confirmPrompt = "SPACE",
-    cyclePrompt = "Q",
+    cyclePrompt = "D-PAD",
+    rerollPrompt = "R",
     language: Language = "en",
   ) {
     ctx.save();
@@ -27,7 +28,9 @@ export class BuffSelectionRenderer {
     ctx.fillText(t(language, "buff.title"), 160, 44);
     ctx.fillStyle = "#8E9EAB";
     ctx.font = uiFont(language, 7);
-    const rerollText = rerollsRemaining > 0 ? t(language, "buff.reroll", { count: rerollsRemaining }) : "";
+    const rerollText = rerollsRemaining > 0
+      ? t(language, "buff.reroll", { prompt: rerollPrompt, count: rerollsRemaining })
+      : "";
     ctx.fillText(t(language, "buff.footer", { cycle: cyclePrompt, confirm: confirmPrompt, reroll: rerollText }), 160, 57);
 
     const cardWidth = 92;

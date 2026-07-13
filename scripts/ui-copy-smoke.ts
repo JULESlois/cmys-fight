@@ -16,13 +16,23 @@ const character = read("src/game/states/CharacterSelectState.ts");
 const records = read("src/game/states/RecordsState.ts");
 const dungeon = read("src/game/states/DungeonState.ts");
 const hud = read("src/game/render/UIRenderer.ts");
+const input = read("src/game/Input.ts");
+const menu = read("src/game/states/MenuState.ts");
+const engine = read("src/game/Engine.ts");
 
 assert.doesNotMatch(canvas, /touch-face-caption/);
 assert.doesNotMatch(css, /\.touch-face-caption/);
 assert.doesNotMatch(canvas, />FIRE<|>USE<|>SKILL<|>SWAP</);
+assert.match(canvas, /data-gamepad-button="lb"/);
+assert.match(canvas, /setTouchUiAction\(action/);
+assert.match(input, /skill: \[4\]/);
+assert.doesNotMatch(input, /skill: \[1\]/);
+assert.doesNotMatch(input, /setVirtualKey\("escape"|setVirtualKey\("enter"|setVirtualKey\("q"|setVirtualKey\("e"/);
 
 assert.match(title, /opt === "newRun"[\s\S]*switchState\("character_select", \{ backState: "title" \}\)/);
 assert.match(title, /opt === "hub"[\s\S]*switchState\("hub"\)/);
+assert.match(title, /moveSelection[\s\S]*!hasSave && this\.options\[this\.selectedIndex\] === "continue"/);
+assert.doesNotMatch(title, /opt === "continue"[\s\S]*switchState\("hub"\)/);
 assert.doesNotMatch(title, /newRun" \|\| opt === "hub/);
 assert.doesNotMatch(title, /BROWSER QA/);
 assert.doesNotMatch(title, /player_main_side_idle|enemy_boss_idle|weapon_pistol|shotX|SpriteRenderer/);
@@ -43,9 +53,11 @@ assert.match(shopSystem, /ShopItemKind = "weapon" \| "buff"/);
 assert.doesNotMatch(shopSystem, /kind: "heal"|kind: "armor"|full_hp|full_armor/);
 
 assert.doesNotMatch(hub, /RUN BONUS HP\+|ENTER BUY \| SPACE START/);
-assert.match(hub, /wasActionPressed\("interact"\)/);
-assert.match(hub, /getPrompt\("interact"\)/);
-assert.match(hub, /getPrompt\("fire"\)/);
+assert.match(hub, /HUB_ACTIONS: HubAction\[\] = \["start", "records", "hard", "challenge", "refund"\]/);
+assert.match(hub, /wasUiPressed\("confirm"\)/);
+assert.match(hub, /getConfirmPrompt\(\)/);
+assert.match(hub, /getCancelPrompt\(\)/);
+assert.doesNotMatch(hub, /wasPressed\("h"\)|wasPressed\("c"\)|wasPressed\("y"\)/);
 assert.doesNotMatch(character, /ARMORY: SHOTGUN|\[PASSIVE\]/);
 assert.match(character, /this\.engine\.switchState\(this\.backState\)/);
 assert.match(character, /CMYS_FORM_IDS = \["knight", "mage", "rogue"\]/);
@@ -54,7 +66,12 @@ assert.match(character, /player_kanami_side_idle/);
 assert.match(character, /SelectionMode = "identity" \| "form"/);
 assert.match(character, /selectedIdentity === "cmys"[\s\S]*this\.mode = "form"/);
 assert.match(records, /common\.hidden/);
-assert.match(dungeon, /dungeon\.retry/);
+assert.doesNotMatch(records, /wasPressed\("a"\)|wasPressed\("q"\)|wasPressed\("e"\)/);
+assert.doesNotMatch(dungeon, /dungeon\.retry/);
+assert.match(menu, /menu\.confirmRestore/);
+assert.match(menu, /menu\.confirmReset/);
+assert.match(engine, /resetGameFromMenu\(\)[\s\S]*rebuildStateAfterDataChange\("title"/);
+assert.doesNotMatch(menu, /System Menu Loaded|TACTICAL JOURNEY ARCHIVE|Archive save completed/);
 
 assert.match(hud, /drawPixelSprite\(ctx, `weapon_\$\{weapon\.id\}`/);
 assert.doesNotMatch(hud, /drawPixelSprite\(ctx, `pickup_\$\{weapon\.id\}`/);
@@ -73,6 +90,8 @@ console.log(JSON.stringify({
   conciseSelectionOverlays: "ok",
   cmysIdentityAndForms: "ok",
   reducedMenuCopy: "ok",
+  semanticInputPrompts: "ok",
+  safeSystemMenu: "ok",
   distinctWeaponHudModels: "ok",
   adaptiveWeaponNames: "ok",
   visibleSkillRecovery: "ok",

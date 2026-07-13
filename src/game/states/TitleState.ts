@@ -18,16 +18,23 @@ export class TitleState extends GameState {
   enter() {}
   exit() {}
 
+  private moveSelection(direction: number): void {
+    const hasSave = this.engine.data.hasValidSave();
+    do {
+      this.selectedIndex = (this.selectedIndex + direction + this.options.length) % this.options.length;
+    } while (!hasSave && this.options[this.selectedIndex] === "continue");
+  }
+
   update(dt: number) {
-    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
-      this.selectedIndex = (this.selectedIndex - 1 + this.options.length) % this.options.length;
+    if (this.engine.input.wasUiPressed("up")) {
+      this.moveSelection(-1);
       audio.playShoot(); // Reuse some sound for blip
     }
-    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
-      this.selectedIndex = (this.selectedIndex + 1) % this.options.length;
+    if (this.engine.input.wasUiPressed("down")) {
+      this.moveSelection(1);
       audio.playShoot();
     }
-    if (this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ")) {
+    if (this.engine.input.wasUiPressed("confirm")) {
       this.handleSelect();
     }
   }
@@ -39,10 +46,7 @@ export class TitleState extends GameState {
     } else if (opt === "hub") {
       this.engine.switchState("hub");
     } else if (opt === "continue") {
-      if (!this.engine.data.hasValidSave()) {
-        this.engine.switchState("hub");
-        return;
-      }
+      if (!this.engine.data.hasValidSave()) return;
       this.engine.switchState("dungeon");
     } else if (opt === "settings") {
       this.engine.switchState("settings");
@@ -116,6 +120,14 @@ export class TitleState extends GameState {
       ? "--:--"
       : `${Math.floor(meta.bestVictoryTime / 60)}:${Math.floor(meta.bestVictoryTime % 60).toString().padStart(2, "0")}`;
     const bestStage = getStageLabel(createRunProgressFromGlobalStage(meta.highestStage));
+    ctx.fillStyle = "#7F8C8D";
+    ctx.font = uiFont(language, 7);
+    ctx.fillText(tr(language, "title.footer", {
+      vertical: this.engine.input.getNavigationPrompt("vertical"),
+      confirm: this.engine.input.getConfirmPrompt(),
+    }), 160, 202);
+    ctx.fillStyle = "#34495E";
+    ctx.font = uiFont(language, 8);
     ctx.fillText(tr(language, "title.stats", { shards: meta.currency, stage: bestStage, wins: meta.victories, best: bestTime }), 160, 218);
     ctx.fillText(`v${APP_VERSION}`, 160, 230);
     ctx.textAlign = "left";

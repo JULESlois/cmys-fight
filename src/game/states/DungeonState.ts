@@ -568,7 +568,7 @@ export class DungeonState extends GameState {
 
   private updateBuffSelection() {
     if (!this.buffSelection) return;
-    if (this.engine.input.wasPressed("r") && this.player.buffRerollsRemaining > 0) {
+    if (this.engine.input.wasUiPressed("secondary") && this.player.buffRerollsRemaining > 0) {
       const floor = this.engine.data.data.floor;
       const rerollCount = (floor.buffChoiceRerollCount ?? 0) + 1;
       const roomId = floor.buffChoiceRoomId ?? "unknown";
@@ -589,8 +589,8 @@ export class DungeonState extends GameState {
       }
       return;
     }
-    const movePrevious = this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("arrowup");
-    const moveNext = this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("arrowdown") || this.engine.input.wasActionPressed("swapWeapon");
+    const movePrevious = this.engine.input.wasUiPressed("left") || this.engine.input.wasUiPressed("up");
+    const moveNext = this.engine.input.wasUiPressed("right") || this.engine.input.wasUiPressed("down");
     if (movePrevious) {
       this.buffSelectionIndex = (this.buffSelectionIndex - 1 + this.buffSelection.length) % this.buffSelection.length;
       audio.playShoot();
@@ -603,7 +603,7 @@ export class DungeonState extends GameState {
     const directIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
     const selectedIndex = directIndex >= 0
       ? directIndex
-      : this.engine.input.wasActionPressed("interact")
+      : this.engine.input.wasUiPressed("confirm")
         ? this.buffSelectionIndex
         : -1;
     if (selectedIndex < 0 || selectedIndex >= this.buffSelection.length) return;
@@ -620,17 +620,17 @@ export class DungeonState extends GameState {
     this.syncRoomState();
     this.engine.data.save();
     audio.playPickup();
-    this.engine.input.clear();
+    this.engine.input.suppressUntilReleased();
   }
 
   private updateShop(dt: number) {
     this.shopFailureTimer = Math.max(0, this.shopFailureTimer - dt);
     if (this.shopFailureTimer <= 0) this.shopFailure = undefined;
 
-    if (this.engine.input.wasPressed("escape") || this.engine.input.wasActionPressed("pause")) {
+    if (this.engine.input.wasUiPressed("cancel")) {
       this.shopOpen = false;
       this.shopFailure = undefined;
-      this.engine.input.clear();
+      this.engine.input.suppressUntilReleased();
       return;
     }
 
@@ -644,8 +644,8 @@ export class DungeonState extends GameState {
     }
 
     room.shopStock = ShopSystem.reconcileStock(floor, room, this.player);
-    const movePrevious = this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("arrowup");
-    const moveNext = this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("arrowdown") || this.engine.input.wasActionPressed("swapWeapon");
+    const movePrevious = this.engine.input.wasUiPressed("left") || this.engine.input.wasUiPressed("up");
+    const moveNext = this.engine.input.wasUiPressed("right") || this.engine.input.wasUiPressed("down");
     if (movePrevious) {
       this.shopSelectionIndex = (this.shopSelectionIndex - 1 + room.shopStock.length) % room.shopStock.length;
       audio.playShoot();
@@ -658,7 +658,7 @@ export class DungeonState extends GameState {
     const directIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
     const selectedIndex = directIndex >= 0
       ? directIndex
-      : this.engine.input.wasActionPressed("interact")
+      : this.engine.input.wasUiPressed("confirm")
         ? this.shopSelectionIndex
         : -1;
     if (selectedIndex < 0 || selectedIndex >= room.shopStock.length) return;
@@ -847,7 +847,7 @@ export class DungeonState extends GameState {
 
     if (
       this.player.hp > 0 &&
-      (this.engine.input.wasActionPressed("swapWeapon") || this.engine.input.wasPressed("tab"))
+      this.engine.input.wasActionPressed("swapWeapon")
     ) {
       if (WeaponController.switchWeapon(this.player)) {
         this.player.muzzleFlash = 0;
@@ -939,7 +939,7 @@ export class DungeonState extends GameState {
              this.engine.data.advanceStage();
              this.player.x = 160;
              this.player.y = 120;
-             this.engine.input.clear();
+             this.engine.input.suppressUntilReleased();
              this.loadRoom();
           };
        }
@@ -1139,10 +1139,6 @@ export class DungeonState extends GameState {
     return this.player;
   }
 
-  public capturesPauseInput(): boolean {
-    return this.shopOpen;
-  }
-
   private handleDoorTransitions() {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -1236,7 +1232,7 @@ export class DungeonState extends GameState {
        this.portal.timer = 0.4;
        audio.playPortal();
     } else if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
-       this.engine.input.clear();
+       this.engine.input.suppressUntilReleased();
        this.engine.switchState(target.type, { sourceRoomId: target.roomId });
     } else if (target.type === "wish_fountain" || target.type === "photo_booth") {
        const floor = this.engine.data.data.floor;
@@ -2991,8 +2987,9 @@ export class DungeonState extends GameState {
         this.buffSelection,
         this.player.buffRerollsRemaining,
         this.buffSelectionIndex,
-        this.engine.input.getPrompt("interact"),
-        this.engine.input.getPrompt("swapWeapon"),
+        this.engine.input.getConfirmPrompt(),
+        this.engine.input.getNavigationPrompt("horizontal"),
+        this.engine.input.getUiPrompt("secondary"),
         this.engine.data.settings.language,
       );
     }
@@ -3004,26 +3001,13 @@ export class DungeonState extends GameState {
         this.engine.data.data.player.coins,
         this.shopFailure,
         this.shopSelectionIndex,
-        this.engine.input.getPrompt("interact"),
-        this.engine.input.getPrompt("swapWeapon"),
+        this.engine.input.getConfirmPrompt(),
+        this.engine.input.getNavigationPrompt("horizontal"),
         this.engine.input.getCancelPrompt(),
         this.engine.data.settings.language,
       );
     }
     
-    if (this.player.hp <= 0) {
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      ctx.fillRect(0, 0, 320, 240);
-      ctx.fillStyle = "#E74C3C";
-      ctx.font = uiFont(this.engine.data.settings.language, 20);
-      ctx.textAlign = "center";
-      ctx.fillText(t(this.engine.data.settings.language, "dungeon.died"), 160, 120);
-      ctx.fillStyle = "#FFF";
-      ctx.font = "10px monospace";
-      ctx.fillText(t(this.engine.data.settings.language, "dungeon.retry", { prompt: this.engine.input.getPrompt("interact") }), 160, 150);
-      ctx.textAlign = "left";
-    }
-
     if (this.transitionAlpha > 0) {
       ctx.fillStyle = `rgba(0, 0, 0, ${this.transitionAlpha})`;
       ctx.fillRect(0, 0, 320, 240);

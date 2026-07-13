@@ -68,14 +68,16 @@ assert.match(canvasSource, /data-gamepad-button="x"[\s\S]*actionHandlers\("fire"
 assert.match(canvasSource, /touchLabels\.fire/);
 assert.match(canvasSource, /data-gamepad-button="a"[\s\S]*actionHandlers\("interact"\)/);
 assert.match(canvasSource, /touchLabels\.interact/);
-assert.match(canvasSource, /data-gamepad-button="b"[\s\S]*actionHandlers\("skill"\)/);
-assert.match(canvasSource, /touchLabels\.skill/);
+assert.match(canvasSource, /data-gamepad-button="b"[\s\S]*uiActionHandlers\("cancel"\)/);
+assert.match(canvasSource, /touchLabels\.cancel/);
 assert.match(canvasSource, /data-gamepad-button="y"[\s\S]*actionHandlers\("swapWeapon"\)/);
 assert.match(canvasSource, /touchLabels\.swapWeapon/);
+assert.match(canvasSource, /data-gamepad-button="lb"[\s\S]*actionHandlers\("skill"\)/);
+assert.match(canvasSource, /touchLabels\.skill/);
 assert.match(canvasSource, /data-gamepad-button="start"[\s\S]*actionHandlers\("pause"\)/);
 assert.match(canvasSource, /touchLabels\.pause/);
 assert.match(canvasSource, /touch-dpad-notch-up/);
-assert.match(canvasSource, /GAMEPAD_TOUCH_LABELS[\s\S]*fire: "X"[\s\S]*interact: "A"[\s\S]*skill: "B"[\s\S]*swapWeapon: "Y"/);
+assert.match(canvasSource, /GAMEPAD_TOUCH_LABELS[\s\S]*fire: "X"[\s\S]*interact: "A"[\s\S]*cancel: "B"[\s\S]*skill: "LB"[\s\S]*swapWeapon: "Y"/);
 assert.match(canvasSource, /buildTouchLabels[\s\S]*formatBinding\(bindings\.fire\)/);
 assert.match(canvasSource, /--touch-side-offset/);
 assert.match(canvasSource, /navigator\.vibrate/);
@@ -89,6 +91,7 @@ assert.doesNotMatch(cssSource, /#276fa7|#2f8f59|#b54646|#b38a27/);
 assert.match(cssSource, /\.touch-face-button[\s\S]*opacity: 0\.5/);
 assert.match(cssSource, /\.touch-joystick[\s\S]*opacity: 0\.48/);
 assert.match(cssSource, /\.touch-start-button[\s\S]*opacity: 0\.45/);
+assert.match(cssSource, /\.touch-shoulder-button[\s\S]*opacity: 0\.5/);
 assert.match(cssSource, /clip-path: polygon\(34% 0, 66% 0/);
 assert.match(cssSource, /filter: drop-shadow\(0 4px 0/);
 assert.match(cssSource, /border-radius: 0/);
@@ -109,7 +112,7 @@ console.log(JSON.stringify({
   narrowViewportSeparation: "ok",
   separatedPauseControl: "ok",
   pixelGamepadStyle: "ok",
-  abxyMapping: "ok",
+  abxyAndShoulderMapping: "ok",
   sharedGamepadPalette: "ok",
   dynamicControlLabels: "ok",
   horizontalGutterPlacement: "ok",

@@ -27,7 +27,6 @@ export class PauseOverlayRenderer {
       [input.getPrompt("interact"), t(language, "action.interact")],
       [input.getPrompt("skill"), t(language, "pause.useSkill")],
       [input.getPrompt("swapWeapon"), t(language, "pause.swapWeapon")],
-      [input.getPrompt("pause"), t(language, "common.resume")],
     ];
     ctx.font = uiFont(language, 7);
     rows.forEach(([prompt, action], index) => {
@@ -112,8 +111,7 @@ export class PauseOverlayRenderer {
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "pause.footer", {
       cancel: input.getCancelPrompt(),
-      menu: input.getPrompt("interact"),
-      pause: input.getPrompt("pause"),
+      menu: input.getConfirmPrompt(),
     }), 160, 197);
     ctx.textAlign = "left";
   }

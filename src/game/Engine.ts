@@ -116,7 +116,7 @@ export class Engine {
 
     this.closeOverlayInternal();
     this.states[this.currentState].exit();
-    this.input.clear();
+    this.input.suppressUntilReleased();
     this.currentState = newState;
     if (["title", "character_select", "settings", "run_result", "hub", "records"].includes(newState)) {
        this.isPaused = false;
@@ -130,7 +130,7 @@ export class Engine {
 
     this.states[this.currentState].prepareForSave();
     this.isPaused = false;
-    this.input.clear();
+    this.input.suppressUntilReleased();
     this.overlayState = "menu";
     this.states.menu.enter();
   }
@@ -138,7 +138,7 @@ export class Engine {
   public closeMenu() {
     if (this.overlayState !== "menu") return;
     this.closeOverlayInternal();
-    this.input.clear();
+    this.input.suppressUntilReleased();
   }
 
   public applySettings() {
@@ -212,7 +212,7 @@ export class Engine {
   }
 
   public resetGameFromMenu() {
-    this.rebuildStateAfterDataChange("dungeon", () => this.data.resetAll());
+    this.rebuildStateAfterDataChange("title", () => this.data.resetAll());
   }
 
   private closeOverlayInternal() {
@@ -225,7 +225,7 @@ export class Engine {
     this.closeOverlayInternal();
     this.states[this.currentState].exit();
     mutateData();
-    this.input.clear();
+    this.input.suppressUntilReleased();
     this.isPaused = false;
     this.currentState = newState;
     this.states[this.currentState].enter();
@@ -284,9 +284,7 @@ export class Engine {
     }
 
     const canPause = ["dungeon", "legacy_rpg", "legacy_tactics"].includes(this.currentState);
-    const stateCapturesPause = this.currentState === "dungeon" &&
-      (this.states.dungeon as DungeonState).capturesPauseInput();
-    if (canPause && !stateCapturesPause && this.input.wasActionPressed("pause")) {
+    if (canPause && this.input.wasActionPressed("pause")) {
       this.isPaused = !this.isPaused;
       this.input.clearJustPressed();
       return;
@@ -295,13 +293,13 @@ export class Engine {
       this.isPaused = false;
     }
 
-    if (canPause && this.isPaused && this.input.wasPressed("escape")) {
+    if (canPause && this.isPaused && this.input.wasUiPressed("cancel")) {
       this.isPaused = false;
       this.input.clearJustPressed();
       return;
     }
 
-    if (canPause && this.isPaused && (this.input.wasPressed("enter") || this.input.wasActionPressed("interact"))) {
+    if (canPause && this.isPaused && this.input.wasUiPressed("confirm")) {
       this.isPaused = false;
       this.openMenu();
       this.input.update();

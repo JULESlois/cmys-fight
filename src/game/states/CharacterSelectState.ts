@@ -79,7 +79,7 @@ export class CharacterSelectState extends GameState {
   }
 
   update(_dt: number) {
-    if (this.engine.input.wasPressed("escape")) {
+    if (this.engine.input.wasUiPressed("cancel")) {
       if (this.mode === "form") {
         this.mode = "identity";
         this.selectedIndex = 0;
@@ -90,11 +90,11 @@ export class CharacterSelectState extends GameState {
       return;
     }
 
-    const left = this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("a");
-    const right = this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("d");
-    const up = this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w");
-    const down = this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s");
-    const confirm = this.engine.input.wasPressed("enter") || this.engine.input.wasPressed(" ");
+    const left = this.engine.input.wasUiPressed("left");
+    const right = this.engine.input.wasUiPressed("right");
+    const up = this.engine.input.wasUiPressed("up");
+    const down = this.engine.input.wasUiPressed("down");
+    const confirm = this.engine.input.wasUiPressed("confirm");
 
     if (this.mode === "identity") {
       if (left || right) {
@@ -224,7 +224,11 @@ export class CharacterSelectState extends GameState {
       ctx.font = uiFont(language, 7);
       ctx.fillText(t(language, "character.cmysForms"), 160, 211);
       ctx.fillStyle = "#BDC3C7";
-      ctx.fillText(t(language, "character.identityFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 232);
+      ctx.fillText(t(language, "character.identityFooter", {
+        horizontal: this.engine.input.getNavigationPrompt("horizontal"),
+        confirm: this.engine.input.getConfirmPrompt(),
+        cancel: this.engine.input.getCancelPrompt(),
+      }), 160, 232);
     } else {
       const character = CHARACTERS[this.selectedIdentity];
       const localized = getCharacterText(character.id, character, language);
@@ -241,7 +245,11 @@ export class CharacterSelectState extends GameState {
       ctx.fillText(`↑↓  ${weapon.name.toUpperCase()}`, 160, 226);
       ctx.fillStyle = "#BDC3C7";
       ctx.font = uiFont(language, 7);
-      ctx.fillText(t(language, "character.identityCharacterFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 238);
+      ctx.fillText(t(language, "character.identityCharacterFooter", {
+        vertical: this.engine.input.getNavigationPrompt("vertical"),
+        confirm: this.engine.input.getConfirmPrompt(),
+        cancel: this.engine.input.getCancelPrompt(),
+      }), 160, 238);
     }
   }
 
@@ -309,7 +317,12 @@ export class CharacterSelectState extends GameState {
     ctx.fillText(`↑↓  ${weapon.name.toUpperCase()}`, 160, 224);
     ctx.fillStyle = unlocked ? "#BDC3C7" : "#E74C3C";
     ctx.font = uiFont(language, 7);
-    ctx.fillText(t(language, "character.formFooter", { cancel: this.engine.input.getCancelPrompt() }), 160, 237);
+    ctx.fillText(t(language, "character.formFooter", {
+      horizontal: this.engine.input.getNavigationPrompt("horizontal"),
+      vertical: this.engine.input.getNavigationPrompt("vertical"),
+      confirm: this.engine.input.getConfirmPrompt(),
+      cancel: this.engine.input.getCancelPrompt(),
+    }), 160, 237);
   }
 
   draw(ctx: CanvasRenderingContext2D) {

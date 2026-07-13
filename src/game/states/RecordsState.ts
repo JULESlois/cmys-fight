@@ -40,23 +40,23 @@ export class RecordsState extends GameState {
   exit() {}
 
   update() {
-    if (this.engine.input.wasPressed("escape") || this.engine.input.wasPressed("a")) {
+    if (this.engine.input.wasUiPressed("cancel")) {
       this.engine.switchState("hub");
       return;
     }
-    if (this.engine.input.wasPressed("arrowleft") || this.engine.input.wasPressed("q")) {
+    if (this.engine.input.wasUiPressed("left")) {
       this.pageIndex = (this.pageIndex - 1 + PAGES.length) % PAGES.length;
       this.selectedIndex = 0;
     }
-    if (this.engine.input.wasPressed("arrowright") || this.engine.input.wasPressed("e")) {
+    if (this.engine.input.wasUiPressed("right")) {
       this.pageIndex = (this.pageIndex + 1) % PAGES.length;
       this.selectedIndex = 0;
     }
     const rows = this.getRows();
-    if (this.engine.input.wasPressed("arrowup") || this.engine.input.wasPressed("w")) {
+    if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + rows.length) % Math.max(1, rows.length);
     }
-    if (this.engine.input.wasPressed("arrowdown") || this.engine.input.wasPressed("s")) {
+    if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % Math.max(1, rows.length);
     }
   }
@@ -179,7 +179,11 @@ export class RecordsState extends GameState {
     ctx.fillStyle = "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(`${this.pageLabel(page)} ${rows.filter(row => row.unlocked).length}/${rows.length}`, 160, 229);
-    ctx.fillText(t(language, "records.footer", { cancel: this.engine.input.getCancelPrompt() }), 160, 238);
+    ctx.fillText(t(language, "records.footer", {
+      horizontal: this.engine.input.getNavigationPrompt("horizontal"),
+      vertical: this.engine.input.getNavigationPrompt("vertical"),
+      cancel: this.engine.input.getCancelPrompt(),
+    }), 160, 238);
     ctx.textAlign = "left";
   }
 }
