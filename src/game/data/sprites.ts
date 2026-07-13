@@ -1,9 +1,9 @@
 import { WEAPON_PALETTES, WEAPON_SPRITES } from "./weaponArt";
 import {
   KANAMI_CHARACTER_SPRITES,
-  KANAMI_HIGH_RES_PALETTE,
+  KANAMI_CHARACTER_PALETTE,
   MICHELE_CHARACTER_SPRITES,
-  MICHELE_HIGH_RES_PALETTE,
+  MICHELE_CHARACTER_PALETTE,
 } from "./characterArt";
 
 export type SpriteData = string[];
@@ -282,17 +282,17 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
     Object.entries(WEAPON_PALETTES).map(([weaponId, palette]) => [`weapon_${weaponId}`, palette]),
   ),
   ...Object.fromEntries(
-    Object.keys(MICHELE_CHARACTER_SPRITES).map(spriteName => [spriteName, MICHELE_HIGH_RES_PALETTE]),
+    Object.keys(MICHELE_CHARACTER_SPRITES).map(spriteName => [spriteName, MICHELE_CHARACTER_PALETTE]),
   ),
   ...Object.fromEntries(
-    Object.keys(KANAMI_CHARACTER_SPRITES).map(spriteName => [spriteName, KANAMI_HIGH_RES_PALETTE]),
+    Object.keys(KANAMI_CHARACTER_SPRITES).map(spriteName => [spriteName, KANAMI_CHARACTER_PALETTE]),
   ),
 };
 
 
-export const KANAMI_PLAYER_PALETTE: Record<string, string> = KANAMI_HIGH_RES_PALETTE;
+export const KANAMI_PLAYER_PALETTE: Record<string, string> = KANAMI_CHARACTER_PALETTE;
 
-export const MICHELE_PLAYER_PALETTE: Record<string, string> = MICHELE_HIGH_RES_PALETTE;
+export const MICHELE_PLAYER_PALETTE: Record<string, string> = MICHELE_CHARACTER_PALETTE;
 
 export const PLAYER_PALETTE: Record<string, string> = {
   ".": "transparent",

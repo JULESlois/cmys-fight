@@ -164,10 +164,10 @@ export class EntityRenderer {
     if (player.hp <= 0) return;
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
-    const detailedCharacter = player.characterId === "michele" || player.characterId === "kanami";
+    const hasExtendedPlayerAnimation = player.characterId === "michele" || player.characterId === "kanami";
 
     if (player.statusEffects.length > 0) {
-      EntityRenderer.drawStatusChips(ctx, player.statusEffects, detailedCharacter ? -60 : -24);
+      EntityRenderer.drawStatusChips(ctx, player.statusEffects, -24);
     }
 
     if (player.characterId === "knight" && player.skillActiveTimer > 0) {
@@ -181,21 +181,15 @@ export class EntityRenderer {
       ctx.fillStyle = "rgba(46, 204, 113, 0.25)";
       ctx.fillRect(Math.round(-player.skillDirectionX * 18) - 7, Math.round(-player.skillDirectionY * 18) - 14, 14, 22);
     } else if (player.characterId === "michele" && player.micheleTurretActive) {
-      ctx.save();
-      ctx.translate(0, -24);
-      EntityRenderer.drawCornerFrame(ctx, 28, "rgba(112, 215, 255, 0.85)", 7);
+      EntityRenderer.drawCornerFrame(ctx, 13, "rgba(112, 215, 255, 0.85)", 5);
       ctx.fillStyle = "rgba(244, 211, 94, 0.8)";
-      ctx.fillRect(-8, -33, 4, 4);
-      ctx.fillRect(4, -33, 4, 4);
-      ctx.restore();
+      ctx.fillRect(-5, -23, 3, 3);
+      ctx.fillRect(2, -23, 3, 3);
     } else if (player.characterId === "kanami" && player.skillActiveTimer > 0) {
-      ctx.save();
-      ctx.translate(0, -24);
-      EntityRenderer.drawCornerFrame(ctx, 28, "rgba(240, 108, 168, 0.88)", 7);
+      EntityRenderer.drawCornerFrame(ctx, 13, "rgba(240, 108, 168, 0.88)", 5);
       ctx.fillStyle = "rgba(143, 217, 255, 0.8)";
-      ctx.fillRect(-10, -34, 4, 3);
-      ctx.fillRect(7, -30, 3, 4);
-      ctx.restore();
+      ctx.fillRect(-7, -23, 3, 2);
+      ctx.fillRect(4, -20, 2, 3);
     }
 
     if (player.characterId === "knight" && player.knightGuardReady) {
@@ -203,9 +197,9 @@ export class EntityRenderer {
     }
 
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.fillRect(detailedCharacter ? -13 : -10, 6, detailedCharacter ? 26 : 20, 5);
+    ctx.fillRect(-10, 6, 20, 5);
     ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.fillRect(detailedCharacter ? -10 : -7, 11, detailedCharacter ? 20 : 14, 2);
+    ctx.fillRect(-7, 11, 14, 2);
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
     const playerSpritePrefix = player.characterId === "michele"
@@ -220,8 +214,8 @@ export class EntityRenderer {
         : PLAYER_PALETTE;
     let spriteName = `${playerSpritePrefix}_idle`;
     if (player.animState === "walk") {
-      spriteName = `${playerSpritePrefix}_walk_${detailedCharacter ? player.animFrame % 4 : player.animFrame % 2}`;
-    } else if (detailedCharacter && player.animFrame % 2 === 1) {
+      spriteName = `${playerSpritePrefix}_walk_${hasExtendedPlayerAnimation ? player.animFrame % 4 : player.animFrame % 2}`;
+    } else if (hasExtendedPlayerAnimation && player.animFrame % 2 === 1) {
       spriteName = `${playerSpritePrefix}_idle_1`;
     }
     const activeWeapon = WEAPONS[player.currentWeaponId];
@@ -229,11 +223,11 @@ export class EntityRenderer {
     if (activeWeapon?.dualWield && !yoyoDeployed) {
       EntityRenderer.drawPlayerWeapon(ctx, player, "back");
     }
-    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, detailedCharacter ? -24 : -8, detailedCharacter ? 1 : 2, {
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX: player.facing === "left",
       paletteOverride: playerPalette,
-      outlineColor: detailedCharacter ? undefined : "#09101A",
+      outlineColor: "#09101A",
     });
     // Normal weapons are drawn in front of the body. Akimbo weapons split the
     // pair across the body layers, while a deployed yoyo hides its held copy.

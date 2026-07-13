@@ -176,18 +176,27 @@ for (const frameName of [
   "player_kanami_side_walk_3",
 ]) {
   const frame = SPRITES[frameName];
-  assert.equal(frame.length, 64, `${frameName} high-resolution height`);
-  assert.ok(frame.every(row => row.length === 48), `${frameName} high-resolution width`);
-  assert.ok(new Set(frame.join("").replaceAll(".", "")).size >= 14, `${frameName} color detail`);
+  assert.equal(frame.length, 16, `${frameName} CMYS-scale height`);
+  assert.ok(frame.every(row => row.length === 16), `${frameName} CMYS-scale width`);
+  assert.ok(new Set(frame.join("").replaceAll(".", "")).size >= 9, `${frameName} readable palette detail`);
+  const pixelCount = frame.join("").replaceAll(".", "").length;
+  assert.ok(pixelCount >= 80 && pixelCount <= 145, `${frameName} compact silhouette density ${pixelCount}`);
+  assert.match(frame[14], /[^.]/, `${frameName} uses the shared foot baseline`);
+  assert.equal(frame[15], "................", `${frameName} keeps the shared bottom padding`);
 }
 assert.notDeepEqual(SPRITES.player_kanami_side_idle, SPRITES.player_kanami_side_idle_1);
 assert.notDeepEqual(SPRITES.player_kanami_side_walk_0, SPRITES.player_kanami_side_walk_2);
-assert.equal(KANAMI_PLAYER_PALETTE.B, "#7E70A6");
-assert.equal(KANAMI_PLAYER_PALETTE.P, "#E466A5");
+assert.deepEqual(
+  SPRITES.player_kanami_side_idle.slice(12),
+  SPRITES.player_kanami_side_idle_1.slice(12),
+  "Kanami idle animation keeps both feet planted",
+);
+assert.equal(KANAMI_PLAYER_PALETTE.B, "#756A98");
+assert.equal(KANAMI_PLAYER_PALETTE.H, "#E466A5");
 assert.notEqual(KANAMI_PLAYER_PALETTE.A, "#000000");
 const kanamiArtPlayer = new Player(100, 100);
 kanamiArtPlayer.characterId = "kanami";
-assert.equal(kanamiArtPlayer.weaponHandOffsetY, -18);
+assert.equal(kanamiArtPlayer.weaponHandOffsetY, -2);
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
@@ -199,7 +208,8 @@ assert.match(dungeonSource, /updateKanamiBeacon/);
 assert.match(dungeonSource, /getKanamiBeaconTarget/);
 assert.match(dungeonSource, /clearRoomScopedSkillEntities/);
 assert.match(rendererSource, /drawKanamiBeacon/);
-assert.match(rendererSource, /detailedCharacter \? undefined : "#09101A"/);
+assert.match(rendererSource, /drawPixelSprite\(ctx, spriteName, 0, -8, 2/);
+assert.match(rendererSource, /outlineColor: "#09101A"/);
 assert.match(rendererSource, /player\.animFrame % 4/);
 assert.match(gameDataSource, /player\.characterId === "michele" \|\| player\.characterId === "kanami"/);
 
@@ -209,7 +219,7 @@ console.log(JSON.stringify({
   finaleImpact: "22px-resonant-burst",
   beaconLure: "projectile-to-7s-room-lure",
   normalEnemyAttraction: "ok",
-  dedicatedCharacterSprite: "48x64-six-frame-color-outline",
+  dedicatedCharacterSprite: "16x16-six-frame-cmys-scale-outline",
   roomScopedSummonsNotSerialized: "ok",
   saveAndMetaMigration: "ok",
 }));

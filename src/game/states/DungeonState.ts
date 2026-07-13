@@ -1425,15 +1425,15 @@ export class DungeonState extends GameState {
   private updatePlayerFacingAndAnimation(dt: number, moved: boolean) {
     this.player.facing = Math.cos(this.player.aimAngle) >= 0 ? "right" : "left";
     this.player.facingLeft = this.player.facing === "left";
-    const detailedCharacter = this.player.characterId === "michele" || this.player.characterId === "kanami";
+    const hasExtendedPlayerAnimation = this.player.characterId === "michele" || this.player.characterId === "kanami";
 
     if (moved) {
       this.player.animState = "walk";
       this.player.animTimer += dt;
-      this.player.animFrame = Math.floor(this.player.animTimer * 8) % (detailedCharacter ? 4 : 2);
+      this.player.animFrame = Math.floor(this.player.animTimer * 8) % (hasExtendedPlayerAnimation ? 4 : 2);
     } else {
       this.player.animState = "idle";
-      if (detailedCharacter) {
+      if (hasExtendedPlayerAnimation) {
         this.player.animTimer += dt;
         this.player.animFrame = Math.floor(this.player.animTimer * 1.8) % 2;
       } else {

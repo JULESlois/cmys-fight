@@ -112,9 +112,7 @@ export class Player {
   }
 
   public get weaponHandOffsetY(): number {
-    return this.characterId === "michele" || this.characterId === "kanami"
-      ? -18
-      : PLAYER_HAND_OFFSET_Y;
+    return PLAYER_HAND_OFFSET_Y;
   }
 
   public getPlayerMuzzlePosition(angle: number) {
