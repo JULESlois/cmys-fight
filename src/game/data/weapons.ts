@@ -417,6 +417,47 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileStyle: "tracer", trailLength: 22, muzzleEffect: "electric", impactEffect: "spark", recoil: 1.4,
   },
 
+  bayonet_ruby: {
+    id: "bayonet_ruby", name: "Bayonet | Doppler Ruby", category: "sword", rarity: "legendary",
+    damage: 9, fireRate: 2.2, bulletSpeed: 185, manaCost: 1.5, spread: 0,
+    pelletCount: 1, knockback: 7, critChance: 0.18, critMultiplier: 2.3, color: "#D9233F",
+    projectileRadius: 5, projectileLife: 0.26, pierce: 2,
+    mechanic: "A long ruby bayonet thrust reaches farther than other knives and pierces a line of enemies.",
+    projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.55,
+  },
+  butterfly_emerald: {
+    id: "butterfly_emerald", name: "Butterfly Knife | Gamma Doppler Emerald", category: "sword", rarity: "legendary",
+    damage: 2, fireRate: 4.8, bulletSpeed: 165, manaCost: 1, spread: 0.72,
+    pelletCount: 3, knockback: 3, critChance: 0.14, critMultiplier: 2.1, color: "#28D878",
+    projectileRadius: 4, projectileLife: 0.2, pierce: 1,
+    mechanic: "A rapid three-cut fan slash trades per-hit damage for the fastest close-range coverage.",
+    projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.2,
+  },
+  karambit_emerald: {
+    id: "karambit_emerald", name: "Karambit | Gamma Doppler Emerald", category: "sword", rarity: "legendary",
+    damage: 4, fireRate: 3.7, bulletSpeed: 170, manaCost: 1, spread: 0.38,
+    pelletCount: 2, knockback: 4, critChance: 0.3, critMultiplier: 2.5, color: "#20C96E",
+    projectileRadius: 5, projectileLife: 0.18, pierce: 1,
+    mechanic: "Twin crossing claw slashes have the highest critical chance and critical damage among the knives.",
+    projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.3,
+  },
+  m4a1_s_cyrex: {
+    id: "m4a1_s_cyrex", name: "M4A1-S | Cyrex", category: "rifle", rarity: "rare",
+    damage: 3, fireRate: 7.8, bulletSpeed: 310, manaCost: 1.5, spread: 0.028,
+    pelletCount: 1, knockback: 3, critChance: 0.13, critMultiplier: 2.05, color: "#E53745",
+    projectileLife: 2, pierce: 1,
+    mechanic: "A suppressed precision rifle combines extremely low spread, mild recoil and one-target penetration.",
+    projectileStyle: "tracer", trailLength: 19, muzzleEffect: "smoke", impactEffect: "spark", recoil: 0.16,
+  },
+  m4a4_coalition: {
+    id: "m4a4_coalition", name: "M4A4 | The Coalition", category: "rifle", rarity: "legendary",
+    damage: 4, fireRate: 7.1, bulletSpeed: 305, manaCost: 2, spread: 0.04,
+    pelletCount: 1, knockback: 4, critChance: 0.16, critMultiplier: 2.15, color: "#D6B347",
+    projectileLife: 2.1, pierce: 1,
+    mechanic: "A disciplined gold-and-black assault rifle delivers high sustained damage, penetration and reliable critical hits.",
+    projectileStyle: "tracer", trailLength: 20, muzzleEffect: "flash", impactEffect: "spark", recoil: 0.28,
+  },
+
   so_14: {
     id: "so_14", name: "SO-14", category: "rifle", rarity: "myth",
     damage: 8, fireRate: 2.4, bulletSpeed: 315, manaCost: 3, spread: 0.022,
@@ -591,9 +632,9 @@ export function getAvailableWeapons(_globalStageIndex = 1, characterId?: string)
 export type WeaponRollContext = "shop" | "treasure" | "boss";
 
 const WEAPON_ROLL_WEIGHTS: Record<WeaponRollContext, Record<WeaponRarity, number>> = {
-  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.48, myth: 0.06 },
-  treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.72, myth: 0.16 },
-  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 3.2, myth: 1.2 },
+  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.37, myth: 0.06 },
+  treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.55, myth: 0.16 },
+  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 2.45, myth: 1.3 },
 };
 
 export function rollAvailableWeapon(

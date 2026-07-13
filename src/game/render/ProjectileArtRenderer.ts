@@ -260,18 +260,38 @@ export class ProjectileArtRenderer {
     ctx.rotate(Math.atan2(p.vy, p.vx));
 
     if (p.style === "sword") {
-      if (!reducedFlashing) {
-        for (let index = 3; index >= 1; index--) {
-          ctx.save();
-          ctx.globalAlpha = 0.09 * (4 - index);
-          ctx.translate(-index * 5, 0);
-          ctx.rotate(-index * 0.04);
-          SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1);
-          ctx.restore();
+      if (p.weaponId !== "zenith") {
+        const progress = p.maxLife > 0 ? Math.max(0, Math.min(1, p.age / p.maxLife)) : 0;
+        const sweepDirection = p.id % 2 === 0 ? 1 : -1;
+        ctx.rotate((progress - 0.5) * 0.95 * sweepDirection);
+        if (!reducedFlashing) {
+          ctx.globalAlpha = 0.22 * (1 - progress * 0.65);
+          ctx.fillStyle = palette.glow;
+          ctx.fillRect(-13, -6, 25, 12);
+          ctx.globalAlpha = 1;
         }
+        ctx.fillStyle = palette.shadow;
+        ctx.fillRect(-12, -3, 24, 6);
+        ctx.fillStyle = palette.base;
+        ctx.fillRect(-11, -2, 22, 4);
+        ctx.fillStyle = palette.accent;
+        ctx.fillRect(-8, -2, 17, 2);
+        ctx.fillStyle = palette.highlight;
+        ctx.fillRect(2, -2, 9, 1);
+      } else {
+        if (!reducedFlashing) {
+          for (let index = 3; index >= 1; index--) {
+            ctx.save();
+            ctx.globalAlpha = 0.09 * (4 - index);
+            ctx.translate(-index * 5, 0);
+            ctx.rotate(-index * 0.04);
+            SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1);
+            ctx.restore();
+          }
+        }
+        ctx.rotate(Math.sin(p.age * 15 + p.id) * 0.16);
+        SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1);
       }
-      ctx.rotate(Math.sin(p.age * 15 + p.id) * 0.16);
-      SpriteRenderer.drawPixelSprite(ctx, "weapon_zenith", 0, 0, 1);
       ctx.restore();
       return;
     }

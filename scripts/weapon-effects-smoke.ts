@@ -88,7 +88,7 @@ assert.ok(bossRates.legendary >= 0.22, `Boss chest legendary rate ${bossRates.le
 assert.ok(bossRates.myth >= 0.015, `Boss chest myth rate ${bossRates.myth}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 13);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 2);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
@@ -305,6 +305,51 @@ assert.equal(WEAPONS.aa_12.pelletCount, 6);
 assert.equal(WEAPONS.aa_12.fireRate, 4.8);
 assert.equal(aa12.style, "bullet");
 releaseProjectile(aa12);
+
+const bayonetPlayer = new Player(160, 120);
+bayonetPlayer.mana = 20;
+bayonetPlayer.setWeaponLoadout(["bayonet_ruby"], 0);
+const bayonetThrust = WeaponController.fire(bayonetPlayer, 0, () => 0.99);
+assert.equal(bayonetThrust.projectiles.length, 1);
+assert.equal(bayonetThrust.projectiles[0].style, "sword");
+assert.equal(bayonetThrust.projectiles[0].pierceRemaining, 2);
+assert.ok(bayonetThrust.projectiles[0].maxLife * Math.hypot(bayonetThrust.projectiles[0].vx, bayonetThrust.projectiles[0].vy) < 50);
+for (const projectile of bayonetThrust.projectiles) releaseProjectile(projectile);
+
+const butterflyPlayer = new Player(160, 120);
+butterflyPlayer.mana = 20;
+butterflyPlayer.setWeaponLoadout(["butterfly_emerald"], 0);
+const butterflyFan = WeaponController.fire(butterflyPlayer, 0, () => 0.99);
+assert.equal(butterflyFan.projectiles.length, 3);
+assert.ok(butterflyFan.projectiles[0].vy < butterflyFan.projectiles[1].vy);
+assert.ok(butterflyFan.projectiles[1].vy < butterflyFan.projectiles[2].vy);
+assert.ok(butterflyFan.projectiles.every(projectile => projectile.maxLife <= 0.2));
+for (const projectile of butterflyFan.projectiles) releaseProjectile(projectile);
+
+const karambitPlayer = new Player(160, 120);
+karambitPlayer.mana = 20;
+karambitPlayer.setWeaponLoadout(["karambit_emerald"], 0);
+const karambitCross = WeaponController.fire(karambitPlayer, 0, () => 0.2);
+assert.equal(karambitCross.projectiles.length, 2);
+assert.ok(karambitCross.projectiles.every(projectile => projectile.critical));
+assert.ok(WEAPONS.karambit_emerald.critChance > WEAPONS.butterfly_emerald.critChance);
+for (const projectile of karambitCross.projectiles) releaseProjectile(projectile);
+
+const cyrexPlayer = new Player(160, 120);
+cyrexPlayer.mana = 20;
+cyrexPlayer.setWeaponLoadout(["m4a1_s_cyrex"], 0);
+const cyrexShot = WeaponController.fire(cyrexPlayer, 0, () => 0.99);
+assert.equal(cyrexShot.projectiles[0].pierceRemaining, 1);
+assert.equal(cyrexShot.projectiles[0].muzzleEffect, "smoke");
+for (const projectile of cyrexShot.projectiles) releaseProjectile(projectile);
+
+const coalitionPlayer = new Player(160, 120);
+coalitionPlayer.mana = 20;
+coalitionPlayer.setWeaponLoadout(["m4a4_coalition"], 0);
+const coalitionShot = WeaponController.fire(coalitionPlayer, 0, () => 0.99);
+assert.equal(coalitionShot.projectiles[0].pierceRemaining, 1);
+assert.equal(WEAPONS.m4a4_coalition.rarity, "legendary");
+for (const projectile of coalitionShot.projectiles) releaseProjectile(projectile);
 
 const awpPlayer = new Player(160, 120);
 awpPlayer.maxMana = 80;
@@ -636,6 +681,7 @@ assert.match(dungeonSource, /heldYoyo[\s\S]*updateTerrarianYoyo[\s\S]*terrarian_
 assert.match(rendererSource, /dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back"\)[\s\S]*drawPlayerWeapon\(ctx, player\)/);
 assert.match(rendererSource, /activeYoyoWeaponId[\s\S]*!yoyoDeployed/);
 assert.match(dungeonSource, /updateProjectileHoming[\s\S]*rotateVelocityToward/);
+assert.match(dungeonSource, /projectile\.style === "sword"[\s\S]*projectile\.weaponId === "zenith"/);
 assert.match(dungeonSource, /applyProjectileChain[\s\S]*calculateChainDamage/);
 assert.match(dungeonSource, /detonateProjectile[\s\S]*calculateExplosionDamage/);
 assert.match(dungeonSource, /stickLinkedPrimer[\s\S]*triggerLinkedPrimer/);
@@ -648,6 +694,7 @@ assert.match(rendererSource, /activeWeapon\?\.dualWield[\s\S]*drawPlayerWeapon\(
 assert.match(rendererSource, /weaponRecoilVisual/);
 assert.match(projectileRendererSource, /p\.style === "beam"[\s\S]*p\.style === "prism"/);
 assert.match(projectileRendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
+assert.match(projectileRendererSource, /p\.weaponId !== "zenith"[\s\S]*weapon_zenith/);
 assert.match(projectileRendererSource, /p\.style === "bullet"[\s\S]*p\.style === "tracer"[\s\S]*p\.style === "plasma"[\s\S]*p\.style === "flame"[\s\S]*p\.style === "rocket"[\s\S]*p\.style === "disc"[\s\S]*p\.style === "water"/);
 assert.match(fxSource, /emitProjectileImpact[\s\S]*emitExplosion/);
 assert.match(audioSource, /playWeaponShot[\s\S]*style === "beam"[\s\S]*style === "lightning"[\s\S]*style === "rocket"[\s\S]*style === "water"[\s\S]*style === "sword"[\s\S]*style === "prism"[\s\S]*style === "dragon"/);
@@ -664,6 +711,7 @@ console.log(JSON.stringify({
   codBurstHeatAndLink: "ok",
   mythAdaptiveAndOpeningShots: "ok",
   wildLotusCriticalBloom: "ok",
+  csMeleeAndRifles: "ruby-emerald-cyrex-coalition",
   allStageWeaponPool: getAvailableWeapons(1).length,
   bossHighTierRate: Number(bossRates.highTier.toFixed(3)),
   bossLegendaryRate: Number(bossRates.legendary.toFixed(3)),

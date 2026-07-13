@@ -173,6 +173,7 @@ const sourceDriven = [
   "ballistic_knife", "olympia", "ksg_12", "akimbo_scorpion", "scavenger", "venom_x", "ray_gun", "wunderwaffe",
   "minishark", "water_bolt", "stardust_dragon_staff", "terrarian", "last_prism", "zenith",
   "r9_0", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
+  "bayonet_ruby", "butterfly_emerald", "karambit_emerald", "m4a1_s_cyrex", "m4a4_coalition",
   "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus", "inspector", "finale", "polaris",
 ];
 for (const id of sourceDriven) assert.ok(WEAPON_SPRITES[id], `${id} source-derived model`);
@@ -194,6 +195,11 @@ assert.equal(WEAPON_PALETTES.inspector["6"], "#E8F5FF");
 assert.equal(WEAPON_PALETTES.finale["6"], "#F06CA8");
 assert.equal(WEAPON_PALETTES.polaris["5"], "#E9F2FA");
 assert.equal(WEAPON_PALETTES.polaris["6"], "#8FDFFF");
+assert.equal(WEAPON_PALETTES.bayonet_ruby["4"], "#A81731");
+assert.equal(WEAPON_PALETTES.butterfly_emerald["5"], "#19B96A");
+assert.equal(WEAPON_PALETTES.karambit_emerald["5"], "#16B865");
+assert.equal(WEAPON_PALETTES.m4a1_s_cyrex["4"], "#D92E3D");
+assert.equal(WEAPON_PALETTES.m4a4_coalition["5"], "#B99736");
 
 const renderedColors = new Set<string>();
 const ctx = {

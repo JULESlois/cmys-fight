@@ -2514,7 +2514,11 @@ export class DungeonState extends GameState {
           targetY = this.player.y + Math.sin(orbitAngle) * 36;
         }
       }
-    } else if (projectile.style === "sword" && projectile.age > projectile.maxLife * 0.52) {
+    } else if (
+      projectile.style === "sword" &&
+      projectile.weaponId === "zenith" &&
+      projectile.age > projectile.maxLife * 0.52
+    ) {
       targetX = this.player.x;
       targetY = this.player.y;
       turnStrength = Math.max(turnStrength, projectile.returnStrength || 3.4);

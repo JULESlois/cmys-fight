@@ -71,6 +71,11 @@ export const PROJECTILE_WEAPON_PALETTES: Record<string, Partial<ProjectilePalett
   mx_guardian: { shadow: "#34383B", base: "#D9DEE2", highlight: "#FFFFFF", accent: "#C89B56", glow: "rgba(217,222,226,0.22)" },
   mg42: { shadow: "#4B351D", base: "#E4B85D", highlight: "#FFF0B0", accent: "#8E969D", glow: "rgba(228,184,93,0.25)" },
   na_45: { shadow: "#433A20", base: "#E1D06B", highlight: "#FFF7C5", accent: "#FF7043", glow: "rgba(225,208,107,0.3)" },
+  bayonet_ruby: { shadow: "#4B1020", base: "#D9233F", highlight: "#FFB4BD", accent: "#FF536B", glow: "rgba(217,35,63,0.34)" },
+  butterfly_emerald: { shadow: "#0D3926", base: "#28D878", highlight: "#C7FFE0", accent: "#66F0A6", glow: "rgba(40,216,120,0.32)" },
+  karambit_emerald: { shadow: "#0B3422", base: "#20C96E", highlight: "#B8FFD7", accent: "#5AE99A", glow: "rgba(32,201,110,0.32)" },
+  m4a1_s_cyrex: { shadow: "#3B151B", base: "#E53745", highlight: "#FFFFFF", accent: "#EF6A75", glow: "rgba(229,55,69,0.24)" },
+  m4a4_coalition: { shadow: "#392F16", base: "#D6B347", highlight: "#FFF0A3", accent: "#758A62", glow: "rgba(214,179,71,0.28)" },
 
   so_14: { shadow: "#2A2035", base: "#CFA7FF", highlight: "#FFF4C2", accent: "#F4D35E", glow: "rgba(207,167,255,0.34)" },
   aa_12: { shadow: "#3A3024", base: "#D8C89A", highlight: "#FFF0C5", accent: "#AEB7BE", glow: "rgba(216,200,154,0.22)" },
