@@ -636,40 +636,54 @@ for (const id of LEFT_FACING_REFERENCE_SPRITES) {
 // The World at War menu render is presented in perspective. Re-author the MG42
 // as a level side profile so horizontal aiming does not inherit that camera tilt.
 SOURCE_DERIVED_SPRITES.mg42 = drawWeapon(32, 16, canvas => {
-  canvas.polygon([[1,8],[4,5],[9,5],[11,7],[10,10],[6,12],[1,11]], "3");
-  canvas.polygon([[2,8],[5,6],[9,6],[9,9],[5,10],[2,10]], "4");
-  canvas.rect(9, 5, 10, 6, "4");
-  canvas.rect(10, 4, 8, 2, "5");
-  canvas.rect(10, 7, 8, 2, "3");
-  canvas.polygon([[10,10],[14,10],[13,15],[10,14]], "2");
-  canvas.rect(18, 5, 12, 4, "4");
+  canvas.polygon([[1,8],[5,6],[9,6],[11,7],[10,9],[6,11],[1,10]], "3");
+  canvas.polygon([[2,8],[5,7],[9,7],[9,8],[5,9],[2,9]], "4");
+  canvas.rect(9, 6, 10, 4, "4");
+  canvas.rect(10, 5, 8, 1, "5");
+  canvas.rect(10, 8, 8, 1, "3");
+  canvas.polygon([[10,9],[13,9],[13,13],[10,13]], "2");
+  canvas.rect(18, 6, 12, 3, "4");
   canvas.rect(18, 6, 12, 1, "5");
-  for (const x of [19,22,25,28]) canvas.rect(x, 7, 2, 1, "2");
-  canvas.rect(29, 5, 3, 4, "3");
-  canvas.rect(30, 6, 2, 2, "5");
-  canvas.rect(16, 3, 2, 2, "3");
-  canvas.line(21, 9, 19, 14, "2");
-  canvas.line(25, 9, 27, 14, "2");
+  for (const x of [19,22,25,28]) canvas.rect(x, 8, 1, 1, "2");
+  canvas.rect(29, 6, 3, 3, "3");
+  canvas.rect(30, 7, 2, 1, "5");
+  canvas.rect(16, 4, 2, 1, "3");
+  canvas.line(21, 8, 19, 14, "2");
+  canvas.line(25, 8, 27, 14, "2");
 });
 
 
-SOURCE_DERIVED_SPRITES.finale = drawWeapon(32, 18, canvas => {
-  canvas.polygon([[1,8],[5,5],[10,5],[12,7],[11,11],[6,13],[1,12]], "3");
-  canvas.polygon([[3,8],[6,6],[10,6],[10,10],[6,11],[3,11]], "4");
-  canvas.rect(10, 5, 12, 6, "3");
-  canvas.rect(12, 6, 9, 3, "4");
-  canvas.rect(13, 4, 8, 2, "5");
-  canvas.rect(15, 2, 9, 3, "3");
-  canvas.rect(16, 1, 7, 1, "5");
-  canvas.rect(22, 6, 9, 3, "4");
-  canvas.rect(23, 7, 8, 1, "6");
+SOURCE_DERIVED_SPRITES.finale = drawWeapon(32, 16, canvas => {
+  canvas.polygon([[1,8],[5,6],[9,6],[11,7],[10,9],[6,11],[1,10]], "3");
+  canvas.polygon([[3,8],[6,7],[9,7],[9,8],[6,9],[3,9]], "4");
+  canvas.rect(7, 7, 4, 1, "6");
+  canvas.rect(10, 6, 11, 3, "3");
+  canvas.rect(12, 7, 8, 1, "4");
+  canvas.rect(14, 8, 6, 1, "6");
+  canvas.rect(13, 4, 8, 1, "5");
+  canvas.rect(15, 2, 8, 2, "3");
+  canvas.rect(16, 2, 6, 1, "5");
+  canvas.rect(21, 6, 10, 3, "4");
+  canvas.rect(22, 7, 9, 1, "6");
   canvas.rect(28, 5, 4, 5, "2");
   canvas.rect(30, 6, 2, 3, "5");
-  canvas.polygon([[12,10],[17,10],[16,16],[12,15]], "2");
-  canvas.polygon([[17,10],[22,10],[20,14],[17,14]], "4");
-  canvas.rect(13, 11, 2, 3, "6");
-  canvas.rect(8, 7, 3, 1, "6");
-  canvas.rect(18, 7, 2, 1, "6");
+  canvas.polygon([[12,8],[15,8],[14,14],[12,13]], "2");
+  canvas.polygon([[16,8],[20,8],[19,11],[16,11]], "4");
+  canvas.rect(13, 9, 1, 3, "6");
+});
+
+SOURCE_DERIVED_SPRITES.bp50 = drawWeapon(32, 16, canvas => {
+  canvas.polygon([[1,8],[5,6],[10,6],[12,7],[11,9],[6,11],[1,10]], "3");
+  canvas.polygon([[3,8],[6,7],[10,7],[10,8],[6,9],[3,9]], "5");
+  canvas.rect(10, 5, 10, 5, "4");
+  canvas.rect(11, 6, 8, 2, "6");
+  canvas.rect(14, 4, 5, 1, "5");
+  canvas.rect(19, 6, 12, 3, "4");
+  canvas.rect(20, 6, 11, 1, "6");
+  canvas.rect(29, 6, 3, 3, "3");
+  canvas.polygon([[10,9],[13,9],[12,14],[10,13]], "2");
+  canvas.polygon([[15,9],[18,9],[18,13],[16,13]], "5");
+  canvas.rect(16, 10, 1, 2, "6");
 });
 
 SOURCE_DERIVED_SPRITES.last_prism = recolorBands(
@@ -765,9 +779,13 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(10, 11, 2, 3, "6");
   }),
   storm_repeater: drawWeapon(30, 16, c => {
-    c.polygon([[2,8],[7,4],[19,4],[23,7],[20,11],[6,12]], "2"); c.rect(7, 6, 14, 3, "4");
-    c.rect(18, 4, 11, 2, "6"); c.rect(20, 9, 9, 2, "6"); c.rect(11, 6, 5, 1, "8");
-    c.polygon([[9,11],[14,11],[13,15],[10,15]], "3"); c.rect(24, 6, 5, 3, "9");
+    c.polygon([[2,8],[7,5],[15,5],[18,7],[16,10],[6,11]], "2");
+    c.rect(7, 6, 12, 3, "4");
+    c.rect(17, 5, 12, 2, "6");
+    c.rect(19, 8, 10, 2, "6");
+    c.rect(11, 6, 5, 1, "8");
+    c.polygon([[9,10],[13,10],[12,14],[10,14]], "3");
+    c.rect(24, 6, 5, 3, "9");
   }),
   starfall_array: drawWeapon(30, 18, c => {
     c.polygon([[2,9],[7,4],[18,4],[22,8],[19,13],[7,13]], "2"); c.rect(8, 6, 11, 5, "3");
@@ -912,7 +930,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   mx_guardian: { grip: [15, 13], muzzle: [31, 7] },
   cx_9: { grip: [16, 13], muzzle: [29, 6] },
   mg42: { grip: [11, 13], muzzle: [31, 7] },
-  bp50: { grip: [11, 13], muzzle: [31, 6] },
+  bp50: { grip: [11, 13], muzzle: [31, 7] },
   na_45: { grip: [13, 11], muzzle: [31, 7] },
 
   so_14: { grip: [16, 11], muzzle: [31, 7] },
@@ -921,7 +939,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   ak47_wild_lotus: { grip: [14, 13], muzzle: [31, 6] },
 
   inspector: { grip: [15, 12], muzzle: [31, 6] },
-  finale: { grip: [14, 13], muzzle: [31, 7] },
+  finale: { grip: [13, 12], muzzle: [31, 7] },
   minishark: { grip: [10, 12], muzzle: [29, 8] },
   water_bolt: { grip: [8, 13], muzzle: [19, 7] },
   stardust_dragon_staff: { grip: [8, 11], muzzle: [29, 5] },

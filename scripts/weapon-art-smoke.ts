@@ -64,6 +64,8 @@ for (const id of [
 
 const barrelAxisAudit: Record<string, { fromX: number; toX: number; axisY: number; tolerance: number }> = {
   mg42: { fromX: 18, toX: 31, axisY: 7, tolerance: 1 },
+  finale: { fromX: 21, toX: 31, axisY: 7, tolerance: 1 },
+  bp50: { fromX: 19, toX: 31, axisY: 7, tolerance: 1 },
 };
 for (const [id, audit] of Object.entries(barrelAxisAudit)) {
   const rows = WEAPON_SPRITES[id];
@@ -83,6 +85,37 @@ for (const [id, audit] of Object.entries(barrelAxisAudit)) {
   const slope = numerator / denominator;
   assert.ok(Math.abs(slope) <= 0.08, `${id} barrel axis must be horizontal, got slope ${slope}`);
   assert.ok(Math.abs(meanY - audit.axisY) <= audit.tolerance, `${id} barrel must stay on authored aim axis`);
+}
+
+const slenderLongGunAudit = ["mg42", "finale", "bp50", "storm_repeater"];
+for (const id of slenderLongGunAudit) {
+  const rows = WEAPON_SPRITES[id];
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  const columnThickness: number[] = [];
+  for (let x = 0; x < rows[0].length; x++) {
+    let thickness = 0;
+    for (let y = 0; y < rows.length; y++) {
+      if (rows[y][x] === ".") continue;
+      thickness++;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+    columnThickness.push(thickness);
+  }
+  const width = maxX - minX + 1;
+  const height = maxY - minY + 1;
+  const coreStart = Math.floor(minX + width * 0.25);
+  const coreEnd = Math.ceil(minX + width * 0.75);
+  const coreColumns = columnThickness.slice(coreStart, coreEnd + 1).filter(value => value > 0);
+  const averageCoreThickness = coreColumns.reduce((sum, value) => sum + value, 0) / coreColumns.length;
+  assert.ok(width >= 28, `${id} must retain a long-gun silhouette`);
+  assert.ok(height / width <= 0.47, `${id} must remain visually slender, got ${(height / width).toFixed(3)}`);
+  assert.ok(averageCoreThickness <= 9.5, `${id} receiver is too thick: ${averageCoreThickness.toFixed(2)}`);
 }
 
 const signatures = new Set<string>();
@@ -186,6 +219,7 @@ console.log(JSON.stringify({
   authoredAnchors: Object.keys(WEAPON_ART_ANCHORS).length,
   rightFacingReferenceAudit: "ok",
   levelBarrelAudit: "ok",
+  slenderLongGunAudit: slenderLongGunAudit.length,
   multicolorFinalWeapons: "ok",
   runtimePaletteRouting: "ok",
 }));
