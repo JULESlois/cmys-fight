@@ -117,12 +117,30 @@ export class Player {
       : PLAYER_HAND_OFFSET_Y;
   }
 
+  public get weaponRenderScale(): number {
+    return this.characterId === "michele" || this.characterId === "kanami"
+      ? 0.8
+      : 1;
+  }
+
+  public get weaponAnimationOffsetY(): number {
+    if (
+      this.animState !== "walk" ||
+      (this.characterId !== "michele" && this.characterId !== "kanami")
+    ) return 0;
+    return [0, 1, 0, -1][this.animFrame % 4] ?? 0;
+  }
+
+  public get effectiveWeaponHandOffsetY(): number {
+    return this.weaponHandOffsetY + this.weaponAnimationOffsetY;
+  }
+
   public getPlayerMuzzlePosition(angle: number) {
     const handX = this.x;
-    const handY = this.y + this.weaponHandOffsetY;
+    const handY = this.y + this.effectiveWeaponHandOffsetY;
     const weapon = WEAPONS[this.currentWeaponId];
-    const localMuzzleX = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
-    const localMuzzleY = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
+    const localMuzzleX = (weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X) * this.weaponRenderScale;
+    const localMuzzleY = (weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y) * this.weaponRenderScale;
     
     let my = localMuzzleY;
     if (Math.abs(angle) > Math.PI / 2) {

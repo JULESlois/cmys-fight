@@ -241,9 +241,10 @@ export class EntityRenderer {
     layer: "front" | "back" = "front",
   ) {
     ctx.save();
-    ctx.translate(0, player.weaponHandOffsetY);
+    ctx.translate(0, player.effectiveWeaponHandOffsetY);
     ctx.rotate(player.aimAngle);
     if (Math.abs(player.aimAngle) > Math.PI / 2) ctx.scale(1, -1);
+    ctx.scale(player.weaponRenderScale, player.weaponRenderScale);
     const weapon = WEAPONS[player.currentWeaponId];
     const recoilOffset = Math.max(0, player.weaponRecoilVisual) * (layer === "back" ? 0.75 : 1);
     ctx.translate(-recoilOffset, layer === "back" ? -3 : weapon?.dualWield ? 2 : 0);

@@ -204,6 +204,17 @@ for (const frameName of [
 }
 assert.notDeepEqual(SPRITES.player_michele_side_idle, SPRITES.player_michele_side_idle_1);
 assert.notDeepEqual(SPRITES.player_michele_side_walk_0, SPRITES.player_michele_side_walk_2);
+const micheleStrideDifference = SPRITES.player_michele_side_walk_0
+  .slice(21, 30)
+  .reduce((difference, row, rowIndex) => (
+    difference + [...row].filter((pixel, column) => (
+      pixel !== SPRITES.player_michele_side_walk_2[rowIndex + 21][column]
+    )).length
+  ), 0);
+assert.ok(
+  micheleStrideDifference >= 80,
+  `Michele contact poses must show a real opposing stride: ${micheleStrideDifference}`,
+);
 assert.deepEqual(
   SPRITES.player_michele_side_idle.slice(24),
   SPRITES.player_michele_side_idle_1.slice(24),
@@ -215,6 +226,18 @@ assert.notEqual(MICHELE_PLAYER_PALETTE.A, "#000000");
 const micheleArtPlayer = new Player(100, 100);
 micheleArtPlayer.characterId = "michele";
 assert.equal(micheleArtPlayer.weaponHandOffsetY, -5);
+assert.equal(micheleArtPlayer.weaponRenderScale, 0.8);
+micheleArtPlayer.currentWeaponId = "inspector";
+const micheleIdleMuzzle = micheleArtPlayer.getPlayerMuzzlePosition(0);
+assert.ok(Math.abs(micheleIdleMuzzle.x - 112.8) < 1e-9);
+assert.ok(Math.abs(micheleIdleMuzzle.y - 90.2) < 1e-9);
+micheleArtPlayer.animState = "walk";
+micheleArtPlayer.animFrame = 1;
+assert.equal(micheleArtPlayer.weaponAnimationOffsetY, 1);
+assert.equal(micheleArtPlayer.effectiveWeaponHandOffsetY, -4);
+micheleArtPlayer.animFrame = 3;
+assert.equal(micheleArtPlayer.weaponAnimationOffsetY, -1);
+assert.equal(micheleArtPlayer.effectiveWeaponHandOffsetY, -6);
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
@@ -234,6 +257,7 @@ assert.match(rendererSource, /drawMicheleTurret/);
 assert.match(rendererSource, /drawMicheleMark/);
 assert.match(rendererSource, /hasExtendedPlayerAnimation \? 1 : 2/);
 assert.match(rendererSource, /outlineColor: "#09101A"/);
+assert.match(rendererSource, /ctx\.scale\(player\.weaponRenderScale, player\.weaponRenderScale\)/);
 assert.match(spriteSource, /MICHELE_CHARACTER_SPRITES/);
 assert.match(characterArtSource, /player_michele_side_idle/);
 assert.match(characterArtSource, /const CHARACTER_WIDTH = 32/);

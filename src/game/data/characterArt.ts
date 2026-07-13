@@ -85,32 +85,56 @@ function finish(canvas: PixelCanvas): CharacterSpriteData {
   return canvas.map(row => row.join(""));
 }
 
-function drawMicheleLegs(canvas: PixelCanvas, bob: number, phase: number): void {
-  const stride = [2, 1, -2, -1][phase] ?? 0;
-  const backStride = -stride;
+function drawMicheleLeg(
+  canvas: PixelCanvas,
+  hipX: number,
+  kneeX: number,
+  ankleX: number,
+  footX: number,
+  skinColor: string,
+  soleColor: string,
+  foreground: boolean,
+): void {
+  const outerThickness = foreground ? 7 : 6;
+  const innerThickness = foreground ? 5 : 4;
+  line(canvas, hipX, 44, kneeX, 51, "A", outerThickness);
+  line(canvas, kneeX, 51, ankleX, 57, "A", outerThickness);
+  line(canvas, hipX, 44, kneeX, 51, skinColor, innerThickness);
+  line(canvas, kneeX, 51, ankleX, 56, skinColor, innerThickness);
+  line(canvas, ankleX, 55, footX, 59, "K", foreground ? 5 : 4);
+  line(canvas, footX - 2, 61, footX + 4, 61, soleColor, 2);
+}
 
-  polygon(canvas, [[17, 43 + bob], [23, 43 + bob], [23 + backStride, 57 + bob], [19 + backStride, 61 + bob], [15 + backStride, 59 + bob], [18, 50 + bob]], "A");
-  polygon(canvas, [[18, 44 + bob], [22, 44 + bob], [22 + backStride, 56 + bob], [19 + backStride, 59 + bob], [17 + backStride, 58 + bob], [19, 49 + bob]], "F");
-  rect(canvas, 17 + backStride, 55 + bob, 5, 5, "K");
-  rect(canvas, 18 + backStride, 55 + bob, 4, 2, "L");
+function drawMicheleLegs(canvas: PixelCanvas, phase: number, idle: boolean): void {
+  if (idle) {
+    drawMicheleLeg(canvas, 20, 20, 19, 17, "E", "L", false);
+    drawMicheleLeg(canvas, 29, 29, 30, 31, "F", "M", true);
+    return;
+  }
 
-  polygon(canvas, [[26, 43 + bob], [32, 43 + bob], [31 + stride, 58 + bob], [35 + stride, 60 + bob], [34 + stride, 62 + bob], [28 + stride, 61 + bob], [27, 50 + bob]], "A");
-  polygon(canvas, [[27, 44 + bob], [31, 44 + bob], [30 + stride, 57 + bob], [33 + stride, 59 + bob], [32 + stride, 60 + bob], [29 + stride, 59 + bob], [28, 49 + bob]], "F");
-  rect(canvas, 29 + stride, 56 + bob, 6, 5, "K");
-  rect(canvas, 30 + stride, 56 + bob, 4, 2, "M");
+  const poses = [
+    { rear: [20, 17, 13, 11], front: [29, 33, 37, 38] },
+    { rear: [20, 18, 21, 19], front: [29, 31, 33, 34] },
+    { rear: [20, 24, 28, 30], front: [29, 25, 20, 17] },
+    { rear: [20, 22, 24, 25], front: [29, 27, 25, 27] },
+  ] as const;
+  const pose = poses[phase] ?? poses[0];
+  drawMicheleLeg(canvas, pose.rear[0], pose.rear[1], pose.rear[2], pose.rear[3], "E", "L", false);
+  drawMicheleLeg(canvas, pose.front[0], pose.front[1], pose.front[2], pose.front[3], "F", "M", true);
 }
 
 function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   const canvas = createCanvas();
-  const bob = idle ? 0 : [0, -2, 0, -1][frame] ?? 0;
   const phase = idle ? 1 : frame % 4;
-  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [2, 0, -2, 0][phase];
+  const bob = idle ? 0 : [0, 2, 0, -2][phase];
+  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [4, 1, -4, -1][phase];
+  const tailSwing = idle ? (frame % 2 === 1 ? -1 : 0) : [-4, -1, 4, 1][phase];
 
   // Black mechanical cat tail. It is separated from the coat so its hooked
   // silhouette survives at native 1x rendering.
-  line(canvas, 18, 41, 11 + hairSwing, 44, "K", 3);
-  line(canvas, 11 + hairSwing, 44, 7 + hairSwing, 38, "K", 3);
-  pixel(canvas, 7 + hairSwing, 36, "M");
+  line(canvas, 18, 41, 11 + tailSwing, 44, "K", 3);
+  line(canvas, 11 + tailSwing, 44, 7 + tailSwing, 38, "K", 3);
+  pixel(canvas, 7 + tailSwing, 36, "M");
 
   // Distinct twin tails. The far tail is narrow; the near tail is wider and
   // receives a brighter highlight, which prevents them merging into one mass.
@@ -144,7 +168,7 @@ function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   rect(canvas, 11, 39 + bob, 5, 4, "K");
   rect(canvas, 12, 40 + bob, 3, 2, "M");
 
-  drawMicheleLegs(canvas, bob, phase);
+  drawMicheleLegs(canvas, phase, idle);
 
   // Torso, layered white-blue investigator uniform.
   polygon(canvas, [[17, 25 + bob], [23, 23 + bob], [30, 25 + bob], [34, 32 + bob], [32, 44 + bob], [18, 44 + bob], [15, 34 + bob]], "A");
@@ -194,29 +218,48 @@ function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   return finish(canvas);
 }
 
-function drawKanamiLegs(canvas: PixelCanvas, bob: number, phase: number): void {
-  const stride = [2, 1, -2, -1][phase] ?? 0;
-  const backStride = -stride;
+function drawKanamiLeg(
+  canvas: PixelCanvas,
+  hipX: number,
+  kneeX: number,
+  ankleX: number,
+  footX: number,
+  highlight: string,
+  foreground: boolean,
+): void {
+  const outerThickness = foreground ? 6 : 5;
+  line(canvas, hipX, 44, kneeX, 50, "A", outerThickness);
+  line(canvas, kneeX, 50, ankleX, 57, "A", outerThickness);
+  line(canvas, hipX, 44, kneeX, 49, "F", foreground ? 4 : 3);
+  line(canvas, kneeX, 49, ankleX, 57, "J", foreground ? 4 : 3);
+  line(canvas, ankleX, 56, footX, 59, "R", foreground ? 5 : 4);
+  line(canvas, footX - 2, 61, footX + 4, 61, highlight, 2);
+}
 
-  polygon(canvas, [[18, 43 + bob], [23, 43 + bob], [22 + backStride, 57 + bob], [18 + backStride, 61 + bob], [14 + backStride, 59 + bob], [18, 50 + bob]], "A");
-  polygon(canvas, [[19, 44 + bob], [22, 44 + bob], [21 + backStride, 56 + bob], [18 + backStride, 59 + bob], [16 + backStride, 58 + bob], [19, 49 + bob]], "F");
-  polygon(canvas, [[19, 49 + bob], [22, 49 + bob], [21 + backStride, 56 + bob], [18 + backStride, 59 + bob], [16 + backStride, 58 + bob], [19, 52 + bob]], "J");
-  rect(canvas, 16 + backStride, 55 + bob, 6, 5, "R");
-  rect(canvas, 17 + backStride, 55 + bob, 4, 2, "P");
+function drawKanamiLegs(canvas: PixelCanvas, phase: number, idle: boolean): void {
+  if (idle) {
+    drawKanamiLeg(canvas, 20, 20, 19, 17, "P", false);
+    drawKanamiLeg(canvas, 29, 29, 30, 31, "Q", true);
+    return;
+  }
 
-  polygon(canvas, [[26, 43 + bob], [31, 43 + bob], [31 + stride, 57 + bob], [35 + stride, 60 + bob], [34 + stride, 62 + bob], [28 + stride, 61 + bob], [27, 50 + bob]], "A");
-  polygon(canvas, [[27, 44 + bob], [30, 44 + bob], [30 + stride, 56 + bob], [33 + stride, 59 + bob], [32 + stride, 60 + bob], [29 + stride, 59 + bob], [28, 49 + bob]], "F");
-  polygon(canvas, [[28, 49 + bob], [31, 49 + bob], [30 + stride, 56 + bob], [33 + stride, 59 + bob], [32 + stride, 60 + bob], [29 + stride, 59 + bob], [29, 52 + bob]], "J");
-  rect(canvas, 29 + stride, 56 + bob, 6, 5, "R");
-  rect(canvas, 30 + stride, 56 + bob, 4, 2, "Q");
+  const poses = [
+    { rear: [20, 16, 12, 10], front: [29, 34, 38, 39] },
+    { rear: [20, 18, 21, 19], front: [29, 31, 34, 35] },
+    { rear: [20, 25, 29, 31], front: [29, 24, 19, 16] },
+    { rear: [20, 23, 25, 26], front: [29, 27, 24, 26] },
+  ] as const;
+  const pose = poses[phase] ?? poses[0];
+  drawKanamiLeg(canvas, pose.rear[0], pose.rear[1], pose.rear[2], pose.rear[3], "P", false);
+  drawKanamiLeg(canvas, pose.front[0], pose.front[1], pose.front[2], pose.front[3], "Q", true);
 }
 
 function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
   const canvas = createCanvas();
-  const bob = idle ? 0 : [0, -2, 0, -1][frame] ?? 0;
   const phase = idle ? 1 : frame % 4;
-  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [2, 0, -2, 0][phase];
-  const ribbonSwing = idle ? (frame % 2 === 1 ? -2 : 0) : [-2, 0, 2, 1][phase];
+  const bob = idle ? 0 : [0, 2, 0, -2][phase];
+  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [4, 1, -4, -1][phase];
+  const ribbonSwing = idle ? (frame % 2 === 1 ? -2 : 0) : [-5, -2, 5, 2][phase];
 
   // Two long waist ribbons are a defining part of Kanami's silhouette. Keep
   // them narrow and bright so they read as ribbons rather than a cape.
@@ -246,7 +289,7 @@ function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
   rect(canvas, 11, 38 + bob, 5, 5, "R");
   rect(canvas, 12, 39 + bob, 3, 2, "P");
 
-  drawKanamiLegs(canvas, bob, phase);
+  drawKanamiLegs(canvas, phase, idle);
 
   polygon(canvas, [[16, 38 + bob], [31, 38 + bob], [35, 45 + bob], [30, 49 + bob], [23, 47 + bob], [16, 49 + bob], [12, 44 + bob]], "A");
   polygon(canvas, [[17, 39 + bob], [30, 39 + bob], [33, 44 + bob], [29, 47 + bob], [23, 45 + bob], [17, 47 + bob], [14, 44 + bob]], "J");

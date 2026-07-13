@@ -188,6 +188,17 @@ for (const frameName of [
 }
 assert.notDeepEqual(SPRITES.player_kanami_side_idle, SPRITES.player_kanami_side_idle_1);
 assert.notDeepEqual(SPRITES.player_kanami_side_walk_0, SPRITES.player_kanami_side_walk_2);
+const kanamiStrideDifference = SPRITES.player_kanami_side_walk_0
+  .slice(21, 30)
+  .reduce((difference, row, rowIndex) => (
+    difference + [...row].filter((pixel, column) => (
+      pixel !== SPRITES.player_kanami_side_walk_2[rowIndex + 21][column]
+    )).length
+  ), 0);
+assert.ok(
+  kanamiStrideDifference >= 80,
+  `Kanami contact poses must show a real opposing stride: ${kanamiStrideDifference}`,
+);
 assert.deepEqual(
   SPRITES.player_kanami_side_idle.slice(28),
   SPRITES.player_kanami_side_idle_1.slice(28),
@@ -199,6 +210,18 @@ assert.notEqual(KANAMI_PLAYER_PALETTE.A, "#000000");
 const kanamiArtPlayer = new Player(100, 100);
 kanamiArtPlayer.characterId = "kanami";
 assert.equal(kanamiArtPlayer.weaponHandOffsetY, -5);
+assert.equal(kanamiArtPlayer.weaponRenderScale, 0.8);
+kanamiArtPlayer.currentWeaponId = "finale";
+const kanamiIdleMuzzle = kanamiArtPlayer.getPlayerMuzzlePosition(0);
+assert.ok(Math.abs(kanamiIdleMuzzle.x - 113.6) < 1e-9);
+assert.ok(Math.abs(kanamiIdleMuzzle.y - 90.2) < 1e-9);
+kanamiArtPlayer.animState = "walk";
+kanamiArtPlayer.animFrame = 1;
+assert.equal(kanamiArtPlayer.weaponAnimationOffsetY, 1);
+assert.equal(kanamiArtPlayer.effectiveWeaponHandOffsetY, -4);
+kanamiArtPlayer.animFrame = 3;
+assert.equal(kanamiArtPlayer.weaponAnimationOffsetY, -1);
+assert.equal(kanamiArtPlayer.effectiveWeaponHandOffsetY, -6);
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
@@ -213,6 +236,7 @@ assert.match(rendererSource, /drawKanamiBeacon/);
 assert.match(rendererSource, /hasExtendedPlayerAnimation \? 1 : 2/);
 assert.match(rendererSource, /outlineColor: "#09101A"/);
 assert.match(rendererSource, /player\.animFrame % 4/);
+assert.match(rendererSource, /ctx\.scale\(player\.weaponRenderScale, player\.weaponRenderScale\)/);
 assert.match(fs.readFileSync("src/game/data/characterArt.ts", "utf8"), /waist ribbons/);
 assert.match(fs.readFileSync("src/game/data/characterArt.ts", "utf8"), /exposed waist/);
 assert.match(gameDataSource, /player\.characterId === "michele" \|\| player\.characterId === "kanami"/);
