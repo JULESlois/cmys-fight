@@ -30,6 +30,10 @@ assert.equal(normalizeLanguage("zh-CN"), "zh-CN");
 assert.equal(normalizeLanguage("zh"), "en");
 
 assert.equal(t("zh-CN", "title.newRun"), "新游戏");
+assert.equal(t("zh-CN", "settings.audioVisual"), "音画设置");
+assert.equal(t("zh-CN", "settings.operation"), "操作设置");
+assert.equal(t("zh-CN", "settings.accountData"), "账号与数据");
+assert.equal(t("zh-CN", "result.footer", { confirm: "K" }), "[K] 返回基地");
 assert.equal(t("zh-CN", "title.records"), "图鉴");
 assert.equal(t("zh-CN", "title.stats", { shards: 3, stage: "1-2", wins: 1, best: "9:00" }), "碎片 3  关卡 1-2  胜场 1  最佳 9:00");
 assert.equal(actionLabel("fire", "zh-CN"), "射击");

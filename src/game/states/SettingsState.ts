@@ -15,7 +15,7 @@ import {
 } from "../Settings";
 import { actionLabel, t, uiFont } from "../i18n";
 
-const OPTIONS = [
+const SETTING_OPTIONS = [
   "language",
   "masterVolume",
   "musicVolume",
@@ -36,10 +36,43 @@ const OPTIONS = [
   "importData",
   "resetTutorial",
   "resetGame",
-  "back",
 ] as const;
 
-type SettingOption = typeof OPTIONS[number];
+type SettingOption = typeof SETTING_OPTIONS[number];
+type SettingsCategory = "audioVisual" | "operation" | "accountData";
+type SettingsView = "root" | SettingsCategory | "keyBindings";
+type SettingsMenuOption = SettingOption | SettingsCategory | "categoryBack" | "back";
+
+const ROOT_OPTIONS: readonly SettingsMenuOption[] = ["audioVisual", "operation", "accountData", "back"];
+const AUDIO_VISUAL_OPTIONS: readonly SettingsMenuOption[] = [
+  "language",
+  "masterVolume",
+  "musicVolume",
+  "musicSource",
+  "uiScale",
+  "fullscreen",
+  "screenShake",
+  "crtFilter",
+  "reducedFlash",
+  "dynamicBg",
+  "colorMode",
+  "categoryBack",
+];
+const OPERATION_OPTIONS: readonly SettingsMenuOption[] = [
+  "touchControls",
+  "touchLayout",
+  "touchSize",
+  "touchLabels",
+  "controls",
+  "resetTutorial",
+  "categoryBack",
+];
+const ACCOUNT_DATA_OPTIONS: readonly SettingsMenuOption[] = [
+  "exportData",
+  "importData",
+  "resetGame",
+  "categoryBack",
+];
 
 const OPTION_KEYS: Record<SettingOption, Parameters<typeof t>[1]> = {
   language: "settings.language",
@@ -62,13 +95,20 @@ const OPTION_KEYS: Record<SettingOption, Parameters<typeof t>[1]> = {
   importData: "settings.importData",
   resetTutorial: "settings.resetTutorial",
   resetGame: "settings.resetGame",
-  back: "common.back",
 };
+
+const CATEGORY_KEYS: Record<SettingsCategory, Parameters<typeof t>[1]> = {
+  audioVisual: "settings.audioVisual",
+  operation: "settings.operation",
+  accountData: "settings.accountData",
+};
+
+const SETTING_OPTION_SET = new Set<string>(SETTING_OPTIONS);
 
 export class SettingsState extends GameState {
   private selectedIndex = 0;
   private controlIndex = 0;
-  private controlsOpen = false;
+  private view: SettingsView = "root";
   private captureAction: InputAction | null = null;
   private message = "";
   private overlayMode = false;
@@ -82,8 +122,9 @@ export class SettingsState extends GameState {
     this.engine.data.loadSettings();
     this.engine.applySettings();
     this.overlayMode = params?.overlay === true;
+    this.view = "root";
     this.selectedIndex = 0;
-    this.controlsOpen = false;
+    this.controlIndex = 0;
     this.message = "";
     this.captureAction = null;
     this.resetConfirmation = false;
@@ -95,7 +136,7 @@ export class SettingsState extends GameState {
   }
 
   update() {
-    if (this.controlsOpen) {
+    if (this.view === "keyBindings") {
       this.updateControls();
       return;
     }
@@ -104,74 +145,115 @@ export class SettingsState extends GameState {
       if (this.resetConfirmation) {
         this.resetConfirmation = false;
         this.message = "";
+      } else if (this.view !== "root") {
+        this.openView("root");
       } else {
         this.leaveSettings();
       }
       return;
     }
+
+    const options = this.getCurrentOptions();
     if (this.engine.input.wasUiPressed("up")) {
-      this.selectedIndex = (this.selectedIndex - 1 + OPTIONS.length) % OPTIONS.length;
-      this.resetConfirmation = false;
-      this.message = "";
+      this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
+      this.clearConfirmationAndMessage();
       audio.playShoot();
     }
     if (this.engine.input.wasUiPressed("down")) {
-      this.selectedIndex = (this.selectedIndex + 1) % OPTIONS.length;
-      this.resetConfirmation = false;
-      this.message = "";
+      this.selectedIndex = (this.selectedIndex + 1) % options.length;
+      this.clearConfirmationAndMessage();
       audio.playShoot();
     }
 
-    const option = OPTIONS[this.selectedIndex];
+    const option = options[this.selectedIndex];
     if (this.engine.input.wasUiPressed("left")) {
-      if (this.resetConfirmation) {
-        this.resetConfirmation = false;
-        this.message = "";
-      } else {
-        this.adjustSetting(option, -1);
-      }
+      if (this.resetConfirmation) this.clearConfirmationAndMessage();
+      else if (this.isSettingOption(option)) this.adjustSetting(option, -1);
     }
     if (this.engine.input.wasUiPressed("right")) {
-      if (this.resetConfirmation) {
-        this.resetConfirmation = false;
-        this.message = "";
-      } else {
-        this.adjustSetting(option, 1);
-      }
+      if (this.resetConfirmation) this.clearConfirmationAndMessage();
+      else if (this.isSettingOption(option)) this.adjustSetting(option, 1);
     }
-    if (this.engine.input.wasUiPressed("confirm")) {
-      const language = this.engine.data.settings.language;
-      if (option === "back") {
-        this.leaveSettings();
-      } else if (option === "controls") {
-        this.controlsOpen = true;
-        this.message = "";
-        this.engine.input.clearJustPressed();
-      } else if (option === "fullscreen") {
-        document.dispatchEvent(new CustomEvent("game:fullscreen"));
-        this.message = t(language, "settings.fullscreenToggled");
-      } else if (option === "exportData") {
-        document.dispatchEvent(new CustomEvent("game:export-data"));
-        this.message = t(language, "settings.exportRequested");
-      } else if (option === "importData") {
-        document.dispatchEvent(new CustomEvent("game:import-data"));
-        this.message = t(language, "settings.selectSave");
-      } else if (option === "resetTutorial") {
-        this.engine.data.settings.tutorialCompleted = false;
-        this.saveSettings(t(language, "settings.tutorialNextRun"));
-      } else if (option === "resetGame") {
-        if (!this.resetConfirmation) {
-          this.resetConfirmation = true;
-          this.message = t(language, "settings.confirmResetGame", {
-            confirm: this.engine.input.getConfirmPrompt(),
-          });
-        } else {
-          this.engine.resetGameFromMenu();
-        }
-      } else {
-        this.adjustSetting(option, 1);
-      }
+    if (this.engine.input.wasUiPressed("confirm")) this.activateOption(option);
+  }
+
+  private getCurrentOptions(): readonly SettingsMenuOption[] {
+    if (this.view === "audioVisual") return AUDIO_VISUAL_OPTIONS;
+    if (this.view === "operation") return OPERATION_OPTIONS;
+    if (this.view === "accountData") return ACCOUNT_DATA_OPTIONS;
+    return ROOT_OPTIONS;
+  }
+
+  private isSettingOption(option: SettingsMenuOption): option is SettingOption {
+    return SETTING_OPTION_SET.has(option);
+  }
+
+  private activateOption(option: SettingsMenuOption): void {
+    const language = this.engine.data.settings.language;
+    if (option === "back") {
+      this.leaveSettings();
+      return;
     }
+    if (option === "categoryBack") {
+      this.openView("root");
+      return;
+    }
+    if (option === "audioVisual" || option === "operation" || option === "accountData") {
+      this.openView(option);
+      return;
+    }
+    if (option === "controls") {
+      this.view = "keyBindings";
+      this.controlIndex = 0;
+      this.message = "";
+      this.captureAction = null;
+      this.engine.input.clearJustPressed();
+      return;
+    }
+    if (option === "fullscreen") {
+      document.dispatchEvent(new CustomEvent("game:fullscreen"));
+      this.message = t(language, "settings.fullscreenToggled");
+      return;
+    }
+    if (option === "exportData") {
+      document.dispatchEvent(new CustomEvent("game:export-data"));
+      this.message = t(language, "settings.exportRequested");
+      return;
+    }
+    if (option === "importData") {
+      document.dispatchEvent(new CustomEvent("game:import-data"));
+      this.message = t(language, "settings.selectSave");
+      return;
+    }
+    if (option === "resetTutorial") {
+      this.engine.data.settings.tutorialCompleted = false;
+      this.saveSettings(t(language, "settings.tutorialNextRun"));
+      return;
+    }
+    if (option === "resetGame") {
+      if (!this.resetConfirmation) {
+        this.resetConfirmation = true;
+        this.message = t(language, "settings.confirmResetGame", {
+          confirm: this.engine.input.getConfirmPrompt(),
+        });
+      } else {
+        this.engine.resetGameFromMenu();
+      }
+      return;
+    }
+    this.adjustSetting(option, 1);
+  }
+
+  private openView(view: SettingsView): void {
+    this.view = view;
+    this.selectedIndex = 0;
+    this.clearConfirmationAndMessage();
+    this.engine.input.clearJustPressed();
+  }
+
+  private clearConfirmationAndMessage(): void {
+    this.resetConfirmation = false;
+    this.message = "";
   }
 
   private leaveSettings() {
@@ -208,8 +290,10 @@ export class SettingsState extends GameState {
     }
 
     if (this.engine.input.wasUiPressed("cancel")) {
-      this.controlsOpen = false;
+      this.view = "operation";
+      this.selectedIndex = OPERATION_OPTIONS.indexOf("controls");
       this.message = "";
+      this.engine.input.clearJustPressed();
       return;
     }
     if (this.engine.input.wasUiPressed("up")) {
@@ -290,10 +374,14 @@ export class SettingsState extends GameState {
     audio.playPickup();
   }
 
-  private getValue(option: SettingOption): string {
+  private getValue(option: SettingsMenuOption): string {
     const settings = this.engine.data.settings;
     const language = settings.language;
     const bool = (value: boolean) => t(language, value ? "common.on" : "common.off");
+    if (option === "audioVisual" || option === "operation" || option === "accountData") {
+      return this.engine.input.getConfirmPrompt();
+    }
+    if (option === "categoryBack" || option === "back") return this.engine.input.getCancelPrompt();
     if (option === "language") return t(language, language === "zh-CN" ? "language.chinese" : "language.english");
     if (option === "masterVolume") return `${settings.masterVolume}%`;
     if (option === "musicVolume") return `${settings.musicVolume}%`;
@@ -317,40 +405,93 @@ export class SettingsState extends GameState {
     if (option === "importData") return t(language, "common.select");
     if (option === "resetTutorial") return t(language, settings.tutorialCompleted ? "common.reset" : "common.ready");
     if (option === "resetGame") return t(language, "common.reset");
-    return this.engine.input.getConfirmPrompt();
+    return "";
+  }
+
+  private getLabel(option: SettingsMenuOption): string {
+    const language = this.engine.data.settings.language;
+    if (option === "audioVisual" || option === "operation" || option === "accountData") {
+      return t(language, CATEGORY_KEYS[option]);
+    }
+    if (option === "categoryBack" || option === "back") return t(language, "common.back");
+    return t(language, OPTION_KEYS[option]);
+  }
+
+  private getTitleKey(): Parameters<typeof t>[1] {
+    if (this.view === "audioVisual" || this.view === "operation" || this.view === "accountData") {
+      return CATEGORY_KEYS[this.view];
+    }
+    if (this.view === "keyBindings") return "settings.controlsTitle";
+    return "settings.title";
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     const language = this.engine.data.settings.language;
     ctx.fillStyle = "#0A0F19";
     ctx.fillRect(0, 0, 320, 240);
-    MenuRenderer.drawTitle(ctx, t(language, this.controlsOpen ? "settings.controlsTitle" : "settings.title"), 160, 20, language);
+    MenuRenderer.drawTitle(ctx, t(language, this.getTitleKey()), 160, 20, language);
     MenuRenderer.drawPanel(ctx, 24, 27, 272, 197);
 
-    if (this.controlsOpen) {
+    if (this.view === "keyBindings") {
       this.drawControls(ctx);
       return;
     }
+    if (this.view === "root") this.drawRoot(ctx);
+    else this.drawSubmenu(ctx);
+  }
 
-    OPTIONS.forEach((option, index) => {
-      const y = 34 + index * 8;
+  private drawRoot(ctx: CanvasRenderingContext2D): void {
+    const language = this.engine.data.settings.language;
+    ROOT_OPTIONS.forEach((option, index) => {
+      const y = 52 + index * 39;
       const selected = index === this.selectedIndex;
-      ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
-      if (selected) ctx.fillRect(32, y - 6, 256, 8);
+      ctx.fillStyle = selected ? "rgba(0,242,254,0.18)" : "rgba(10,15,25,0.82)";
+      ctx.fillRect(48, y, 224, 27);
+      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
+      ctx.strokeRect(48, y, 224, 27);
+      ctx.textAlign = "left";
+      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
+      ctx.font = uiFont(language, 8, true);
+      ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, 60, y + 17);
+      ctx.textAlign = "right";
+      ctx.fillStyle = selected ? "#00F2FE" : "#647481";
+      ctx.fillText(this.getValue(option), 260, y + 17);
+    });
+    this.drawFooter(ctx, false);
+  }
+
+  private drawSubmenu(ctx: CanvasRenderingContext2D): void {
+    const language = this.engine.data.settings.language;
+    const options = this.getCurrentOptions();
+    const spacing = Math.min(14, Math.floor(154 / Math.max(1, options.length - 1)));
+    options.forEach((option, index) => {
+      const y = 47 + index * spacing;
+      const selected = index === this.selectedIndex;
+      if (selected) {
+        ctx.fillStyle = "rgba(0,242,254,0.16)";
+        ctx.fillRect(32, y - 8, 256, 11);
+      }
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 6, true);
-      ctx.fillText(`${selected ? ">" : " "} ${t(language, OPTION_KEYS[option])}`, 36, y);
+      ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, 36, y);
       ctx.textAlign = "right";
       ctx.fillStyle = "#00F2FE";
       ctx.fillText(this.getValue(option), 282, y);
     });
+    this.drawFooter(ctx, true);
+  }
 
+  private drawFooter(ctx: CanvasRenderingContext2D, showMessage: boolean): void {
+    const language = this.engine.data.settings.language;
     ctx.textAlign = "center";
-    ctx.fillStyle = this.resetConfirmation ? "#E74C3C" : "#F1C40F";
-    ctx.font = uiFont(language, 6);
-    ctx.fillText(this.message, 160, 205);
+    if (showMessage && this.message) {
+      ctx.fillStyle = this.resetConfirmation ? "#E74C3C" : "#F1C40F";
+      ctx.font = uiFont(language, 6);
+      ctx.fillText(this.message, 160, 211);
+    }
     ctx.fillStyle = "#7F8C8D";
+    ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "settings.footer", {
       vertical: this.engine.input.getNavigationPrompt("vertical"),
       horizontal: this.engine.input.getNavigationPrompt("horizontal"),

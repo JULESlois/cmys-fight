@@ -231,8 +231,8 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   vector_9: {
     id: "vector_9", name: "Vector-9", category: "smg", rarity: "rare",
-    damage: 1, fireRate: 12, bulletSpeed: 260, manaCost: 0, spread: 0.11,
-    pelletCount: 1, knockback: 2, critChance: 0.08, color: "#79D7FF",
+    damage: 1, fireRate: 14, bulletSpeed: 275, manaCost: 0, spread: 0.095,
+    pelletCount: 1, knockback: 2, critChance: 0.09, color: "#79D7FF",
     projectileLife: 1.35,
     mechanic: "Zero-energy hyper-burst SMG: extreme rate, low per-shot damage.", projectileStyle: "tracer",
     trailLength: 17, muzzleEffect: "flash", recoil: 0.15,
@@ -367,8 +367,8 @@ export const WEAPONS: Record<string, WeaponData> = {
 
   cx_9: {
     id: "cx_9", name: "CX-9", category: "smg", rarity: "common",
-    damage: 1, fireRate: 10.5, bulletSpeed: 285, manaCost: 0, spread: 0.06,
-    pelletCount: 1, knockback: 2, critChance: 0.07, color: "#D7DEE3",
+    damage: 1, fireRate: 13, bulletSpeed: 300, manaCost: 0, spread: 0.052,
+    pelletCount: 1, knockback: 2, critChance: 0.09, color: "#D7DEE3",
     projectileLife: 1.45,
     mechanic: "Lightweight automatic SMG with a high fire rate, tight spread and manageable recoil.",
     projectileStyle: "tracer", trailLength: 14, muzzleEffect: "flash", recoil: 0.12,
@@ -383,8 +383,8 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   bp50: {
     id: "bp50", name: "BP50", category: "rifle", rarity: "rare",
-    damage: 3, fireRate: 7.2, bulletSpeed: 290, manaCost: 2, spread: 0.045,
-    pelletCount: 1, knockback: 3, critChance: 0.1, color: "#D7E0DD",
+    damage: 3, fireRate: 9, bulletSpeed: 305, manaCost: 1.5, spread: 0.038,
+    pelletCount: 1, knockback: 3, critChance: 0.12, color: "#D7E0DD",
     projectileLife: 1.8,
     mechanic: "Fast-firing bullpup rifle combines exceptional accuracy with strong mid-range velocity.",
     projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", recoil: 0.22,
@@ -399,10 +399,10 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   mg42: {
     id: "mg42", name: "MG42", category: "rifle", rarity: "rare",
-    damage: 1, fireRate: 13, bulletSpeed: 260, manaCost: 0, spread: 0.1,
-    pelletCount: 1, knockback: 3, critChance: 0.08, color: "#F0C56A",
+    damage: 1, fireRate: 15, bulletSpeed: 275, manaCost: 0, spread: 0.085,
+    pelletCount: 1, knockback: 3, critChance: 0.1, color: "#F0C56A",
     projectileLife: 1.8, pierce: 2,
-    heatPerShot: 6.5, heatDecayRate: 24, maxHeat: 100, overheatLockout: 1.1, heatSpreadMultiplier: 1.8,
+    heatPerShot: 2.3, heatDecayRate: 24, maxHeat: 100, overheatLockout: 1.1, heatSpreadMultiplier: 1.65,
     mechanic: "Buzzsaw-rate machine gun builds heat and spread until an overheat lockout forces cooling.",
     projectileStyle: "tracer", trailLength: 16, muzzleEffect: "smoke", recoil: 0.28,
   },
@@ -431,7 +431,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   aa_12: {
     id: "aa_12", name: "AA-12", category: "shotgun", rarity: "rare",
-    damage: 1, fireRate: 3.8, bulletSpeed: 210, manaCost: 3, spread: 0.86,
+    damage: 1, fireRate: 4.8, bulletSpeed: 225, manaCost: 2.5, spread: 0.82,
     pelletCount: 6, knockback: 5, critChance: 0.03, color: "#D8C89A",
     projectileLife: 0.82,
     mechanic: "Fully automatic combat shotgun sustains a dense six-pellet close-range barrage.",

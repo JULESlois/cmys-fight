@@ -274,10 +274,16 @@ const metrics = Object.fromEntries(
 );
 const zeroEnergy = Object.values(WEAPONS).filter(weapon => weapon.manaCost === 0);
 for (const weapon of zeroEnergy) {
-  const ceiling = weapon.maxHeat ? 15.5 : 15;
+  const ceiling = weapon.maxHeat ? 17 : 15.5;
   assert.ok(metrics[weapon.id].directDps <= ceiling, `${weapon.id} free DPS ${metrics[weapon.id].directDps}`);
 }
 assert.ok(metrics.vector_9.directDps <= metrics.laser.directDps * 0.65);
+assert.ok(WEAPONS.vector_9.fireRate >= 14);
+assert.ok(WEAPONS.cx_9.fireRate >= 13);
+assert.ok(WEAPONS.bp50.fireRate >= 9);
+assert.ok(WEAPONS.aa_12.fireRate >= 4.8);
+assert.ok(WEAPONS.mg42.fireRate >= 15);
+assert.ok(metrics.bp50.directDps > 29);
 assert.ok(metrics.nail_driver.directDps < metrics.plasma_caster.directDps);
 assert.ok(metrics.service_revolver.directDps < metrics.kingmaker.directDps);
 assert.ok(metrics.liberator.directDps < metrics.void_rail.directDps);

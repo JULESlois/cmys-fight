@@ -709,20 +709,6 @@ SOURCE_DERIVED_SPRITES.polaris = drawWeapon(32, 16, canvas => {
   canvas.rect(30, 8, 2, 1, "6");
 });
 
-SOURCE_DERIVED_SPRITES.bp50 = drawWeapon(32, 16, canvas => {
-  canvas.polygon([[1,8],[5,6],[10,6],[12,7],[11,9],[6,11],[1,10]], "3");
-  canvas.polygon([[3,8],[6,7],[10,7],[10,8],[6,9],[3,9]], "5");
-  canvas.rect(10, 5, 10, 5, "4");
-  canvas.rect(11, 6, 8, 2, "6");
-  canvas.rect(14, 4, 5, 1, "5");
-  canvas.rect(19, 6, 12, 3, "4");
-  canvas.rect(20, 6, 11, 1, "6");
-  canvas.rect(29, 6, 3, 3, "3");
-  canvas.polygon([[10,9],[13,9],[12,14],[10,13]], "2");
-  canvas.polygon([[15,9],[18,9],[18,13],[16,13]], "5");
-  canvas.rect(16, 10, 1, 2, "6");
-});
-
 SOURCE_DERIVED_SPRITES.last_prism = recolorBands(
   SOURCE_DERIVED_SPRITES.last_prism,
   ["8", "7", "6", "5", "4", "3", "2"],
@@ -968,7 +954,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   mx_guardian: { grip: [15, 13], muzzle: [31, 7] },
   cx_9: { grip: [16, 13], muzzle: [29, 6] },
   mg42: { grip: [11, 13], muzzle: [31, 7] },
-  bp50: { grip: [11, 13], muzzle: [31, 7] },
+  bp50: { grip: [11, 13], muzzle: [31, 6] },
   na_45: { grip: [13, 11], muzzle: [31, 7] },
 
   so_14: { grip: [16, 11], muzzle: [31, 7] },

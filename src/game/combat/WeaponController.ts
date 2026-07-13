@@ -1,4 +1,4 @@
-import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, isWeaponId } from "../data/weapons";
+import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, isWeaponId, type WeaponData } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
 import { acquireProjectile } from "../EntityPools";
@@ -21,6 +21,17 @@ export interface FireWeaponResult {
 }
 
 export class WeaponController {
+  static readonly SHOTGUN_VOLLEY_KNOCKBACK_MULTIPLIER = 0.6;
+
+  static getPerProjectileKnockback(
+    weapon: Pick<WeaponData, "category" | "pelletCount" | "knockback">,
+    knockbackBonus = 0,
+  ): number {
+    const volleyKnockback = Math.max(0, weapon.knockback + knockbackBonus);
+    if (weapon.category !== "shotgun" || weapon.pelletCount <= 1) return volleyKnockback;
+    return volleyKnockback * WeaponController.SHOTGUN_VOLLEY_KNOCKBACK_MULTIPLIER / weapon.pelletCount;
+  }
+
   static calculateEnergyCost(baseCost: number, multiplier = 1): number {
     return Math.round(Math.max(0, baseCost * Math.max(0, multiplier)) * 100) / 100;
   }
@@ -326,7 +337,7 @@ export class WeaponController {
                 : weapon.attackMode === "channel"
                   ? prismColors[i % prismColors.length]
                   : burstColor ?? weapon.color,
-          weapon.knockback + modifiers.knockbackBonus,
+          WeaponController.getPerProjectileKnockback(weapon, modifiers.knockbackBonus),
           critical,
           modifiers.pierce + (weapon.pierce ?? 0) + burstPierceBonus + extraPierce,
           modifiers.wallBounces + (weapon.wallBounces ?? 0),

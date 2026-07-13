@@ -18,6 +18,9 @@ const dungeon = read("src/game/states/DungeonState.ts");
 const hud = read("src/game/render/UIRenderer.ts");
 const input = read("src/game/Input.ts");
 const menu = read("src/game/states/MenuState.ts");
+const settings = read("src/game/states/SettingsState.ts");
+const result = read("src/game/states/RunResultState.ts");
+const menuRenderer = read("src/game/render/MenuRenderer.ts");
 const engine = read("src/game/Engine.ts");
 
 assert.doesNotMatch(canvas, /touch-face-caption/);
@@ -77,6 +80,9 @@ assert.match(character, /player_kanami_side_idle/);
 assert.match(character, /player_celestia_side_idle/);
 assert.match(character, /SelectionMode = "identity" \| "form"/);
 assert.match(character, /selectedIdentity === "cmys"[\s\S]*this\.mode = "form"/);
+assert.match(character, /drawFittedCenteredText/);
+assert.doesNotMatch(character, /wrapLocalized\(getCharacterText\(character\.id, character, language\)\.title/);
+assert.match(character, /this\.drawStats\(ctx, character, x \+ 5, startY \+ 94, 29\)/);
 assert.match(records, /common\.hidden/);
 assert.match(records, /"overview" \| "achievements"/);
 assert.match(records, /backState: "title" \| "hub"/);
@@ -94,6 +100,15 @@ assert.match(engine, /resetGameFromMenu\(\)[\s\S]*rebuildStateAfterDataChange\("
 assert.match(engine, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S]*wasUiPressed\("cancel"\)/);
 assert.match(dungeon, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
 assert.doesNotMatch(menu, /System Menu Loaded|TACTICAL JOURNEY ARCHIVE|Archive save completed/);
+assert.match(settings, /ROOT_OPTIONS: readonly SettingsMenuOption\[\] = \["audioVisual", "operation", "accountData", "back"\]/);
+assert.match(settings, /AUDIO_VISUAL_OPTIONS/);
+assert.match(settings, /OPERATION_OPTIONS/);
+assert.match(settings, /ACCOUNT_DATA_OPTIONS/);
+assert.match(settings, /this\.view === "keyBindings"/);
+assert.doesNotMatch(settings, /const OPTIONS = \[/);
+assert.match(result, /switchState\("hub"\)/);
+assert.doesNotMatch(result, /selection: "hub" \| "title"|result\.titleButton|wasUiPressed\("left"\)|wasUiPressed\("right"\)/);
+assert.match(menuRenderer, /Math\.max\(0, Math\.min\(1, val \/ max\)\)/);
 
 assert.match(hud, /drawPixelSprite\(ctx, `weapon_\$\{weapon\.id\}`/);
 assert.doesNotMatch(hud, /drawPixelSprite\(ctx, `pickup_\$\{weapon\.id\}`/);

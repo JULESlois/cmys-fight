@@ -44,6 +44,7 @@ const { CharacterSelectState } = await import("../src/game/states/CharacterSelec
 const { DungeonState } = await import("../src/game/states/DungeonState");
 const { MenuState } = await import("../src/game/states/MenuState");
 const { SettingsState } = await import("../src/game/states/SettingsState");
+const { RunResultState } = await import("../src/game/states/RunResultState");
 const { HubState } = await import("../src/game/states/HubState");
 const fs = await import("node:fs");
 
@@ -356,7 +357,18 @@ assert.equal(settingsOverlayCloseCount, 1, "pause settings returns to the system
 settingsInput.update();
 windowTarget.dispatch("keyup", { key: "Escape", preventDefault() {} });
 settingsState.enter();
-settingsState.selectedIndex = 19;
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+settingsState.update(0);
+assert.equal(settingsState.view, "audioVisual", "settings root opens an audio/visual submenu");
+settingsInput.update();
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "Escape", preventDefault() {} });
+settingsState.update(0);
+assert.equal(settingsState.view, "root", "submenu cancel returns to the three-category settings root");
+settingsInput.update();
+windowTarget.dispatch("keyup", { key: "Escape", preventDefault() {} });
+settingsState.view = "accountData";
+settingsState.selectedIndex = 2;
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 settingsState.update(0);
 assert.equal(settingsResetCount, 0, "settings reset requires a second confirmation");
@@ -368,6 +380,23 @@ assert.equal(settingsResetCount, 1, "settings owns the destructive reset action"
 settingsInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 settingsInput.cleanup();
+
+const resultInput = new Input();
+let resultDestination = "";
+const resultState = new RunResultState({
+  input: resultInput,
+  switchState(destination: string) { resultDestination = destination; },
+} as any);
+windowTarget.dispatch("keydown", { key: "a", preventDefault() {} });
+resultState.update();
+assert.equal(resultDestination, "", "result screen has no title/hub horizontal selection");
+resultInput.update();
+windowTarget.dispatch("keyup", { key: "a", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+resultState.update();
+assert.equal(resultDestination, "hub", "result confirmation always returns to the hub");
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+resultInput.cleanup();
 
 const shopInput = new Input();
 const shopEngine = { input: shopInput } as any;

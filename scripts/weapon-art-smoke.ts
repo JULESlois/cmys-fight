@@ -36,6 +36,8 @@ assert.deepEqual(
   expectedLeftFacingReferences,
   "all left-facing source references must be mirrored exactly once",
 );
+assert.equal(WEAPON_SPRITES.bp50[5], "15665555566666666666655666533231", "BP50 keeps its pre-slim source silhouette");
+
 assert.equal(
   (LEFT_FACING_REFERENCE_SPRITES as readonly string[]).includes("minishark"),
   false,
@@ -65,7 +67,6 @@ for (const id of [
 const barrelAxisAudit: Record<string, { fromX: number; toX: number; axisY: number; tolerance: number }> = {
   mg42: { fromX: 18, toX: 31, axisY: 7, tolerance: 1 },
   finale: { fromX: 21, toX: 31, axisY: 7, tolerance: 1 },
-  bp50: { fromX: 19, toX: 31, axisY: 7, tolerance: 1 },
 };
 for (const [id, audit] of Object.entries(barrelAxisAudit)) {
   const rows = WEAPON_SPRITES[id];
@@ -87,7 +88,7 @@ for (const [id, audit] of Object.entries(barrelAxisAudit)) {
   assert.ok(Math.abs(meanY - audit.axisY) <= audit.tolerance, `${id} barrel must stay on authored aim axis`);
 }
 
-const slenderLongGunAudit = ["mg42", "finale", "bp50", "storm_repeater"];
+const slenderLongGunAudit = ["mg42", "finale", "storm_repeater"];
 for (const id of slenderLongGunAudit) {
   const rows = WEAPON_SPRITES[id];
   let minX = Number.POSITIVE_INFINITY;

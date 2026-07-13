@@ -167,6 +167,26 @@ export class CharacterSelectState extends GameState {
     MenuRenderer.drawStatBar(ctx, "SP", character.speed, 150, x, y + 45, "#F1C40F", width);
   }
 
+  private drawFittedCenteredText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    language: "en" | "zh-CN",
+    preferredSize: number,
+    minimumSize = 4,
+  ): void {
+    let size = preferredSize;
+    ctx.textAlign = "center";
+    ctx.font = uiFont(language, size, true);
+    while (size > minimumSize && ctx.measureText(text).width > maxWidth) {
+      size--;
+      ctx.font = uiFont(language, size, true);
+    }
+    ctx.fillText(text, x, y);
+  }
+
   private drawIdentityScreen(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
     const cardW = 70;
@@ -213,12 +233,17 @@ export class CharacterSelectState extends GameState {
         ctx.font = uiFont(language, character.id === "celestia" ? 9 : 10, true);
         ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 69);
         ctx.fillStyle = character.color;
-        ctx.font = uiFont(language, 5, true);
-        wrapLocalized(getCharacterText(character.id, character, language).title, language === "zh-CN" ? 8 : 15)
-          .slice(0, 2)
-          .forEach((line, lineIndex) => ctx.fillText(line, x + cardW / 2, startY + 78 + lineIndex * 7));
+        this.drawFittedCenteredText(
+          ctx,
+          getCharacterText(character.id, character, language).title,
+          x + cardW / 2,
+          startY + 81,
+          cardW - 8,
+          language,
+          5,
+        );
         ctx.textAlign = "left";
-        this.drawStats(ctx, character, x + 5, startY + 90, 38);
+        this.drawStats(ctx, character, x + 5, startY + 94, 29);
       }
     }
 

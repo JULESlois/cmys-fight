@@ -195,6 +195,11 @@ r90Player.setWeaponLoadout(["r9_0"], 0);
 const r90First = WeaponController.fire(r90Player, 0, () => 0.5);
 assert.equal(r90First.fired, true);
 assert.equal(r90First.projectiles.length, 6);
+const r90VolleyKnockback = r90First.projectiles.reduce((sum, projectile) => sum + projectile.knockback, 0);
+assert.ok(
+  Math.abs(r90VolleyKnockback - WEAPONS.r9_0.knockback * WeaponController.SHOTGUN_VOLLEY_KNOCKBACK_MULTIPLIER) < 1e-9,
+  "shotgun knockback is capped per volley instead of stacking once per pellet",
+);
 assert.ok(Math.abs(r90Player.fireCooldown - 0.12) < 1e-9, "R9-0 first blast must quickly chamber the second barrel");
 for (const projectile of r90First.projectiles) releaseProjectile(projectile);
 r90Player.fireCooldown = 0;
@@ -208,7 +213,7 @@ mg42Player.setWeaponLoadout(["mg42", "pistol"], 0);
 mg42Player.mana = 0;
 const coolShot = WeaponController.fire(mg42Player, 0, () => 0.99);
 assert.equal(coolShot.fired, true);
-assert.equal(mg42Player.weaponHeat, 6.5);
+assert.equal(mg42Player.weaponHeat, 2.3);
 const coolAngle = Math.abs(Math.atan2(coolShot.projectiles[0].vy, coolShot.projectiles[0].vx));
 for (const projectile of coolShot.projectiles) releaseProjectile(projectile);
 mg42Player.weaponHeat = 90;
@@ -218,6 +223,7 @@ assert.equal(hotShot.fired, true);
 const hotAngle = Math.abs(Math.atan2(hotShot.projectiles[0].vy, hotShot.projectiles[0].vx));
 assert.ok(hotAngle > coolAngle * 1.7, "MG42 spread must widen as heat rises");
 for (const projectile of hotShot.projectiles) releaseProjectile(projectile);
+mg42Player.weaponHeat = 99;
 mg42Player.fireCooldown = 0;
 const overheatShot = WeaponController.fire(mg42Player, 0, () => 0.5);
 assert.equal(overheatShot.fired, true);
@@ -232,6 +238,24 @@ assert.ok(mg42Player.weaponHeat < heatBeforeSwap && mg42Player.weaponHeat > 0, "
 WeaponController.updateRuntime(mg42Player, 2, false);
 assert.equal(mg42Player.weaponOverheatTimer, 0);
 assert.ok(mg42Player.weaponHeat <= 35);
+
+const sustainedMg42 = new Player(160, 120);
+sustainedMg42.setWeaponLoadout(["mg42"], 0);
+const heatStep = 1 / 120;
+let sustainedFireTime = 0;
+while (sustainedFireTime < 5 && sustainedMg42.weaponOverheatTimer <= 0) {
+  sustainedMg42.fireCooldown = Math.max(0, sustainedMg42.fireCooldown - heatStep);
+  WeaponController.updateRuntime(sustainedMg42, heatStep, true);
+  if (sustainedMg42.fireCooldown <= 0) {
+    const shot = WeaponController.fire(sustainedMg42, 0, () => 0.5);
+    for (const projectile of shot.projectiles) releaseProjectile(projectile);
+  }
+  sustainedFireTime += heatStep;
+}
+assert.ok(
+  sustainedFireTime >= 3.8 && sustainedFireTime <= 4.2,
+  `MG42 should overheat after about 4 seconds of continuous fire, got ${sustainedFireTime.toFixed(3)}s`,
+);
 
 const na45Player = new Player(160, 120);
 na45Player.maxMana = 80;
@@ -278,7 +302,7 @@ for (const projectile of so14FollowB.projectiles) releaseProjectile(projectile);
 
 const aa12 = fire("aa_12");
 assert.equal(WEAPONS.aa_12.pelletCount, 6);
-assert.equal(WEAPONS.aa_12.fireRate, 3.8);
+assert.equal(WEAPONS.aa_12.fireRate, 4.8);
 assert.equal(aa12.style, "bullet");
 releaseProjectile(aa12);
 

@@ -54,9 +54,10 @@ export class MenuRenderer {
     
     const w = width;
     const h = 4;
+    const ratio = max > 0 ? Math.max(0, Math.min(1, val / max)) : 0;
     ctx.fillStyle = "rgba(255,255,255,0.2)";
     ctx.fillRect(x + 30, y - 6, w, h);
     ctx.fillStyle = color;
-    ctx.fillRect(x + 30, y - 6, w * (val / max), h);
+    ctx.fillRect(x + 30, y - 6, w * ratio, h);
   }
 }
