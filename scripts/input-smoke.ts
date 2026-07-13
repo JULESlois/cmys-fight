@@ -226,7 +226,7 @@ const hierarchyEngine = {
 } as any;
 const hierarchyState = new CharacterSelectState(hierarchyEngine) as any;
 hierarchyState.enter({ backState: "hub" });
-assert.equal(hierarchyState.mode, "identity");
+assert.equal(hierarchyState.mode, "collection");
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 hierarchyState.update(0);
 assert.equal(hierarchyState.mode, "form", "selecting CMYS must open form selection");
@@ -265,14 +265,24 @@ const kanamiEngine = {
 } as any;
 const kanamiState = new CharacterSelectState(kanamiEngine) as any;
 kanamiState.enter({ backState: "hub" });
-for (let step = 0; step < 2; step++) {
-  windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
-  kanamiState.update(0);
-  kanamiInput.update();
-  windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
-  kanamiInput.update();
-}
-assert.equal(kanamiState.selectedIdentity, "kanami");
+windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
+kanamiState.update(0);
+kanamiInput.update();
+windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
+kanamiInput.update();
+assert.equal(kanamiState.selectedCollectionId, "strinova");
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+kanamiState.update(0);
+assert.equal(kanamiState.mode, "character");
+kanamiInput.update();
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+kanamiInput.update();
+windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
+kanamiState.update(0);
+assert.equal(kanamiState.selectedCharacter.id, "kanami");
+kanamiInput.update();
+windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
+kanamiInput.update();
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 kanamiState.update(0);
 assert.deepEqual(kanamiStart, { characterId: "kanami", weaponId: "finale" });
@@ -555,4 +565,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", coreKeyboardLayout: "ESC-WASD-JKLI", noEnterOrSpaceFallback: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "J-X-only", shopEscapeCapture: "ok", transitionReleaseGate: "keyboard-and-gamepad", axisNavigationDebounce: "neutral-gate-420ms-repeat", menuSafety: "restore-confirmed-reset-in-settings", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", coreKeyboardLayout: "ESC-WASD-JKLI", noEnterOrSpaceFallback: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "J-X-only", shopEscapeCapture: "ok", transitionReleaseGate: "keyboard-and-gamepad", axisNavigationDebounce: "neutral-gate-420ms-repeat", menuSafety: "restore-confirmed-reset-in-settings", touchPromptLabels: "ok", hubUnifiedMenu: "ok", characterCollections: "cmys-strinova-nte", cmysFormSelection: "collection-to-three-forms", kanamiSelection: "strinova-to-finale" }));

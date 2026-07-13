@@ -2,7 +2,15 @@ import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 
-export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash" | "pawtector" | "beacon_lure" | "guardian_star";
+export type SkillId =
+  | "dual_fire"
+  | "arcane_overdrive"
+  | "shadow_dash"
+  | "pawtector"
+  | "beacon_lure"
+  | "guardian_star"
+  | "appraise_engrave"
+  | "colucci_authority";
 
 export interface SkillConfig {
   id: SkillId;
@@ -63,6 +71,18 @@ const SKILLS: Record<string, SkillConfig> = {
     name: "GUARDIAN STAR",
     cooldown: 12,
     duration: 1.2,
+  },
+  esper_zero: {
+    id: "appraise_engrave",
+    name: "APPRAISE & ENGRAVE",
+    cooldown: 11,
+    duration: 5,
+  },
+  nanally: {
+    id: "colucci_authority",
+    name: "ICHI-DAIME'S AUTHORITY",
+    cooldown: 15,
+    duration: 12,
   },
 };
 
@@ -209,6 +229,22 @@ export class SkillController {
         SkillController.CELESTIA_TEMPORARY_ARMOR,
       );
       player.celestiaTemporaryArmorTimer = SkillController.CELESTIA_TEMPORARY_ARMOR_DURATION;
+      restoreEnergy();
+      return { activated: true, killedEnemyIds: [], lightningArcs: [] };
+    }
+
+    if (config.id === "appraise_engrave") {
+      player.skillActiveTimer = config.duration;
+      player.skillCooldown = cooldown;
+      player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.25);
+      restoreEnergy();
+      return { activated: true, killedEnemyIds: [], lightningArcs: [] };
+    }
+
+    if (config.id === "colucci_authority") {
+      player.skillActiveTimer = config.duration;
+      player.skillCooldown = cooldown;
+      player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.15);
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }

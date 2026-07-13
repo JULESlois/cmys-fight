@@ -909,6 +909,28 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(25, 6, 3, 2, "4");
     c.rect(26, 6, 2, 1, "7");
   }),
+  zeroth_sense: drawWeapon(30, 16, c => {
+    c.polygon([[2,8],[7,5],[11,6],[13,8],[10,11],[5,12],[2,10]], "2");
+    c.rect(4, 7, 7, 3, "3");
+    c.rect(10, 4, 3, 9, "5");
+    c.circle(11, 8, 2, "6");
+    c.polygon([[12,6],[23,3],[29,4],[26,7],[29,9],[22,11],[12,9]], "3");
+    c.polygon([[13,7],[23,4],[27,5],[24,7],[27,8],[21,10],[13,8]], "4");
+    c.line(14, 7, 25, 5, "6", 1);
+    c.rect(20, 6, 4, 1, "7");
+  }),
+  colucci_claws: drawWeapon(24, 18, c => {
+    c.polygon([[2,9],[6,5],[13,5],[17,9],[14,14],[7,15],[3,12]], "2");
+    c.polygon([[4,9],[7,7],[12,7],[15,9],[12,12],[7,13],[4,11]], "3");
+    c.circle(9, 9, 2, "5");
+    c.rect(6, 12, 7, 2, "4");
+    c.polygon([[14,7],[20,2],[23,2],[20,6],[16,9]], "4");
+    c.polygon([[15,9],[21,6],[23,7],[20,10],[16,11]], "5");
+    c.polygon([[14,11],[20,11],[22,13],[18,14],[14,13]], "6");
+    c.line(17, 7, 21, 3, "7", 1);
+    c.line(18, 9, 22, 7, "7", 1);
+    c.line(17, 12, 21, 12, "7", 1);
+  }),
 };
 
 SOURCE_DERIVED_SPRITES.akimbo_scorpion = drawWeapon(28, 18, c => {
@@ -978,6 +1000,8 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   m4a1_s_cyrex: { ...BASE_OUTLINE, "2":"#15171B","3":"#30343A","4":"#D92E3D","5":"#E3E7EA","6":"#FF6671" },
   m4a4_coalition: { ...BASE_OUTLINE, "2":"#101412","3":"#27352D","4":"#4A5A43","5":"#B99736","6":"#F0D16A" },
   ultimate: { ...BASE_OUTLINE, "2":"#10161D","3":"#263341","4":"#586A78","5":"#C9D6DF","6":"#39CFE8","7":"#9B6CFF" },
+  zeroth_sense: { ...BASE_OUTLINE, "2":"#171923","3":"#4B5065","4":"#D9DDE8","5":"#332953","6":"#BDA7FF","7":"#6DE4F1" },
+  colucci_claws: { ...BASE_OUTLINE, "2":"#211923","3":"#413B49","4":"#D3426C","5":"#FF668F","6":"#9D2E52","7":"#FFD1DE" },
 
   so_14: { ...BASE_OUTLINE, "2":"#171A1D","3":"#30363D","4":"#596158","5":"#899184","6":"#D7DCE1" },
   aa_12: { ...BASE_OUTLINE, "2":"#181A1B","3":"#343737","4":"#5C5F5C","5":"#AAA58D" },
@@ -1045,6 +1069,8 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   m4a1_s_cyrex: { grip: [13, 13], muzzle: [31, 7] },
   m4a4_coalition: { grip: [13, 13], muzzle: [31, 7] },
   ultimate: { grip: [11, 12], muzzle: [27, 6] },
+  zeroth_sense: { grip: [8, 11], muzzle: [29, 5] },
+  colucci_claws: { grip: [9, 13], muzzle: [23, 7] },
 
   so_14: { grip: [16, 11], muzzle: [31, 7] },
   aa_12: { grip: [18, 13], muzzle: [31, 5] },

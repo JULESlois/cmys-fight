@@ -1,7 +1,7 @@
 {
   "name": "cmys-fight",
   "private": true,
-  "version": "0.27.0",
+  "version": "0.28.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -11,7 +11,7 @@
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
-    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:i18n && npm run test:content && npm run test:weapons && npm run test:michele && npm run test:kanami && npm run test:celestia && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
+    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:i18n && npm run test:content && npm run test:weapons && npm run test:michele && npm run test:kanami && npm run test:celestia && npm run test:nte && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
     "test:http": "node scripts/http-smoke.mjs",
     "test:input": "node --import tsx scripts/input-smoke.ts",
     "test:art": "node --import tsx scripts/art-audio-smoke.ts",
@@ -29,7 +29,8 @@
     "test:balance": "node --import tsx scripts/balance-smoke.ts",
     "test:michele": "node --import tsx scripts/michele-smoke.ts",
     "test:kanami": "node --import tsx scripts/kanami-smoke.ts",
-    "test:celestia": "node --import tsx scripts/celestia-smoke.ts"
+    "test:celestia": "node --import tsx scripts/celestia-smoke.ts",
+    "test:nte": "node --import tsx scripts/nte-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

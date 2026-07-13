@@ -175,7 +175,7 @@ passiveDungeon.projectiles = [markedShot];
 passiveDungeon.updateProjectiles(0.1);
 assert.ok(Math.abs(attacker.hp - 15.95) < 0.001, `marked Inspector damage ${attacker.hp}`);
 
-assert.equal(META_SAVE_VERSION, 6);
+assert.equal(META_SAVE_VERSION, 7);
 const meta = createDefaultMetaProgress();
 assert.ok(meta.unlockedCharacters.includes("michele"));
 assert.ok(meta.unlockedStarterWeapons.includes("inspector"));
@@ -183,7 +183,7 @@ const migratedMeta = normalizeMetaProgress({ unlockedCharacters: ["knight"], unl
 assert.ok(migratedMeta.unlockedCharacters.includes("michele"));
 assert.ok(migratedMeta.unlockedStarterWeapons.includes("inspector"));
 assert.equal(normalizeMetaProgress({ version: 5, highestStage: 20 }).highestStage, 16);
-assert.equal(normalizeMetaProgress({ version: 6, highestStage: 16 }).highestStage, 16);
+assert.equal(normalizeMetaProgress({ version: 7, highestStage: 16 }).highestStage, 16);
 
 for (const frameName of [
   "player_michele_side_idle",

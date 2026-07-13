@@ -2,10 +2,14 @@ import { WEAPON_PALETTES, WEAPON_SPRITES } from "./weaponArt";
 import {
   CELESTIA_CHARACTER_PALETTE,
   CELESTIA_CHARACTER_SPRITES,
+  ESPER_ZERO_CHARACTER_PALETTE,
+  ESPER_ZERO_CHARACTER_SPRITES,
   KANAMI_CHARACTER_SPRITES,
   KANAMI_CHARACTER_PALETTE,
   MICHELE_CHARACTER_SPRITES,
   MICHELE_CHARACTER_PALETTE,
+  NANALLY_CHARACTER_PALETTE,
+  NANALLY_CHARACTER_SPRITES,
 } from "./characterArt";
 
 export type SpriteData = string[];
@@ -73,6 +77,8 @@ export const SPRITES: Record<string, SpriteData> = {
   ...MICHELE_CHARACTER_SPRITES,
   ...KANAMI_CHARACTER_SPRITES,
   ...CELESTIA_CHARACTER_SPRITES,
+  ...ESPER_ZERO_CHARACTER_SPRITES,
+  ...NANALLY_CHARACTER_SPRITES,
 
   enemy_melee_idle: [
     "...11......11...",
@@ -293,6 +299,12 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
   ...Object.fromEntries(
     Object.keys(CELESTIA_CHARACTER_SPRITES).map(spriteName => [spriteName, CELESTIA_CHARACTER_PALETTE]),
   ),
+  ...Object.fromEntries(
+    Object.keys(ESPER_ZERO_CHARACTER_SPRITES).map(spriteName => [spriteName, ESPER_ZERO_CHARACTER_PALETTE]),
+  ),
+  ...Object.fromEntries(
+    Object.keys(NANALLY_CHARACTER_SPRITES).map(spriteName => [spriteName, NANALLY_CHARACTER_PALETTE]),
+  ),
 };
 
 
@@ -301,6 +313,10 @@ export const KANAMI_PLAYER_PALETTE: Record<string, string> = KANAMI_CHARACTER_PA
 export const MICHELE_PLAYER_PALETTE: Record<string, string> = MICHELE_CHARACTER_PALETTE;
 
 export const CELESTIA_PLAYER_PALETTE: Record<string, string> = CELESTIA_CHARACTER_PALETTE;
+
+export const ESPER_ZERO_PLAYER_PALETTE: Record<string, string> = ESPER_ZERO_CHARACTER_PALETTE;
+
+export const NANALLY_PLAYER_PALETTE: Record<string, string> = NANALLY_CHARACTER_PALETTE;
 
 export const PLAYER_PALETTE: Record<string, string> = {
   ".": "transparent",

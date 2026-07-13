@@ -1,4 +1,5 @@
 import { WEAPONS, type WeaponSlots } from "../data/weapons";
+import { usesDetailedCharacterArt } from "../data/characters";
 import type { BuffId } from "../combat/BuffSystem";
 import type { ActiveStatusEffect } from "../combat/StatusEffectSystem";
 
@@ -114,13 +115,13 @@ export class Player {
   }
 
   public get weaponHandOffsetY(): number {
-    return this.characterId === "michele" || this.characterId === "kanami" || this.characterId === "celestia"
+    return usesDetailedCharacterArt(this.characterId)
       ? -5
       : PLAYER_HAND_OFFSET_Y;
   }
 
   public get weaponRenderScale(): number {
-    return this.characterId === "michele" || this.characterId === "kanami" || this.characterId === "celestia"
+    return usesDetailedCharacterArt(this.characterId)
       ? 0.8
       : 1;
   }
@@ -128,7 +129,7 @@ export class Player {
   public get weaponAnimationOffsetY(): number {
     if (
       this.animState !== "walk" ||
-      (this.characterId !== "michele" && this.characterId !== "kanami" && this.characterId !== "celestia")
+      !usesDetailedCharacterArt(this.characterId)
     ) return 0;
     return [0, 1, 0, -1][this.animFrame % 4] ?? 0;
   }

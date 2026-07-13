@@ -35,6 +35,7 @@ import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
 import { createSeededRandom, hashSeed } from "../Random";
 import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, rollAvailableWeapon } from "../data/weapons";
+import { usesDetailedCharacterArt } from "../data/characters";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
@@ -1429,7 +1430,7 @@ export class DungeonState extends GameState {
   private updatePlayerFacingAndAnimation(dt: number, moved: boolean) {
     this.player.facing = Math.cos(this.player.aimAngle) >= 0 ? "right" : "left";
     this.player.facingLeft = this.player.facing === "left";
-    const hasExtendedPlayerAnimation = this.player.characterId === "michele" || this.player.characterId === "kanami" || this.player.characterId === "celestia";
+    const hasExtendedPlayerAnimation = usesDetailedCharacterArt(this.player.characterId);
 
     if (moved) {
       this.player.animState = "walk";

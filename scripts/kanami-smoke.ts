@@ -19,7 +19,7 @@ import { META_SAVE_VERSION, createDefaultMetaProgress, normalizeMetaProgress } f
 import { releaseProjectile } from "../src/game/EntityPools";
 
 assert.equal(CHARACTERS.kanami.starterWeapon, "finale");
-assert.equal(CHARACTERS.kanami.familyId, "kanami");
+assert.equal(CHARACTERS.kanami.collectionId, "strinova");
 assert.equal(CHARACTERS.kanami.maxHp, 5);
 assert.equal(CHARACTERS.kanami.maxArmor, 4);
 assert.equal(CHARACTERS.kanami.maxMana, 48);
@@ -153,7 +153,7 @@ const restoredMichele = persistenceDungeon.createPlayerFromSave();
 assert.equal(restoredMichele.skillActiveTimer, 0);
 assert.equal(restoredMichele.micheleTurretActive, false);
 
-assert.equal(META_SAVE_VERSION, 6);
+assert.equal(META_SAVE_VERSION, 7);
 const meta = createDefaultMetaProgress();
 assert.ok(meta.unlockedCharacters.includes("kanami"));
 assert.ok(meta.unlockedStarterWeapons.includes("finale"));
@@ -228,7 +228,7 @@ const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", 
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
-assert.match(selectSource, /IDENTITY_IDS: IdentityId\[\] = \["cmys", "michele", "kanami", "celestia"\]/);
+assert.match(selectSource, /CHARACTER_COLLECTION_IDS/);
 assert.match(selectSource, /player_kanami_side_idle/);
 assert.match(dungeonSource, /updateKanamiBeacon/);
 assert.match(dungeonSource, /getKanamiBeaconTarget/);

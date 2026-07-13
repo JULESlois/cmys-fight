@@ -2,7 +2,15 @@ import { Player, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, PLAYER_MUZZLE_O
 import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
-import { CELESTIA_PLAYER_PALETTE, KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
+import {
+  CELESTIA_PLAYER_PALETTE,
+  ESPER_ZERO_PLAYER_PALETTE,
+  KANAMI_PLAYER_PALETTE,
+  MICHELE_PLAYER_PALETTE,
+  NANALLY_PLAYER_PALETTE,
+  PLAYER_PALETTE,
+} from "../data/sprites";
+import { usesDetailedCharacterArt } from "../data/characters";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
@@ -164,7 +172,7 @@ export class EntityRenderer {
     if (player.hp <= 0) return;
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
-    const hasExtendedPlayerAnimation = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia";
+    const hasExtendedPlayerAnimation = usesDetailedCharacterArt(player.characterId);
 
     if (player.statusEffects.length > 0) {
       EntityRenderer.drawStatusChips(ctx, player.statusEffects, -24);
@@ -196,6 +204,18 @@ export class EntityRenderer {
       ctx.fillRect(-1, -25, 3, 3);
       ctx.fillRect(-4, -22, 9, 1);
       ctx.fillRect(0, -26, 1, 9);
+    } else if (player.characterId === "esper_zero" && player.skillActiveTimer > 0) {
+      EntityRenderer.drawCornerFrame(ctx, 14, "rgba(189, 167, 255, 0.9)", 5);
+      ctx.fillStyle = "rgba(109, 228, 241, 0.85)";
+      ctx.fillRect(-12, -19, 7, 1);
+      ctx.fillRect(5, -13, 8, 1);
+      ctx.fillRect(-2, -25, 1, 6);
+    } else if (player.characterId === "nanally" && player.skillActiveTimer > 0) {
+      EntityRenderer.drawCornerFrame(ctx, 14, "rgba(255, 102, 143, 0.9)", 5);
+      ctx.fillStyle = "rgba(255, 181, 200, 0.9)";
+      ctx.fillRect(-9, -24, 3, 3);
+      ctx.fillRect(6, -21, 3, 3);
+      ctx.fillRect(-1, -26, 3, 2);
     }
 
     if (player.characterId === "celestia" && player.celestiaTemporaryArmor > 0) {
@@ -218,20 +238,15 @@ export class EntityRenderer {
     ctx.fillRect(-7, 11, 14, 2);
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
-    const playerSpritePrefix = player.characterId === "michele"
-      ? "player_michele_side"
-      : player.characterId === "kanami"
-        ? "player_kanami_side"
-        : player.characterId === "celestia"
-          ? "player_celestia_side"
-        : "player_main_side";
-    const playerPalette = player.characterId === "michele"
-      ? MICHELE_PLAYER_PALETTE
-      : player.characterId === "kanami"
-        ? KANAMI_PLAYER_PALETTE
-        : player.characterId === "celestia"
-          ? CELESTIA_PLAYER_PALETTE
-        : PLAYER_PALETTE;
+    const detailedArt = {
+      michele: { prefix: "player_michele_side", palette: MICHELE_PLAYER_PALETTE },
+      kanami: { prefix: "player_kanami_side", palette: KANAMI_PLAYER_PALETTE },
+      celestia: { prefix: "player_celestia_side", palette: CELESTIA_PLAYER_PALETTE },
+      esper_zero: { prefix: "player_esper_zero_side", palette: ESPER_ZERO_PLAYER_PALETTE },
+      nanally: { prefix: "player_nanally_side", palette: NANALLY_PLAYER_PALETTE },
+    }[player.characterId];
+    const playerSpritePrefix = detailedArt?.prefix ?? "player_main_side";
+    const playerPalette = detailedArt?.palette ?? PLAYER_PALETTE;
     let spriteName = `${playerSpritePrefix}_idle`;
     if (player.animState === "walk") {
       spriteName = `${playerSpritePrefix}_walk_${hasExtendedPlayerAnimation ? player.animFrame % 4 : player.animFrame % 2}`;

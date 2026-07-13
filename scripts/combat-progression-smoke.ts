@@ -87,7 +87,7 @@ assert.ok(boss.radius < bossDef.radius);
 
 const legendaryWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "legendary");
 const mythWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "myth");
-assert.equal(Object.keys(WEAPONS).length, 55);
+assert.equal(Object.keys(WEAPONS).length, 57);
 assert.equal(legendaryWeapons.length, 17);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);

@@ -18,7 +18,7 @@ import { createDefaultMetaProgress, normalizeMetaProgress } from "../src/game/Me
 const celestia = CHARACTERS.celestia;
 assert.ok(celestia);
 assert.equal(celestia.name, "Celestia");
-assert.equal(celestia.familyId, "celestia");
+assert.equal(celestia.collectionId, "strinova");
 assert.equal(celestia.starterWeapon, "polaris");
 assert.equal(celestia.maxHp, 5);
 assert.equal(celestia.maxArmor, 8);
@@ -145,7 +145,8 @@ assert.ok(migrated.unlockedStarterWeapons.includes("polaris"));
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
-assert.match(selectSource, /"cmys", "michele", "kanami", "celestia"/);
+assert.match(selectSource, /CHARACTER_COLLECTION_IDS/);
+assert.match(fs.readFileSync("src/game/data/characters.ts", "utf8"), /strinova:[\s\S]*"michele", "kanami", "celestia"/);
 assert.match(selectSource, /player_celestia_side_idle/);
 assert.match(rendererSource, /player_celestia_side/);
 assert.match(rendererSource, /CELESTIA_PLAYER_PALETTE/);

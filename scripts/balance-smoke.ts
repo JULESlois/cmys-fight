@@ -74,6 +74,8 @@ assert.deepEqual(
     michele: { maxMana: 42, rate: 10, delay: 1.1 },
     kanami: { maxMana: 48, rate: 10, delay: 1.2 },
     celestia: { maxMana: 52, rate: 11, delay: 1.05 },
+    esper_zero: { maxMana: 50, rate: 11, delay: 1 },
+    nanally: { maxMana: 44, rate: 10, delay: 1.1 },
     rogue: { maxMana: 40, rate: 9, delay: 1.35 },
   },
 );

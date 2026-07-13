@@ -507,6 +507,23 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileStyle: "tracer", trailLength: 18, muzzleEffect: "flash", impactEffect: "plasma", recoil: 0.38,
   },
 
+  zeroth_sense: {
+    id: "zeroth_sense", name: "Zeroth Sense", category: "sword", rarity: "rare",
+    damage: 5, fireRate: 2.8, bulletSpeed: 190, manaCost: 1.5, spread: 0.34,
+    pelletCount: 2, knockback: 5, critChance: 0.2, critMultiplier: 2.2, color: "#BDA7FF",
+    projectileRadius: 5, projectileLife: 0.24, pierce: 1, exclusiveCharacterId: "esper_zero",
+    mechanic: "Esper Zero-exclusive appraisal blade; Appraise and Engrave empowers its paired cuts with stronger damage and penetration.",
+    projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.4,
+  },
+  colucci_claws: {
+    id: "colucci_claws", name: "Colucci Claws", category: "sword", rarity: "rare",
+    damage: 2, fireRate: 4.6, bulletSpeed: 175, manaCost: 1, spread: 0.58,
+    pelletCount: 3, knockback: 3, critChance: 0.15, critMultiplier: 2.1, color: "#FF668F",
+    projectileRadius: 4, projectileLife: 0.2, pierce: 1, exclusiveCharacterId: "nanally",
+    mechanic: "Nanally-exclusive paw gauntlets unleash rapid claw fans; Authority adds an Underboss follow-up to every combo.",
+    projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.2,
+  },
+
 
   finale: {
     id: "finale", name: "Finale", category: "rifle", rarity: "rare",

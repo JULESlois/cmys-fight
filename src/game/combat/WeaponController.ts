@@ -283,7 +283,18 @@ export class WeaponController {
     const rogueCritBonus = player.characterId === "rogue" && player.rogueCritTimer > 0
       ? SkillController.ROGUE_CRIT_BONUS
       : 0;
-    const volleys = dualFireActive
+    const zeroAppraisalActive = player.characterId === "esper_zero" &&
+      weapon.id === "zeroth_sense" &&
+      player.skillActiveTimer > 0;
+    const nanallyAuthorityActive = player.characterId === "nanally" &&
+      weapon.id === "colucci_claws" &&
+      player.skillActiveTimer > 0;
+    const volleys: Array<{ offset: number; damageMultiplier: number; echo: boolean; followUp?: boolean }> = nanallyAuthorityActive
+      ? [
+          { offset: -0.025, damageMultiplier: 1, echo: false },
+          { offset: 0.075, damageMultiplier: 0.55, echo: false, followUp: true },
+        ]
+      : dualFireActive
       ? [
           { offset: -0.035, damageMultiplier: 1, echo: false },
           { offset: 0.035, damageMultiplier: 1, echo: false },
@@ -313,10 +324,13 @@ export class WeaponController {
         const angle = aimAngle + volley.offset + spreadOffset;
         const critical = random() < Math.min(1, weapon.critChance + burstCritBonus + rogueCritBonus + modifiers.critChanceBonus);
         const channelDamageMultiplier = weapon.attackMode === "channel" ? 1 + channelRatio * 1.5 : 1;
-        const baseDamage = Math.max(1, Math.round(weapon.damage * channelDamageMultiplier * burstDamageMultiplier));
+        const appraisalDamageMultiplier = zeroAppraisalActive ? 1.35 : 1;
+        const baseDamage = Math.max(1, Math.round(
+          weapon.damage * channelDamageMultiplier * burstDamageMultiplier * appraisalDamageMultiplier,
+        ));
         const criticalMultiplier = Math.max(1, (weapon.critMultiplier ?? 2) + modifiers.critDamageBonus);
         const fullDamage = critical ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
-        const damage = volley.echo
+        const damage = volley.damageMultiplier !== 1
           ? Math.max(0.5, Math.round(fullDamage * volley.damageMultiplier * 2) / 2)
           : fullDamage;
         const projectile = acquireProjectile(
@@ -328,7 +342,9 @@ export class WeaponController {
           damage,
           "player",
           weapon.projectileLife ?? 2,
-          volley.echo
+          volley.followUp
+            ? "#FF8FAE"
+            : volley.echo
             ? "#C792EA"
             : linkedShotMode === "primer"
               ? "#F2D45C"
@@ -339,7 +355,7 @@ export class WeaponController {
                   : burstColor ?? weapon.color,
           WeaponController.getPerProjectileKnockback(weapon, modifiers.knockbackBonus),
           critical,
-          modifiers.pierce + (weapon.pierce ?? 0) + burstPierceBonus + extraPierce,
+          modifiers.pierce + (weapon.pierce ?? 0) + burstPierceBonus + extraPierce + (zeroAppraisalActive ? 1 : 0),
           modifiers.wallBounces + (weapon.wallBounces ?? 0),
           projectileStatus?.id,
           projectileStatus?.duration ?? 0,

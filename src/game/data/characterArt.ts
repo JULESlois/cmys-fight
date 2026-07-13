@@ -94,6 +94,10 @@ function rasterSpan(canvas: PixelCanvas, x0: number, x1: number, y: number, colo
   for (let x = x0; x <= x1; x++) rasterPixel(canvas, x, y, color);
 }
 
+function rasterRect(canvas: PixelCanvas, x: number, y: number, width: number, height: number, color: string): void {
+  for (let row = y; row < y + height; row++) rasterSpan(canvas, x, x + width - 1, row, color);
+}
+
 function drawChibiHead(
   canvas: PixelCanvas,
   bob: number,
@@ -589,6 +593,157 @@ function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
   return finish(canvas);
 }
 
+
+function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
+  const canvas = createCanvas();
+  const phase = idle ? frame % 2 : frame % 4;
+  const bob = idle ? 0 : [0, 1, 0, -1][phase];
+  const coatSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
+  const rearFoot = idle ? 13 : [10, 12, 18, 16][phase];
+  const frontFoot = idle ? 20 : [23, 21, 15, 17][phase];
+
+  for (let step = 0; step < 17; step++) {
+    rasterPixel(canvas, 7 + Math.floor(step * 0.55), 25 - step, "K");
+    if (step > 2) rasterPixel(canvas, 8 + Math.floor(step * 0.55), 25 - step, "L");
+  }
+  rasterRect(canvas, 6, 24, 5, 2, "A");
+  rasterPixel(canvas, 6, 23, "M");
+
+  rasterSpan(canvas, 10 + coatSwing, 15, 19 + bob, "A");
+  rasterSpan(canvas, 9 + coatSwing, 15, 20 + bob, "B");
+  rasterSpan(canvas, 8 + coatSwing, 14, 21 + bob, "B");
+  rasterSpan(canvas, 9 + coatSwing, 13, 22 + bob, "C");
+  rasterSpan(canvas, 10 + coatSwing, 12, 23 + bob, "C");
+
+  rasterRect(canvas, 13, 22 + bob, 4, 6, "G");
+  rasterRect(canvas, 18, 22 + bob, 4, 6, "H");
+  rasterRect(canvas, rearFoot - 1, 27, 4, 3, "A");
+  rasterRect(canvas, frontFoot - 1, 27, 4, 3, "A");
+  rasterSpan(canvas, rearFoot - 2, rearFoot + 2, 30, "N");
+  rasterSpan(canvas, frontFoot - 2, frontFoot + 2, 30, "N");
+
+  rasterSpan(canvas, 11, 21, 13 + bob, "A");
+  rasterSpan(canvas, 10, 22, 14 + bob, "A");
+  rasterSpan(canvas, 10, 22, 15 + bob, "B");
+  rasterSpan(canvas, 11, 21, 16 + bob, "B");
+  rasterSpan(canvas, 11, 21, 17 + bob, "B");
+  rasterSpan(canvas, 12, 20, 18 + bob, "C");
+  rasterRect(canvas, 15, 14 + bob, 4, 5, "I");
+  rasterPixel(canvas, 16, 15 + bob, "J");
+  rasterPixel(canvas, 17, 16 + bob, "J");
+  rasterSpan(canvas, 12, 20, 19 + bob, "O");
+  rasterSpan(canvas, 13, 19, 20 + bob, "O");
+  rasterPixel(canvas, 15, 20 + bob, "A");
+  rasterPixel(canvas, 18, 20 + bob, "A");
+
+  rasterRect(canvas, 8, 15 + bob, 3, 7, "B");
+  rasterRect(canvas, 21, 15 + bob, 3, 7, "B");
+  rasterRect(canvas, 8, 21 + bob, 4, 3, "A");
+  rasterRect(canvas, 21, 21 + bob, 4, 3, "A");
+  rasterPixel(canvas, 24, 22 + bob, "F");
+
+  rasterRect(canvas, 14, 11 + bob, 5, 3, "E");
+  rasterSpan(canvas, 10, 22, 6 + bob, "D");
+  rasterSpan(canvas, 10, 22, 7 + bob, "D");
+  rasterSpan(canvas, 11, 21, 8 + bob, "F");
+  rasterSpan(canvas, 11, 21, 9 + bob, "F");
+  rasterSpan(canvas, 12, 20, 10 + bob, "F");
+  rasterSpan(canvas, 13, 19, 11 + bob, "F");
+  rasterSpan(canvas, 11, 21, 3 + bob, "A");
+  rasterSpan(canvas, 10, 22, 4 + bob, "C");
+  rasterSpan(canvas, 11, 21, 5 + bob, "D");
+  rasterSpan(canvas, 10, 13, 6 + bob, "C");
+  rasterSpan(canvas, 19, 22, 6 + bob, "C");
+  rasterSpan(canvas, 10, 12, 7 + bob, "C");
+  rasterSpan(canvas, 20, 22, 7 + bob, "C");
+  rasterSpan(canvas, 12, 20, 4 + bob, "P");
+  rasterPixel(canvas, 14, 8 + bob, "A");
+  rasterPixel(canvas, 15, 8 + bob, "J");
+  rasterPixel(canvas, 18, 8 + bob, "A");
+  rasterPixel(canvas, 19, 8 + bob, "J");
+  rasterPixel(canvas, 17, 10 + bob, "E");
+  if (idle && phase === 1) rasterPixel(canvas, 8, 12, "M");
+
+  return finish(canvas);
+}
+
+function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
+  const canvas = createCanvas();
+  const phase = idle ? frame % 2 : frame % 4;
+  const bob = idle ? 0 : [0, 1, 0, -1][phase];
+  const hairSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
+  const rearFoot = idle ? 13 : [10, 12, 19, 16][phase];
+  const frontFoot = idle ? 20 : [23, 21, 14, 17][phase];
+
+  rasterSpan(canvas, 8 + hairSwing, 23, 5 + bob, "A");
+  rasterSpan(canvas, 7 + hairSwing, 24, 6 + bob, "B");
+  rasterSpan(canvas, 7 + hairSwing, 24, 7 + bob, "B");
+  for (let y = 8; y <= 24; y++) {
+    const width = y < 15 ? 4 : 3;
+    rasterSpan(canvas, 7 + hairSwing, 7 + hairSwing + width, y + bob, y % 3 === 0 ? "D" : "C");
+    rasterSpan(canvas, 21 - hairSwing, 24 - hairSwing, y + bob, y % 4 === 0 ? "D" : "B");
+  }
+
+  rasterPixel(canvas, 10 + hairSwing, 3 + bob, "A");
+  rasterSpan(canvas, 9 + hairSwing, 12 + hairSwing, 4 + bob, "A");
+  rasterPixel(canvas, 10 + hairSwing, 4 + bob, "D");
+  rasterPixel(canvas, 21 - hairSwing, 3 + bob, "A");
+  rasterSpan(canvas, 19 - hairSwing, 22 - hairSwing, 4 + bob, "A");
+  rasterPixel(canvas, 21 - hairSwing, 4 + bob, "D");
+
+  rasterRect(canvas, 13, 22 + bob, 4, 6, "G");
+  rasterRect(canvas, 18, 22 + bob, 4, 6, "H");
+  rasterRect(canvas, 13, 25 + bob, 4, 3, "I");
+  rasterRect(canvas, 18, 25 + bob, 4, 3, "I");
+  rasterRect(canvas, rearFoot - 1, 27, 4, 3, "A");
+  rasterRect(canvas, frontFoot - 1, 27, 4, 3, "A");
+  rasterSpan(canvas, rearFoot - 2, rearFoot + 2, 30, "J");
+  rasterSpan(canvas, frontFoot - 2, frontFoot + 2, 30, "J");
+
+  rasterSpan(canvas, 9, 23, 14 + bob, "A");
+  rasterSpan(canvas, 8, 24, 15 + bob, "A");
+  rasterSpan(canvas, 9, 23, 16 + bob, "K");
+  rasterSpan(canvas, 10, 22, 17 + bob, "K");
+  rasterSpan(canvas, 11, 21, 18 + bob, "K");
+  rasterRect(canvas, 14, 14 + bob, 5, 5, "I");
+  rasterPixel(canvas, 16, 15 + bob, "A");
+  rasterPixel(canvas, 16, 16 + bob, "L");
+  rasterSpan(canvas, 11, 21, 19 + bob, "D");
+  rasterSpan(canvas, 10, 22, 20 + bob, "D");
+  rasterSpan(canvas, 11, 21, 21 + bob, "D");
+  for (const x of [12, 15, 18, 21]) rasterPixel(canvas, x, 21 + bob, "M");
+
+  rasterRect(canvas, 7, 15 + bob, 4, 8, "A");
+  rasterRect(canvas, 22, 15 + bob, 4, 8, "A");
+  rasterRect(canvas, 6, 21 + bob, 6, 4, "N");
+  rasterRect(canvas, 21, 21 + bob, 6, 4, "N");
+  rasterPixel(canvas, 7, 22 + bob, "O");
+  rasterPixel(canvas, 9, 22 + bob, "O");
+  rasterPixel(canvas, 23, 22 + bob, "O");
+  rasterPixel(canvas, 25, 22 + bob, "O");
+
+  rasterRect(canvas, 14, 11 + bob, 5, 3, "F");
+  rasterSpan(canvas, 11, 21, 6 + bob, "F");
+  rasterSpan(canvas, 10, 22, 7 + bob, "F");
+  rasterSpan(canvas, 10, 22, 8 + bob, "F");
+  rasterSpan(canvas, 11, 21, 9 + bob, "F");
+  rasterSpan(canvas, 12, 20, 10 + bob, "F");
+  rasterSpan(canvas, 11, 21, 5 + bob, "B");
+  rasterSpan(canvas, 10, 14, 6 + bob, "C");
+  rasterSpan(canvas, 18, 22, 6 + bob, "C");
+  rasterSpan(canvas, 10, 12, 7 + bob, "C");
+  rasterSpan(canvas, 20, 22, 7 + bob, "C");
+  rasterRect(canvas, 12, 7 + bob, 5, 3, "A");
+  rasterRect(canvas, 18, 7 + bob, 5, 3, "A");
+  rasterRect(canvas, 13, 8 + bob, 3, 1, "P");
+  rasterRect(canvas, 19, 8 + bob, 3, 1, "P");
+  rasterPixel(canvas, 17, 8 + bob, "A");
+  rasterPixel(canvas, 17, 10 + bob, "E");
+  if (idle && phase === 1) rasterPixel(canvas, 24, 12, "O");
+
+  return finish(canvas);
+}
+
 export const MICHELE_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
   player_michele_side_idle: drawMichele(0, true),
   player_michele_side_idle_1: drawMichele(1, true),
@@ -614,6 +769,23 @@ export const CELESTIA_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
   player_celestia_side_walk_1: drawCelestia(1, false),
   player_celestia_side_walk_2: drawCelestia(2, false),
   player_celestia_side_walk_3: drawCelestia(3, false),
+};
+export const ESPER_ZERO_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
+  player_esper_zero_side_idle: drawEsperZero(0, true),
+  player_esper_zero_side_idle_1: drawEsperZero(1, true),
+  player_esper_zero_side_walk_0: drawEsperZero(0, false),
+  player_esper_zero_side_walk_1: drawEsperZero(1, false),
+  player_esper_zero_side_walk_2: drawEsperZero(2, false),
+  player_esper_zero_side_walk_3: drawEsperZero(3, false),
+};
+
+export const NANALLY_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
+  player_nanally_side_idle: drawNanally(0, true),
+  player_nanally_side_idle_1: drawNanally(1, true),
+  player_nanally_side_walk_0: drawNanally(0, false),
+  player_nanally_side_walk_1: drawNanally(1, false),
+  player_nanally_side_walk_2: drawNanally(2, false),
+  player_nanally_side_walk_3: drawNanally(3, false),
 };
 
 export const MICHELE_CHARACTER_PALETTE: Record<string, string> = {
@@ -680,9 +852,28 @@ export const CELESTIA_CHARACTER_PALETTE: Record<string, string> = {
   P: "#A5EBFF",
 };
 
+
+export const ESPER_ZERO_CHARACTER_PALETTE: Record<string, string> = {
+  ".": "transparent",
+  A: "#171923", B: "#292C3A", C: "#4B5065", D: "#C9CEDB",
+  E: "#C88E7D", F: "#F4C7B3", G: "#4A405B", H: "#6D5C82",
+  I: "#F4F5FA", J: "#A787EE", K: "#332953", L: "#DCCBFF",
+  M: "#6DE4F1", N: "#8B90A2", O: "#2C2B38", P: "#0E1018",
+};
+
+export const NANALLY_CHARACTER_PALETTE: Record<string, string> = {
+  ".": "transparent",
+  A: "#211923", B: "#9D2E52", C: "#D3426C", D: "#FF668F",
+  E: "#C98B7D", F: "#F6C4B0", G: "#D69A89", H: "#F0B7A1",
+  I: "#F4F4F7", J: "#727A8C", K: "#34313B", L: "#8E273F",
+  M: "#FF9DB7", N: "#413B49", O: "#FFB5C8", P: "#76C7E8",
+};
+
 export const MICHELE_HIGH_RES_PALETTE = MICHELE_CHARACTER_PALETTE;
 export const KANAMI_HIGH_RES_PALETTE = KANAMI_CHARACTER_PALETTE;
 export const CELESTIA_HIGH_RES_PALETTE = CELESTIA_CHARACTER_PALETTE;
+export const ESPER_ZERO_HIGH_RES_PALETTE = ESPER_ZERO_CHARACTER_PALETTE;
+export const NANALLY_HIGH_RES_PALETTE = NANALLY_CHARACTER_PALETTE;
 
 export const PLAYER_CHARACTER_WIDTH = CHARACTER_WIDTH;
 export const PLAYER_CHARACTER_HEIGHT = CHARACTER_HEIGHT;

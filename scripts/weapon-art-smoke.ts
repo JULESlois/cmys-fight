@@ -174,7 +174,7 @@ const sourceDriven = [
   "minishark", "water_bolt", "stardust_dragon_staff", "terrarian", "last_prism", "zenith",
   "r9_0", "mx_guardian", "cx_9", "mg42", "bp50", "na_45",
   "bayonet_ruby", "butterfly_emerald", "karambit_emerald", "m4a1_s_cyrex", "m4a4_coalition",
-  "ultimate",
+  "ultimate", "zeroth_sense", "colucci_claws",
   "so_14", "aa_12", "awp_dragon_lore", "ak47_wild_lotus", "inspector", "finale", "polaris",
 ];
 for (const id of sourceDriven) assert.ok(WEAPON_SPRITES[id], `${id} source-derived model`);
@@ -203,6 +203,8 @@ assert.equal(WEAPON_PALETTES.m4a1_s_cyrex["4"], "#D92E3D");
 assert.equal(WEAPON_PALETTES.m4a4_coalition["5"], "#B99736");
 assert.equal(WEAPON_PALETTES.ultimate["6"], "#39CFE8");
 assert.equal(WEAPON_PALETTES.ultimate["7"], "#9B6CFF");
+assert.equal(WEAPON_PALETTES.zeroth_sense["6"], "#BDA7FF");
+assert.equal(WEAPON_PALETTES.colucci_claws["5"], "#FF668F");
 
 const renderedColors = new Set<string>();
 const ctx = {
