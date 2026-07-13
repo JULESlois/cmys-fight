@@ -85,6 +85,35 @@ function finish(canvas: PixelCanvas): CharacterSpriteData {
   return canvas.map(row => row.join(""));
 }
 
+function drawChibiHead(
+  canvas: PixelCanvas,
+  bob: number,
+  outlineColor: string,
+  skinColor: string,
+): void {
+  // The runtime only mirrors this authored right-facing sprite. Keep the head
+  // as a soft three-quarter chibi shape so both eyes remain visible in either
+  // direction, without introducing a profile nose silhouette.
+  ellipse(canvas, 24, 15 + bob, 8, 10, outlineColor);
+  ellipse(canvas, 24, 15 + bob, 7, 9, skinColor);
+}
+
+function drawChibiFaceFeatures(
+  canvas: PixelCanvas,
+  bob: number,
+  eyeColor: string,
+  eyeHighlightColor: string,
+  mouthColor: string,
+): void {
+  // Two compact 2x2 raster eyes. The face is intentionally abstract: no nose,
+  // no profile protrusion, and only a tiny neutral mouth below the eyes.
+  rect(canvas, 19, 15 + bob, 3, 3, eyeColor);
+  rect(canvas, 27, 15 + bob, 3, 3, eyeColor);
+  pixel(canvas, 20, 15 + bob, eyeHighlightColor);
+  pixel(canvas, 28, 15 + bob, eyeHighlightColor);
+  line(canvas, 23, 21 + bob, 26, 21 + bob, mouthColor);
+}
+
 function drawMicheleLeg(
   canvas: PixelCanvas,
   hipX: number,
@@ -189,23 +218,17 @@ function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   line(canvas, 19, 39 + bob, 31, 39 + bob, "L", 2);
   line(canvas, 25, 40 + bob, 25, 45 + bob, "K", 1);
 
-  // Neck and face.
+  // Neck and chibi head.
   rect(canvas, 22, 22 + bob, 6, 6, "E");
   rect(canvas, 23, 22 + bob, 5, 5, "F");
-  ellipse(canvas, 24, 15 + bob, 8, 10, "A");
-  ellipse(canvas, 25, 15 + bob, 7, 9, "F");
-  rect(canvas, 29, 15 + bob, 4, 4, "F");
-  pixel(canvas, 33, 17 + bob, "E");
-  rect(canvas, 29, 12 + bob, 2, 3, "H");
-  pixel(canvas, 30, 12 + bob, "O");
-  pixel(canvas, 30, 17 + bob, "E");
-  line(canvas, 28, 20 + bob, 31, 20 + bob, "E");
+  drawChibiHead(canvas, bob, "A", "F");
 
   // Layered fringe and hair highlights.
   polygon(canvas, [[15, 8 + bob], [22, 5 + bob], [29, 8 + bob], [26, 13 + bob], [22, 16 + bob], [18, 14 + bob], [14, 18 + bob]], "B");
   polygon(canvas, [[17, 8 + bob], [22, 6 + bob], [27, 8 + bob], [24, 11 + bob], [21, 13 + bob], [18, 12 + bob]], "C");
   line(canvas, 17, 9 + bob, 23, 7 + bob, "D", 2);
   line(canvas, 13 + hairSwing, 18 + bob, 15 + hairSwing, 29 + bob, "C", 2);
+  drawChibiFaceFeatures(canvas, bob, "H", "O", "E");
 
   // Front arm and hand placed at the new weapon height.
   polygon(canvas, [[29, 28 + bob], [34, 29 + bob], [37, 37 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
@@ -312,17 +335,10 @@ function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
   polygon(canvas, [[20, 34 + bob], [29, 34 + bob], [29, 37 + bob], [19, 37 + bob]], "F");
   line(canvas, 18, 38 + bob, 31, 38 + bob, "P", 2);
 
-  // Neck and face.
+  // Neck and chibi head.
   rect(canvas, 22, 21 + bob, 6, 6, "E");
   rect(canvas, 23, 21 + bob, 5, 5, "F");
-  ellipse(canvas, 24, 14 + bob, 8, 10, "A");
-  ellipse(canvas, 25, 14 + bob, 7, 9, "F");
-  rect(canvas, 29, 14 + bob, 4, 4, "F");
-  pixel(canvas, 33, 16 + bob, "E");
-  rect(canvas, 29, 11 + bob, 2, 3, "H");
-  pixel(canvas, 30, 11 + bob, "T");
-  pixel(canvas, 30, 16 + bob, "E");
-  line(canvas, 28, 19 + bob, 31, 19 + bob, "E");
+  drawChibiHead(canvas, bob - 1, "A", "F");
 
   // Fringe with lavender and pink streaks.
   polygon(canvas, [[14, 8 + bob], [21, 4 + bob], [29, 7 + bob], [27, 12 + bob], [23, 15 + bob], [18, 13 + bob], [14, 18 + bob]], "B");
@@ -330,6 +346,7 @@ function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
   line(canvas, 17, 8 + bob, 23, 6 + bob, "D", 2);
   line(canvas, 18, 10 + bob, 17, 18 + bob, "S", 2);
   line(canvas, 25, 8 + bob, 23, 16 + bob, "Q", 2);
+  drawChibiFaceFeatures(canvas, bob - 1, "H", "T", "E");
 
   // Front arm, asymmetrical sleeve and hand at weapon grip height.
   polygon(canvas, [[29, 27 + bob], [34, 29 + bob], [37, 36 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
@@ -444,19 +461,12 @@ function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
   polygon(canvas, [[20, 39 + bob], [28, 39 + bob], [28, 42 + bob], [25, 43 + bob], [21, 45 + bob], [19, 43 + bob]], "I");
   line(canvas, 19, 39 + bob, 29, 39 + bob, "L", 1);
 
-  // Neck, gold star choker and face.
+  // Neck, gold star choker and chibi head.
   rect(canvas, 22, 21 + bob, 6, 6, "E");
   rect(canvas, 23, 21 + bob, 5, 5, "F");
   rect(canvas, 22, 24 + bob, 6, 2, "J");
   pixel(canvas, 25, 25 + bob, "M");
-  ellipse(canvas, 24, 14 + bob, 8, 10, "A");
-  ellipse(canvas, 25, 14 + bob, 7, 9, "F");
-  rect(canvas, 29, 14 + bob, 4, 4, "F");
-  pixel(canvas, 33, 16 + bob, "E");
-  rect(canvas, 29, 11 + bob, 2, 3, "L");
-  pixel(canvas, 30, 11 + bob, "P");
-  pixel(canvas, 30, 16 + bob, "E");
-  line(canvas, 28, 19 + bob, 31, 19 + bob, "E");
+  drawChibiHead(canvas, bob - 1, "A", "F");
 
   // Swept fringe and the small gold/cyan constellation hair ornaments.
   polygon(canvas, [[14, 8 + bob], [21, 3 + bob], [29, 6 + bob], [28, 11 + bob], [24, 15 + bob], [19, 13 + bob], [14, 18 + bob]], "B");
@@ -465,6 +475,7 @@ function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
   pixel(canvas, 15, 12 + bob, "M");
   pixel(canvas, 13, 15 + bob, "P");
   line(canvas, 14, 13 + bob, 12, 16 + bob, "L", 1);
+  drawChibiFaceFeatures(canvas, bob - 1, "L", "P", "E");
 
   // Bare front arm, violet band, fingerless glove and weapon hand.
   polygon(canvas, [[29, 27 + bob], [34, 29 + bob], [37, 36 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
