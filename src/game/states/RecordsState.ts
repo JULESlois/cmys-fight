@@ -17,6 +17,7 @@ import {
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { MonsterModelRenderer } from "../render/MonsterModelRenderer";
+import { SpriteRenderer } from "../render/SpriteRenderer";
 import { GameState } from "./GameState";
 
 type RecordsPage = "overview" | "achievements" | "enemies" | "bosses" | "weapons" | "buffs";
@@ -210,6 +211,7 @@ export class RecordsState extends GameState {
       });
 
       const isMonsterPage = page === "enemies" || page === "bosses";
+      const isWeaponPage = page === "weapons";
       if (isMonsterPage && selected?.unlocked) {
         const definition = ENEMIES[selected.id];
         ctx.fillStyle = "rgba(9, 16, 26, 0.92)";
@@ -229,6 +231,38 @@ export class RecordsState extends GameState {
         ctx.fillText(selected.description, 104, 207);
         ctx.fillStyle = definition.color;
         ctx.fillText(`${definition.role.toUpperCase()} // HP ${definition.maxHp}`, 104, 219);
+      } else if (isWeaponPage && selected?.unlocked) {
+        const weapon = WEAPONS[selected.id];
+        ctx.fillStyle = "rgba(9, 16, 26, 0.92)";
+        ctx.fillRect(34, 183, 62, 43);
+        ctx.strokeStyle = weapon.color;
+        ctx.strokeRect(34, 183, 62, 43);
+        const bob = Math.round(Math.sin(performance.now() / 360) * 1);
+        if (weapon.dualWield) {
+          ctx.save();
+          ctx.globalAlpha = 0.72;
+          SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, 61, 202 + bob, 1);
+          ctx.restore();
+          SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, 69, 210 - bob, 1);
+        } else {
+          SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, 65, 205 + bob, 1);
+        }
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#ECF0F1";
+        ctx.font = uiFont(language, 7, true);
+        ctx.fillText(selected.name, 104, 193);
+        ctx.fillStyle = weapon.color;
+        ctx.font = uiFont(language, 6, true);
+        ctx.fillText(
+          `${rarityLabel(weapon.rarity, language)} // DMG ${weapon.damage} // RATE ${weapon.fireRate}`,
+          104,
+          204,
+        );
+        ctx.fillStyle = "#BDC3C7";
+        ctx.font = uiFont(language, 5);
+        wrapLocalized(getWeaponMechanic(weapon.id, weapon.mechanic, language), language === "zh-CN" ? 34 : 42)
+          .slice(0, 2)
+          .forEach((text, index) => ctx.fillText(text, 104, 214 + index * 8));
       } else {
         ctx.textAlign = "center";
         ctx.fillStyle = selected?.unlocked ? "#BDC3C7" : "#4B5563";

@@ -24,7 +24,7 @@ for (const theme of themes) {
 assert.equal(new Set(themes.flatMap(theme => getBossPool(theme).map(boss => boss.bossPattern))).size, 8);
 for (const id of ["dingdong_fowl", "bark_hound", "white_sampler", "code_horse"]) assert.ok(ENEMIES[id]);
 
-assert.equal(Object.keys(WEAPONS).length, 54);
+assert.equal(Object.keys(WEAPONS).length, 55);
 assert.equal(WEAPONS.code_scanner.pierce, 2);
 assert.equal(WEAPONS.vat_horse_cannon.wallBounces, 1);
 assert.equal(WEAPONS.vat_horse_cannon.statusEffect, "burn");
@@ -48,7 +48,10 @@ assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
 assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "vector_9"), true);
 assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "micro_rocket"), true);
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 2);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 3);
+assert.equal(WEAPONS.ultimate.rarity, "myth");
+assert.equal(WEAPONS.ultimate.dualWield, true);
+assert.ok(WEAPONS.ultimate.fireRate >= 18);
 for (const id of ["bayonet_ruby", "butterfly_emerald", "karambit_emerald"]) {
   assert.equal(WEAPONS[id].category, "sword");
   assert.equal(WEAPONS[id].attackMode, "melee");

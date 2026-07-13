@@ -76,6 +76,7 @@ export const PROJECTILE_WEAPON_PALETTES: Record<string, Partial<ProjectilePalett
   karambit_emerald: { shadow: "#0B3422", base: "#20C96E", highlight: "#B8FFD7", accent: "#5AE99A", glow: "rgba(32,201,110,0.32)" },
   m4a1_s_cyrex: { shadow: "#3B151B", base: "#E53745", highlight: "#FFFFFF", accent: "#EF6A75", glow: "rgba(229,55,69,0.24)" },
   m4a4_coalition: { shadow: "#392F16", base: "#D6B347", highlight: "#FFF0A3", accent: "#758A62", glow: "rgba(214,179,71,0.28)" },
+  ultimate: { shadow: "#162E3A", base: "#45DFF2", highlight: "#F3FEFF", accent: "#9B6CFF", glow: "rgba(69,223,242,0.34)" },
 
   so_14: { shadow: "#2A2035", base: "#CFA7FF", highlight: "#FFF4C2", accent: "#F4D35E", glow: "rgba(207,167,255,0.34)" },
   aa_12: { shadow: "#3A3024", base: "#D8C89A", highlight: "#FFF0C5", accent: "#AEB7BE", glow: "rgba(216,200,154,0.22)" },

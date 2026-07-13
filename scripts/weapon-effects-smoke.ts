@@ -13,6 +13,7 @@ import {
 import {
   SHOTGUN_CLOSE_RANGE_FALLOFF_DISTANCE,
   SHOTGUN_CLOSE_RANGE_MULTIPLIER,
+  MYTH_DROP_RATE_MULTIPLIER,
   WEAPONS,
   getAvailableWeapons,
   getProjectileProfile,
@@ -83,13 +84,16 @@ const shopRates = sampleRarityRates("shop");
 const treasureRates = sampleRarityRates("treasure");
 const bossRates = sampleRarityRates("boss");
 assert.ok(treasureRates.highTier > shopRates.highTier);
+assert.ok(MYTH_DROP_RATE_MULTIPLIER >= 2 && MYTH_DROP_RATE_MULTIPLIER <= 3);
+assert.ok(shopRates.myth >= 0.0018 && shopRates.myth <= 0.005, `Shop myth rate ${shopRates.myth}`);
+assert.ok(treasureRates.myth >= 0.005 && treasureRates.myth <= 0.012, `Treasure myth rate ${treasureRates.myth}`);
 assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.highTier}`);
 assert.ok(bossRates.legendary >= 0.22, `Boss chest legendary rate ${bossRates.legendary}`);
-assert.ok(bossRates.myth >= 0.015, `Boss chest myth rate ${bossRates.myth}`);
+assert.ok(bossRates.myth >= 0.028 && bossRates.myth <= 0.055, `Boss chest myth rate ${bossRates.myth}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 2);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 3);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
 
@@ -350,6 +354,20 @@ const coalitionShot = WeaponController.fire(coalitionPlayer, 0, () => 0.99);
 assert.equal(coalitionShot.projectiles[0].pierceRemaining, 1);
 assert.equal(WEAPONS.m4a4_coalition.rarity, "legendary");
 for (const projectile of coalitionShot.projectiles) releaseProjectile(projectile);
+
+const ultimatePlayer = new Player(160, 120);
+ultimatePlayer.maxMana = 80;
+ultimatePlayer.mana = 80;
+ultimatePlayer.setWeaponLoadout(["ultimate"], 0);
+const ultimateVolley = WeaponController.fire(ultimatePlayer, 0, () => 0.99);
+assert.equal(WEAPONS.ultimate.rarity, "myth");
+assert.equal(WEAPONS.ultimate.dualWield, true);
+assert.ok(WEAPONS.ultimate.fireRate >= 18);
+assert.equal(ultimateVolley.projectiles.length, 2, "Ultimate fires both electronic pistols per trigger cycle");
+assert.ok(ultimatePlayer.fireCooldown <= 1 / 18 + 1e-9);
+assert.equal(ultimatePlayer.mana, 79.2);
+assert.ok(ultimatePlayer.weaponHeat > 0);
+for (const projectile of ultimateVolley.projectiles) releaseProjectile(projectile);
 
 const awpPlayer = new Player(160, 120);
 awpPlayer.maxMana = 80;
@@ -712,6 +730,8 @@ console.log(JSON.stringify({
   mythAdaptiveAndOpeningShots: "ok",
   wildLotusCriticalBloom: "ok",
   csMeleeAndRifles: "ruby-emerald-cyrex-coalition",
+  ultimate: "myth-dual-electronic-storm",
+  mythDropMultiplier: MYTH_DROP_RATE_MULTIPLIER,
   allStageWeaponPool: getAvailableWeapons(1).length,
   bossHighTierRate: Number(bossRates.highTier.toFixed(3)),
   bossLegendaryRate: Number(bossRates.legendary.toFixed(3)),

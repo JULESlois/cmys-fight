@@ -890,6 +890,25 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(29, 6, 3, 3, "3");
     c.rect(30, 7, 2, 1, "6");
   }),
+  ultimate: drawWeapon(28, 16, c => {
+    // One half of the mirrored dual-wield pair: compact electronic receiver,
+    // exposed capacitor spine, vented barrel shroud and hooked magazine.
+    c.polygon([[1,8],[5,5],[10,5],[13,7],[11,10],[6,12],[1,11]], "2");
+    c.polygon([[3,8],[6,6],[10,6],[11,7],[9,9],[5,10],[3,10]], "4");
+    c.rect(10, 4, 10, 6, "2");
+    c.rect(11, 5, 8, 2, "5");
+    c.rect(12, 7, 7, 2, "3");
+    c.rect(13, 4, 5, 1, "6");
+    c.rect(13, 8, 6, 1, "7");
+    c.polygon([[10,9],[14,9],[13,14],[10,13]], "2");
+    c.polygon([[15,9],[20,9],[19,14],[16,14]], "3");
+    c.rect(16, 10, 2, 3, "6");
+    c.rect(19, 5, 8, 4, "2");
+    c.rect(20, 5, 6, 1, "5");
+    for (const x of [20,23,26]) c.rect(x, 7, 1, 1, "6");
+    c.rect(25, 6, 3, 2, "4");
+    c.rect(26, 6, 2, 1, "7");
+  }),
 };
 
 SOURCE_DERIVED_SPRITES.akimbo_scorpion = drawWeapon(28, 18, c => {
@@ -958,6 +977,7 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   karambit_emerald: { ...BASE_OUTLINE, "2":"#111719","3":"#103A27","4":"#245849","5":"#16B865","6":"#75EFA8" },
   m4a1_s_cyrex: { ...BASE_OUTLINE, "2":"#15171B","3":"#30343A","4":"#D92E3D","5":"#E3E7EA","6":"#FF6671" },
   m4a4_coalition: { ...BASE_OUTLINE, "2":"#101412","3":"#27352D","4":"#4A5A43","5":"#B99736","6":"#F0D16A" },
+  ultimate: { ...BASE_OUTLINE, "2":"#10161D","3":"#263341","4":"#586A78","5":"#C9D6DF","6":"#39CFE8","7":"#9B6CFF" },
 
   so_14: { ...BASE_OUTLINE, "2":"#171A1D","3":"#30363D","4":"#596158","5":"#899184","6":"#D7DCE1" },
   aa_12: { ...BASE_OUTLINE, "2":"#181A1B","3":"#343737","4":"#5C5F5C","5":"#AAA58D" },
@@ -1024,6 +1044,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   karambit_emerald: { grip: [9, 13], muzzle: [23, 5] },
   m4a1_s_cyrex: { grip: [13, 13], muzzle: [31, 7] },
   m4a4_coalition: { grip: [13, 13], muzzle: [31, 7] },
+  ultimate: { grip: [11, 12], muzzle: [27, 6] },
 
   so_14: { grip: [16, 11], muzzle: [31, 7] },
   aa_12: { grip: [18, 13], muzzle: [31, 5] },

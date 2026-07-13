@@ -88,6 +88,8 @@ assert.match(records, /"overview" \| "achievements"/);
 assert.match(records, /backState: "title" \| "hub"/);
 assert.match(records, /records\.runStats/);
 assert.match(records, /records\.collection/);
+assert.match(records, /isWeaponPage[\s\S]*SpriteRenderer\.drawPixelSprite\(ctx, `weapon_\$\{weapon\.id\}`/);
+assert.match(records, /weapon\.dualWield[\s\S]*weapon_\$\{weapon\.id\}/);
 assert.doesNotMatch(records, /wasPressed\("a"\)|wasPressed\("q"\)|wasPressed\("e"\)/);
 assert.doesNotMatch(dungeon, /dungeon\.retry/);
 assert.match(menu, /menu\.confirmRestore/);
@@ -137,6 +139,7 @@ console.log(JSON.stringify({
   shopEscapeCapture: "ok",
   safeSystemMenu: "ok",
   distinctWeaponHudModels: "ok",
+  weaponCodexModels: "selected-authored-weapon-preview",
   adaptiveWeaponNames: "ok",
   visibleSkillRecovery: "ok",
   talentStrip: "owned-only-up-to-twelve",

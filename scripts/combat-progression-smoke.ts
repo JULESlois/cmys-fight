@@ -87,15 +87,15 @@ assert.ok(boss.radius < bossDef.radius);
 
 const legendaryWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "legendary");
 const mythWeapons = Object.values(WEAPONS).filter(weapon => weapon.rarity === "myth");
-assert.equal(Object.keys(WEAPONS).length, 54);
+assert.equal(Object.keys(WEAPONS).length, 55);
 assert.equal(legendaryWeapons.length, 17);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "phoenix").length, 2);
 assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
-assert.equal(mythWeapons.length, 2);
-assert.deepEqual(mythWeapons.map(weapon => weapon.id).sort(), ["awp_dragon_lore", "so_14"]);
+assert.equal(mythWeapons.length, 3);
+assert.deepEqual(mythWeapons.map(weapon => weapon.id).sort(), ["awp_dragon_lore", "so_14", "ultimate"]);
 assert.deepEqual(
   getAvailableWeapons(1).map(weapon => weapon.id),
   getAvailableWeapons(FINAL_GLOBAL_STAGE).map(weapon => weapon.id),

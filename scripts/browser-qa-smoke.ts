@@ -7,7 +7,7 @@ import { isDebugMode } from "../src/game/DebugTools";
 
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 assert.equal(packageJson.version, APP_VERSION);
-assert.equal(APP_VERSION, "0.26.0");
+assert.equal(APP_VERSION, "0.27.0");
 
 assert.deepEqual(QA_STAGE_PRESETS.map(preset => preset.stage), [1, 5, 9, 13, 16]);
 assert.equal(new Set(QA_MUSIC_SCENES).size, 16);

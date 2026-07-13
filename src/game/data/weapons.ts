@@ -458,6 +458,16 @@ export const WEAPONS: Record<string, WeaponData> = {
     projectileStyle: "tracer", trailLength: 20, muzzleEffect: "flash", impactEffect: "spark", recoil: 0.28,
   },
 
+  ultimate: {
+    id: "ultimate", name: "Ultimate", category: "smg", rarity: "myth",
+    damage: 1, fireRate: 18, bulletSpeed: 335, manaCost: 0.8, spread: 0.16,
+    pelletCount: 2, knockback: 1, critChance: 0.14, critMultiplier: 2, color: "#66ECFF",
+    projectileLife: 1.45, pierce: 1, dualWield: true,
+    heatPerShot: 2, heatDecayRate: 26, maxHeat: 100, overheatLockout: 1.2, heatSpreadMultiplier: 0.9,
+    mechanic: "Twin electronically fired machine pistols discharge paired rounds at an extreme rate; sustained fire builds heat and bloom before lockout.",
+    projectileStyle: "tracer", trailLength: 20, muzzleEffect: "electric", impactEffect: "spark", recoil: 0.08,
+  },
+
   so_14: {
     id: "so_14", name: "SO-14", category: "rifle", rarity: "myth",
     damage: 8, fireRate: 2.4, bulletSpeed: 315, manaCost: 3, spread: 0.022,
@@ -631,10 +641,15 @@ export function getAvailableWeapons(_globalStageIndex = 1, characterId?: string)
 
 export type WeaponRollContext = "shop" | "treasure" | "boss";
 
+export const MYTH_DROP_RATE_MULTIPLIER = 2.5;
+const LEGACY_MYTH_WEAPON_COUNT = 2;
+const currentMythWeaponCount = Math.max(1, Object.values(WEAPONS).filter(weapon => weapon.rarity === "myth").length);
+const mythPerWeaponWeightScale = MYTH_DROP_RATE_MULTIPLIER * LEGACY_MYTH_WEAPON_COUNT / currentMythWeaponCount;
+
 const WEAPON_ROLL_WEIGHTS: Record<WeaponRollContext, Record<WeaponRarity, number>> = {
-  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.37, myth: 0.06 },
-  treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.55, myth: 0.16 },
-  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 2.45, myth: 1.3 },
+  shop: { common: 4.6, uncommon: 3.15, rare: 1.55, legendary: 0.37, myth: 0.06 * mythPerWeaponWeightScale },
+  treasure: { common: 2.1, uncommon: 3.4, rare: 2.5, legendary: 0.55, myth: 0.16 * mythPerWeaponWeightScale },
+  boss: { common: 0.15, uncommon: 1.2, rare: 5.5, legendary: 2.45, myth: 1.3 * mythPerWeaponWeightScale },
 };
 
 export function rollAvailableWeapon(
