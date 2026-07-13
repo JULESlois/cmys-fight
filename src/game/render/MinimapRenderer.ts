@@ -1,14 +1,50 @@
-import { FloorData } from "../FloorGenerator";
+import { FloorData, type Room } from "../FloorGenerator";
+
+const roomKey = (room: Pick<Room, "x" | "y">) => `${room.x},${room.y}`;
+
+function getVisibleRooms(floor: FloorData): { visible: Room[]; visited: Set<string> } {
+  const byPosition = new Map(floor.rooms.map(room => [roomKey(room), room]));
+  const visited = new Set<string>();
+
+  for (const room of floor.rooms) {
+    const isCurrent = room.x === floor.currentRoomX && room.y === floor.currentRoomY;
+    if (room.visited || isCurrent) visited.add(roomKey(room));
+  }
+
+  const visible = new Set(visited);
+  const reveal = (x: number, y: number) => {
+    const neighbor = byPosition.get(`${x},${y}`);
+    if (neighbor) visible.add(roomKey(neighbor));
+  };
+
+  for (const key of visited) {
+    const room = byPosition.get(key);
+    if (!room) continue;
+    if (room.doors.up) reveal(room.x, room.y - 1);
+    if (room.doors.down) reveal(room.x, room.y + 1);
+    if (room.doors.left) reveal(room.x - 1, room.y);
+    if (room.doors.right) reveal(room.x + 1, room.y);
+  }
+
+  return {
+    visible: floor.rooms.filter(room => visible.has(roomKey(room))),
+    visited,
+  };
+}
 
 export class MinimapRenderer {
   static draw(ctx: CanvasRenderingContext2D, floor: FloorData) {
     if (floor.rooms.length === 0) return;
 
+    const { visible, visited } = getVisibleRooms(floor);
+    if (visible.length === 0) return;
+    const visibleKeys = new Set(visible.map(roomKey));
+
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
-    for (const room of floor.rooms) {
+    for (const room of visible) {
       minX = Math.min(minX, room.x);
       maxX = Math.max(maxX, room.x);
       minY = Math.min(minY, room.y);
@@ -38,20 +74,38 @@ export class MinimapRenderer {
       y: panelY + (y - minY) * cellSize,
     });
 
-    // Draw continuous links behind room cells. The old one-pixel edge marks made
-    // connected rooms look detached, especially on wider generated layouts.
+    // Only discovered links are drawn. A visible unknown room never reveals
+    // rooms beyond itself, so the complete floor shape remains concealed.
     ctx.fillStyle = "rgba(189, 195, 199, 0.48)";
-    for (const room of floor.rooms) {
+    for (const room of visible) {
       const point = position(room.x, room.y);
       const centerX = point.x + Math.floor((cellSize - 1) / 2);
       const centerY = point.y + Math.floor((cellSize - 1) / 2);
-      if (room.doors.right) ctx.fillRect(centerX, centerY, cellSize + 1, 1);
-      if (room.doors.down) ctx.fillRect(centerX, centerY, 1, cellSize + 1);
+      if (room.doors.right && visibleKeys.has(`${room.x + 1},${room.y}`)) {
+        ctx.fillRect(centerX, centerY, cellSize + 1, 1);
+      }
+      if (room.doors.down && visibleKeys.has(`${room.x},${room.y + 1}`)) {
+        ctx.fillRect(centerX, centerY, 1, cellSize + 1);
+      }
     }
 
-    for (const room of floor.rooms) {
+    for (const room of visible) {
       const point = position(room.x, room.y);
+      const key = roomKey(room);
       const isCurrent = room.x === floor.currentRoomX && room.y === floor.currentRoomY;
+      const isVisited = visited.has(key);
+
+      if (!isVisited) {
+        ctx.fillStyle = "#263445";
+        ctx.fillRect(point.x + 1, point.y + 1, Math.max(2, cellSize - 3), Math.max(2, cellSize - 3));
+        ctx.fillStyle = "#BDC3C7";
+        ctx.font = `bold ${Math.max(5, cellSize - 2)}px monospace`;
+        ctx.textAlign = "center";
+        ctx.fillText("?", point.x + cellSize / 2, point.y + cellSize - 1);
+        ctx.textAlign = "left";
+        continue;
+      }
+
       if (isCurrent) ctx.fillStyle = "#FFFFFF";
       else if (room.type === "boss") ctx.fillStyle = room.cleared ? "#922B21" : "#E74C3C";
       else if (room.type === "exit") ctx.fillStyle = "#00F2FE";

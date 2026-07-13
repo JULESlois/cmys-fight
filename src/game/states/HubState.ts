@@ -12,8 +12,8 @@ import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 import { CHALLENGES, getDailyChallengeId } from "../ChallengeSystem";
 import { getChallengeText, getMetaUpgradeText, t, uiFont } from "../i18n";
 
-type HubAction = "start" | "records" | "hard" | "challenge" | "refund";
-const HUB_ACTIONS: HubAction[] = ["start", "records", "hard", "challenge", "refund"];
+type HubAction = "start" | "hard" | "challenge" | "refund";
+const HUB_ACTIONS: HubAction[] = ["start", "hard", "challenge", "refund"];
 const HUB_ENTRY_COUNT = META_UPGRADE_IDS.length + HUB_ACTIONS.length;
 
 export class HubState extends GameState {
@@ -73,10 +73,6 @@ export class HubState extends GameState {
     const language = this.engine.data.settings.language;
     if (action === "start") {
       this.engine.switchState("character_select", { backState: "hub" });
-      return;
-    }
-    if (action === "records") {
-      this.engine.switchState("records");
       return;
     }
     if (action === "hard") {

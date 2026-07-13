@@ -129,18 +129,20 @@ export class UIRenderer {
 
     // Compact buff strip. Detailed skill and swap information lives on the pause screen.
     if (player.buffs.length > 0) {
+      const visibleBuffCount = Math.min(player.buffs.length, BuffSystem.MAX_BUFFS);
+      const stripWidth = visibleBuffCount * 14 + 4;
+      const stripX = 315 - stripWidth;
       ctx.fillStyle = "rgba(10, 15, 25, 0.85)";
-      ctx.fillRect(143, 5, 172, 12);
+      ctx.fillRect(stripX, 5, stripWidth, 12);
       ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
-      ctx.strokeRect(143, 5, 172, 12);
-      for (let index = 0; index < BuffSystem.MAX_BUFFS; index++) {
-        const x = 146 + index * 14;
+      ctx.strokeRect(stripX, 5, stripWidth, 12);
+      for (let index = 0; index < visibleBuffCount; index++) {
+        const x = stripX + 3 + index * 14;
         ctx.fillStyle = "#1A1C2C";
         ctx.fillRect(x - 1, 7, 12, 8);
         ctx.strokeStyle = "#34495E";
         ctx.strokeRect(x - 1, 7, 12, 8);
         const id = player.buffs[index];
-        if (!id) continue;
         const buff = BUFFS[id];
         ctx.fillStyle = buff.rarity === "legendary" ? "#FFB347" : buff.rarity === "rare" ? "#00F2FE" : buff.rarity === "uncommon" ? "#2ECC71" : "#BDC3C7";
         ctx.font = "bold 5px monospace";

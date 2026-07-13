@@ -195,6 +195,11 @@ assert.match(floorSource, /assignRoomType\("wish_fountain"/);
 assert.match(floorSource, /assignRoomType\("photo_booth"/);
 assert.match(roomRendererSource, /tileId === 0 \|\| tileId === 2/);
 assert.match(minimapSource, /room\.doors\.right[\s\S]*room\.doors\.down/);
+assert.match(minimapSource, /room\.visited \|\| isCurrent/);
+assert.match(minimapSource, /visibleKeys\.has/);
+assert.match(minimapSource, /ctx\.fillText\("\?"/);
+assert.match(minimapSource, /for \(const room of visible\) \{[\s\S]*minX = Math\.min\(minX, room\.x\)/);
+assert.doesNotMatch(minimapSource, /for \(const room of floor\.rooms\) \{\s*minX = Math\.min/);
 assert.match(gameDataSource, /room\.type === "legacy_rpg"[\s\S]*room\.type = "wish_fountain"/);
 assert.match(gameDataSource, /room\.type === "legacy_tactics"[\s\S]*room\.type = "photo_booth"/);
 
@@ -210,6 +215,6 @@ console.log(JSON.stringify({
   bossCoverage: Object.fromEntries([...bossesEncountered].map(([theme, ids]) => [theme, ids.size])),
   pixelTelegraphs: "ok",
   specialRoomReplacement: "wish-fountain-and-photo-booth",
-  minimapLinks: "continuous-and-scaled",
+  minimapLinks: "progressive-visited-and-adjacent",
   floorTileRendering: "zero-and-bridge-tiles",
 }));
