@@ -192,27 +192,29 @@ for (const frameName of [
   "player_michele_side_walk_3",
 ]) {
   const frame = SPRITES[frameName];
-  assert.equal(frame.length, 16, `${frameName} CMYS-scale height`);
-  assert.ok(frame.every(row => row.length === 16), `${frameName} CMYS-scale width`);
-  assert.ok(new Set(frame.join("").replaceAll(".", "")).size >= 9, `${frameName} readable palette detail`);
+  assert.equal(frame.length, 32, `${frameName} dense source height`);
+  assert.ok(frame.every(row => row.length === 32), `${frameName} dense source width`);
+  assert.ok(new Set(frame.join("").replaceAll(".", "")).size >= 12, `${frameName} readable palette detail`);
   const pixelCount = frame.join("").replaceAll(".", "").length;
-  assert.ok(pixelCount >= 80 && pixelCount <= 145, `${frameName} compact silhouette density ${pixelCount}`);
-  assert.match(frame[14], /[^.]/, `${frameName} uses the shared foot baseline`);
-  assert.equal(frame[15], "................", `${frameName} keeps the shared bottom padding`);
+  assert.ok(pixelCount >= 250 && pixelCount <= 450, `${frameName} detailed silhouette density ${pixelCount}`);
+  const baseline = frame.map(row => /[^.]/.test(row)).lastIndexOf(true);
+  assert.ok(baseline >= 28 && baseline <= 29, `${frameName} final height stays aligned with CMYS: ${baseline}`);
+  assert.equal(frame[30], ".".repeat(32), `${frameName} keeps lower padding row 30`);
+  assert.equal(frame[31], ".".repeat(32), `${frameName} keeps lower padding row 31`);
 }
 assert.notDeepEqual(SPRITES.player_michele_side_idle, SPRITES.player_michele_side_idle_1);
 assert.notDeepEqual(SPRITES.player_michele_side_walk_0, SPRITES.player_michele_side_walk_2);
 assert.deepEqual(
-  SPRITES.player_michele_side_idle.slice(12),
-  SPRITES.player_michele_side_idle_1.slice(12),
+  SPRITES.player_michele_side_idle.slice(24),
+  SPRITES.player_michele_side_idle_1.slice(24),
   "Michele idle animation keeps both feet planted",
 );
 assert.equal(MICHELE_PLAYER_PALETTE.C, "#E1B94E");
-assert.equal(MICHELE_PLAYER_PALETTE.H, "#69DFF1");
+assert.equal(MICHELE_PLAYER_PALETTE.M, "#69DFF1");
 assert.notEqual(MICHELE_PLAYER_PALETTE.A, "#000000");
 const micheleArtPlayer = new Player(100, 100);
 micheleArtPlayer.characterId = "michele";
-assert.equal(micheleArtPlayer.weaponHandOffsetY, -2);
+assert.equal(micheleArtPlayer.weaponHandOffsetY, -5);
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
@@ -230,12 +232,14 @@ assert.match(dungeonSource, /micheleTurretActive/);
 assert.match(gameDataSource, /setStarterWeapons\(starterWeapon, char\.id\)/);
 assert.match(rendererSource, /drawMicheleTurret/);
 assert.match(rendererSource, /drawMicheleMark/);
-assert.match(rendererSource, /drawPixelSprite\(ctx, spriteName, 0, -8, 2/);
+assert.match(rendererSource, /hasExtendedPlayerAnimation \? 1 : 2/);
 assert.match(rendererSource, /outlineColor: "#09101A"/);
 assert.match(spriteSource, /MICHELE_CHARACTER_SPRITES/);
 assert.match(characterArtSource, /player_michele_side_idle/);
-assert.match(characterArtSource, /const CHARACTER_WIDTH = 16/);
-assert.match(characterArtSource, /const CHARACTER_HEIGHT = 16/);
+assert.match(characterArtSource, /const CHARACTER_WIDTH = 32/);
+assert.match(characterArtSource, /const CHARACTER_HEIGHT = 32/);
+assert.match(characterArtSource, /mechanical cat tail/);
+assert.match(characterArtSource, /Distinct twin tails/);
 
 console.log(JSON.stringify({
   character: "michele",
@@ -244,7 +248,7 @@ console.log(JSON.stringify({
   pawtectorDurability: "six-hits-and-priority-taunt",
   catTrace: "2s-attacker-mark",
   markedInspectorMultiplier: 1.35,
-  dedicatedCharacterSprite: "16x16-six-frame-cmys-scale-outline",
+  dedicatedCharacterSprite: "32x32-six-frame-native-scale-outline",
   singleWeaponStart: "inspector-only",
   roomScopedPawtector: "ok",
   saveAndMetaMigration: "ok",

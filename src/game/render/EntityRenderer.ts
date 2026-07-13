@@ -223,7 +223,7 @@ export class EntityRenderer {
     if (activeWeapon?.dualWield && !yoyoDeployed) {
       EntityRenderer.drawPlayerWeapon(ctx, player, "back");
     }
-    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, 2, {
+    SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, hasExtendedPlayerAnimation ? 1 : 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX: player.facing === "left",
       paletteOverride: playerPalette,

@@ -1,25 +1,83 @@
 export type CharacterSpriteData = string[];
 
 type PixelCanvas = string[][];
+type Point = readonly [number, number];
 
-const CHARACTER_WIDTH = 16;
-const CHARACTER_HEIGHT = 16;
+// Michele and Kanami use a denser source grid than CMYS, but are rendered at
+// the same final 30-32px height. Geometry remains authored in the original
+// 48x64 logical coordinate space and is rasterized onto a 32x32 canvas.
+const CHARACTER_WIDTH = 32;
+const CHARACTER_HEIGHT = 32;
+const LOGICAL_X_SCALE = 0.5;
+const LOGICAL_Y_SCALE = 30 / 63;
+const LOGICAL_X_OFFSET = 4;
 
 function createCanvas(): PixelCanvas {
-  return Array.from(
-    { length: CHARACTER_HEIGHT },
-    () => Array.from({ length: CHARACTER_WIDTH }, () => "."),
-  );
+  return Array.from({ length: CHARACTER_HEIGHT }, () => Array.from({ length: CHARACTER_WIDTH }, () => "."));
 }
 
 function pixel(canvas: PixelCanvas, x: number, y: number, color: string): void {
-  if (x < 0 || y < 0 || x >= CHARACTER_WIDTH || y >= CHARACTER_HEIGHT) return;
-  canvas[y][x] = color;
+  const px = Math.round(x * LOGICAL_X_SCALE) + LOGICAL_X_OFFSET;
+  const py = Math.round(y * LOGICAL_Y_SCALE);
+  if (px < 0 || py < 0 || px >= CHARACTER_WIDTH || py >= CHARACTER_HEIGHT) return;
+  canvas[py][px] = color;
 }
 
 function rect(canvas: PixelCanvas, x: number, y: number, width: number, height: number, color: string): void {
-  for (let py = y; py < y + height; py++) {
-    for (let px = x; px < x + width; px++) pixel(canvas, px, py, color);
+  for (let py = Math.round(y); py < Math.round(y + height); py++) {
+    for (let px = Math.round(x); px < Math.round(x + width); px++) pixel(canvas, px, py, color);
+  }
+}
+
+function ellipse(canvas: PixelCanvas, cx: number, cy: number, rx: number, ry: number, color: string): void {
+  const minX = Math.floor(cx - rx);
+  const maxX = Math.ceil(cx + rx);
+  const minY = Math.floor(cy - ry);
+  const maxY = Math.ceil(cy + ry);
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const nx = (x - cx) / Math.max(0.001, rx);
+      const ny = (y - cy) / Math.max(0.001, ry);
+      if (nx * nx + ny * ny <= 1) pixel(canvas, x, y, color);
+    }
+  }
+}
+
+function line(canvas: PixelCanvas, x0: number, y0: number, x1: number, y1: number, color: string, thickness = 1): void {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy))));
+  for (let step = 0; step <= steps; step++) {
+    const t = step / steps;
+    const x = Math.round(x0 + dx * t);
+    const y = Math.round(y0 + dy * t);
+    const half = Math.floor(thickness / 2);
+    rect(canvas, x - half, y - half, thickness, thickness, color);
+  }
+}
+
+function polygon(canvas: PixelCanvas, points: readonly Point[], color: string): void {
+  if (points.length < 3) return;
+  const minY = Math.floor(Math.min(...points.map(([, y]) => y)));
+  const maxY = Math.ceil(Math.max(...points.map(([, y]) => y)));
+  for (let y = minY; y <= maxY; y++) {
+    const intersections: number[] = [];
+    for (let index = 0; index < points.length; index++) {
+      const [x1, y1] = points[index];
+      const [x2, y2] = points[(index + 1) % points.length];
+      if (y1 === y2) continue;
+      const lowY = Math.min(y1, y2);
+      const highY = Math.max(y1, y2);
+      if (y < lowY || y >= highY) continue;
+      const t = (y - y1) / (y2 - y1);
+      intersections.push(x1 + (x2 - x1) * t);
+    }
+    intersections.sort((a, b) => a - b);
+    for (let index = 0; index + 1 < intersections.length; index += 2) {
+      const start = Math.ceil(intersections[index]);
+      const end = Math.floor(intersections[index + 1]);
+      for (let x = start; x <= end; x++) pixel(canvas, x, y, color);
+    }
   }
 }
 
@@ -27,183 +85,216 @@ function finish(canvas: PixelCanvas): CharacterSpriteData {
   return canvas.map(row => row.join(""));
 }
 
-function drawMicheleLegs(canvas: PixelCanvas, phase: number, idle: boolean): void {
-  if (idle) {
-    rect(canvas, 6, 11, 2, 3, "F");
-    pixel(canvas, 6, 12, "G");
-    rect(canvas, 5, 13, 3, 2, "A");
-    pixel(canvas, 5, 14, "H");
+function drawMicheleLegs(canvas: PixelCanvas, bob: number, phase: number): void {
+  const stride = [2, 1, -2, -1][phase] ?? 0;
+  const backStride = -stride;
 
-    rect(canvas, 9, 11, 2, 3, "F");
-    pixel(canvas, 10, 12, "G");
-    rect(canvas, 9, 13, 3, 2, "A");
-    pixel(canvas, 11, 14, "H");
-    return;
-  }
+  polygon(canvas, [[17, 43 + bob], [23, 43 + bob], [23 + backStride, 57 + bob], [19 + backStride, 61 + bob], [15 + backStride, 59 + bob], [18, 50 + bob]], "A");
+  polygon(canvas, [[18, 44 + bob], [22, 44 + bob], [22 + backStride, 56 + bob], [19 + backStride, 59 + bob], [17 + backStride, 58 + bob], [19, 49 + bob]], "F");
+  rect(canvas, 17 + backStride, 55 + bob, 5, 5, "K");
+  rect(canvas, 18 + backStride, 55 + bob, 4, 2, "L");
 
-  const leftLegX = [6, 6, 7, 6][phase] ?? 6;
-  const rightLegX = [9, 10, 9, 9][phase] ?? 9;
-  const leftFootX = [4, 5, 7, 6][phase] ?? 5;
-  const rightFootX = [9, 10, 7, 9][phase] ?? 9;
-
-  rect(canvas, leftLegX, 11, 2, 3, "F");
-  pixel(canvas, leftLegX, 12, "G");
-  rect(canvas, leftFootX, 13, 3, 2, "A");
-  pixel(canvas, leftFootX, 14, "H");
-
-  rect(canvas, rightLegX, 11, 2, 3, "F");
-  pixel(canvas, rightLegX + 1, 12, "G");
-  rect(canvas, rightFootX, 13, 3, 2, "A");
-  pixel(canvas, rightFootX + 2, 14, "H");
+  polygon(canvas, [[26, 43 + bob], [32, 43 + bob], [31 + stride, 58 + bob], [35 + stride, 60 + bob], [34 + stride, 62 + bob], [28 + stride, 61 + bob], [27, 50 + bob]], "A");
+  polygon(canvas, [[27, 44 + bob], [31, 44 + bob], [30 + stride, 57 + bob], [33 + stride, 59 + bob], [32 + stride, 60 + bob], [29 + stride, 59 + bob], [28, 49 + bob]], "F");
+  rect(canvas, 29 + stride, 56 + bob, 6, 5, "K");
+  rect(canvas, 30 + stride, 56 + bob, 4, 2, "M");
 }
 
 function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   const canvas = createCanvas();
-  const phase = idle ? 0 : frame % 4;
-  const ponytailShift = idle ? frame % 2 : [0, 1, 0, -1][phase];
+  const bob = idle ? 0 : [0, -2, 0, -1][frame] ?? 0;
+  const phase = idle ? 1 : frame % 4;
+  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [2, 0, -2, 0][phase];
 
-  drawMicheleLegs(canvas, phase, idle);
+  // Black mechanical cat tail. It is separated from the coat so its hooked
+  // silhouette survives at native 1x rendering.
+  line(canvas, 18, 41, 11 + hairSwing, 44, "K", 3);
+  line(canvas, 11 + hairSwing, 44, 7 + hairSwing, 38, "K", 3);
+  pixel(canvas, 7 + hairSwing, 36, "M");
 
-  // Long blonde twin-tail silhouette behind the body.
-  pixel(canvas, 3 + ponytailShift, 3, "A");
-  rect(canvas, 2 + ponytailShift, 4, 3, 5, "A");
-  rect(canvas, 3 + ponytailShift, 4, 2, 4, "C");
-  pixel(canvas, 3 + ponytailShift, 4, "D");
-  pixel(canvas, 2 + ponytailShift, 8, "B");
-  pixel(canvas, 3 + ponytailShift, 9, "A");
-  pixel(canvas, 4 + ponytailShift, 9, "C");
+  // Distinct twin tails. The far tail is narrow; the near tail is wider and
+  // receives a brighter highlight, which prevents them merging into one mass.
+  polygon(canvas, [[14, 14], [10 + hairSwing, 18], [8 + hairSwing, 31], [11 + hairSwing, 43], [16 + hairSwing, 39], [17, 23]], "A");
+  polygon(canvas, [[14, 16], [12 + hairSwing, 20], [11 + hairSwing, 31], [13 + hairSwing, 39], [15 + hairSwing, 37], [16, 23]], "C");
+  line(canvas, 13 + hairSwing, 20, 13 + hairSwing, 34, "D", 2);
+  polygon(canvas, [[28, 14], [34 - hairSwing, 19], [35 - hairSwing, 31], [31 - hairSwing, 42], [27 - hairSwing, 37], [27, 22]], "A");
+  polygon(canvas, [[29, 16], [32 - hairSwing, 20], [32 - hairSwing, 31], [30 - hairSwing, 38], [28 - hairSwing, 35], [28, 22]], "B");
 
-  // Short investigator coat and rear arm.
-  rect(canvas, 4, 8, 2, 4, "A");
-  rect(canvas, 5, 9, 1, 3, "G");
-  pixel(canvas, 4, 11, "G");
+  // Rear hair mass and side locks.
+  polygon(canvas, [[10, 13 + bob], [13, 7 + bob], [20, 4 + bob], [28, 5 + bob], [34, 10 + bob], [35, 22 + bob], [32, 32 + bob], [29, 42 + bob], [22, 47 + bob], [14 + hairSwing, 42 + bob], [10 + hairSwing, 31 + bob], [8 + hairSwing, 20 + bob]], "A");
+  polygon(canvas, [[11, 14 + bob], [14, 8 + bob], [20, 6 + bob], [28, 7 + bob], [33, 11 + bob], [33, 22 + bob], [30, 31 + bob], [27, 40 + bob], [22, 44 + bob], [15 + hairSwing, 40 + bob], [12 + hairSwing, 30 + bob], [10 + hairSwing, 20 + bob]], "B");
+  polygon(canvas, [[12, 13 + bob], [16, 8 + bob], [23, 6 + bob], [29, 8 + bob], [31, 13 + bob], [29, 24 + bob], [25, 37 + bob], [21, 41 + bob], [17 + hairSwing, 37 + bob], [14 + hairSwing, 25 + bob]], "C");
+  polygon(canvas, [[14, 11 + bob], [18, 8 + bob], [24, 7 + bob], [27, 9 + bob], [24, 13 + bob], [18, 17 + bob], [14, 20 + bob]], "D");
+  line(canvas, 13 + hairSwing, 25 + bob, 16 + hairSwing, 39 + bob, "D", 2);
+  line(canvas, 28, 17 + bob, 28, 36 + bob, "B", 2);
 
-  // Compact white-and-blue uniform with dark tie, red collar and utility belt.
-  rect(canvas, 5, 7, 6, 5, "A");
-  rect(canvas, 6, 8, 4, 3, "F");
-  rect(canvas, 5, 8, 1, 3, "G");
-  rect(canvas, 10, 8, 1, 3, "G");
-  pixel(canvas, 7, 8, "I");
-  rect(canvas, 8, 8, 1, 3, "A");
-  rect(canvas, 6, 10, 4, 1, "J");
-  pixel(canvas, 9, 8, "H");
+  // Cat-ear headset, colored rather than black-bordered.
+  polygon(canvas, [[13, 9 + bob], [15, 2 + bob], [20, 8 + bob]], "K");
+  polygon(canvas, [[14, 8 + bob], [16, 4 + bob], [18, 8 + bob]], "M");
+  polygon(canvas, [[27, 7 + bob], [32, 2 + bob], [33, 11 + bob]], "K");
+  polygon(canvas, [[29, 7 + bob], [31, 4 + bob], [32, 9 + bob]], "M");
+  rect(canvas, 31, 10 + bob, 3, 9, "K");
+  rect(canvas, 32, 13 + bob, 2, 4, "N");
 
-  // Forward arm and weapon hand remain stable across locomotion frames.
-  pixel(canvas, 11, 8, "A");
-  rect(canvas, 11, 9, 2, 2, "G");
-  pixel(canvas, 12, 9, "E");
-  pixel(canvas, 13, 9, "E");
-  pixel(canvas, 12, 10, "A");
+  // Back coat tails and rear arm.
+  polygon(canvas, [[13, 30 + bob], [22, 28 + bob], [25, 42 + bob], [20, 50 + bob], [14 + hairSwing, 47 + bob], [16, 39 + bob]], "A");
+  polygon(canvas, [[15, 31 + bob], [21, 30 + bob], [22, 41 + bob], [19, 47 + bob], [16 + hairSwing, 45 + bob]], "L");
+  polygon(canvas, [[13, 29 + bob], [17, 28 + bob], [18, 39 + bob], [15, 44 + bob], [11, 41 + bob]], "A");
+  polygon(canvas, [[14, 30 + bob], [17, 30 + bob], [16, 39 + bob], [14, 41 + bob], [12, 40 + bob]], "I");
+  rect(canvas, 11, 39 + bob, 5, 4, "K");
+  rect(canvas, 12, 40 + bob, 3, 2, "M");
 
-  // Head and face.
-  rect(canvas, 5, 2, 5, 1, "A");
-  rect(canvas, 4, 3, 7, 4, "A");
-  rect(canvas, 5, 7, 6, 1, "A");
-  rect(canvas, 5, 3, 5, 2, "C");
-  pixel(canvas, 6, 3, "D");
-  pixel(canvas, 7, 3, "D");
-  pixel(canvas, 5, 5, "B");
-  pixel(canvas, 6, 5, "C");
-  rect(canvas, 7, 5, 4, 2, "E");
-  pixel(canvas, 9, 5, "H");
-  pixel(canvas, 11, 6, "E");
+  drawMicheleLegs(canvas, bob, phase);
 
-  // Black cat-ear communications rig with cyan status lights.
-  pixel(canvas, 5, 0, "A");
-  pixel(canvas, 6, 1, idle && frame % 2 === 1 ? "D" : "H");
-  pixel(canvas, 9, 0, "A");
-  pixel(canvas, 10, 1, "H");
-  pixel(canvas, 11, 4, "A");
-  pixel(canvas, 11, 5, "H");
+  // Torso, layered white-blue investigator uniform.
+  polygon(canvas, [[17, 25 + bob], [23, 23 + bob], [30, 25 + bob], [34, 32 + bob], [32, 44 + bob], [18, 44 + bob], [15, 34 + bob]], "A");
+  polygon(canvas, [[18, 26 + bob], [23, 24 + bob], [29, 26 + bob], [32, 32 + bob], [30, 42 + bob], [19, 42 + bob], [17, 34 + bob]], "J");
+  polygon(canvas, [[18, 29 + bob], [23, 25 + bob], [24, 42 + bob], [19, 42 + bob], [17, 34 + bob]], "I");
+  polygon(canvas, [[24, 25 + bob], [29, 27 + bob], [31, 34 + bob], [29, 42 + bob], [25, 42 + bob]], "L");
+  rect(canvas, 23, 27 + bob, 3, 14, "K");
+  rect(canvas, 24, 29 + bob, 1, 10, "M");
+  rect(canvas, 18, 34 + bob, 13, 3, "K");
+  rect(canvas, 20, 35 + bob, 9, 1, "N");
+  rect(canvas, 27, 28 + bob, 3, 3, "M");
+  pixel(canvas, 28, 29 + bob, "O");
+
+  // White short uniform and exposed legs are a primary part of Michele's
+  // silhouette; keep the jacket ending above the hip instead of reading as
+  // blue trousers.
+  polygon(canvas, [[19, 38 + bob], [31, 38 + bob], [31, 45 + bob], [26, 45 + bob], [25, 41 + bob], [24, 45 + bob], [19, 45 + bob]], "J");
+  line(canvas, 19, 39 + bob, 31, 39 + bob, "L", 2);
+  line(canvas, 25, 40 + bob, 25, 45 + bob, "K", 1);
+
+  // Neck and face.
+  rect(canvas, 22, 22 + bob, 6, 6, "E");
+  rect(canvas, 23, 22 + bob, 5, 5, "F");
+  ellipse(canvas, 24, 15 + bob, 8, 10, "A");
+  ellipse(canvas, 25, 15 + bob, 7, 9, "F");
+  rect(canvas, 29, 15 + bob, 4, 4, "F");
+  pixel(canvas, 33, 17 + bob, "E");
+  rect(canvas, 29, 12 + bob, 2, 3, "H");
+  pixel(canvas, 30, 12 + bob, "O");
+  pixel(canvas, 30, 17 + bob, "E");
+  line(canvas, 28, 20 + bob, 31, 20 + bob, "E");
+
+  // Layered fringe and hair highlights.
+  polygon(canvas, [[15, 8 + bob], [22, 5 + bob], [29, 8 + bob], [26, 13 + bob], [22, 16 + bob], [18, 14 + bob], [14, 18 + bob]], "B");
+  polygon(canvas, [[17, 8 + bob], [22, 6 + bob], [27, 8 + bob], [24, 11 + bob], [21, 13 + bob], [18, 12 + bob]], "C");
+  line(canvas, 17, 9 + bob, 23, 7 + bob, "D", 2);
+  line(canvas, 13 + hairSwing, 18 + bob, 15 + hairSwing, 29 + bob, "C", 2);
+
+  // Front arm and hand placed at the new weapon height.
+  polygon(canvas, [[29, 28 + bob], [34, 29 + bob], [37, 37 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
+  polygon(canvas, [[30, 29 + bob], [33, 30 + bob], [35, 36 + bob], [33, 39 + bob], [31, 37 + bob]], "L");
+  rect(canvas, 33, 37 + bob, 5, 4, "E");
+  rect(canvas, 34, 37 + bob, 4, 3, "F");
+  rect(canvas, 36, 38 + bob, 3, 2, "K");
+  pixel(canvas, 37, 38 + bob, "M");
 
   return finish(canvas);
 }
 
-function drawKanamiLegs(canvas: PixelCanvas, phase: number, idle: boolean): void {
-  if (idle) {
-    rect(canvas, 6, 12, 2, 2, "E");
-    rect(canvas, 5, 13, 3, 2, "F");
-    pixel(canvas, 5, 14, "H");
+function drawKanamiLegs(canvas: PixelCanvas, bob: number, phase: number): void {
+  const stride = [2, 1, -2, -1][phase] ?? 0;
+  const backStride = -stride;
 
-    rect(canvas, 9, 12, 2, 2, "E");
-    rect(canvas, 9, 13, 3, 2, "F");
-    pixel(canvas, 11, 14, "I");
-    return;
-  }
+  polygon(canvas, [[18, 43 + bob], [23, 43 + bob], [22 + backStride, 57 + bob], [18 + backStride, 61 + bob], [14 + backStride, 59 + bob], [18, 50 + bob]], "A");
+  polygon(canvas, [[19, 44 + bob], [22, 44 + bob], [21 + backStride, 56 + bob], [18 + backStride, 59 + bob], [16 + backStride, 58 + bob], [19, 49 + bob]], "F");
+  polygon(canvas, [[19, 49 + bob], [22, 49 + bob], [21 + backStride, 56 + bob], [18 + backStride, 59 + bob], [16 + backStride, 58 + bob], [19, 52 + bob]], "J");
+  rect(canvas, 16 + backStride, 55 + bob, 6, 5, "R");
+  rect(canvas, 17 + backStride, 55 + bob, 4, 2, "P");
 
-  const leftLegX = [6, 6, 8, 7][phase] ?? 6;
-  const rightLegX = [9, 10, 9, 9][phase] ?? 9;
-  const leftFootX = [4, 5, 7, 6][phase] ?? 5;
-  const rightFootX = [9, 10, 7, 9][phase] ?? 9;
-
-  rect(canvas, leftLegX, 12, 2, 2, "E");
-  rect(canvas, leftFootX, 13, 3, 2, "F");
-  pixel(canvas, leftFootX, 14, "H");
-
-  rect(canvas, rightLegX, 12, 2, 2, "E");
-  rect(canvas, rightFootX, 13, 3, 2, "F");
-  pixel(canvas, rightFootX + 2, 14, "I");
+  polygon(canvas, [[26, 43 + bob], [31, 43 + bob], [31 + stride, 57 + bob], [35 + stride, 60 + bob], [34 + stride, 62 + bob], [28 + stride, 61 + bob], [27, 50 + bob]], "A");
+  polygon(canvas, [[27, 44 + bob], [30, 44 + bob], [30 + stride, 56 + bob], [33 + stride, 59 + bob], [32 + stride, 60 + bob], [29 + stride, 59 + bob], [28, 49 + bob]], "F");
+  polygon(canvas, [[28, 49 + bob], [31, 49 + bob], [30 + stride, 56 + bob], [33 + stride, 59 + bob], [32 + stride, 60 + bob], [29 + stride, 59 + bob], [29, 52 + bob]], "J");
+  rect(canvas, 29 + stride, 56 + bob, 6, 5, "R");
+  rect(canvas, 30 + stride, 56 + bob, 4, 2, "Q");
 }
 
 function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
   const canvas = createCanvas();
-  const phase = idle ? 0 : frame % 4;
-  const hairShift = idle ? frame % 2 : [0, 1, 0, -1][phase];
+  const bob = idle ? 0 : [0, -2, 0, -1][frame] ?? 0;
+  const phase = idle ? 1 : frame % 4;
+  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [2, 0, -2, 0][phase];
+  const ribbonSwing = idle ? (frame % 2 === 1 ? -2 : 0) : [-2, 0, 2, 1][phase];
 
-  drawKanamiLegs(canvas, phase, idle);
+  // Two long waist ribbons are a defining part of Kanami's silhouette. Keep
+  // them narrow and bright so they read as ribbons rather than a cape.
+  polygon(canvas, [[16, 31 + bob], [12, 35 + bob], [7 + ribbonSwing, 45 + bob], [4 + ribbonSwing, 57 + bob], [8 + ribbonSwing, 54 + bob], [14 + ribbonSwing, 42 + bob], [19, 34 + bob]], "O");
+  polygon(canvas, [[16, 33 + bob], [13, 36 + bob], [9 + ribbonSwing, 45 + bob], [6 + ribbonSwing, 53 + bob], [9 + ribbonSwing, 51 + bob], [15 + ribbonSwing, 40 + bob], [19, 34 + bob]], "Q");
+  polygon(canvas, [[21, 32 + bob], [17, 38 + bob], [15 + ribbonSwing, 58 + bob], [20 + ribbonSwing, 54 + bob], [23 + ribbonSwing, 40 + bob], [24, 34 + bob]], "O");
+  polygon(canvas, [[21, 34 + bob], [19, 39 + bob], [18 + ribbonSwing, 53 + bob], [20 + ribbonSwing, 51 + bob], [22 + ribbonSwing, 39 + bob], [23, 35 + bob]], "P");
 
-  // Silver-lavender long hair; the small pink tab replaces the old oversized ribbons.
-  rect(canvas, 3 + hairShift, 4, 3, 7, "A");
-  rect(canvas, 4 + hairShift, 4, 2, 6, "C");
-  pixel(canvas, 4 + hairShift, 5, "D");
-  pixel(canvas, 3 + hairShift, 10, "B");
-  pixel(canvas, 4 + hairShift, 11, "C");
-  pixel(canvas, 2 + hairShift, 8, "H");
-  pixel(canvas, 2 + hairShift, 9, "I");
+  // Rear hair mass and trailing strands.
+  polygon(canvas, [[10, 13 + bob], [14, 6 + bob], [21, 3 + bob], [29, 5 + bob], [34, 11 + bob], [35, 23 + bob], [31, 37 + bob], [27, 48 + bob], [18 + hairSwing, 50 + bob], [12 + hairSwing, 41 + bob], [9 + hairSwing, 27 + bob]], "A");
+  polygon(canvas, [[11, 14 + bob], [15, 7 + bob], [21, 5 + bob], [28, 7 + bob], [33, 12 + bob], [33, 23 + bob], [29, 36 + bob], [25, 45 + bob], [19 + hairSwing, 47 + bob], [14 + hairSwing, 39 + bob], [11 + hairSwing, 26 + bob]], "B");
+  polygon(canvas, [[13, 12 + bob], [17, 7 + bob], [23, 5 + bob], [28, 8 + bob], [30, 14 + bob], [27, 27 + bob], [24, 40 + bob], [20 + hairSwing, 44 + bob], [16 + hairSwing, 36 + bob], [14 + hairSwing, 22 + bob]], "C");
+  polygon(canvas, [[14, 10 + bob], [19, 6 + bob], [24, 5 + bob], [27, 8 + bob], [23, 12 + bob], [17, 16 + bob]], "D");
+  line(canvas, 13 + hairSwing, 22 + bob, 16 + hairSwing, 41 + bob, "D", 2);
+  line(canvas, 27, 18 + bob, 25, 41 + bob, "S", 2);
 
-  // Narrow black stage top with white center, pink waist and layered skirt.
-  rect(canvas, 5, 7, 6, 4, "A");
-  rect(canvas, 6, 8, 4, 3, "F");
-  rect(canvas, 7, 8, 2, 2, "G");
-  pixel(canvas, 8, 8, "I");
-  rect(canvas, 5, 10, 6, 1, "H");
-  rect(canvas, 4, 11, 8, 2, "A");
-  rect(canvas, 5, 11, 6, 1, "G");
-  pixel(canvas, 5, 12, "H");
-  pixel(canvas, 8, 12, "I");
-  pixel(canvas, 11, 12, "H");
+  // Ahoge and black-pink idol hair ornament.
+  line(canvas, 23, 5 + bob, 25, 0 + bob, "A", 2);
+  line(canvas, 25, 0 + bob, 29, 2 + bob, "C", 2);
+  polygon(canvas, [[11, 10 + bob], [15, 6 + bob], [18, 10 + bob], [15, 14 + bob]], "R");
+  polygon(canvas, [[12, 10 + bob], [15, 8 + bob], [17, 10 + bob], [15, 12 + bob]], "P");
+  rect(canvas, 10, 11 + bob, 3, 4, "Q");
 
-  // Asymmetrical sleeve and forward weapon hand.
-  pixel(canvas, 11, 8, "A");
-  rect(canvas, 11, 9, 2, 2, "F");
-  pixel(canvas, 12, 9, "E");
-  pixel(canvas, 13, 9, "E");
-  pixel(canvas, 12, 10, "H");
+  // Back arm, glove and layered skirt tails.
+  polygon(canvas, [[14, 28 + bob], [18, 27 + bob], [18, 39 + bob], [15, 44 + bob], [11, 40 + bob]], "A");
+  polygon(canvas, [[15, 29 + bob], [17, 29 + bob], [16, 38 + bob], [14, 41 + bob], [12, 39 + bob]], "R");
+  rect(canvas, 11, 38 + bob, 5, 5, "R");
+  rect(canvas, 12, 39 + bob, 3, 2, "P");
 
-  // Head, silver fringe and visible blue eye.
-  rect(canvas, 5, 2, 5, 1, "A");
-  rect(canvas, 4, 3, 7, 4, "A");
-  rect(canvas, 5, 7, 6, 1, "A");
-  rect(canvas, 5, 3, 5, 2, "C");
-  pixel(canvas, 6, 3, "D");
-  pixel(canvas, 7, 3, "D");
-  pixel(canvas, 5, 5, "B");
-  rect(canvas, 7, 5, 4, 2, "E");
-  pixel(canvas, 9, 5, "J");
-  pixel(canvas, 11, 6, "E");
+  drawKanamiLegs(canvas, bob, phase);
 
-  // Pink fringe streak, idol ornament and one-pixel ahoge.
-  pixel(canvas, 8, 3, "H");
-  pixel(canvas, 8, 4, "I");
-  pixel(canvas, 4, 3, "H");
-  pixel(canvas, 3, 4, "I");
-  pixel(canvas, 8, 0, "C");
-  pixel(canvas, idle && frame % 2 === 1 ? 8 : 9, 1, "D");
+  polygon(canvas, [[16, 38 + bob], [31, 38 + bob], [35, 45 + bob], [30, 49 + bob], [23, 47 + bob], [16, 49 + bob], [12, 44 + bob]], "A");
+  polygon(canvas, [[17, 39 + bob], [30, 39 + bob], [33, 44 + bob], [29, 47 + bob], [23, 45 + bob], [17, 47 + bob], [14, 44 + bob]], "J");
+  polygon(canvas, [[18, 42 + bob], [30, 42 + bob], [31, 45 + bob], [27, 47 + bob], [23, 44 + bob], [18, 47 + bob], [15, 44 + bob]], "P");
+  line(canvas, 17, 41 + bob, 31, 41 + bob, "Q", 2);
 
-  // Near-side trailing lock creates a different silhouette from Michele's coat.
-  pixel(canvas, 10, 7, "B");
-  pixel(canvas, 11, 7, "C");
-  pixel(canvas, 11, 8, "C");
+  // Torso: black off-shoulder top, white center and pink stage details.
+  polygon(canvas, [[17, 24 + bob], [23, 22 + bob], [30, 25 + bob], [34, 33 + bob], [31, 41 + bob], [17, 41 + bob], [14, 32 + bob]], "A");
+  polygon(canvas, [[18, 25 + bob], [23, 23 + bob], [29, 26 + bob], [32, 32 + bob], [30, 39 + bob], [18, 39 + bob], [16, 32 + bob]], "R");
+  polygon(canvas, [[21, 24 + bob], [25, 24 + bob], [27, 39 + bob], [21, 39 + bob]], "J");
+  polygon(canvas, [[23, 25 + bob], [26, 27 + bob], [25, 37 + bob], [22, 37 + bob]], "I");
+  line(canvas, 18, 28 + bob, 30, 28 + bob, "P", 2);
+  rect(canvas, 18, 37 + bob, 13, 3, "P");
+  rect(canvas, 22, 30 + bob, 5, 4, "Q");
+  pixel(canvas, 24, 31 + bob, "T");
+
+  // Cropped stage top and exposed waist. This separation is essential to
+  // distinguish Kanami from a generic black-and-pink dress silhouette.
+  polygon(canvas, [[19, 33 + bob], [30, 33 + bob], [30, 38 + bob], [18, 38 + bob]], "E");
+  polygon(canvas, [[20, 34 + bob], [29, 34 + bob], [29, 37 + bob], [19, 37 + bob]], "F");
+  line(canvas, 18, 38 + bob, 31, 38 + bob, "P", 2);
+
+  // Neck and face.
+  rect(canvas, 22, 21 + bob, 6, 6, "E");
+  rect(canvas, 23, 21 + bob, 5, 5, "F");
+  ellipse(canvas, 24, 14 + bob, 8, 10, "A");
+  ellipse(canvas, 25, 14 + bob, 7, 9, "F");
+  rect(canvas, 29, 14 + bob, 4, 4, "F");
+  pixel(canvas, 33, 16 + bob, "E");
+  rect(canvas, 29, 11 + bob, 2, 3, "H");
+  pixel(canvas, 30, 11 + bob, "T");
+  pixel(canvas, 30, 16 + bob, "E");
+  line(canvas, 28, 19 + bob, 31, 19 + bob, "E");
+
+  // Fringe with lavender and pink streaks.
+  polygon(canvas, [[14, 8 + bob], [21, 4 + bob], [29, 7 + bob], [27, 12 + bob], [23, 15 + bob], [18, 13 + bob], [14, 18 + bob]], "B");
+  polygon(canvas, [[16, 8 + bob], [21, 6 + bob], [27, 7 + bob], [24, 11 + bob], [21, 13 + bob], [17, 11 + bob]], "C");
+  line(canvas, 17, 8 + bob, 23, 6 + bob, "D", 2);
+  line(canvas, 18, 10 + bob, 17, 18 + bob, "S", 2);
+  line(canvas, 25, 8 + bob, 23, 16 + bob, "Q", 2);
+
+  // Front arm, asymmetrical sleeve and hand at weapon grip height.
+  polygon(canvas, [[29, 27 + bob], [34, 29 + bob], [37, 36 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
+  polygon(canvas, [[30, 28 + bob], [33, 30 + bob], [35, 36 + bob], [33, 39 + bob], [31, 37 + bob]], "R");
+  rect(canvas, 33, 37 + bob, 5, 4, "E");
+  rect(canvas, 34, 37 + bob, 4, 3, "F");
+  rect(canvas, 36, 38 + bob, 3, 2, "R");
+  pixel(canvas, 37, 38 + bob, "P");
 
   return finish(canvas);
 }
@@ -228,33 +319,47 @@ export const KANAMI_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
 
 export const MICHELE_CHARACTER_PALETTE: Record<string, string> = {
   ".": "transparent",
-  A: "#1B2A3D",
-  B: "#A86F24",
+  A: "#26384F",
+  B: "#A8742D",
   C: "#E1B94E",
   D: "#FFF0A0",
-  E: "#F4C6A4",
-  F: "#F7FBFF",
-  G: "#4E8FD0",
-  H: "#69DFF1",
-  I: "#C6534D",
-  J: "#6E4935",
+  E: "#C98F72",
+  F: "#F4C6A4",
+  G: "#FFE0C6",
+  H: "#367FC5",
+  I: "#CAD8E8",
+  J: "#F7FBFF",
+  K: "#233B5A",
+  L: "#4E8FD0",
+  M: "#69DFF1",
+  N: "#E7B93E",
+  O: "#FFFFFF",
 };
 
 export const KANAMI_CHARACTER_PALETTE: Record<string, string> = {
   ".": "transparent",
-  A: "#292533",
-  B: "#756A98",
-  C: "#C8C0E3",
-  D: "#F1EDFF",
-  E: "#F5C9B4",
-  F: "#3A3045",
-  G: "#FAF8FF",
-  H: "#E466A5",
-  I: "#FFABD3",
-  J: "#538ED8",
+  A: "#352A48",
+  B: "#9589B5",
+  C: "#CEC7E7",
+  D: "#F4F1FF",
+  E: "#C88F7F",
+  F: "#F5C9B4",
+  G: "#FFE2D2",
+  H: "#538ED8",
+  I: "#D7D4E5",
+  J: "#FAF8FF",
+  K: "#51415F",
+  L: "#756080",
+  M: "#9C87B1",
+  N: "#D8B6DE",
+  O: "#9E3D6E",
+  P: "#E466A5",
+  Q: "#FFABD3",
+  R: "#292533",
+  S: "#D58FC3",
+  T: "#FFFFFF",
 };
 
-// Compatibility aliases for callers that imported the former 48×64 names.
 export const MICHELE_HIGH_RES_PALETTE = MICHELE_CHARACTER_PALETTE;
 export const KANAMI_HIGH_RES_PALETTE = KANAMI_CHARACTER_PALETTE;
 

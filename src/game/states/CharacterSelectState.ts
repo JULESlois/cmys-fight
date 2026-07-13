@@ -166,10 +166,10 @@ export class CharacterSelectState extends GameState {
   private drawIdentityScreen(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
     const cardW = 94;
-    const cardH = 132;
+    const cardH = 140;
     const gap = 8;
     const startX = 160 - (cardW * IDENTITY_IDS.length + gap * (IDENTITY_IDS.length - 1)) / 2;
-    const startY = 50;
+    const startY = 44;
 
     for (let index = 0; index < IDENTITY_IDS.length; index++) {
       const id = IDENTITY_IDS[index];
@@ -182,37 +182,37 @@ export class CharacterSelectState extends GameState {
       ctx.strokeRect(x, startY, cardW, cardH);
 
       if (id === "cmys") {
-        this.drawCharacterSprite(ctx, "knight", x + cardW / 2, startY + 24, 3, "#E74C3C");
+        this.drawCharacterSprite(ctx, "knight", x + cardW / 2, startY + 31, 4, "#E74C3C");
         ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
         ctx.font = uiFont(language, 12, true);
-        ctx.fillText("CMYS", x + cardW / 2, startY + 55);
+        ctx.fillText("CMYS", x + cardW / 2, startY + 69);
         ctx.fillStyle = "#F1C40F";
         ctx.font = uiFont(language, 6, true);
-        ctx.fillText(t(language, "character.cmysFormsShort"), x + cardW / 2, startY + 69);
+        ctx.fillText(t(language, "character.cmysFormsShort"), x + cardW / 2, startY + 82);
         const formLabels = language === "zh-CN" ? ["守御", "奥术", "疾行"] : ["GUARD", "ARCANE", "SWIFT"];
         formLabels.forEach((label, formIndex) => {
           const form = CHARACTERS[CMYS_FORM_IDS[formIndex]];
           const unlocked = this.engine.data.isCharacterUnlocked(form.id);
           ctx.fillStyle = unlocked ? form.color : "#4D5656";
-          ctx.fillRect(x + 10, startY + 82 + formIndex * 12, 5, 5);
+          ctx.fillRect(x + 10, startY + 96 + formIndex * 12, 5, 5);
           ctx.fillStyle = unlocked ? "#BDC3C7" : "#616A6B";
           ctx.textAlign = "left";
           ctx.font = uiFont(language, 6, unlocked);
-          ctx.fillText(label, x + 21, startY + 87 + formIndex * 12);
+          ctx.fillText(label, x + 21, startY + 101 + formIndex * 12);
         });
       } else {
         const character = CHARACTERS[id];
-        this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 24, 3, character.color);
+        this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 31, 2, character.color);
         ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
         ctx.font = uiFont(language, 11, true);
-        ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 55);
+        ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 69);
         ctx.fillStyle = character.color;
         ctx.font = uiFont(language, 6, true);
-        ctx.fillText(getCharacterText(character.id, character, language).title, x + cardW / 2, startY + 68);
+        ctx.fillText(getCharacterText(character.id, character, language).title, x + cardW / 2, startY + 81);
         ctx.textAlign = "left";
-        this.drawStats(ctx, character, x + 7, startY + 80, 51);
+        this.drawStats(ctx, character, x + 7, startY + 90, 51);
       }
     }
 
