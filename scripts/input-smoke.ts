@@ -177,7 +177,7 @@ const hierarchyEngine = {
     isStarterWeaponUnlocked: () => true,
     isCharacterUnlocked: () => true,
     getStarterWeaponForCharacter(characterId: string) {
-      return characterId === "michele" ? "inspector" : characterId === "kanami" ? "finale" : characterId === "mage" ? "laser" : characterId === "rogue" ? "shotgun" : "pistol";
+      return characterId === "michele" ? "inspector" : characterId === "kanami" ? "finale" : characterId === "celestia" ? "polaris" : characterId === "mage" ? "laser" : characterId === "rogue" ? "shotgun" : "pistol";
     },
     startNewRun(characterId: string, weaponId?: string) {
       hierarchyStart = { characterId, weaponId };

@@ -156,10 +156,14 @@ export class BuffSystem {
   }
 
   static applyRuntimeStats(player: RuntimePlayer): void {
+    const baseArmorRechargeDelay = player.characterId === "celestia" ? 2 : 3;
+    const baseArmorRechargeRate = player.characterId === "celestia" ? 5.5 : 4;
     player.armorRechargeDelay = BuffSystem.has(player, "reactive_plating")
       ? 1
-      : BuffSystem.has(player, "fast_recharge") ? 1.95 : 3;
-    player.armorRechargeRate = BuffSystem.has(player, "aegis_foundry") ? 7 : 4;
+      : BuffSystem.has(player, "fast_recharge") ? baseArmorRechargeDelay * 0.65 : baseArmorRechargeDelay;
+    player.armorRechargeRate = BuffSystem.has(player, "aegis_foundry")
+      ? baseArmorRechargeRate + 3
+      : baseArmorRechargeRate;
     BuffSystem.applyManaRuntimeStats(player);
   }
 

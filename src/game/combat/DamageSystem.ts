@@ -53,10 +53,16 @@ export class DamageSystem {
       player.knightGuardReady = false;
     }
 
-    const armorDamage = Math.min(player.armor, damage);
-    const hpDamage = damage - armorDamage;
+    const temporaryArmorDamage = Math.min(player.celestiaTemporaryArmor, damage);
+    player.celestiaTemporaryArmor = Math.max(0, player.celestiaTemporaryArmor - temporaryArmorDamage);
+    if (player.celestiaTemporaryArmor <= 0) player.celestiaTemporaryArmorTimer = 0;
+    damage -= temporaryArmorDamage;
 
-    player.armor = Math.max(0, player.armor - armorDamage);
+    const normalArmorDamage = Math.min(player.armor, damage);
+    const armorDamage = temporaryArmorDamage + normalArmorDamage;
+    const hpDamage = damage - normalArmorDamage;
+
+    player.armor = Math.max(0, player.armor - normalArmorDamage);
     const hpBefore = player.hp;
     player.hp = Math.max(0, player.hp - hpDamage);
     let actualHpDamage = hpBefore - player.hp;

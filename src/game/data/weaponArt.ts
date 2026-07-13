@@ -672,6 +672,43 @@ SOURCE_DERIVED_SPRITES.finale = drawWeapon(32, 16, canvas => {
   canvas.rect(13, 9, 1, 3, "6");
 });
 
+SOURCE_DERIVED_SPRITES.polaris = drawWeapon(32, 16, canvas => {
+  // Compact ambidextrous stock with the pale shell and dark underside visible
+  // in the official Polaris weapon render.
+  canvas.polygon([[1,8],[5,5],[10,5],[12,7],[10,10],[6,12],[1,11]], "3");
+  canvas.polygon([[3,8],[6,6],[10,6],[10,8],[7,10],[3,10]], "5");
+  canvas.rect(7, 7, 5, 2, "6");
+
+  // White/silver receiver, navy lower frame and cyan star-energy seam.
+  canvas.polygon([[10,5],[21,5],[24,7],[22,10],[11,10],[9,8]], "2");
+  canvas.polygon([[11,5],[20,5],[22,7],[21,8],[11,8],[10,7]], "5");
+  canvas.rect(12, 8, 10, 2, "3");
+  canvas.rect(13, 7, 8, 1, "6");
+  canvas.rect(17, 6, 2, 2, "7");
+  canvas.set(18, 6, "6");
+
+  // Low 1.25x optic and its violet-blue lens.
+  canvas.rect(13, 2, 9, 3, "2");
+  canvas.rect(14, 2, 7, 2, "4");
+  canvas.rect(16, 2, 4, 1, "6");
+  canvas.rect(12, 4, 2, 2, "3");
+  canvas.rect(21, 4, 2, 2, "3");
+
+  // Ergonomic grip and forward-curved magazine.
+  canvas.polygon([[11,9],[15,9],[14,14],[11,13]], "2");
+  canvas.polygon([[12,10],[14,10],[13,13],[12,13]], "4");
+  canvas.polygon([[17,9],[22,9],[21,14],[18,14]], "3");
+  canvas.polygon([[18,10],[21,10],[20,13],[18,13]], "4");
+
+  // Long heat-shrouded barrel and forked muzzle brake.
+  canvas.rect(22, 6, 9, 3, "2");
+  canvas.rect(22, 6, 8, 1, "5");
+  canvas.rect(23, 8, 7, 1, "4");
+  canvas.rect(29, 5, 3, 5, "2");
+  canvas.rect(30, 6, 2, 1, "6");
+  canvas.rect(30, 8, 2, 1, "6");
+});
+
 SOURCE_DERIVED_SPRITES.bp50 = drawWeapon(32, 16, canvas => {
   canvas.polygon([[1,8],[5,6],[10,6],[12,7],[11,9],[6,11],[1,10]], "3");
   canvas.polygon([[3,8],[6,7],[10,7],[10,8],[6,9],[3,9]], "5");
@@ -880,6 +917,7 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
 
   inspector: { ...BASE_OUTLINE, "2":"#101820","3":"#263A52","4":"#3D6D91","5":"#70D7FF","6":"#E8F5FF" },
   finale: { ...BASE_OUTLINE, "2":"#111217","3":"#282A31","4":"#454852","5":"#C6CAD3","6":"#F06CA8" },
+  polaris: { ...BASE_OUTLINE, "2":"#171A2F","3":"#24284A","4":"#586A91","5":"#E9F2FA","6":"#8FDFFF","7":"#F0D36B" },
   minishark: { ...BASE_OUTLINE, "2":"#30363A","3":"#657079","4":"#8A5A2E","5":"#B9C3C8" },
   water_bolt: { ...BASE_OUTLINE, "2":"#5A1E22","3":"#A42E35","4":"#E5C98E" },
   stardust_dragon_staff: { ...BASE_OUTLINE, "2":"#9B6827","3":"#273B9E","4":"#3E87D0","5":"#77CBE8","6":"#DFF8FF" },
@@ -940,6 +978,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
 
   inspector: { grip: [15, 12], muzzle: [31, 6] },
   finale: { grip: [13, 12], muzzle: [31, 7] },
+  polaris: { grip: [13, 12], muzzle: [31, 7] },
   minishark: { grip: [10, 12], muzzle: [29, 8] },
   water_bolt: { grip: [8, 13], muzzle: [19, 7] },
   stardust_dragon_staff: { grip: [8, 11], muzzle: [29, 5] },

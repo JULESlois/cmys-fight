@@ -117,7 +117,7 @@ export class DungeonState extends GameState {
     player.speed = savedP.speed;
     player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
     player.skillCooldown = savedP.skillCooldown ?? 0;
-    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami"
+    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia"
       ? 0
       : savedP.skillActiveTimer ?? 0;
     player.skillDirectionX = savedP.skillDirectionX ?? 0;
@@ -207,7 +207,7 @@ export class DungeonState extends GameState {
     savedP.activeWeaponSlot = this.player.activeWeaponSlot;
     savedP.currentWeaponId = this.player.currentWeaponId;
     savedP.skillCooldown = this.player.skillCooldown;
-    savedP.skillActiveTimer = this.player.characterId === "michele" || this.player.characterId === "kanami"
+    savedP.skillActiveTimer = this.player.characterId === "michele" || this.player.characterId === "kanami" || this.player.characterId === "celestia"
       ? 0
       : this.player.skillActiveTimer;
     savedP.skillDirectionX = this.player.skillDirectionX;
@@ -1429,7 +1429,7 @@ export class DungeonState extends GameState {
   private updatePlayerFacingAndAnimation(dt: number, moved: boolean) {
     this.player.facing = Math.cos(this.player.aimAngle) >= 0 ? "right" : "left";
     this.player.facingLeft = this.player.facing === "left";
-    const hasExtendedPlayerAnimation = this.player.characterId === "michele" || this.player.characterId === "kanami";
+    const hasExtendedPlayerAnimation = this.player.characterId === "michele" || this.player.characterId === "kanami" || this.player.characterId === "celestia";
 
     if (moved) {
       this.player.animState = "walk";

@@ -68,7 +68,10 @@ const sampleRarityRates = (context: WeaponRollContext) => {
   const counts = { common: 0, uncommon: 0, rare: 0, legendary: 0, myth: 0 };
   const samples = 12000;
   for (let index = 0; index < samples; index++) {
-    counts[rollAvailableWeapon(1, random, context).rarity]++;
+    // Runtime weapon rolls are always filtered for the active character.
+    // Sampling without a character incorrectly mixes every exclusive starter
+    // weapon into one synthetic pool and dilutes the intended rarity curve.
+    counts[rollAvailableWeapon(1, random, context, [], "knight").rarity]++;
   }
   return {
     highTier: (counts.rare + counts.legendary + counts.myth) / samples,

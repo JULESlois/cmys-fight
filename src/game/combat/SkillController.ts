@@ -2,7 +2,7 @@ import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 
-export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash" | "pawtector" | "beacon_lure";
+export type SkillId = "dual_fire" | "arcane_overdrive" | "shadow_dash" | "pawtector" | "beacon_lure" | "guardian_star";
 
 export interface SkillConfig {
   id: SkillId;
@@ -58,6 +58,12 @@ const SKILLS: Record<string, SkillConfig> = {
     cooldown: 13,
     duration: 7,
   },
+  celestia: {
+    id: "guardian_star",
+    name: "GUARDIAN STAR",
+    cooldown: 12,
+    duration: 1.2,
+  },
 };
 
 const EMPTY_RESULT: SkillActivationResult = {
@@ -84,6 +90,8 @@ export class SkillController {
   static readonly KANAMI_BEACON_RANGE = 108;
   static readonly KANAMI_BEACON_STOP_RADIUS = 16;
   static readonly KANAMI_BEACON_BOSS_PULL = 0.35;
+  static readonly CELESTIA_TEMPORARY_ARMOR = 4;
+  static readonly CELESTIA_TEMPORARY_ARMOR_DURATION = 10;
 
   static getConfig(characterId: string): SkillConfig {
     return SKILLS[characterId] ?? SKILLS.knight;
@@ -94,6 +102,11 @@ export class SkillController {
     player.rogueCritTimer = Math.max(0, player.rogueCritTimer - dt);
     player.micheleMarkTimer = Math.max(0, player.micheleMarkTimer - dt);
     player.micheleTurretFireCooldown = Math.max(0, player.micheleTurretFireCooldown - dt);
+    player.celestiaTemporaryArmorTimer = Math.max(0, player.celestiaTemporaryArmorTimer - dt);
+    if (player.celestiaTemporaryArmorTimer <= 0 || player.celestiaTemporaryArmor <= 0) {
+      player.celestiaTemporaryArmorTimer = 0;
+      player.celestiaTemporaryArmor = 0;
+    }
     if (player.micheleMarkTimer <= 0) player.micheleMarkedEnemyId = -1;
 
     if (player.skillActiveTimer <= 0) {
@@ -184,6 +197,18 @@ export class SkillController {
       player.kanamiBeaconVy = Math.sin(aimAngle) * SkillController.KANAMI_BEACON_SPEED;
       player.kanamiBeaconFlightTimer = SkillController.KANAMI_BEACON_FLIGHT_TIME;
       player.kanamiBeaconDeployed = false;
+      restoreEnergy();
+      return { activated: true, killedEnemyIds: [], lightningArcs: [] };
+    }
+
+    if (config.id === "guardian_star") {
+      player.skillActiveTimer = config.duration;
+      player.skillCooldown = cooldown;
+      player.celestiaTemporaryArmor = Math.max(
+        player.celestiaTemporaryArmor,
+        SkillController.CELESTIA_TEMPORARY_ARMOR,
+      );
+      player.celestiaTemporaryArmorTimer = SkillController.CELESTIA_TEMPORARY_ARMOR_DURATION;
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }

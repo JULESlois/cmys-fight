@@ -11,7 +11,7 @@ export interface CharacterConfig {
   speed: number;
   starterWeapon: string;
   passive: string;
-  familyId: "cmys" | "michele" | "kanami";
+  familyId: "cmys" | "michele" | "kanami" | "celestia";
   formName?: string;
 }
 
@@ -79,6 +79,22 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     starterWeapon: "finale",
     passive: "Finale impacts release a resonant pulse that damages nearby enemies",
     familyId: "kanami",
+  },
+
+  celestia: {
+    id: "celestia",
+    name: "Celestia",
+    title: "Star Sanctuary Director",
+    color: "#9CCBFF",
+    maxHp: 5,
+    maxArmor: 8,
+    maxMana: 52,
+    manaRechargeDelay: 1.05,
+    manaRechargeRate: 11,
+    speed: 92,
+    starterWeapon: "polaris",
+    passive: "Armor begins recharging sooner and recovers faster; Guardian Star grants temporary armor",
+    familyId: "celestia",
   },
 
   rogue: {

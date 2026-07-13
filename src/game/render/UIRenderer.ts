@@ -110,6 +110,10 @@ export class UIRenderer {
       ctx.fillStyle = "#F4D35E";
       ctx.font = "bold 6px monospace";
       ctx.fillText(`TRACE ${player.micheleMarkTimer.toFixed(1)}S`, 67, 42);
+    } else if (player.characterId === "celestia" && player.celestiaTemporaryArmor > 0) {
+      ctx.fillStyle = "#A5EBFF";
+      ctx.font = "bold 6px monospace";
+      ctx.fillText(`STAR AR +${Math.ceil(player.celestiaTemporaryArmor)}`, 67, 42);
     }
 
     const skill = SkillController.getConfig(player.characterId);

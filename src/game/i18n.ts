@@ -601,6 +601,7 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   ak47_wild_lotus: "传奇突击步枪，暴击命中时绽放短距离莲花爆破。",
   inspector: "米雪儿专属自动步枪，兼顾精度与射速；对被标记的攻击者伤害提高 35%。",
   finale: "香奈美专属高精度狙击步枪；命中点会释放音波爆破，对附近敌人造成伤害。",
+  polaris: "星绘专属自动步枪，散热与后坐控制优秀，适合稳定全自动射击和近距离精准点射。",
 };
 
 const ACHIEVEMENT_ZH: Record<string, { name: string; description: string }> = {
@@ -633,6 +634,7 @@ const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
   rogue: { title: "CMYS·疾行形态", passive: "冲刺后 2 秒内暴击率 +25%。" },
   michele: { title: "萌新搜查官", passive: "受到伤害后标记攻击者 2 秒；Inspector 对标记目标伤害 +35%。" },
   kanami: { title: "灵魂歌姬", passive: "Finale 命中时释放共鸣音波，对附近敌人造成范围伤害。" },
+  celestia: { title: "守护星芒", passive: "护甲会更早且更快地恢复；守护星芒可提供持续 10 秒的临时护甲。" },
 };
 
 export function normalizeLanguage(value: unknown): Language {

@@ -2,7 +2,7 @@ import { Player, PLAYER_WEAPON_OFFSET_X, PLAYER_WEAPON_OFFSET_Y, PLAYER_MUZZLE_O
 import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
-import { KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
+import { CELESTIA_PLAYER_PALETTE, KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
@@ -164,7 +164,7 @@ export class EntityRenderer {
     if (player.hp <= 0) return;
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
-    const hasExtendedPlayerAnimation = player.characterId === "michele" || player.characterId === "kanami";
+    const hasExtendedPlayerAnimation = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia";
 
     if (player.statusEffects.length > 0) {
       EntityRenderer.drawStatusChips(ctx, player.statusEffects, -24);
@@ -190,6 +190,22 @@ export class EntityRenderer {
       ctx.fillStyle = "rgba(143, 217, 255, 0.8)";
       ctx.fillRect(-7, -23, 3, 2);
       ctx.fillRect(4, -20, 2, 3);
+    } else if (player.characterId === "celestia" && player.skillActiveTimer > 0) {
+      EntityRenderer.drawCornerFrame(ctx, 13, "rgba(165, 235, 255, 0.9)", 5);
+      ctx.fillStyle = "rgba(240, 211, 107, 0.95)";
+      ctx.fillRect(-1, -25, 3, 3);
+      ctx.fillRect(-4, -22, 9, 1);
+      ctx.fillRect(0, -26, 1, 9);
+    }
+
+    if (player.characterId === "celestia" && player.celestiaTemporaryArmor > 0) {
+      const pulse = Math.floor(player.celestiaTemporaryArmorTimer * 8) % 2;
+      ctx.fillStyle = pulse === 0 ? "rgba(142, 220, 255, 0.18)" : "rgba(201, 239, 255, 0.23)";
+      ctx.fillRect(-13, -22, 26, 31);
+      EntityRenderer.drawCornerFrame(ctx, 14, "rgba(165, 235, 255, 0.72)", 4);
+      ctx.fillStyle = "rgba(240, 211, 107, 0.9)";
+      ctx.fillRect(-11, -17, 2, 2);
+      ctx.fillRect(9, -9, 2, 2);
     }
 
     if (player.characterId === "knight" && player.knightGuardReady) {
@@ -206,11 +222,15 @@ export class EntityRenderer {
       ? "player_michele_side"
       : player.characterId === "kanami"
         ? "player_kanami_side"
+        : player.characterId === "celestia"
+          ? "player_celestia_side"
         : "player_main_side";
     const playerPalette = player.characterId === "michele"
       ? MICHELE_PLAYER_PALETTE
       : player.characterId === "kanami"
         ? KANAMI_PLAYER_PALETTE
+        : player.characterId === "celestia"
+          ? CELESTIA_PLAYER_PALETTE
         : PLAYER_PALETTE;
     let spriteName = `${playerSpritePrefix}_idle`;
     if (player.animState === "walk") {

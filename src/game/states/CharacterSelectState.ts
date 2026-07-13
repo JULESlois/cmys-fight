@@ -2,7 +2,7 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
-import { KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
+import { CELESTIA_PLAYER_PALETTE, KANAMI_PLAYER_PALETTE, MICHELE_PLAYER_PALETTE, PLAYER_PALETTE } from "../data/sprites";
 import { CHARACTERS, type CharacterConfig } from "../data/characters";
 import { SpriteRenderer } from "../render/SpriteRenderer";
 import { WEAPONS, isWeaponAvailableForCharacter, type WeaponData } from "../data/weapons";
@@ -10,10 +10,10 @@ import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont, wrapLocalized } from "../i18n";
 import { SkillController } from "../combat/SkillController";
 
-type IdentityId = "cmys" | "michele" | "kanami";
+type IdentityId = "cmys" | "michele" | "kanami" | "celestia";
 type SelectionMode = "identity" | "form";
 
-const IDENTITY_IDS: IdentityId[] = ["cmys", "michele", "kanami"];
+const IDENTITY_IDS: IdentityId[] = ["cmys", "michele", "kanami", "celestia"];
 const CMYS_FORM_IDS = ["knight", "mage", "rogue"] as const;
 
 export class CharacterSelectState extends GameState {
@@ -139,16 +139,20 @@ export class CharacterSelectState extends GameState {
     scale: number,
     color: string,
   ): void {
-    const dedicated = characterId === "michele" || characterId === "kanami";
+    const dedicated = characterId === "michele" || characterId === "kanami" || characterId === "celestia";
     const spriteName = characterId === "michele"
       ? "player_michele_side_idle"
       : characterId === "kanami"
         ? "player_kanami_side_idle"
+        : characterId === "celestia"
+          ? "player_celestia_side_idle"
         : "player_main_side_idle";
     const palette = characterId === "michele"
       ? MICHELE_PLAYER_PALETTE
       : characterId === "kanami"
         ? KANAMI_PLAYER_PALETTE
+        : characterId === "celestia"
+          ? CELESTIA_PLAYER_PALETTE
         : { ...PLAYER_PALETTE, "2": color };
     SpriteRenderer.drawPixelSprite(ctx, spriteName, x, y, scale, {
       paletteOverride: dedicated ? palette : { ...palette, "2": color },
@@ -165,9 +169,9 @@ export class CharacterSelectState extends GameState {
 
   private drawIdentityScreen(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
-    const cardW = 94;
+    const cardW = 70;
     const cardH = 140;
-    const gap = 8;
+    const gap = 6;
     const startX = 160 - (cardW * IDENTITY_IDS.length + gap * (IDENTITY_IDS.length - 1)) / 2;
     const startY = 44;
 
@@ -206,13 +210,15 @@ export class CharacterSelectState extends GameState {
         this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 31, 2, character.color);
         ctx.fillStyle = "#FFFFFF";
         ctx.textAlign = "center";
-        ctx.font = uiFont(language, 11, true);
+        ctx.font = uiFont(language, character.id === "celestia" ? 9 : 10, true);
         ctx.fillText(character.name.toUpperCase(), x + cardW / 2, startY + 69);
         ctx.fillStyle = character.color;
-        ctx.font = uiFont(language, 6, true);
-        ctx.fillText(getCharacterText(character.id, character, language).title, x + cardW / 2, startY + 81);
+        ctx.font = uiFont(language, 5, true);
+        wrapLocalized(getCharacterText(character.id, character, language).title, language === "zh-CN" ? 8 : 15)
+          .slice(0, 2)
+          .forEach((line, lineIndex) => ctx.fillText(line, x + cardW / 2, startY + 78 + lineIndex * 7));
         ctx.textAlign = "left";
-        this.drawStats(ctx, character, x + 7, startY + 90, 51);
+        this.drawStats(ctx, character, x + 5, startY + 90, 38);
       }
     }
 

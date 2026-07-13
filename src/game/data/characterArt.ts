@@ -342,6 +342,142 @@ function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
   return finish(canvas);
 }
 
+function drawCelestiaLeg(
+  canvas: PixelCanvas,
+  hipX: number,
+  kneeX: number,
+  ankleX: number,
+  footX: number,
+  foreground: boolean,
+): void {
+  const outerThickness = foreground ? 6 : 5;
+  const innerThickness = foreground ? 4 : 3;
+  line(canvas, hipX, 43, kneeX, 50, "A", outerThickness);
+  line(canvas, kneeX, 50, ankleX, 56, "A", outerThickness);
+  line(canvas, hipX, 43, kneeX, 50, foreground ? "O" : "J", innerThickness);
+  line(canvas, kneeX, 50, ankleX, 55, "O", innerThickness);
+  line(canvas, ankleX, 55, footX, 59, "A", foreground ? 6 : 5);
+  line(canvas, ankleX, 55, footX, 58, "N", foreground ? 4 : 3);
+  line(canvas, footX - 2, 61, footX + 4, 61, foreground ? "L" : "K", 2);
+  pixel(canvas, footX + 2, 58, "I");
+}
+
+function drawCelestiaLegs(canvas: PixelCanvas, phase: number, idle: boolean): void {
+  if (idle) {
+    drawCelestiaLeg(canvas, 20, 20, 19, 17, false);
+    drawCelestiaLeg(canvas, 28, 29, 30, 32, true);
+    return;
+  }
+
+  const poses = [
+    { rear: [20, 16, 12, 10], front: [28, 33, 37, 39] },
+    { rear: [20, 18, 20, 18], front: [28, 31, 34, 35] },
+    { rear: [20, 24, 29, 32], front: [28, 24, 19, 16] },
+    { rear: [20, 22, 25, 27], front: [28, 27, 24, 26] },
+  ] as const;
+  const pose = poses[phase] ?? poses[0];
+  drawCelestiaLeg(canvas, pose.rear[0], pose.rear[1], pose.rear[2], pose.rear[3], false);
+  drawCelestiaLeg(canvas, pose.front[0], pose.front[1], pose.front[2], pose.front[3], true);
+}
+
+function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
+  const canvas = createCanvas();
+  const phase = idle ? 1 : frame % 4;
+  const bob = idle ? 0 : [0, 2, 0, -2][phase];
+  const hairSwing = idle ? (frame % 2 === 1 ? 2 : 0) : [4, 1, -4, -1][phase];
+  const coatSwing = idle ? (frame % 2 === 1 ? -1 : 0) : [-4, -1, 4, 1][phase];
+  const bowSwing = idle ? (frame % 2 === 1 ? 1 : 0) : [3, 1, -3, -1][phase];
+
+  // Four-point navy back bow visible in the official front/side/back sheet.
+  polygon(canvas, [[16, 29 + bob], [9 + bowSwing, 26 + bob], [6 + bowSwing, 33 + bob], [13 + bowSwing, 38 + bob], [18, 34 + bob]], "A");
+  polygon(canvas, [[15, 30 + bob], [10 + bowSwing, 28 + bob], [8 + bowSwing, 33 + bob], [13 + bowSwing, 36 + bob], [18, 33 + bob]], "J");
+  polygon(canvas, [[18, 33 + bob], [11 + bowSwing, 39 + bob], [13 + bowSwing, 47 + bob], [20, 39 + bob]], "A");
+  polygon(canvas, [[19, 33 + bob], [14 + bowSwing, 39 + bob], [15 + bowSwing, 44 + bob], [20, 38 + bob]], "K");
+
+  // Long silver-white hair, with cool blue-lavender shadow locks.
+  polygon(canvas, [[10, 13 + bob], [14, 6 + bob], [21, 2 + bob], [29, 4 + bob], [35, 10 + bob], [36, 22 + bob], [33, 34 + bob], [29, 46 + bob], [23 + hairSwing, 52 + bob], [16 + hairSwing, 48 + bob], [11 + hairSwing, 38 + bob], [8 + hairSwing, 24 + bob]], "A");
+  polygon(canvas, [[11, 14 + bob], [15, 7 + bob], [21, 4 + bob], [28, 6 + bob], [34, 11 + bob], [34, 22 + bob], [31, 34 + bob], [27, 44 + bob], [22 + hairSwing, 49 + bob], [17 + hairSwing, 45 + bob], [13 + hairSwing, 36 + bob], [10 + hairSwing, 24 + bob]], "B");
+  polygon(canvas, [[13, 12 + bob], [17, 7 + bob], [23, 4 + bob], [29, 7 + bob], [32, 13 + bob], [31, 25 + bob], [28, 36 + bob], [25, 43 + bob], [21 + hairSwing, 46 + bob], [17 + hairSwing, 39 + bob], [14 + hairSwing, 26 + bob]], "C");
+  polygon(canvas, [[15, 10 + bob], [20, 5 + bob], [25, 5 + bob], [29, 8 + bob], [25, 12 + bob], [20, 15 + bob], [15, 18 + bob]], "D");
+  line(canvas, 13 + hairSwing, 22 + bob, 17 + hairSwing, 43 + bob, "D", 2);
+  line(canvas, 29, 18 + bob, 27, 41 + bob, "B", 2);
+
+  // High-low pale-blue coat, exposing the navy star-field lining when moving.
+  polygon(canvas, [[15, 28 + bob], [22, 25 + bob], [31, 28 + bob], [35, 38 + bob], [32 + coatSwing, 50 + bob], [26 + coatSwing, 47 + bob], [21, 41 + bob], [17 + coatSwing, 51 + bob], [11 + coatSwing, 47 + bob], [14, 37 + bob]], "A");
+  polygon(canvas, [[16, 29 + bob], [22, 27 + bob], [30, 29 + bob], [33, 37 + bob], [30 + coatSwing, 47 + bob], [26 + coatSwing, 44 + bob], [21, 39 + bob], [18 + coatSwing, 48 + bob], [13 + coatSwing, 45 + bob], [16, 36 + bob]], "G");
+  polygon(canvas, [[17, 31 + bob], [22, 29 + bob], [29, 31 + bob], [31, 38 + bob], [28 + coatSwing, 45 + bob], [24 + coatSwing, 42 + bob], [20, 38 + bob], [18 + coatSwing, 45 + bob], [15 + coatSwing, 43 + bob]], "H");
+  polygon(canvas, [[16, 38 + bob], [22, 36 + bob], [30, 39 + bob], [28 + coatSwing, 47 + bob], [24 + coatSwing, 43 + bob], [20, 40 + bob], [17 + coatSwing, 48 + bob], [13 + coatSwing, 45 + bob]], "J");
+  line(canvas, 17, 40 + bob, 28 + coatSwing, 45 + bob, "K", 2);
+  polygon(canvas, [[14, 38 + bob], [19, 37 + bob], [20, 41 + bob], [17 + coatSwing, 48 + bob], [13 + coatSwing, 45 + bob]], "H");
+  polygon(canvas, [[26, 38 + bob], [31, 40 + bob], [28 + coatSwing, 47 + bob], [25 + coatSwing, 44 + bob]], "H");
+  line(canvas, 15, 39 + bob, 17 + coatSwing, 45 + bob, "I", 2);
+  line(canvas, 27, 39 + bob, 28 + coatSwing, 44 + bob, "I", 2);
+  pixel(canvas, 20 + coatSwing, 42 + bob, "M");
+  pixel(canvas, 24 + coatSwing, 44 + bob, "P");
+  pixel(canvas, 27 + coatSwing, 42 + bob, "M");
+
+  // Rear dark sleeve and glove.
+  polygon(canvas, [[15, 27 + bob], [19, 27 + bob], [18, 39 + bob], [14, 44 + bob], [10, 40 + bob]], "A");
+  polygon(canvas, [[16, 28 + bob], [18, 29 + bob], [16, 38 + bob], [14, 41 + bob], [12, 39 + bob]], "J");
+  rect(canvas, 10, 39 + bob, 5, 4, "O");
+  rect(canvas, 11, 40 + bob, 3, 2, "L");
+
+  drawCelestiaLegs(canvas, phase, idle);
+
+  // Dark bustier, purple corset and pale-blue off-shoulder mantle.
+  polygon(canvas, [[17, 24 + bob], [23, 22 + bob], [30, 25 + bob], [34, 33 + bob], [31, 42 + bob], [18, 42 + bob], [14, 32 + bob]], "A");
+  polygon(canvas, [[18, 25 + bob], [23, 23 + bob], [29, 26 + bob], [32, 32 + bob], [30, 40 + bob], [18, 40 + bob], [16, 32 + bob]], "H");
+  polygon(canvas, [[17, 25 + bob], [22, 22 + bob], [29, 25 + bob], [31, 29 + bob], [27, 30 + bob], [23, 27 + bob], [19, 31 + bob], [15, 29 + bob]], "G");
+  polygon(canvas, [[18, 25 + bob], [22, 24 + bob], [28, 26 + bob], [29, 28 + bob], [26, 28 + bob], [23, 26 + bob], [19, 29 + bob], [17, 28 + bob]], "I");
+  polygon(canvas, [[20, 28 + bob], [25, 27 + bob], [29, 30 + bob], [28, 37 + bob], [20, 37 + bob], [18, 31 + bob]], "O");
+  polygon(canvas, [[21, 29 + bob], [25, 29 + bob], [27, 31 + bob], [26, 35 + bob], [21, 35 + bob], [20, 31 + bob]], "J");
+  rect(canvas, 18, 35 + bob, 13, 4, "A");
+  rect(canvas, 19, 36 + bob, 11, 2, "K");
+  rect(canvas, 23, 35 + bob, 3, 4, "M");
+  pixel(canvas, 24, 36 + bob, "P");
+
+  // Pale front skirt panel from the full-body illustration. The navy lining
+  // remains exposed at the rear, while this broad value block makes the outfit
+  // read as Celestia's blue dress rather than a generic dark bodysuit.
+  polygon(canvas, [[18, 38 + bob], [31, 38 + bob], [32, 43 + bob], [28, 48 + bob], [24, 45 + bob], [20, 49 + bob], [17, 45 + bob]], "A");
+  polygon(canvas, [[19, 39 + bob], [30, 39 + bob], [30, 43 + bob], [27, 46 + bob], [24, 43 + bob], [20, 47 + bob], [18, 44 + bob]], "H");
+  polygon(canvas, [[20, 39 + bob], [28, 39 + bob], [28, 42 + bob], [25, 43 + bob], [21, 45 + bob], [19, 43 + bob]], "I");
+  line(canvas, 19, 39 + bob, 29, 39 + bob, "L", 1);
+
+  // Neck, gold star choker and face.
+  rect(canvas, 22, 21 + bob, 6, 6, "E");
+  rect(canvas, 23, 21 + bob, 5, 5, "F");
+  rect(canvas, 22, 24 + bob, 6, 2, "J");
+  pixel(canvas, 25, 25 + bob, "M");
+  ellipse(canvas, 24, 14 + bob, 8, 10, "A");
+  ellipse(canvas, 25, 14 + bob, 7, 9, "F");
+  rect(canvas, 29, 14 + bob, 4, 4, "F");
+  pixel(canvas, 33, 16 + bob, "E");
+  rect(canvas, 29, 11 + bob, 2, 3, "L");
+  pixel(canvas, 30, 11 + bob, "P");
+  pixel(canvas, 30, 16 + bob, "E");
+  line(canvas, 28, 19 + bob, 31, 19 + bob, "E");
+
+  // Swept fringe and the small gold/cyan constellation hair ornaments.
+  polygon(canvas, [[14, 8 + bob], [21, 3 + bob], [29, 6 + bob], [28, 11 + bob], [24, 15 + bob], [19, 13 + bob], [14, 18 + bob]], "B");
+  polygon(canvas, [[16, 8 + bob], [21, 5 + bob], [27, 6 + bob], [25, 10 + bob], [22, 13 + bob], [18, 11 + bob]], "C");
+  line(canvas, 17, 8 + bob, 23, 5 + bob, "D", 2);
+  pixel(canvas, 15, 12 + bob, "M");
+  pixel(canvas, 13, 15 + bob, "P");
+  line(canvas, 14, 13 + bob, 12, 16 + bob, "L", 1);
+
+  // Bare front arm, violet band, fingerless glove and weapon hand.
+  polygon(canvas, [[29, 27 + bob], [34, 29 + bob], [37, 36 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
+  polygon(canvas, [[30, 28 + bob], [33, 30 + bob], [35, 36 + bob], [33, 39 + bob], [31, 37 + bob]], "F");
+  rect(canvas, 32, 31 + bob, 3, 4, "K");
+  rect(canvas, 33, 37 + bob, 5, 4, "E");
+  rect(canvas, 34, 37 + bob, 4, 3, "F");
+  rect(canvas, 36, 38 + bob, 3, 2, "J");
+  pixel(canvas, 37, 38 + bob, "P");
+
+  return finish(canvas);
+}
+
 export const MICHELE_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
   player_michele_side_idle: drawMichele(0, true),
   player_michele_side_idle_1: drawMichele(1, true),
@@ -358,6 +494,15 @@ export const KANAMI_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
   player_kanami_side_walk_1: drawKanami(1, false),
   player_kanami_side_walk_2: drawKanami(2, false),
   player_kanami_side_walk_3: drawKanami(3, false),
+};
+
+export const CELESTIA_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
+  player_celestia_side_idle: drawCelestia(0, true),
+  player_celestia_side_idle_1: drawCelestia(1, true),
+  player_celestia_side_walk_0: drawCelestia(0, false),
+  player_celestia_side_walk_1: drawCelestia(1, false),
+  player_celestia_side_walk_2: drawCelestia(2, false),
+  player_celestia_side_walk_3: drawCelestia(3, false),
 };
 
 export const MICHELE_CHARACTER_PALETTE: Record<string, string> = {
@@ -403,8 +548,29 @@ export const KANAMI_CHARACTER_PALETTE: Record<string, string> = {
   T: "#FFFFFF",
 };
 
+export const CELESTIA_CHARACTER_PALETTE: Record<string, string> = {
+  ".": "transparent",
+  A: "#171A3D",
+  B: "#B9C9E2",
+  C: "#E8F0FA",
+  D: "#FFFFFF",
+  E: "#C9907A",
+  F: "#F6CDB8",
+  G: "#78A9D4",
+  H: "#B5D9F3",
+  I: "#E4F5FF",
+  J: "#1E1B48",
+  K: "#4F479D",
+  L: "#7971C7",
+  M: "#F0D36B",
+  N: "#F7F4EF",
+  O: "#292A48",
+  P: "#A5EBFF",
+};
+
 export const MICHELE_HIGH_RES_PALETTE = MICHELE_CHARACTER_PALETTE;
 export const KANAMI_HIGH_RES_PALETTE = KANAMI_CHARACTER_PALETTE;
+export const CELESTIA_HIGH_RES_PALETTE = CELESTIA_CHARACTER_PALETTE;
 
 export const PLAYER_CHARACTER_WIDTH = CHARACTER_WIDTH;
 export const PLAYER_CHARACTER_HEIGHT = CHARACTER_HEIGHT;

@@ -78,6 +78,8 @@ export class Player {
   public kanamiBeaconVy: number = 0;
   public kanamiBeaconFlightTimer: number = 0;
   public kanamiBeaconDeployed: boolean = false;
+  public celestiaTemporaryArmor: number = 0;
+  public celestiaTemporaryArmorTimer: number = 0;
   public buffs: BuffId[] = [];
   public emergencyBarrierReady: boolean = false;
   public phoenixProtocolReady: boolean = false;
@@ -112,13 +114,13 @@ export class Player {
   }
 
   public get weaponHandOffsetY(): number {
-    return this.characterId === "michele" || this.characterId === "kanami"
+    return this.characterId === "michele" || this.characterId === "kanami" || this.characterId === "celestia"
       ? -5
       : PLAYER_HAND_OFFSET_Y;
   }
 
   public get weaponRenderScale(): number {
-    return this.characterId === "michele" || this.characterId === "kanami"
+    return this.characterId === "michele" || this.characterId === "kanami" || this.characterId === "celestia"
       ? 0.8
       : 1;
   }
@@ -126,7 +128,7 @@ export class Player {
   public get weaponAnimationOffsetY(): number {
     if (
       this.animState !== "walk" ||
-      (this.characterId !== "michele" && this.characterId !== "kanami")
+      (this.characterId !== "michele" && this.characterId !== "kanami" && this.characterId !== "celestia")
     ) return 0;
     return [0, 1, 0, -1][this.animFrame % 4] ?? 0;
   }

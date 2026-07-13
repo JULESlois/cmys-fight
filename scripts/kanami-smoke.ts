@@ -227,7 +227,7 @@ const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", 
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
-assert.match(selectSource, /IDENTITY_IDS: IdentityId\[\] = \["cmys", "michele", "kanami"\]/);
+assert.match(selectSource, /IDENTITY_IDS: IdentityId\[\] = \["cmys", "michele", "kanami", "celestia"\]/);
 assert.match(selectSource, /player_kanami_side_idle/);
 assert.match(dungeonSource, /updateKanamiBeacon/);
 assert.match(dungeonSource, /getKanamiBeaconTarget/);
@@ -239,7 +239,7 @@ assert.match(rendererSource, /player\.animFrame % 4/);
 assert.match(rendererSource, /ctx\.scale\(player\.weaponRenderScale, player\.weaponRenderScale\)/);
 assert.match(fs.readFileSync("src/game/data/characterArt.ts", "utf8"), /waist ribbons/);
 assert.match(fs.readFileSync("src/game/data/characterArt.ts", "utf8"), /exposed waist/);
-assert.match(gameDataSource, /player\.characterId === "michele" \|\| player\.characterId === "kanami"/);
+assert.match(gameDataSource, /player\.characterId === "michele" \|\| player\.characterId === "kanami" \|\| player\.characterId === "celestia"/);
 
 console.log(JSON.stringify({
   character: "kanami",

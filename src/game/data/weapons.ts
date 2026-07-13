@@ -475,6 +475,14 @@ export const WEAPONS: Record<string, WeaponData> = {
     mechanic: "Michele-exclusive balanced automatic rifle; marked attackers take 35% more damage.",
     projectileStyle: "tracer", trailLength: 19, muzzleEffect: "flash", impactEffect: "spark", recoil: 0.24,
   },
+  polaris: {
+    id: "polaris", name: "Polaris", category: "rifle", rarity: "rare",
+    damage: 3, fireRate: 6.4, bulletSpeed: 300, manaCost: 1, spread: 0.032,
+    pelletCount: 1, knockback: 2, critChance: 0.09, critMultiplier: 2, color: "#9ED8FF",
+    projectileLife: 2, exclusiveCharacterId: "celestia",
+    mechanic: "Celestia-exclusive ergonomic automatic rifle with excellent heat control, stable recoil, and precise close-range bursts.",
+    projectileStyle: "tracer", trailLength: 20, muzzleEffect: "flash", impactEffect: "spark", recoil: 0.2,
+  },
   minishark: {
     id: "minishark", name: "Minishark", category: "rifle", rarity: "common",
     damage: 1, fireRate: 11.5, bulletSpeed: 235, manaCost: 0, spread: 0.17,

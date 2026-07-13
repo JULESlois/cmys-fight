@@ -58,6 +58,7 @@ assert.deepEqual(
     mage: { maxMana: 60, rate: 12, delay: 1.1 },
     michele: { maxMana: 42, rate: 10, delay: 1.1 },
     kanami: { maxMana: 48, rate: 10, delay: 1.2 },
+    celestia: { maxMana: 52, rate: 11, delay: 1.05 },
     rogue: { maxMana: 40, rate: 9, delay: 1.35 },
   },
 );
