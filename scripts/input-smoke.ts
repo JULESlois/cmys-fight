@@ -116,7 +116,7 @@ promptInput.setBindings({ fire: "r", skill: "e", interact: " ", swapWeapon: "q",
 promptInput.setTouchAction("fire", true);
 promptInput.setTouchPromptMode("gamepad");
 assert.equal(promptInput.getPrompt("fire"), "X");
-assert.equal(promptInput.getPrompt("skill"), "LB");
+assert.equal(promptInput.getPrompt("skill"), "B");
 assert.equal(promptInput.getPrompt("interact"), "A");
 assert.equal(promptInput.getPrompt("swapWeapon"), "Y");
 assert.equal(promptInput.getPrompt("pause"), "START");
@@ -129,19 +129,22 @@ assert.equal(promptInput.getPrompt("pause"), "P");
 promptInput.setTouchAction("fire", false);
 gamepads = [createPad(false, true)];
 promptInput.beginFrame();
-assert.equal(promptInput.wasActionPressed("skill"), false, "gamepad B must never trigger the gameplay skill");
-assert.equal(promptInput.wasUiPressed("cancel"), true);
+assert.equal(promptInput.wasActionPressed("skill"), true, "gamepad B is the contextual gameplay skill button");
+assert.equal(promptInput.wasUiPressed("cancel"), true, "the same B button is cancel in menu contexts");
 assert.equal(promptInput.wasPressed("escape"), false, "gamepad buttons must not masquerade as keyboard keys");
-assert.equal(promptInput.getPrompt("skill"), "LB");
+assert.equal(promptInput.getPrompt("skill"), "B");
 assert.equal(promptInput.getCancelPrompt(), "B");
+promptInput.suppressUntilReleased();
 promptInput.update();
+promptInput.beginFrame();
+assert.equal(promptInput.wasActionPressed("skill"), false, "held B is blocked after a context transition");
+assert.equal(promptInput.wasUiPressed("cancel"), false);
 gamepads = [createPad(false, false)];
 promptInput.beginFrame();
 promptInput.update();
 gamepads = [createPad(false, false, false, false, true)];
 promptInput.beginFrame();
-assert.equal(promptInput.wasActionPressed("skill"), true, "LB is the dedicated gamepad skill button");
-assert.equal(promptInput.wasUiPressed("cancel"), false);
+assert.equal(promptInput.wasActionPressed("skill"), false, "LB is not part of the compact ABXY touch/gamepad contract");
 promptInput.update();
 gamepads = [createPad(false)];
 promptInput.beginFrame();
@@ -362,11 +365,18 @@ touchMenuInput.setTouchPromptMode("gamepad");
 let touchMenuClosed = 0;
 const touchMenuEngine = {
   input: touchMenuInput,
-  closeMenu() { touchMenuClosed++; },
+  closeMenu() {
+    touchMenuClosed++;
+    touchMenuInput.suppressUntilReleased();
+  },
 } as any;
+touchMenuInput.setTouchAction("skill", true);
 touchMenuInput.setTouchUiAction("cancel", true);
+assert.equal(touchMenuInput.wasActionPressed("skill"), true, "touch B exposes skill to gameplay contexts");
 new MenuState(touchMenuEngine).update(0);
-assert.equal(touchMenuClosed, 1, "touch B closes menus in gamepad label mode");
+assert.equal(touchMenuClosed, 1, "touch B closes menus in menu contexts");
+assert.equal(touchMenuInput.wasActionPressed("skill"), false, "closing the menu suppresses the held contextual B action");
+touchMenuInput.setTouchAction("skill", false);
 touchMenuInput.setTouchUiAction("cancel", false);
 touchMenuInput.setTouchPromptMode("keyboard");
 touchMenuInput.clearJustPressed();
@@ -422,4 +432,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", dedicatedGamepadSkill: "LB", secondaryActionIsolation: "R-X-only", transitionReleaseGate: "keyboard-and-gamepad", destructiveMenuConfirmation: "ok", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "R-X-only", transitionReleaseGate: "keyboard-and-gamepad", destructiveMenuConfirmation: "ok", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));

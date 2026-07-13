@@ -10,7 +10,7 @@ export type UiAction = "confirm" | "cancel" | "up" | "down" | "left" | "right" |
 
 const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
   fire: [2, 7],
-  skill: [4],
+  skill: [1],
   interact: [0],
   swapWeapon: [3],
   pause: [9],
@@ -18,7 +18,7 @@ const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
 
 const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X/RT",
-  skill: "LB",
+  skill: "B",
   interact: "A",
   swapWeapon: "Y",
   pause: "START",
@@ -30,7 +30,7 @@ const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
 
 const TOUCH_GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X",
-  skill: "LB",
+  skill: "B",
   interact: "A",
   swapWeapon: "Y",
   pause: "START",

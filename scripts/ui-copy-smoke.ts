@@ -23,10 +23,10 @@ const engine = read("src/game/Engine.ts");
 assert.doesNotMatch(canvas, /touch-face-caption/);
 assert.doesNotMatch(css, /\.touch-face-caption/);
 assert.doesNotMatch(canvas, />FIRE<|>USE<|>SKILL<|>SWAP</);
-assert.match(canvas, /data-gamepad-button="lb"/);
-assert.match(canvas, /setTouchUiAction\(action/);
-assert.match(input, /skill: \[4\]/);
-assert.doesNotMatch(input, /skill: \[1\]/);
+assert.doesNotMatch(canvas, /data-gamepad-button="lb"|touch-shoulder-button/);
+assert.match(canvas, /contextualActionHandlers\("skill", "cancel"\)/);
+assert.match(input, /skill: \[1\]/);
+assert.match(input, /skill: "B"/);
 assert.doesNotMatch(input, /setVirtualKey\("escape"|setVirtualKey\("enter"|setVirtualKey\("q"|setVirtualKey\("e"/);
 
 assert.match(title, /opt === "newRun"[\s\S]*switchState\("character_select", \{ backState: "title" \}\)/);

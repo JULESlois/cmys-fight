@@ -27,8 +27,8 @@ assert.equal(normalizeSettings({ touchLabelMode: "invalid" }).touchLabelMode, "g
 const portrait = calculateTouchViewportOffsets(960, 1700);
 assert.equal(portrait.verticalGutter, 490);
 assert.equal(portrait.horizontalGutter, 0);
-assert.equal(portrait.bottomOffset, 184);
-assert.equal(portrait.topOffset, 231);
+assert.ok(Math.abs(portrait.bottomOffset - 178.3) < 0.001);
+assert.ok(Math.abs(portrait.topOffset - 230.05) < 0.001);
 assert.equal(portrait.sideOffset, 10);
 
 const compactPortrait = calculateTouchViewportOffsets(390, 844);
@@ -39,25 +39,29 @@ assert.ok(compactPortrait.topOffset > 100);
 const screenshotViewport = calculateTouchViewportOffsets(1536, 960);
 assert.equal(screenshotViewport.horizontalGutter, 128);
 assert.equal(screenshotViewport.sideOffset, 10);
-const screenshotGameLeft = screenshotViewport.horizontalGutter;
-const screenshotGameRight = 1536 - screenshotViewport.horizontalGutter;
-assert.ok(screenshotViewport.sideOffset + 110 <= screenshotGameLeft, "D-pad should fit inside the left letterbox gutter");
-assert.ok(1536 - screenshotViewport.sideOffset - 116 >= screenshotGameRight, "face buttons should fit inside the right letterbox gutter");
 
 const landscape = calculateTouchViewportOffsets(1920, 1080);
 assert.equal(landscape.verticalGutter, 0);
 assert.equal(landscape.horizontalGutter, 240);
 assert.equal(landscape.bottomOffset, 10);
 assert.equal(landscape.topOffset, 7);
-assert.equal(landscape.sideOffset, 62);
+assert.ok(Math.abs(landscape.sideOffset - 53.3) < 0.001);
 
-// At the narrowest supported viewport and largest user scale, the effective
-// responsive scale still leaves the movement and action hit regions separated.
-const narrowWidth = 320;
-const effectiveScale = 1.15 * 0.78;
-const joystickRight = 10 + 98 * effectiveScale;
-const actionContentLeft = narrowWidth - 10 - 116 * effectiveScale;
-assert.ok(actionContentLeft - joystickRight > 20);
+// The calculated anchors reserve enough room for the maximum configured
+// touch scale. CSS then applies safe-area-aware minimum edge gaps.
+const maxTouchScale = 1.15;
+const maxActionSize = 116 * maxTouchScale;
+for (const [width, height] of [[320, 568], [320, 240], [240, 320], [200, 200]]) {
+  const offsets = calculateTouchViewportOffsets(width, height);
+  assert.ok(offsets.sideOffset >= 10);
+  assert.ok(offsets.bottomOffset >= 10);
+  assert.ok(offsets.sideOffset + maxActionSize <= width, `${width}x${height} keeps ABXY inside horizontally`);
+  assert.ok(offsets.bottomOffset + maxActionSize <= height, `${width}x${height} keeps ABXY inside vertically`);
+}
+const narrowResponsiveScale = 1.15 * 0.78;
+const narrowJoystickRight = 10 + 110 * narrowResponsiveScale;
+const narrowActionLeft = 320 - 10 - 116 * narrowResponsiveScale;
+assert.ok(narrowActionLeft - narrowJoystickRight > 20, "320px viewport keeps movement and ABXY hit regions separate");
 
 const canvasSource = fs.readFileSync("src/components/GameCanvas.tsx", "utf8");
 const cssSource = fs.readFileSync("src/index.css", "utf8");
@@ -68,16 +72,15 @@ assert.match(canvasSource, /data-gamepad-button="x"[\s\S]*actionHandlers\("fire"
 assert.match(canvasSource, /touchLabels\.fire/);
 assert.match(canvasSource, /data-gamepad-button="a"[\s\S]*actionHandlers\("interact"\)/);
 assert.match(canvasSource, /touchLabels\.interact/);
-assert.match(canvasSource, /data-gamepad-button="b"[\s\S]*uiActionHandlers\("cancel"\)/);
-assert.match(canvasSource, /touchLabels\.cancel/);
+assert.match(canvasSource, /data-gamepad-button="b"[\s\S]*contextualActionHandlers\("skill", "cancel"\)/);
+assert.match(canvasSource, /touchLabels\.skillCancel/);
 assert.match(canvasSource, /data-gamepad-button="y"[\s\S]*actionHandlers\("swapWeapon"\)/);
 assert.match(canvasSource, /touchLabels\.swapWeapon/);
-assert.match(canvasSource, /data-gamepad-button="lb"[\s\S]*actionHandlers\("skill"\)/);
-assert.match(canvasSource, /touchLabels\.skill/);
+assert.doesNotMatch(canvasSource, /data-gamepad-button="lb"|touch-shoulder-button/);
 assert.match(canvasSource, /data-gamepad-button="start"[\s\S]*actionHandlers\("pause"\)/);
 assert.match(canvasSource, /touchLabels\.pause/);
 assert.match(canvasSource, /touch-dpad-notch-up/);
-assert.match(canvasSource, /GAMEPAD_TOUCH_LABELS[\s\S]*fire: "X"[\s\S]*interact: "A"[\s\S]*cancel: "B"[\s\S]*skill: "LB"[\s\S]*swapWeapon: "Y"/);
+assert.match(canvasSource, /GAMEPAD_TOUCH_LABELS[\s\S]*fire: "X"[\s\S]*interact: "A"[\s\S]*skillCancel: "B"[\s\S]*swapWeapon: "Y"/);
 assert.match(canvasSource, /buildTouchLabels[\s\S]*formatBinding\(bindings\.fire\)/);
 assert.match(canvasSource, /--touch-side-offset/);
 assert.match(canvasSource, /navigator\.vibrate/);
@@ -91,13 +94,18 @@ assert.doesNotMatch(cssSource, /#276fa7|#2f8f59|#b54646|#b38a27/);
 assert.match(cssSource, /\.touch-face-button[\s\S]*opacity: 0\.5/);
 assert.match(cssSource, /\.touch-joystick[\s\S]*opacity: 0\.48/);
 assert.match(cssSource, /\.touch-start-button[\s\S]*opacity: 0\.45/);
-assert.match(cssSource, /\.touch-shoulder-button[\s\S]*opacity: 0\.5/);
+assert.doesNotMatch(cssSource, /\.touch-shoulder-button/);
 assert.match(cssSource, /clip-path: polygon\(34% 0, 66% 0/);
 assert.match(cssSource, /filter: drop-shadow\(0 4px 0/);
 assert.match(cssSource, /border-radius: 0/);
 assert.doesNotMatch(cssSource.slice(0, cssSource.indexOf("@media (hover: hover)")), /border-radius: 9999px/);
 assert.match(cssSource, /@media \(max-width: 360px\)/);
 assert.match(cssSource, /env\(safe-area-inset-bottom/);
+assert.match(cssSource, /--touch-safe-bottom: max\(var\(--touch-bottom-offset\), calc\(env\(safe-area-inset-bottom/);
+assert.match(cssSource, /left: max\(var\(--touch-side-offset\), calc\(env\(safe-area-inset-left/);
+assert.match(cssSource, /right: max\(var\(--touch-side-offset\), calc\(env\(safe-area-inset-right/);
+assert.match(cssSource, /\.game-shell[\s\S]*padding: 0/);
+assert.doesNotMatch(cssSource, /padding-(top|right|bottom|left): env\(safe-area-inset/);
 assert.match(settingsSource, /"touchLayout"/);
 assert.match(settingsSource, /settings\.touchLayout/);
 assert.match(settingsSource, /"touchSize"/);
@@ -112,8 +120,8 @@ console.log(JSON.stringify({
   narrowViewportSeparation: "ok",
   separatedPauseControl: "ok",
   pixelGamepadStyle: "ok",
-  abxyAndShoulderMapping: "ok",
+  contextualAbxyMapping: "B-skill-or-cancel",
   sharedGamepadPalette: "ok",
   dynamicControlLabels: "ok",
-  horizontalGutterPlacement: "ok",
+  safeViewportClamping: "ok",
 }));
