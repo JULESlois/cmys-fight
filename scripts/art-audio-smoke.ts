@@ -75,31 +75,55 @@ function spriteRectCount(outline: boolean): number {
 assert.ok(spriteRectCount(true) > spriteRectCount(false), "sprite outline pass");
 
 const chibiFaceSpecs = [
-  { id: "michele", eyeHighlight: "O" },
-  { id: "kanami", eyeHighlight: "T" },
-  { id: "celestia", eyeHighlight: "P" },
+  {
+    id: "michele",
+    iris: "H",
+    nearIrisShadow: "H",
+    forbiddenHighlight: "O",
+    eyeY: { idle: 7, idle_1: 7, walk_0: 7, walk_1: 8, walk_2: 7, walk_3: 6 },
+  },
+  {
+    id: "kanami",
+    iris: "H",
+    nearIrisShadow: "M",
+    forbiddenHighlight: "T",
+    eyeY: { idle: 7, idle_1: 7, walk_0: 7, walk_1: 7, walk_2: 7, walk_3: 6 },
+  },
+  {
+    id: "celestia",
+    iris: "L",
+    nearIrisShadow: "K",
+    forbiddenHighlight: "P",
+    eyeY: { idle: 8, idle_1: 8, walk_0: 8, walk_1: 8, walk_2: 8, walk_3: 7 },
+  },
 ] as const;
 const animationSuffixes = ["idle", "idle_1", "walk_0", "walk_1", "walk_2", "walk_3"] as const;
-for (const { id, eyeHighlight } of chibiFaceSpecs) {
+const idleFaceSignatures = new Set<string>();
+for (const { id, iris, nearIrisShadow, forbiddenHighlight, eyeY } of chibiFaceSpecs) {
   for (const suffix of animationSuffixes) {
     const frameName = `player_${id}_side_${suffix}`;
     const frame = SPRITES[frameName];
     assert.ok(frame, `${frameName} exists`);
-    const eyeHighlights: Array<readonly [number, number]> = [];
+    const y = eyeY[suffix];
+    assert.equal(frame[y + 1][14], iris, `${frameName} exposes the far iris`);
+    assert.equal(frame[y + 1][18], iris, `${frameName} exposes the near iris`);
+    if (nearIrisShadow) {
+      assert.equal(frame[y + 1][19], nearIrisShadow, `${frameName} keeps its authored near-eye width`);
+    }
     for (let y = 3; y <= 12; y++) {
-      for (let x = 10; x <= 22; x++) {
-        if (frame[y][x] === eyeHighlight) eyeHighlights.push([x, y]);
-      }
       assert.ok(
         frame[y][21] !== "E" && frame[y][21] !== "F",
         `${frameName} has no profile nose protrusion on row ${y}`,
       );
     }
-    assert.equal(eyeHighlights.length, 2, `${frameName} exposes two eye highlights`);
-    assert.equal(eyeHighlights[0][1], eyeHighlights[1][1], `${frameName} eyes share a baseline`);
-    assert.equal(eyeHighlights[1][0] - eyeHighlights[0][0], 4, `${frameName} keeps two distinct eyes`);
+    assert.notEqual(frame[y + 1][14], forbiddenHighlight, `${frameName} removes far-eye glare`);
+    assert.notEqual(frame[y + 1][18], forbiddenHighlight, `${frameName} removes near-eye glare`);
+    if (suffix === "idle") {
+      idleFaceSignatures.add(frame.slice(5, 12).map(row => row.slice(12, 21)).join("/"));
+    }
   }
 }
+assert.equal(idleFaceSignatures.size, 3, "Michele, Kanami and Celestia use distinct eye and mouth geometry");
 assert.ok(
   !Object.keys(SPRITES).some(name => /^player_(michele|kanami|celestia)_(front|back)/.test(name)),
   "special characters use mirrored left/right side sprites only",
@@ -119,6 +143,6 @@ console.log(JSON.stringify({
   settingsMigration: "ok",
   particleFx: "ok",
   spriteOutlines: "ok",
-  twoEyeChibiFaces: "mirrored-left-right-no-nose",
+  twoEyeChibiFaces: "distinct-mirrored-left-right-no-nose-no-glare",
   pwaMusicConfig: "ok",
 }));

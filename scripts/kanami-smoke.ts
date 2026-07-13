@@ -204,8 +204,9 @@ assert.deepEqual(
   SPRITES.player_kanami_side_idle_1.slice(28),
   "Kanami idle animation keeps both feet planted",
 );
-assert.equal(KANAMI_PLAYER_PALETTE.B, "#9589B5");
-assert.equal(KANAMI_PLAYER_PALETTE.P, "#E466A5");
+assert.equal(KANAMI_PLAYER_PALETTE.B, "#A7A0C5");
+assert.equal(KANAMI_PLAYER_PALETTE.H, "#5E95DD");
+assert.equal(KANAMI_PLAYER_PALETTE.P, "#D85E9B");
 assert.notEqual(KANAMI_PLAYER_PALETTE.A, "#000000");
 const kanamiArtPlayer = new Player(100, 100);
 kanamiArtPlayer.characterId = "kanami";

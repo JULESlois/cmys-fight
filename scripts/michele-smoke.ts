@@ -222,8 +222,9 @@ assert.deepEqual(
   SPRITES.player_michele_side_idle_1.slice(24),
   "Michele idle animation keeps both feet planted",
 );
-assert.equal(MICHELE_PLAYER_PALETTE.C, "#E1B94E");
+assert.equal(MICHELE_PLAYER_PALETTE.C, "#E0AE6A");
 assert.equal(MICHELE_PLAYER_PALETTE.M, "#69DFF1");
+assert.equal(MICHELE_PLAYER_PALETTE.P, "#C94F58");
 assert.notEqual(MICHELE_PLAYER_PALETTE.A, "#000000");
 const micheleArtPlayer = new Player(100, 100);
 micheleArtPlayer.characterId = "michele";

@@ -109,6 +109,13 @@ for (const frameName of frameNames) {
 }
 assert.notDeepEqual(SPRITES.player_celestia_side_idle, SPRITES.player_celestia_side_idle_1);
 assert.notDeepEqual(SPRITES.player_celestia_side_walk_0, SPRITES.player_celestia_side_walk_2);
+assert.equal(SPRITES.player_celestia_side_idle[15][16], "M", "Celestia star has a raised point");
+assert.equal(
+  [15, 16, 17].map(x => SPRITES.player_celestia_side_idle[16][x]).join(""),
+  "PMP",
+  "Celestia chest ornament combines a gold core with cyan star glow",
+);
+assert.equal(SPRITES.player_celestia_side_idle[17][16], "M", "Celestia star has a lower point");
 const strideDifference = SPRITES.player_celestia_side_walk_0
   .slice(21, 30)
   .reduce((difference, row, rowIndex) => (
@@ -123,8 +130,9 @@ assert.deepEqual(
   "Celestia idle keeps the boots planted",
 );
 assert.equal(CELESTIA_PLAYER_PALETTE.C, "#E8F0FA");
-assert.equal(CELESTIA_PLAYER_PALETTE.H, "#B5D9F3");
+assert.equal(CELESTIA_PLAYER_PALETTE.H, "#C2E2F7");
 assert.equal(CELESTIA_PLAYER_PALETTE.J, "#1E1B48");
+assert.equal(CELESTIA_PLAYER_PALETTE.L, "#806FD6");
 assert.equal(CELESTIA_PLAYER_PALETTE.M, "#F0D36B");
 
 const meta = createDefaultMetaProgress();

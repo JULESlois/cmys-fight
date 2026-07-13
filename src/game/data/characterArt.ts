@@ -85,33 +85,82 @@ function finish(canvas: PixelCanvas): CharacterSpriteData {
   return canvas.map(row => row.join(""));
 }
 
+function rasterPixel(canvas: PixelCanvas, x: number, y: number, color: string): void {
+  if (x < 0 || y < 0 || x >= CHARACTER_WIDTH || y >= CHARACTER_HEIGHT) return;
+  canvas[y][x] = color;
+}
+
+function rasterSpan(canvas: PixelCanvas, x0: number, x1: number, y: number, color: string): void {
+  for (let x = x0; x <= x1; x++) rasterPixel(canvas, x, y, color);
+}
+
 function drawChibiHead(
   canvas: PixelCanvas,
   bob: number,
   outlineColor: string,
   skinColor: string,
+  variant: "round" | "narrow" | "soft",
 ): void {
-  // The runtime only mirrors this authored right-facing sprite. Keep the head
-  // as a soft three-quarter chibi shape so both eyes remain visible in either
-  // direction, without introducing a profile nose silhouette.
-  ellipse(canvas, 24, 15 + bob, 8, 10, outlineColor);
-  ellipse(canvas, 24, 15 + bob, 7, 9, skinColor);
+  // The runtime mirrors this right-facing sprite. These are deliberately
+  // front-biased three-quarter chibi heads: both eyes remain visible, while
+  // the silhouette never grows a profile nose.
+  if (variant === "round") {
+    ellipse(canvas, 24, 15 + bob, 8.5, 9.5, outlineColor);
+    ellipse(canvas, 24, 15 + bob, 7.5, 8.5, skinColor);
+    return;
+  }
+  if (variant === "narrow") {
+    ellipse(canvas, 24, 14.5 + bob, 7.5, 10, outlineColor);
+    ellipse(canvas, 24, 14.5 + bob, 6.5, 9, skinColor);
+    return;
+  }
+  ellipse(canvas, 24, 15 + bob, 7.5, 10.5, outlineColor);
+  ellipse(canvas, 24, 15 + bob, 6.5, 9.5, skinColor);
 }
 
-function drawChibiFaceFeatures(
-  canvas: PixelCanvas,
-  bob: number,
-  eyeColor: string,
-  eyeHighlightColor: string,
-  mouthColor: string,
-): void {
-  // Two compact 2x2 raster eyes. The face is intentionally abstract: no nose,
-  // no profile protrusion, and only a tiny neutral mouth below the eyes.
-  rect(canvas, 19, 15 + bob, 3, 3, eyeColor);
-  rect(canvas, 27, 15 + bob, 3, 3, eyeColor);
-  pixel(canvas, 20, 15 + bob, eyeHighlightColor);
-  pixel(canvas, 28, 15 + bob, eyeHighlightColor);
-  line(canvas, 23, 21 + bob, 26, 21 + bob, mouthColor);
+function faceRasterOffset(bob: number): number {
+  return Math.round(bob * LOGICAL_Y_SCALE);
+}
+
+function drawMicheleFace(canvas: PixelCanvas, bob: number): void {
+  const y = 7 + faceRasterOffset(bob);
+  // Round, open and energetic. The near eye is wider, but no white highlight
+  // is used so the saturated cyan-blue iris remains the dominant signal.
+  rasterPixel(canvas, 14, y, "A");
+  rasterPixel(canvas, 14, y + 1, "H");
+  rasterPixel(canvas, 18, y, "A");
+  rasterPixel(canvas, 19, y, "A");
+  rasterPixel(canvas, 18, y + 1, "H");
+  rasterPixel(canvas, 19, y + 1, "H");
+  // Small, slightly open smile.
+  rasterPixel(canvas, 17, y + 3, "E");
+  rasterPixel(canvas, 18, y + 3, "E");
+}
+
+function drawKanamiFace(canvas: PixelCanvas, bob: number): void {
+  const y = 7 + faceRasterOffset(bob);
+  // Slim upturned eyelids and cool irises create a self-assured idol gaze.
+  rasterPixel(canvas, 14, y, "R");
+  rasterPixel(canvas, 14, y + 1, "H");
+  rasterPixel(canvas, 18, y, "R");
+  rasterPixel(canvas, 19, y, "R");
+  rasterPixel(canvas, 18, y + 1, "H");
+  rasterPixel(canvas, 19, y + 1, "M");
+  // Offset single-pixel smile rather than the shared neutral mouth.
+  rasterPixel(canvas, 18, y + 3, "E");
+}
+
+function drawCelestiaFace(canvas: PixelCanvas, bob: number): void {
+  const y = 8 + faceRasterOffset(bob);
+  // Lower, softer half-lidded violet eyes. Both eyes remain visible, while the
+  // near eye carries the larger iris area and the far eye stays understated.
+  rasterPixel(canvas, 14, y, "A");
+  rasterPixel(canvas, 14, y + 1, "L");
+  rasterPixel(canvas, 18, y, "A");
+  rasterPixel(canvas, 19, y, "A");
+  rasterPixel(canvas, 18, y + 1, "L");
+  rasterPixel(canvas, 19, y + 1, "K");
+  rasterPixel(canvas, 17, y + 3, "E");
 }
 
 function drawMicheleLeg(
@@ -207,7 +256,7 @@ function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   rect(canvas, 23, 27 + bob, 3, 14, "K");
   rect(canvas, 24, 29 + bob, 1, 10, "M");
   rect(canvas, 18, 34 + bob, 13, 3, "K");
-  rect(canvas, 20, 35 + bob, 9, 1, "N");
+  rect(canvas, 23, 35 + bob, 4, 1, "N");
   rect(canvas, 27, 28 + bob, 3, 3, "M");
   pixel(canvas, 28, 29 + bob, "O");
 
@@ -221,14 +270,19 @@ function drawMichele(frame: number, idle: boolean): CharacterSpriteData {
   // Neck and chibi head.
   rect(canvas, 22, 22 + bob, 6, 6, "E");
   rect(canvas, 23, 22 + bob, 5, 5, "F");
-  drawChibiHead(canvas, bob, "A", "F");
+  drawChibiHead(canvas, bob, "A", "F", "round");
 
   // Layered fringe and hair highlights.
   polygon(canvas, [[15, 8 + bob], [22, 5 + bob], [29, 8 + bob], [26, 13 + bob], [22, 16 + bob], [18, 14 + bob], [14, 18 + bob]], "B");
   polygon(canvas, [[17, 8 + bob], [22, 6 + bob], [27, 8 + bob], [24, 11 + bob], [21, 13 + bob], [18, 12 + bob]], "C");
   line(canvas, 17, 9 + bob, 23, 7 + bob, "D", 2);
   line(canvas, 13 + hairSwing, 18 + bob, 15 + hairSwing, 29 + bob, "C", 2);
-  drawChibiFaceFeatures(canvas, bob, "H", "O", "E");
+  drawMicheleFace(canvas, bob);
+  const bodyOffset = faceRasterOffset(bob);
+  // Small red collar tabs frame the dark tie without recreating the former
+  // oversized yellow waist stripe.
+  rasterPixel(canvas, 15, 13 + bodyOffset, "P");
+  rasterPixel(canvas, 17, 13 + bodyOffset, "P");
 
   // Front arm and hand placed at the new weapon height.
   polygon(canvas, [[29, 28 + bob], [34, 29 + bob], [37, 37 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
@@ -254,7 +308,7 @@ function drawKanamiLeg(
   line(canvas, hipX, 44, kneeX, 50, "A", outerThickness);
   line(canvas, kneeX, 50, ankleX, 57, "A", outerThickness);
   line(canvas, hipX, 44, kneeX, 49, "F", foreground ? 4 : 3);
-  line(canvas, kneeX, 49, ankleX, 57, "J", foreground ? 4 : 3);
+  line(canvas, kneeX, 49, ankleX, 57, "J", foreground ? 5 : 4);
   line(canvas, ankleX, 56, footX, 59, "R", foreground ? 5 : 4);
   line(canvas, footX - 2, 61, footX + 4, 61, highlight, 2);
 }
@@ -316,37 +370,61 @@ function drawKanami(frame: number, idle: boolean): CharacterSpriteData {
 
   polygon(canvas, [[16, 38 + bob], [31, 38 + bob], [35, 45 + bob], [30, 49 + bob], [23, 47 + bob], [16, 49 + bob], [12, 44 + bob]], "A");
   polygon(canvas, [[17, 39 + bob], [30, 39 + bob], [33, 44 + bob], [29, 47 + bob], [23, 45 + bob], [17, 47 + bob], [14, 44 + bob]], "J");
-  polygon(canvas, [[18, 42 + bob], [30, 42 + bob], [31, 45 + bob], [27, 47 + bob], [23, 44 + bob], [18, 47 + bob], [15, 44 + bob]], "P");
-  line(canvas, 17, 41 + bob, 31, 41 + bob, "Q", 2);
+  polygon(canvas, [[15, 42 + bob], [19, 42 + bob], [19, 47 + bob], [16, 46 + bob]], "P");
+  polygon(canvas, [[29, 42 + bob], [32, 44 + bob], [29, 47 + bob], [27, 45 + bob]], "P");
+  line(canvas, 17, 41 + bob, 31, 41 + bob, "Q", 1);
 
   // Torso: black off-shoulder top, white center and pink stage details.
   polygon(canvas, [[17, 24 + bob], [23, 22 + bob], [30, 25 + bob], [34, 33 + bob], [31, 41 + bob], [17, 41 + bob], [14, 32 + bob]], "A");
   polygon(canvas, [[18, 25 + bob], [23, 23 + bob], [29, 26 + bob], [32, 32 + bob], [30, 39 + bob], [18, 39 + bob], [16, 32 + bob]], "R");
-  polygon(canvas, [[21, 24 + bob], [25, 24 + bob], [27, 39 + bob], [21, 39 + bob]], "J");
-  polygon(canvas, [[23, 25 + bob], [26, 27 + bob], [25, 37 + bob], [22, 37 + bob]], "I");
-  line(canvas, 18, 28 + bob, 30, 28 + bob, "P", 2);
-  rect(canvas, 18, 37 + bob, 13, 3, "P");
-  rect(canvas, 22, 30 + bob, 5, 4, "Q");
-  pixel(canvas, 24, 31 + bob, "T");
+  polygon(canvas, [[21, 24 + bob], [25, 24 + bob], [27, 39 + bob], [21, 39 + bob]], "R");
+  polygon(canvas, [[23, 25 + bob], [26, 27 + bob], [25, 37 + bob], [22, 37 + bob]], "R");
+  line(canvas, 18, 28 + bob, 30, 28 + bob, "R", 1);
+  rect(canvas, 18, 37 + bob, 13, 2, "P");
+  rect(canvas, 22, 30 + bob, 5, 4, "R");
 
   // Cropped stage top and exposed waist. This separation is essential to
   // distinguish Kanami from a generic black-and-pink dress silhouette.
   polygon(canvas, [[19, 33 + bob], [30, 33 + bob], [30, 38 + bob], [18, 38 + bob]], "E");
   polygon(canvas, [[20, 34 + bob], [29, 34 + bob], [29, 37 + bob], [19, 37 + bob]], "F");
-  line(canvas, 18, 38 + bob, 31, 38 + bob, "P", 2);
+  line(canvas, 18, 38 + bob, 31, 38 + bob, "P", 1);
+
+  // Exact 32px shorts treatment: a single pink belt row, broad white shorts,
+  // a dark center seam and only small pink side panels. This prevents the
+  // lower body reading as a solid pink idol skirt.
+  const bodyOffset = faceRasterOffset(bob);
+  rasterSpan(canvas, 13, 19, 18 + bodyOffset, "P");
+  rasterSpan(canvas, 13, 19, 19 + bodyOffset, "J");
+  rasterSpan(canvas, 12, 20, 20 + bodyOffset, "J");
+  rasterSpan(canvas, 13, 19, 21 + bodyOffset, "J");
+  rasterSpan(canvas, 13, 15, 22 + bodyOffset, "J");
+  rasterSpan(canvas, 17, 19, 22 + bodyOffset, "J");
+  rasterPixel(canvas, 12, 20 + bodyOffset, "P");
+  rasterPixel(canvas, 20, 20 + bodyOffset, "P");
+  rasterPixel(canvas, 13, 21 + bodyOffset, "P");
+  rasterPixel(canvas, 19, 21 + bodyOffset, "P");
+  rasterPixel(canvas, 16, 20 + bodyOffset, "I");
+  rasterPixel(canvas, 16, 21 + bodyOffset, "A");
+  rasterPixel(canvas, 16, 22 + bodyOffset, "A");
 
   // Neck and chibi head.
   rect(canvas, 22, 21 + bob, 6, 6, "E");
   rect(canvas, 23, 21 + bob, 5, 5, "F");
-  drawChibiHead(canvas, bob - 1, "A", "F");
+  drawChibiHead(canvas, bob - 1, "A", "F", "narrow");
 
   // Fringe with lavender and pink streaks.
   polygon(canvas, [[14, 8 + bob], [21, 4 + bob], [29, 7 + bob], [27, 12 + bob], [23, 15 + bob], [18, 13 + bob], [14, 18 + bob]], "B");
   polygon(canvas, [[16, 8 + bob], [21, 6 + bob], [27, 7 + bob], [24, 11 + bob], [21, 13 + bob], [17, 11 + bob]], "C");
   line(canvas, 17, 8 + bob, 23, 6 + bob, "D", 2);
-  line(canvas, 18, 10 + bob, 17, 18 + bob, "S", 2);
-  line(canvas, 25, 8 + bob, 23, 16 + bob, "Q", 2);
-  drawChibiFaceFeatures(canvas, bob - 1, "H", "T", "E");
+  line(canvas, 18, 10 + bob, 17, 17 + bob, "S", 1);
+  pixel(canvas, 24, 10 + bob, "Q");
+  pixel(canvas, 23, 13 + bob, "S");
+  drawKanamiFace(canvas, bob - 1);
+  // White bow/collar with a restrained pink center, matching the official
+  // black crop top rather than adding another broad pink stripe.
+  rasterPixel(canvas, 15, 12 + bodyOffset, "J");
+  rasterPixel(canvas, 17, 12 + bodyOffset, "J");
+  rasterPixel(canvas, 16, 13 + bodyOffset, "P");
 
   // Front arm, asymmetrical sleeve and hand at weapon grip height.
   polygon(canvas, [[29, 27 + bob], [34, 29 + bob], [37, 36 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
@@ -444,14 +522,19 @@ function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
   // Dark bustier, purple corset and pale-blue off-shoulder mantle.
   polygon(canvas, [[17, 24 + bob], [23, 22 + bob], [30, 25 + bob], [34, 33 + bob], [31, 42 + bob], [18, 42 + bob], [14, 32 + bob]], "A");
   polygon(canvas, [[18, 25 + bob], [23, 23 + bob], [29, 26 + bob], [32, 32 + bob], [30, 40 + bob], [18, 40 + bob], [16, 32 + bob]], "H");
-  polygon(canvas, [[17, 25 + bob], [22, 22 + bob], [29, 25 + bob], [31, 29 + bob], [27, 30 + bob], [23, 27 + bob], [19, 31 + bob], [15, 29 + bob]], "G");
-  polygon(canvas, [[18, 25 + bob], [22, 24 + bob], [28, 26 + bob], [29, 28 + bob], [26, 28 + bob], [23, 26 + bob], [19, 29 + bob], [17, 28 + bob]], "I");
+  polygon(canvas, [[15, 25 + bob], [22, 22 + bob], [30, 25 + bob], [33, 30 + bob], [28, 31 + bob], [23, 27 + bob], [18, 32 + bob], [13, 29 + bob]], "G");
+  polygon(canvas, [[16, 25 + bob], [22, 24 + bob], [29, 26 + bob], [31, 29 + bob], [27, 29 + bob], [23, 26 + bob], [18, 30 + bob], [15, 28 + bob]], "I");
   polygon(canvas, [[20, 28 + bob], [25, 27 + bob], [29, 30 + bob], [28, 37 + bob], [20, 37 + bob], [18, 31 + bob]], "O");
   polygon(canvas, [[21, 29 + bob], [25, 29 + bob], [27, 31 + bob], [26, 35 + bob], [21, 35 + bob], [20, 31 + bob]], "J");
   rect(canvas, 18, 35 + bob, 13, 4, "A");
   rect(canvas, 19, 36 + bob, 11, 2, "K");
-  rect(canvas, 23, 35 + bob, 3, 4, "M");
-  pixel(canvas, 24, 36 + bob, "P");
+  rect(canvas, 23, 35 + bob, 3, 4, "K");
+  const starY = 16 + faceRasterOffset(bob);
+  rasterPixel(canvas, 16, starY - 1, "M");
+  rasterPixel(canvas, 15, starY, "P");
+  rasterPixel(canvas, 16, starY, "M");
+  rasterPixel(canvas, 17, starY, "P");
+  rasterPixel(canvas, 16, starY + 1, "M");
 
   // Pale front skirt panel from the full-body illustration. The navy lining
   // remains exposed at the rear, while this broad value block makes the outfit
@@ -461,12 +544,29 @@ function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
   polygon(canvas, [[20, 39 + bob], [28, 39 + bob], [28, 42 + bob], [25, 43 + bob], [21, 45 + bob], [19, 43 + bob]], "I");
   line(canvas, 19, 39 + bob, 29, 39 + bob, "L", 1);
 
+  // Reinforce the official high-low pale-blue dress at the final raster
+  // scale. The light outer panels widen toward the hips, while the navy
+  // star-field lining remains visible in the split center and long side tails.
+  const skirtOffset = faceRasterOffset(bob);
+  rasterSpan(canvas, 12, 19, 19 + skirtOffset, "H");
+  rasterSpan(canvas, 11, 20, 20 + skirtOffset, "G");
+  rasterSpan(canvas, 13, 18, 20 + skirtOffset, "I");
+  rasterSpan(canvas, 10, 21, 21 + skirtOffset, "H");
+  rasterSpan(canvas, 13, 18, 21 + skirtOffset, "I");
+  rasterSpan(canvas, 10, 14, 22 + skirtOffset, "G");
+  rasterSpan(canvas, 18, 22, 22 + skirtOffset, "G");
+  rasterSpan(canvas, 14, 17, 22 + skirtOffset, "J");
+  rasterSpan(canvas, 9, 12, 23 + skirtOffset, "H");
+  rasterSpan(canvas, 20, 23, 23 + skirtOffset, "H");
+  rasterPixel(canvas, 11, 24 + skirtOffset, "G");
+  rasterPixel(canvas, 21, 24 + skirtOffset, "G");
+
   // Neck, gold star choker and chibi head.
   rect(canvas, 22, 21 + bob, 6, 6, "E");
   rect(canvas, 23, 21 + bob, 5, 5, "F");
   rect(canvas, 22, 24 + bob, 6, 2, "J");
   pixel(canvas, 25, 25 + bob, "M");
-  drawChibiHead(canvas, bob - 1, "A", "F");
+  drawChibiHead(canvas, bob - 1, "A", "F", "soft");
 
   // Swept fringe and the small gold/cyan constellation hair ornaments.
   polygon(canvas, [[14, 8 + bob], [21, 3 + bob], [29, 6 + bob], [28, 11 + bob], [24, 15 + bob], [19, 13 + bob], [14, 18 + bob]], "B");
@@ -475,7 +575,7 @@ function drawCelestia(frame: number, idle: boolean): CharacterSpriteData {
   pixel(canvas, 15, 12 + bob, "M");
   pixel(canvas, 13, 15 + bob, "P");
   line(canvas, 14, 13 + bob, 12, 16 + bob, "L", 1);
-  drawChibiFaceFeatures(canvas, bob - 1, "L", "P", "E");
+  drawCelestiaFace(canvas, bob - 1);
 
   // Bare front arm, violet band, fingerless glove and weapon hand.
   polygon(canvas, [[29, 27 + bob], [34, 29 + bob], [37, 36 + bob], [34, 41 + bob], [30, 38 + bob]], "A");
@@ -519,9 +619,9 @@ export const CELESTIA_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
 export const MICHELE_CHARACTER_PALETTE: Record<string, string> = {
   ".": "transparent",
   A: "#26384F",
-  B: "#A8742D",
-  C: "#E1B94E",
-  D: "#FFF0A0",
+  B: "#A76F49",
+  C: "#E0AE6A",
+  D: "#FFE1B0",
   E: "#C98F72",
   F: "#F4C6A4",
   G: "#FFE0C6",
@@ -531,20 +631,21 @@ export const MICHELE_CHARACTER_PALETTE: Record<string, string> = {
   K: "#233B5A",
   L: "#4E8FD0",
   M: "#69DFF1",
-  N: "#E7B93E",
+  N: "#C79B4C",
   O: "#FFFFFF",
+  P: "#C94F58",
 };
 
 export const KANAMI_CHARACTER_PALETTE: Record<string, string> = {
   ".": "transparent",
   A: "#352A48",
-  B: "#9589B5",
-  C: "#CEC7E7",
+  B: "#A7A0C5",
+  C: "#D9D4EB",
   D: "#F4F1FF",
   E: "#C88F7F",
   F: "#F5C9B4",
   G: "#FFE2D2",
-  H: "#538ED8",
+  H: "#5E95DD",
   I: "#D7D4E5",
   J: "#FAF8FF",
   K: "#51415F",
@@ -552,10 +653,10 @@ export const KANAMI_CHARACTER_PALETTE: Record<string, string> = {
   M: "#9C87B1",
   N: "#D8B6DE",
   O: "#9E3D6E",
-  P: "#E466A5",
-  Q: "#FFABD3",
+  P: "#D85E9B",
+  Q: "#F2A0C4",
   R: "#292533",
-  S: "#D58FC3",
+  S: "#B78CAE",
   T: "#FFFFFF",
 };
 
@@ -567,12 +668,12 @@ export const CELESTIA_CHARACTER_PALETTE: Record<string, string> = {
   D: "#FFFFFF",
   E: "#C9907A",
   F: "#F6CDB8",
-  G: "#78A9D4",
-  H: "#B5D9F3",
+  G: "#8EBCE1",
+  H: "#C2E2F7",
   I: "#E4F5FF",
   J: "#1E1B48",
   K: "#4F479D",
-  L: "#7971C7",
+  L: "#806FD6",
   M: "#F0D36B",
   N: "#F7F4EF",
   O: "#292A48",
