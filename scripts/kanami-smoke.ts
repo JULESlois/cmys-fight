@@ -153,7 +153,7 @@ const restoredMichele = persistenceDungeon.createPlayerFromSave();
 assert.equal(restoredMichele.skillActiveTimer, 0);
 assert.equal(restoredMichele.micheleTurretActive, false);
 
-assert.equal(META_SAVE_VERSION, 5);
+assert.equal(META_SAVE_VERSION, 6);
 const meta = createDefaultMetaProgress();
 assert.ok(meta.unlockedCharacters.includes("kanami"));
 assert.ok(meta.unlockedStarterWeapons.includes("finale"));

@@ -14,6 +14,7 @@ import { WEAPON_PALETTES, WEAPON_SPRITES } from "../src/game/data/weaponArt";
 import { EnemyFactory } from "../src/game/EnemyFactory";
 import { getEnemyDefinition } from "../src/game/data/enemies";
 import { ShopSystem } from "../src/game/shop/ShopSystem";
+import { FINAL_GLOBAL_STAGE } from "../src/game/RunProgress";
 
 const oldDefaults = {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
@@ -97,7 +98,7 @@ assert.equal(mythWeapons.length, 2);
 assert.deepEqual(mythWeapons.map(weapon => weapon.id).sort(), ["awp_dragon_lore", "so_14"]);
 assert.deepEqual(
   getAvailableWeapons(1).map(weapon => weapon.id),
-  getAvailableWeapons(20).map(weapon => weapon.id),
+  getAvailableWeapons(FINAL_GLOBAL_STAGE).map(weapon => weapon.id),
 );
 assert.ok(WEAPONS.void_rail.damage > WEAPONS.laser.damage * 2);
 assert.ok(WEAPONS.dragon_breath.pelletCount > WEAPONS.shotgun.pelletCount * 2);
@@ -109,19 +110,19 @@ for (const series of ["vanguard", "aether", "phoenix"] as const) {
   assert.equal(legendaryBuffs.filter(buff => buff.series === series).length, 3);
 }
 for (let seed = 1; seed <= 80; seed++) {
-  const early = BuffSystem.rollChoices(seed, [], 3, 6);
+  const early = BuffSystem.rollChoices(seed, [], 3, 5);
   assert.equal(early.some(id => BUFFS[id].rarity === "legendary"), false);
 }
 const latePool = new Set<BuffId>();
 for (let seed = 1; seed <= 800; seed++) {
-  for (const id of BuffSystem.rollChoices(seed, [], 3, 20)) latePool.add(id);
+  for (const id of BuffSystem.rollChoices(seed, [], 3, FINAL_GLOBAL_STAGE)) latePool.add(id);
 }
 for (const buff of legendaryBuffs) assert.ok(latePool.has(buff.id));
 
 let foundLegendaryStock = false;
 for (let seed = 1; seed <= 200 && !foundLegendaryStock; seed++) {
   const stock = ShopSystem.generateStock(
-    { seed, globalStageIndex: 20, chapterIndex: 4 } as any,
+    { seed, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
     { id: `shop-${seed}`, shopSeed: seed } as any,
     { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
   );
@@ -136,7 +137,7 @@ let shopBuffTotal = 0;
 let shopBuffHighTier = 0;
 for (let seed = 1; seed <= 2000; seed++) {
   const stock = ShopSystem.generateStock(
-    { seed, globalStageIndex: 20, chapterIndex: 4 } as any,
+    { seed, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
     { id: `quality-shop-${seed}`, shopSeed: seed } as any,
     { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
   );
@@ -177,7 +178,7 @@ assert.ok(
 );
 
 const fullBuffStock = ShopSystem.generateStock(
-  { seed: 0xF011, globalStageIndex: 20, chapterIndex: 4 } as any,
+  { seed: 0xF011, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
   { id: "full-buff-shop", shopSeed: 0xF011 } as any,
   {
     buffs: (Object.keys(BUFFS) as BuffId[]).slice(0, BuffSystem.MAX_BUFFS),
@@ -199,7 +200,7 @@ const legacyShopRoom = {
   ],
 } as any;
 const migratedShopStock = ShopSystem.reconcileStock(
-  { seed: 0x51A, globalStageIndex: 20, chapterIndex: 4 } as any,
+  { seed: 0x51A, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
   legacyShopRoom,
   { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
 );

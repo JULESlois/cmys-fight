@@ -7,7 +7,7 @@ import { Player } from "../src/game/entities/Player";
 import { WeaponController } from "../src/game/combat/WeaponController";
 import { EnvironmentSystem } from "../src/game/environment/EnvironmentSystem";
 import { generateStage } from "../src/game/FloorGenerator";
-import { createRunProgressFromGlobalStage } from "../src/game/RunProgress";
+import { createRunProgressFromGlobalStage, FINAL_GLOBAL_STAGE, STAGES_PER_CHAPTER } from "../src/game/RunProgress";
 import { getMapData, getRoomTemplate, isSolid, MAP_HEIGHT, MAP_WIDTH } from "../src/game/MapData";
 import { EncounterFactory } from "../src/game/EncounterFactory";
 
@@ -51,7 +51,7 @@ assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendar
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 2);
 assert.deepEqual(
   getAvailableWeapons(1).map(weapon => weapon.id),
-  getAvailableWeapons(20).map(weapon => weapon.id),
+  getAvailableWeapons(FINAL_GLOBAL_STAGE).map(weapon => weapon.id),
   "weapon availability must not depend on chapter or stage",
 );
 for (const weapon of Object.values(WEAPONS)) {
@@ -111,7 +111,7 @@ let obstacleVariants = new Set<string>();
 const specialRooms = { npc: 0, wish_fountain: 0, photo_booth: 0 };
 const encountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [theme, new Set()]));
 const bossesEncountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [theme, new Set()]));
-for (let globalStage = 1; globalStage <= 20; globalStage++) {
+for (let globalStage = 1; globalStage <= FINAL_GLOBAL_STAGE; globalStage++) {
   const stage = generateStage(createRunProgressFromGlobalStage(globalStage), seeded(globalStage * 97));
   for (const room of stage.rooms) {
     if (room.type === "npc" || room.type === "wish_fountain" || room.type === "photo_booth") specialRooms[room.type]++;
@@ -138,7 +138,7 @@ for (let globalStage = 1; globalStage <= 20; globalStage++) {
 for (const theme of themes) {
   const chapterIndex = themes.indexOf(theme) + 1;
   for (let sample = 1; sample <= 120; sample++) {
-    const stage = generateStage(createRunProgressFromGlobalStage((chapterIndex - 1) * 5 + 3), seeded(sample * 37 + chapterIndex));
+    const stage = generateStage(createRunProgressFromGlobalStage((chapterIndex - 1) * STAGES_PER_CHAPTER + 3), seeded(sample * 37 + chapterIndex));
     const room = stage.rooms.find(candidate => candidate.type === "combat");
     if (!room) continue;
     room.encounterSeed = sample * 7919;
@@ -147,7 +147,7 @@ for (const theme of themes) {
   }
   assert.equal(encountered.get(theme)!.size, 5, `${theme} encounter coverage`);
 
-  const bossStageIndex = chapterIndex * 5;
+  const bossStageIndex = chapterIndex * STAGES_PER_CHAPTER;
   for (let sample = 1; sample <= 80; sample++) {
     const stage = generateStage(createRunProgressFromGlobalStage(bossStageIndex), seeded(sample * 101 + chapterIndex));
     const room = stage.rooms.find(candidate => candidate.type === "boss")!;
@@ -162,8 +162,9 @@ for (const theme of themes) {
   assert.equal(bossesEncountered.get(theme)!.size, 2, `${theme} alternate boss coverage`);
 }
 assert.ok(hazardsChecked > 100);
-assert.ok(obstacleVariants.size > 40);
-// The fixed 20-stage sample is small; verify all special room branches over a broader seed set.
+const minimumObstacleVariants = Math.floor(41 * FINAL_GLOBAL_STAGE / 20);
+assert.ok(obstacleVariants.size >= minimumObstacleVariants);
+// The fixed full-run sample is small; verify all special room branches over a broader seed set.
 for (let sample = 1; sample <= 300; sample++) {
   const stage = generateStage(createRunProgressFromGlobalStage(3), seeded(sample * 13007));
   for (const room of stage.rooms) {

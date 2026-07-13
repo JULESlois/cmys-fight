@@ -18,6 +18,12 @@ import { DungeonState } from "../src/game/states/DungeonState";
 import { GameData, RUN_SAVE_KEY } from "../src/game/GameData";
 import { DEFAULT_KEY_BINDINGS, SETTINGS_VERSION, normalizeSettings } from "../src/game/Settings";
 import { getWeaponBalanceMetrics, hasWeaponUtility } from "../src/game/WeaponBalance";
+import {
+  FINAL_GLOBAL_STAGE,
+  STAGES_PER_CHAPTER,
+  getDifficultyStageIndex,
+  migrateLegacyGlobalStage,
+} from "../src/game/RunProgress";
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -33,6 +39,15 @@ const storage = new MemoryStorage();
 Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
 
 assert.equal(SETTINGS_VERSION, 7);
+assert.equal(STAGES_PER_CHAPTER, 4);
+assert.equal(FINAL_GLOBAL_STAGE, 16);
+assert.equal(getDifficultyStageIndex(4), 5);
+assert.equal(getDifficultyStageIndex(8), 10);
+assert.equal(getDifficultyStageIndex(12), 15);
+assert.equal(getDifficultyStageIndex(16), 20);
+assert.equal(migrateLegacyGlobalStage(5), 4);
+assert.equal(migrateLegacyGlobalStage(6), 5);
+assert.equal(migrateLegacyGlobalStage(20), 16);
 assert.deepEqual(DEFAULT_KEY_BINDINGS, {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
   fire: "j", skill: "l", interact: "k", swapWeapon: "i", pause: "escape",
@@ -128,9 +143,35 @@ function loadLegacyCombatSave(options: {
   const loaded = new GameData();
   assert.equal(loaded.load(), true);
   const persisted = JSON.parse(storage.getItem(RUN_SAVE_KEY) ?? "{}") as { saveVersion?: number };
-  assert.equal(persisted.saveVersion, 23);
+  assert.equal(persisted.saveVersion, 24);
   return loaded.data.player;
 }
+
+storage.clear();
+const legacyBossSave = new GameData();
+legacyBossSave.data.saveVersion = 23;
+legacyBossSave.data.run = {
+  chapterIndex: 2,
+  stageIndex: 5,
+  globalStageIndex: 10,
+  stagesCleared: 9,
+  hardMode: false,
+};
+legacyBossSave.data.runStats.highestStage = 10;
+legacyBossSave.data.runStats.stagesCleared = 9;
+legacyBossSave.data.floor.chapterIndex = 2;
+legacyBossSave.data.floor.stageIndex = 5;
+legacyBossSave.data.floor.globalStageIndex = 10;
+legacyBossSave.data.floor.depth = 10;
+storage.setItem(RUN_SAVE_KEY, JSON.stringify(legacyBossSave.data));
+const migratedBossSave = new GameData();
+assert.equal(migratedBossSave.load(), true);
+assert.equal(migratedBossSave.data.run.chapterIndex, 2);
+assert.equal(migratedBossSave.data.run.stageIndex, 4);
+assert.equal(migratedBossSave.data.run.globalStageIndex, 8);
+assert.equal(migratedBossSave.data.floor.globalStageIndex, 8);
+assert.equal(migratedBossSave.data.floor.isBossStage, true);
+assert.equal(migratedBossSave.data.runStats.highestStage, 8);
 
 const migratedKnight = loadLegacyCombatSave({
   saveVersion: 16,
@@ -224,6 +265,9 @@ assert.equal(WeaponController.formatEnergyCost(0.8), "0.8");
 assert.equal(WeaponController.formatEnergyCost(2), "2");
 assert.equal(ENEMY_ATTACK_RATE_MULTIPLIER, 0.7);
 assert.ok(Math.abs(getStageDifficulty({ globalStageIndex: 1, chapterIndex: 1 }).attackCooldownMultiplier - 1 / 0.7) < 1e-9);
+const finalDifficulty = getStageDifficulty({ globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 });
+assert.equal(finalDifficulty.difficultyStageIndex, 20);
+assert.ok(finalDifficulty.healthMultiplier > 3);
 
 const metrics = Object.fromEntries(
   Object.values(WEAPONS).map(weapon => [weapon.id, getWeaponBalanceMetrics(weapon, MAX_PLAYER_MANA)]),
@@ -262,7 +306,7 @@ assert.equal(iceShamanDefinition.attackDamage, 2);
 assert.equal(iceShamanDefinition.areaRadius, 18);
 assert.equal(iceShamanDefinition.statusDuration, 1.25);
 assert.equal(iceShamanDefinition.attackRange, 135);
-const snowStage = { globalStageIndex: 15, chapterIndex: 3, stageIndex: 5, hardMode: false } as any;
+const snowStage = { globalStageIndex: 12, chapterIndex: 3, stageIndex: 4, hardMode: false } as any;
 const scaledShaman = EnemyFactory.create(snowStage, {
   x: 80, y: 80, type: "ranged", enemyId: "ice_shaman", isElite: false,
 });
@@ -413,7 +457,7 @@ const characterSustain = Object.fromEntries(
 
 console.log(JSON.stringify({
   settingsMigration: "v6-v7",
-  runMigration: "v17-v23-ratio-preserved",
+  runMigration: "v17-v24-ratio-and-four-stage-chapters",
   manaCap: MAX_PLAYER_MANA,
   characterMana: Object.fromEntries(Object.values(CHARACTERS).map(character => [character.id, [
     character.maxMana,

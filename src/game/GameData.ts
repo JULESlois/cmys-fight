@@ -8,6 +8,8 @@ import {
   FINAL_GLOBAL_STAGE,
   isFinalStage,
   isBossStage,
+  migrateLegacyGlobalStage,
+  migrateLegacyRunProgress,
   normalizeRunProgress,
   type RunProgress,
 } from "./RunProgress";
@@ -73,7 +75,7 @@ export const META_SAVE_KEY = "retro_rpg_meta";
 export const RUN_BACKUP_KEY = "retro_rpg_save_backup";
 export const META_BACKUP_KEY = "retro_rpg_meta_backup";
 export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
-const CURRENT_SAVE_VERSION = 23;
+const CURRENT_SAVE_VERSION = 24;
 const INITIAL_RUN = createInitialRunProgress();
 
 export interface GameSave {
@@ -277,12 +279,23 @@ export class GameData {
 
       const legacyGlobalStage = Number(parsed.floor?.globalStageIndex ?? parsed.floor?.depth ?? 1);
       this.data.run = parsed.run
-        ? normalizeRunProgress(parsed.run)
-        : createRunProgressFromGlobalStage(legacyGlobalStage);
+        ? loadedVersion < 24
+          ? migrateLegacyRunProgress(parsed.run)
+          : normalizeRunProgress(parsed.run)
+        : createRunProgressFromGlobalStage(
+          loadedVersion < 24 ? migrateLegacyGlobalStage(legacyGlobalStage) : legacyGlobalStage,
+        );
       if (loadedVersion < 12 && this.data.run.globalStageIndex > FINAL_GLOBAL_STAGE) {
         this.data.run = createRunProgressFromGlobalStage(FINAL_GLOBAL_STAGE);
       }
-      this.data.runStats = normalizeRunStats(parsed.runStats, this.data.run);
+      const runStatsSource = loadedVersion < 24 && parsed.runStats
+        ? {
+          ...parsed.runStats,
+          highestStage: migrateLegacyGlobalStage(Number(parsed.runStats.highestStage) || legacyGlobalStage),
+          stagesCleared: Math.max(0, this.data.run.globalStageIndex - 1),
+        }
+        : parsed.runStats;
+      this.data.runStats = normalizeRunStats(runStatsSource, this.data.run);
 
       const stageCompatible = this.isStageCompatible(parsed.floor, this.data.run);
       if (loadedVersion < 6 || !stageCompatible) {

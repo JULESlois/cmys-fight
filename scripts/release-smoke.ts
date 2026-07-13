@@ -55,9 +55,9 @@ for (let stage = 1; stage <= FINAL_GLOBAL_STAGE; stage++) {
   if (stage < FINAL_GLOBAL_STAGE) game.advanceStage();
 }
 assert.equal(game.data.run.chapterIndex, 4);
-assert.equal(game.data.run.stageIndex, 5);
+assert.equal(game.data.run.stageIndex, 4);
 game.data.runStats.bossKills = 4;
-game.data.runStats.stagesCleared = 20;
+game.data.runStats.stagesCleared = FINAL_GLOBAL_STAGE;
 const summary = game.finalizeRun("victory");
 assert.equal(summary.outcome, "victory");
 assert.ok(summary.rewardEarned > 0);

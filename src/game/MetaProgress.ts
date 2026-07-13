@@ -2,6 +2,7 @@ import { createDefaultMetaUpgrades, normalizeMetaUpgrades, type MetaUpgradeLevel
 import { createDefaultCodex, normalizeCodex, type CodexProgress } from "./Codex";
 import { isAchievementId, type AchievementId } from "./AchievementSystem";
 import { isChallengeId, type ChallengeId } from "./ChallengeSystem";
+import { getDifficultyStageIndex, migrateLegacyGlobalStage } from "./RunProgress";
 
 export interface MetaProgress {
   version: number;
@@ -27,7 +28,7 @@ export interface MetaProgress {
   codex: CodexProgress;
 }
 
-export const META_SAVE_VERSION = 5;
+export const META_SAVE_VERSION = 6;
 
 export function createDefaultMetaProgress(): MetaProgress {
   return {
@@ -67,11 +68,15 @@ export function normalizeMetaProgress(value: unknown): MetaProgress {
   const fallback = createDefaultMetaProgress();
   if (!value || typeof value !== "object") return fallback;
   const raw = value as Partial<MetaProgress>;
+  const loadedVersion = Math.max(0, Math.floor(Number(raw.version) || 0));
   const bestVictoryTime = Number(raw.bestVictoryTime);
+  const rawHighestStage = Math.max(1, Math.floor(Number(raw.highestStage) || 1));
   const meta: MetaProgress = {
     version: META_SAVE_VERSION,
     currency: Math.max(0, Math.floor(Number(raw.currency) || 0)),
-    highestStage: Math.max(1, Math.floor(Number(raw.highestStage) || 1)),
+    highestStage: loadedVersion < META_SAVE_VERSION
+      ? migrateLegacyGlobalStage(rawHighestStage)
+      : rawHighestStage,
     bestVictoryTime: Number.isFinite(bestVictoryTime) && bestVictoryTime > 0 ? bestVictoryTime : null,
     totalRuns: Math.max(0, Math.floor(Number(raw.totalRuns) || 0)),
     victories: Math.max(0, Math.floor(Number(raw.victories) || 0)),
@@ -114,10 +119,11 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
   unlock(meta.unlockedCharacters, "celestia", "Celestia");
   unlock(meta.unlockedStarterWeapons, "polaris", "Polaris");
 
-  if (meta.highestStage >= 5 || meta.currency >= 30) {
+  const difficultyStage = getDifficultyStageIndex(meta.highestStage);
+  if (difficultyStage >= 5 || meta.currency >= 30) {
     unlock(meta.unlockedStarterWeapons, "shotgun", "Rusty Shotgun");
   }
-  if (meta.highestStage >= 6 || meta.currency >= 50) {
+  if (difficultyStage >= 6 || meta.currency >= 50) {
     unlock(meta.unlockedCharacters, "mage", "CMYS Arcane Form");
   }
   if (meta.victories >= 1) {

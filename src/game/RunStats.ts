@@ -1,4 +1,4 @@
-import type { RunProgress } from "./RunProgress";
+import { FINAL_GLOBAL_STAGE, type RunProgress } from "./RunProgress";
 
 export type RunOutcome = "active" | "victory" | "defeat";
 
@@ -86,7 +86,9 @@ export function normalizeRunStats(value: unknown, progress: RunProgress): RunSta
 }
 
 export function calculateRunReward(stats: RunStats, outcome: Exclude<RunOutcome, "active">): number {
-  const stageReward = stats.stagesCleared * 5;
+  // Preserve the former 20-stage full-run reward after compressing the run to
+  // four stages per chapter.
+  const stageReward = Math.round(stats.stagesCleared * (100 / FINAL_GLOBAL_STAGE));
   const killReward = stats.kills;
   const eliteReward = stats.eliteKills * 6;
   const bossReward = stats.bossKills * 15;

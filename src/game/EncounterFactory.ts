@@ -165,7 +165,7 @@ export class EncounterFactory {
 
       waves.push({
         delay: waveIndex === 0 ? 0.5 : 0.9,
-        telegraphTime: Math.max(0.38, 0.62 - (difficulty.globalStageIndex - 1) * 0.012),
+        telegraphTime: Math.max(0.38, 0.62 - (difficulty.difficultyStageIndex - 1) * 0.012),
         spawns,
       });
     }

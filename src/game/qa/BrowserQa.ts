@@ -33,10 +33,10 @@ export interface QaSnapshot {
 
 export const QA_STAGE_PRESETS = [
   { label: "1-1", stage: 1 },
-  { label: "2-1", stage: 6 },
-  { label: "3-1", stage: 11 },
-  { label: "4-1", stage: 16 },
-  { label: "FINAL", stage: 20 },
+  { label: "2-1", stage: 5 },
+  { label: "3-1", stage: 9 },
+  { label: "4-1", stage: 13 },
+  { label: "FINAL", stage: 16 },
 ] as const;
 
 export const QA_MUSIC_SCENES: MusicScene[] = [

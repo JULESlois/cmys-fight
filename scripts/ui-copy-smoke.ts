@@ -124,5 +124,5 @@ console.log(JSON.stringify({
   distinctWeaponHudModels: "ok",
   adaptiveWeaponNames: "ok",
   visibleSkillRecovery: "ok",
-  twelveTalentSlots: "ok",
+  talentStrip: "owned-only-up-to-twelve",
 }));
