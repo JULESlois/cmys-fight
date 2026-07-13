@@ -28,6 +28,11 @@ assert.match(canvas, /contextualActionHandlers\("skill", "cancel"\)/);
 assert.match(input, /skill: \[1\]/);
 assert.match(input, /skill: "B"/);
 assert.doesNotMatch(input, /setVirtualKey\("escape"|setVirtualKey\("enter"|setVirtualKey\("q"|setVirtualKey\("e"/);
+assert.match(input, /action === "confirm"\) return this\.wasActionPressed\("interact"\)/);
+assert.match(input, /action === "secondary"\) return this\.wasActionPressed\("fire"\)/);
+assert.doesNotMatch(input, /wasPressed\("enter"\)|wasPressed\(" "\)|wasPressed\("r"\)/);
+assert.match(input, /action === "confirm"\) return formatBinding\(this\.bindings\.interact\)/);
+assert.match(input, /action === "secondary"\) return formatBinding\(this\.bindings\.fire\)/);
 
 assert.match(title, /opt === "newRun"[\s\S]*switchState\("character_select", \{ backState: "title" \}\)/);
 assert.match(title, /opt === "hub"[\s\S]*switchState\("hub"\)/);
@@ -71,6 +76,8 @@ assert.doesNotMatch(dungeon, /dungeon\.retry/);
 assert.match(menu, /menu\.confirmRestore/);
 assert.match(menu, /menu\.confirmReset/);
 assert.match(engine, /resetGameFromMenu\(\)[\s\S]*rebuildStateAfterDataChange\("title"/);
+assert.match(engine, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S]*wasUiPressed\("cancel"\)/);
+assert.match(dungeon, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
 assert.doesNotMatch(menu, /System Menu Loaded|TACTICAL JOURNEY ARCHIVE|Archive save completed/);
 
 assert.match(hud, /drawPixelSprite\(ctx, `weapon_\$\{weapon\.id\}`/);
@@ -91,6 +98,8 @@ console.log(JSON.stringify({
   cmysIdentityAndForms: "ok",
   reducedMenuCopy: "ok",
   semanticInputPrompts: "ok",
+  compactKeyboardContract: "ESC-WASD-JKLI",
+  shopEscapeCapture: "ok",
   safeSystemMenu: "ok",
   distinctWeaponHudModels: "ok",
   adaptiveWeaponNames: "ok",

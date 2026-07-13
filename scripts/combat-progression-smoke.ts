@@ -215,8 +215,8 @@ assert.equal(
 const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
-assert.match(engineSource, /canPause && this\.input\.wasActionPressed\("pause"\)/);
-assert.doesNotMatch(engineSource, /stateCapturesPause|capturesPauseInput/);
+assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S]*wasUiPressed\("cancel"\)[\s\S]*!stateCapturesPause[\s\S]*wasActionPressed\("pause"\)/);
+assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
 assert.doesNotMatch(dungeonSource, /wasUiPressed\("cancel"\) \|\| this\.engine\.input\.wasActionPressed\("pause"\)/);
 assert.match(dungeonSource, /kind === "boss" \? "boss" : "treasure"/);
 assert.match(dungeonSource, /createOrRestoreWeaponChest\(currentRoom, "boss"\)/);

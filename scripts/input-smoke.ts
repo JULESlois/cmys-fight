@@ -44,6 +44,7 @@ const { CharacterSelectState } = await import("../src/game/states/CharacterSelec
 const { DungeonState } = await import("../src/game/states/DungeonState");
 const { MenuState } = await import("../src/game/states/MenuState");
 const { HubState } = await import("../src/game/states/HubState");
+const fs = await import("node:fs");
 
 function keyboardPulse(input: InstanceType<typeof Input>, key: string) {
   windowTarget.dispatch("keydown", { key, preventDefault() {} });
@@ -112,7 +113,7 @@ function runContract(label: string, pulse: (input: InstanceType<typeof Input>) =
 
 
 const promptInput = new Input();
-promptInput.setBindings({ fire: "r", skill: "e", interact: " ", swapWeapon: "q", pause: "p" });
+promptInput.setBindings({ fire: "j", skill: "l", interact: "k", swapWeapon: "i", pause: "escape" });
 promptInput.setTouchAction("fire", true);
 promptInput.setTouchPromptMode("gamepad");
 assert.equal(promptInput.getPrompt("fire"), "X");
@@ -121,11 +122,13 @@ assert.equal(promptInput.getPrompt("interact"), "A");
 assert.equal(promptInput.getPrompt("swapWeapon"), "Y");
 assert.equal(promptInput.getPrompt("pause"), "START");
 promptInput.setTouchPromptMode("keyboard");
-assert.equal(promptInput.getPrompt("fire"), "R");
-assert.equal(promptInput.getPrompt("skill"), "E");
-assert.equal(promptInput.getPrompt("interact"), "SPACE");
-assert.equal(promptInput.getPrompt("swapWeapon"), "Q");
-assert.equal(promptInput.getPrompt("pause"), "P");
+assert.equal(promptInput.getPrompt("fire"), "J");
+assert.equal(promptInput.getPrompt("skill"), "L");
+assert.equal(promptInput.getPrompt("interact"), "K");
+assert.equal(promptInput.getPrompt("swapWeapon"), "I");
+assert.equal(promptInput.getPrompt("pause"), "ESC");
+assert.equal(promptInput.getConfirmPrompt(), "K");
+assert.equal(promptInput.getUiPrompt("secondary"), "J");
 promptInput.setTouchAction("fire", false);
 gamepads = [createPad(false, true)];
 promptInput.beginFrame();
@@ -185,25 +188,25 @@ const hierarchyEngine = {
 const hierarchyState = new CharacterSelectState(hierarchyEngine) as any;
 hierarchyState.enter({ backState: "hub" });
 assert.equal(hierarchyState.mode, "identity");
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 hierarchyState.update(0);
 assert.equal(hierarchyState.mode, "form", "selecting CMYS must open form selection");
 assert.equal(hierarchyStart, null, "selecting CMYS must not immediately start a run");
 hierarchyInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 hierarchyInput.update();
-windowTarget.dispatch("keydown", { key: "ArrowRight", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
 hierarchyState.update(0);
 assert.equal(hierarchyState.selectedForm.id, "mage", "CMYS form selection must cycle Guard, Arcane, and Swift forms");
 hierarchyInput.update();
-windowTarget.dispatch("keyup", { key: "ArrowRight", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
 hierarchyInput.update();
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 hierarchyState.update(0);
 assert.deepEqual(hierarchyStart, { characterId: "mage", weaponId: "laser" });
 assert.equal(hierarchySwitch, "dungeon");
 hierarchyInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 hierarchyInput.cleanup();
 
 const kanamiInput = new Input();
@@ -224,19 +227,19 @@ const kanamiEngine = {
 const kanamiState = new CharacterSelectState(kanamiEngine) as any;
 kanamiState.enter({ backState: "hub" });
 for (let step = 0; step < 2; step++) {
-  windowTarget.dispatch("keydown", { key: "ArrowRight", preventDefault() {} });
+  windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
   kanamiState.update(0);
   kanamiInput.update();
-  windowTarget.dispatch("keyup", { key: "ArrowRight", preventDefault() {} });
+  windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
   kanamiInput.update();
 }
 assert.equal(kanamiState.selectedIdentity, "kanami");
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 kanamiState.update(0);
 assert.deepEqual(kanamiStart, { characterId: "kanami", weaponId: "finale" });
 assert.equal(kanamiSwitch, "dungeon");
 kanamiInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 kanamiInput.cleanup();
 
 const menuInput = new Input();
@@ -266,39 +269,43 @@ const destructiveMenuEngine = {
 const destructiveMenu = new MenuState(destructiveMenuEngine) as any;
 destructiveMenu.enter();
 destructiveMenu.selection = 2;
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 destructiveMenu.update(0);
 assert.equal(restoreCount, 0, "restore requires a second confirmation");
 destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 destructiveMenu.update(0);
 assert.equal(restoreCount, 1);
 destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 destructiveMenu.enter();
 destructiveMenu.selection = 3;
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 destructiveMenu.update(0);
 assert.equal(resetCount, 0, "reset requires a second confirmation");
 destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 destructiveMenu.update(0);
 assert.equal(resetCount, 1);
 destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 destructiveMenuInput.cleanup();
 
 const shopInput = new Input();
 const shopEngine = { input: shopInput } as any;
 const shopState = new DungeonState(shopEngine) as any;
 shopState.shopOpen = true;
-gamepads = [createPad(false, true)];
-shopInput.beginFrame();
+assert.equal(shopState.capturesPauseInput(), true, "open shop captures the shared Escape pause key");
+windowTarget.dispatch("keydown", { key: "Escape", preventDefault() {} });
 shopState.updateShop(0);
-assert.equal(shopState.shopOpen, false, "gamepad B closes the shop before gameplay skill handling");
+assert.equal(shopState.shopOpen, false, "Escape closes the shop instead of opening pause");
+assert.equal(shopInput.wasActionPressed("pause"), false, "shop close suppresses held Escape before returning to combat");
+windowTarget.dispatch("keyup", { key: "Escape", preventDefault() {} });
 shopInput.cleanup();
+const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
+assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S]*wasUiPressed\("cancel"\)[\s\S]*!stateCapturesPause/);
 
 const createHubEngine = (input: InstanceType<typeof Input>) => {
   let purchases = 0;
@@ -338,9 +345,14 @@ hubKeyboardInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
 hubKeyboardState.update();
-assert.equal(hubKeyboard.getPurchases(), 2, "Enter remains a purchase fallback");
+assert.equal(hubKeyboard.getPurchases(), 1, "Enter is not a keyboard confirmation fallback");
 hubKeyboardInput.update();
 windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: " ", preventDefault() {} });
+hubKeyboardState.update();
+assert.equal(hubKeyboard.getPurchases(), 1, "Space is not a keyboard confirmation fallback");
+hubKeyboardInput.update();
+windowTarget.dispatch("keyup", { key: " ", preventDefault() {} });
 hubKeyboardInput.cleanup();
 
 const hubGamepadInput = new Input();
@@ -403,24 +415,30 @@ assert.equal(transitionInput.wasUiPressed("confirm"), true, "A works again after
 transitionInput.cleanup();
 
 const keyboardTransitionInput = new Input();
-windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), true);
 keyboardTransitionInput.suppressUntilReleased();
 keyboardTransitionInput.update();
-assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "held Enter is suppressed after a state transition");
-windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "held K is suppressed after a state transition");
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), true, "K works again after release");
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
-assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), true, "Enter works again after release");
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "Enter has no implicit UI meaning");
 windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: " ", preventDefault() {} });
+assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "Space has no implicit UI meaning");
+windowTarget.dispatch("keyup", { key: " ", preventDefault() {} });
 keyboardTransitionInput.cleanup();
 
 const secondaryInput = new Input();
 windowTarget.dispatch("keydown", { key: "j", preventDefault() {} });
-assert.equal(secondaryInput.wasUiPressed("secondary"), false, "keyboard fire binding must not reset or reroll UI content");
+assert.equal(secondaryInput.wasUiPressed("secondary"), true, "J is the keyboard secondary UI action");
 windowTarget.dispatch("keyup", { key: "j", preventDefault() {} });
 secondaryInput.update();
 windowTarget.dispatch("keydown", { key: "r", preventDefault() {} });
-assert.equal(secondaryInput.wasUiPressed("secondary"), true, "R is the keyboard secondary UI action");
+assert.equal(secondaryInput.wasUiPressed("secondary"), false, "R is not required by the core keyboard layout");
 windowTarget.dispatch("keyup", { key: "r", preventDefault() {} });
 secondaryInput.update();
 secondaryInput.setTouchAction("fire", true);
@@ -432,4 +450,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "R-X-only", transitionReleaseGate: "keyboard-and-gamepad", destructiveMenuConfirmation: "ok", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", coreKeyboardLayout: "ESC-WASD-JKLI", noEnterOrSpaceFallback: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "J-X-only", shopEscapeCapture: "ok", transitionReleaseGate: "keyboard-and-gamepad", destructiveMenuConfirmation: "ok", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));

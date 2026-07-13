@@ -69,8 +69,8 @@ export class ShopRenderer {
     coins: number,
     failure?: ShopPurchaseFailure,
     selectedIndex = 0,
-    confirmPrompt = "SPACE",
-    cyclePrompt = "Q",
+    confirmPrompt = "K",
+    cyclePrompt = "A/D",
     closePrompt = "ESC",
     language: Language = "en",
   ) {

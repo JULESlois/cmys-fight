@@ -150,9 +150,9 @@ export class Input {
       if (action === "secondary") return "X";
       return "D-PAD";
     }
-    if (action === "confirm") return "ENTER";
+    if (action === "confirm") return formatBinding(this.bindings.interact);
     if (action === "cancel") return "ESC";
-    if (action === "secondary") return "R";
+    if (action === "secondary") return formatBinding(this.bindings.fire);
     if (action === "up") return formatBinding(this.bindings.moveUp);
     if (action === "down") return formatBinding(this.bindings.moveDown);
     if (action === "left") return formatBinding(this.bindings.moveLeft);
@@ -258,20 +258,13 @@ export class Input {
 
   public wasUiPressed(action: UiAction): boolean {
     if (this.gamepadUiJustPressed[action] || this.touchUiJustPressed[action]) return true;
-    if (action === "confirm") {
-      return this.wasPressed("enter") || this.wasPressed(" ") || this.wasActionPressed("interact");
-    }
+    if (action === "confirm") return this.wasActionPressed("interact");
     if (action === "cancel") return this.wasPressed("escape");
-    if (action === "secondary") {
-      if (this.lastDevice === "touch") {
-        return this.touchJustPressed.fire === true && !this.suppressedTouchActions.has("fire");
-      }
-      return this.wasPressed("r");
-    }
-    if (action === "up") return this.wasPressed("arrowup") || this.wasPressed(this.bindings.moveUp);
-    if (action === "down") return this.wasPressed("arrowdown") || this.wasPressed(this.bindings.moveDown);
-    if (action === "left") return this.wasPressed("arrowleft") || this.wasPressed(this.bindings.moveLeft);
-    return this.wasPressed("arrowright") || this.wasPressed(this.bindings.moveRight);
+    if (action === "secondary") return this.wasActionPressed("fire");
+    if (action === "up") return !!this.virtualKeyJustPressed.arrowup || this.wasPressed(this.bindings.moveUp);
+    if (action === "down") return !!this.virtualKeyJustPressed.arrowdown || this.wasPressed(this.bindings.moveDown);
+    if (action === "left") return !!this.virtualKeyJustPressed.arrowleft || this.wasPressed(this.bindings.moveLeft);
+    return !!this.virtualKeyJustPressed.arrowright || this.wasPressed(this.bindings.moveRight);
   }
 
   public setTouchAxis(x: number, y: number) {
@@ -398,10 +391,10 @@ export class Input {
     let y = 0;
 
     const physicalDown = (key: string) => this.keys[this.normalizeKey(key)] === true && !this.suppressedKeys.has(this.normalizeKey(key));
-    if (physicalDown(this.bindings.moveLeft) || physicalDown("arrowleft")) x -= 1;
-    if (physicalDown(this.bindings.moveRight) || physicalDown("arrowright")) x += 1;
-    if (physicalDown(this.bindings.moveUp) || physicalDown("arrowup")) y -= 1;
-    if (physicalDown(this.bindings.moveDown) || physicalDown("arrowdown")) y += 1;
+    if (physicalDown(this.bindings.moveLeft)) x -= 1;
+    if (physicalDown(this.bindings.moveRight)) x += 1;
+    if (physicalDown(this.bindings.moveUp)) y -= 1;
+    if (physicalDown(this.bindings.moveDown)) y += 1;
 
     x += this.gamepadAxis.x + this.touchAxis.x;
     y += this.gamepadAxis.y + this.touchAxis.y;

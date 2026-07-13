@@ -284,7 +284,10 @@ export class Engine {
     }
 
     const canPause = ["dungeon", "legacy_rpg", "legacy_tactics"].includes(this.currentState);
-    if (canPause && this.input.wasActionPressed("pause")) {
+    const stateCapturesPause = this.currentState === "dungeon"
+      && (this.states.dungeon as DungeonState).capturesPauseInput()
+      && this.input.wasUiPressed("cancel");
+    if (canPause && !stateCapturesPause && this.input.wasActionPressed("pause")) {
       this.isPaused = !this.isPaused;
       this.input.clearJustPressed();
       return;

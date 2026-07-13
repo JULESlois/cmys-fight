@@ -1,7 +1,7 @@
 import { t, uiFont, type Language } from "../i18n";
 
 export class PromptRenderer {
-  static draw(ctx: CanvasRenderingContext2D, target: any, time: number, interactPrompt = "SPACE", language: Language = "en") {
+  static draw(ctx: CanvasRenderingContext2D, target: any, time: number, interactPrompt = "K", language: Language = "en") {
     if (!target) return;
 
     ctx.save();

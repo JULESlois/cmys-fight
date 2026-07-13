@@ -148,7 +148,7 @@ export class SettingsState extends GameState {
         return;
       }
       const key = this.engine.input.consumePhysicalKey();
-      if (!key || key === "enter") return;
+      if (!key) return;
       const settings = this.engine.data.settings;
       const oldKey = settings.keyBindings[this.captureAction];
       const conflictingAction = INPUT_ACTIONS.find(
@@ -270,12 +270,12 @@ export class SettingsState extends GameState {
     if (option === "touchLayout") return t(language, settings.touchHandedness === "right" ? "value.right" : "value.left");
     if (option === "touchSize") return `${Math.round(settings.touchScale * 100)}%`;
     if (option === "touchLabels") return t(language, settings.touchLabelMode === "gamepad" ? "value.gamepad" : "value.keyboard");
-    if (option === "controls") return t(language, "common.enter");
+    if (option === "controls") return this.engine.input.getConfirmPrompt();
     if (option === "fullscreen") return t(language, "common.toggle");
     if (option === "exportData") return t(language, "common.download");
     if (option === "importData") return t(language, "common.select");
     if (option === "resetTutorial") return t(language, settings.tutorialCompleted ? "common.reset" : "common.ready");
-    return t(language, "common.enter");
+    return this.engine.input.getConfirmPrompt();
   }
 
   draw(ctx: CanvasRenderingContext2D) {

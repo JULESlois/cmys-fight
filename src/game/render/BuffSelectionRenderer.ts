@@ -14,9 +14,9 @@ export class BuffSelectionRenderer {
     options: BuffId[],
     rerollsRemaining = 0,
     selectedIndex = 0,
-    confirmPrompt = "SPACE",
+    confirmPrompt = "K",
     cyclePrompt = "D-PAD",
-    rerollPrompt = "R",
+    rerollPrompt = "J",
     language: Language = "en",
   ) {
     ctx.save();

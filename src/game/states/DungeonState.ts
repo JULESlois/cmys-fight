@@ -97,6 +97,10 @@ export class DungeonState extends GameState {
     this.player = new Player(160, 120);
   }
 
+  public capturesPauseInput(): boolean {
+    return this.shopOpen;
+  }
+
   private createPlayerFromSave(): Player {
     const savedP = this.engine.data.data.player;
     const player = new Player(savedP.x ?? 160, savedP.y ?? 120);
