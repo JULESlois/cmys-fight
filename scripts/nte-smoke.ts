@@ -121,6 +121,26 @@ for (const [id, palette] of [
 }
 assert.notDeepEqual(SPRITES.player_esper_zero_side_idle, SPRITES.player_nanally_side_idle);
 
+const zeroIdle = SPRITES.player_esper_zero_side_idle;
+assert.equal(zeroIdle[1][16], "L", "female Esper Zero keeps the official silver ahoge");
+assert.ok(zeroIdle[4].slice(11, 22).includes("P"), "female Esper Zero keeps the black headband");
+assert.ok(zeroIdle.slice(13, 17).some(row => row.slice(12, 21).includes("I")), "female Esper Zero keeps the fitted white blouse");
+assert.ok(zeroIdle.slice(13, 17).every(row => row.includes("J")), "female Esper Zero keeps the lavender tie");
+assert.ok(zeroIdle.slice(13, 17).some(row => row.includes("B") && row.includes("C")), "female Esper Zero keeps the cropped tactical jacket");
+assert.ok(zeroIdle.slice(19, 22).some(row => row.includes("G") || row.includes("H")), "female Esper Zero keeps the dark pleated skirt");
+assert.equal(zeroIdle.flatMap(row => [...row.slice(0, 5)]).every(pixel => pixel === "."), true, "Esper Zero sprite does not bake in a duplicate sword");
+
+const nanallyIdle = SPRITES.player_nanally_side_idle;
+assert.equal(nanallyIdle[3][10], "A", "Nanally keeps the left black cat-ear accessory");
+assert.equal(nanallyIdle[3][21], "A", "Nanally keeps the right black cat-ear accessory");
+assert.ok(nanallyIdle[8].slice(12, 23).includes("P"), "Nanally keeps the round glasses");
+assert.ok(nanallyIdle.slice(13, 17).some(row => row.slice(11, 22).includes("I")), "Nanally keeps the white shirt");
+assert.ok(nanallyIdle.slice(13, 17).some(row => row.includes("L")), "Nanally keeps the black paw tie");
+assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("D")), "Nanally keeps the bright pink skirt panels");
+assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("C")), "Nanally keeps the darker pleated skirt folds");
+assert.ok(nanallyIdle.slice(18, 23).some(row => row.slice(4, 8).includes("C") || row.slice(4, 8).includes("D")), "Nanally keeps the cat tail");
+assert.ok(nanallyIdle.slice(18, 23).some(row => row.slice(21, 26).includes("O")), "Nanally keeps the dangling cat plush");
+
 for (const id of ["zeroth_sense", "colucci_claws"]) {
   assert.ok(WEAPON_SPRITES[id]);
   assert.ok(WEAPON_PALETTES[id]);
@@ -171,6 +191,7 @@ console.log(JSON.stringify({
   exclusiveWeapons: ["zeroth_sense", "colucci_claws"],
   esperZero: "five-second-appraisal-empower",
   nanally: "twelve-second-underboss-follow-up",
-  detailedSprites: "32x32-six-frame",
+  detailedSprites: "32x32-six-frame-official-silhouettes",
+  officialArtFeatures: "zero-silver-tactical-nanally-pink-cat-streetwear",
   metaMigration: "v6-v7-auto-unlock",
 }));

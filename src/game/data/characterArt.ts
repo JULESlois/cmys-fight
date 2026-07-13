@@ -598,71 +598,80 @@ function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
   const canvas = createCanvas();
   const phase = idle ? frame % 2 : frame % 4;
   const bob = idle ? 0 : [0, 1, 0, -1][phase];
-  const coatSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
+  const coatSwing = idle ? (phase === 1 ? 1 : 0) : [1, 1, -1, -1][phase];
+  const charmSwing = idle ? (phase === 1 ? 1 : 0) : [1, 0, -1, 0][phase];
   const rearFoot = idle ? 13 : [10, 12, 18, 16][phase];
   const frontFoot = idle ? 20 : [23, 21, 15, 17][phase];
 
-  for (let step = 0; step < 17; step++) {
-    rasterPixel(canvas, 7 + Math.floor(step * 0.55), 25 - step, "K");
-    if (step > 2) rasterPixel(canvas, 8 + Math.floor(step * 0.55), 25 - step, "L");
-  }
-  rasterRect(canvas, 6, 24, 5, 2, "A");
-  rasterPixel(canvas, 6, 23, "M");
-
-  rasterSpan(canvas, 10 + coatSwing, 15, 19 + bob, "A");
-  rasterSpan(canvas, 9 + coatSwing, 15, 20 + bob, "B");
-  rasterSpan(canvas, 8 + coatSwing, 14, 21 + bob, "B");
-  rasterSpan(canvas, 9 + coatSwing, 13, 22 + bob, "C");
-  rasterSpan(canvas, 10 + coatSwing, 12, 23 + bob, "C");
-
-  rasterRect(canvas, 13, 22 + bob, 4, 6, "G");
-  rasterRect(canvas, 18, 22 + bob, 4, 6, "H");
-  rasterRect(canvas, rearFoot - 1, 27, 4, 3, "A");
-  rasterRect(canvas, frontFoot - 1, 27, 4, 3, "A");
-  rasterSpan(canvas, rearFoot - 2, rearFoot + 2, 30, "N");
-  rasterSpan(canvas, frontFoot - 2, frontFoot + 2, 30, "N");
-
-  rasterSpan(canvas, 11, 21, 13 + bob, "A");
-  rasterSpan(canvas, 10, 22, 14 + bob, "A");
-  rasterSpan(canvas, 10, 22, 15 + bob, "B");
-  rasterSpan(canvas, 11, 21, 16 + bob, "B");
-  rasterSpan(canvas, 11, 21, 17 + bob, "B");
-  rasterSpan(canvas, 12, 20, 18 + bob, "C");
-  rasterRect(canvas, 15, 14 + bob, 4, 5, "I");
-  rasterPixel(canvas, 16, 15 + bob, "J");
-  rasterPixel(canvas, 17, 16 + bob, "J");
-  rasterSpan(canvas, 12, 20, 19 + bob, "O");
-  rasterSpan(canvas, 13, 19, 20 + bob, "O");
-  rasterPixel(canvas, 15, 20 + bob, "A");
-  rasterPixel(canvas, 18, 20 + bob, "A");
-
-  rasterRect(canvas, 8, 15 + bob, 3, 7, "B");
-  rasterRect(canvas, 21, 15 + bob, 3, 7, "B");
-  rasterRect(canvas, 8, 21 + bob, 4, 3, "A");
-  rasterRect(canvas, 21, 21 + bob, 4, 3, "A");
-  rasterPixel(canvas, 24, 22 + bob, "F");
-
-  rasterRect(canvas, 14, 11 + bob, 5, 3, "E");
-  rasterSpan(canvas, 10, 22, 6 + bob, "D");
-  rasterSpan(canvas, 10, 22, 7 + bob, "D");
-  rasterSpan(canvas, 11, 21, 8 + bob, "F");
-  rasterSpan(canvas, 11, 21, 9 + bob, "F");
-  rasterSpan(canvas, 12, 20, 10 + bob, "F");
-  rasterSpan(canvas, 13, 19, 11 + bob, "F");
-  rasterSpan(canvas, 11, 21, 3 + bob, "A");
-  rasterSpan(canvas, 10, 22, 4 + bob, "C");
-  rasterSpan(canvas, 11, 21, 5 + bob, "D");
-  rasterSpan(canvas, 10, 13, 6 + bob, "C");
-  rasterSpan(canvas, 19, 22, 6 + bob, "C");
-  rasterSpan(canvas, 10, 12, 7 + bob, "C");
-  rasterSpan(canvas, 20, 22, 7 + bob, "C");
-  rasterSpan(canvas, 12, 20, 4 + bob, "P");
+  // Short silver bob with an ahoge and black headband. The weapon is rendered
+  // separately, so the character sprite deliberately contains no built-in
+  // sword or long diagonal prop.
+  rasterPixel(canvas, 16, 1 + bob, "L");
+  rasterPixel(canvas, 17, 2 + bob, "L");
+  rasterSpan(canvas, 12, 20, 3 + bob, "A");
+  rasterSpan(canvas, 10, 22, 4 + bob, "D");
+  rasterSpan(canvas, 10, 22, 5 + bob, "D");
+  rasterSpan(canvas, 11, 21, 6 + bob, "L");
+  rasterSpan(canvas, 10, 13, 7 + bob, "C");
+  rasterSpan(canvas, 19, 22, 7 + bob, "C");
+  rasterSpan(canvas, 11, 21, 4 + bob, "P");
+  rasterSpan(canvas, 12, 20, 5 + bob, "D");
+  rasterRect(canvas, 13, 6 + bob, 7, 5, "F");
   rasterPixel(canvas, 14, 8 + bob, "A");
   rasterPixel(canvas, 15, 8 + bob, "J");
   rasterPixel(canvas, 18, 8 + bob, "A");
   rasterPixel(canvas, 19, 8 + bob, "J");
   rasterPixel(canvas, 17, 10 + bob, "E");
-  if (idle && phase === 1) rasterPixel(canvas, 8, 12, "M");
+  rasterSpan(canvas, 12, 15, 6 + bob, "D");
+  rasterSpan(canvas, 19, 21, 6 + bob, "D");
+
+  // Neck, fitted white blouse and lavender tie.
+  rasterRect(canvas, 14, 11 + bob, 5, 3, "E");
+  rasterSpan(canvas, 13, 19, 13 + bob, "I");
+  rasterSpan(canvas, 12, 20, 14 + bob, "I");
+  rasterSpan(canvas, 12, 20, 15 + bob, "I");
+  rasterSpan(canvas, 13, 19, 16 + bob, "I");
+  rasterPixel(canvas, 16, 13 + bob, "J");
+  rasterPixel(canvas, 16, 14 + bob, "J");
+  rasterPixel(canvas, 17, 15 + bob, "J");
+  rasterPixel(canvas, 17, 16 + bob, "J");
+
+  // Cropped black tactical jacket, buckles and fingerless gloves.
+  rasterSpan(canvas, 9 + coatSwing, 12, 13 + bob, "A");
+  rasterSpan(canvas, 8 + coatSwing, 12, 14 + bob, "B");
+  rasterSpan(canvas, 8 + coatSwing, 11, 15 + bob, "B");
+  rasterSpan(canvas, 9 + coatSwing, 12, 16 + bob, "C");
+  rasterSpan(canvas, 20, 23, 13 + bob, "A");
+  rasterSpan(canvas, 20, 24, 14 + bob, "B");
+  rasterSpan(canvas, 21, 24, 15 + bob, "B");
+  rasterSpan(canvas, 20, 23, 16 + bob, "C");
+  rasterRect(canvas, 7 + coatSwing, 15 + bob, 3, 6, "B");
+  rasterRect(canvas, 23, 15 + bob, 3, 6, "B");
+  rasterRect(canvas, 7 + coatSwing, 20 + bob, 4, 3, "A");
+  rasterRect(canvas, 22, 20 + bob, 4, 3, "A");
+  rasterPixel(canvas, 10 + coatSwing, 15 + bob, "M");
+  rasterPixel(canvas, 22, 15 + bob, "M");
+  rasterPixel(canvas, 25, 21 + bob, "F");
+
+  // Utility belt, pleated dark skirt and small dangling appraiser charms.
+  rasterSpan(canvas, 11, 21, 17 + bob, "O");
+  rasterSpan(canvas, 10, 22, 18 + bob, "O");
+  rasterPixel(canvas, 13, 18 + bob, "N");
+  rasterPixel(canvas, 19, 18 + bob, "M");
+  rasterSpan(canvas, 10, 22, 19 + bob, "G");
+  rasterSpan(canvas, 9, 23, 20 + bob, "G");
+  rasterSpan(canvas, 10, 22, 21 + bob, "H");
+  for (const x of [11, 14, 17, 20]) rasterPixel(canvas, x, 21 + bob, "C");
+  rasterPixel(canvas, 22 + charmSwing, 19 + bob, "M");
+  rasterPixel(canvas, 23 + charmSwing, 20 + bob, "J");
+
+  // Bare legs, dark ankle boots and planted walk cycle.
+  rasterRect(canvas, 13, 22 + bob, 4, 6, "F");
+  rasterRect(canvas, 18, 22 + bob, 4, 6, "F");
+  rasterRect(canvas, rearFoot - 1, 27, 4, 3, "A");
+  rasterRect(canvas, frontFoot - 1, 27, 4, 3, "A");
+  rasterSpan(canvas, rearFoot - 2, rearFoot + 2, 30, "N");
+  rasterSpan(canvas, frontFoot - 2, frontFoot + 2, 30, "N");
 
   return finish(canvas);
 }
@@ -672,9 +681,11 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   const phase = idle ? frame % 2 : frame % 4;
   const bob = idle ? 0 : [0, 1, 0, -1][phase];
   const hairSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
+  const tailSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
   const rearFoot = idle ? 13 : [10, 12, 19, 16][phase];
   const frontFoot = idle ? 20 : [23, 21, 14, 17][phase];
 
+  // Long red-pink hair with black cat-ear accessories.
   rasterSpan(canvas, 8 + hairSwing, 23, 5 + bob, "A");
   rasterSpan(canvas, 7 + hairSwing, 24, 6 + bob, "B");
   rasterSpan(canvas, 7 + hairSwing, 24, 7 + bob, "B");
@@ -691,37 +702,63 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterSpan(canvas, 19 - hairSwing, 22 - hairSwing, 4 + bob, "A");
   rasterPixel(canvas, 21 - hairSwing, 4 + bob, "D");
 
-  rasterRect(canvas, 13, 22 + bob, 4, 6, "G");
-  rasterRect(canvas, 18, 22 + bob, 4, 6, "H");
-  rasterRect(canvas, 13, 25 + bob, 4, 3, "I");
-  rasterRect(canvas, 18, 25 + bob, 4, 3, "I");
+  // Cat tail arcs behind the jacket and skirt.
+  rasterPixel(canvas, 7 + tailSwing, 18 + bob, "B");
+  rasterPixel(canvas, 6 + tailSwing, 19 + bob, "C");
+  rasterPixel(canvas, 5 + tailSwing, 20 + bob, "C");
+  rasterPixel(canvas, 5 + tailSwing, 21 + bob, "D");
+  rasterPixel(canvas, 6 + tailSwing, 22 + bob, "D");
+
+  // Legs, dark thigh-high accents and shoes.
+  rasterRect(canvas, 13, 22 + bob, 4, 6, "F");
+  rasterRect(canvas, 18, 22 + bob, 4, 6, "F");
+  rasterRect(canvas, 13, 25 + bob, 4, 3, "J");
+  rasterRect(canvas, 18, 25 + bob, 4, 3, "J");
   rasterRect(canvas, rearFoot - 1, 27, 4, 3, "A");
   rasterRect(canvas, frontFoot - 1, 27, 4, 3, "A");
   rasterSpan(canvas, rearFoot - 2, rearFoot + 2, 30, "J");
   rasterSpan(canvas, frontFoot - 2, frontFoot + 2, 30, "J");
 
-  rasterSpan(canvas, 9, 23, 14 + bob, "A");
-  rasterSpan(canvas, 8, 24, 15 + bob, "A");
-  rasterSpan(canvas, 9, 23, 16 + bob, "K");
-  rasterSpan(canvas, 10, 22, 17 + bob, "K");
-  rasterSpan(canvas, 11, 21, 18 + bob, "K");
-  rasterRect(canvas, 14, 14 + bob, 5, 5, "I");
-  rasterPixel(canvas, 16, 15 + bob, "A");
-  rasterPixel(canvas, 16, 16 + bob, "L");
-  rasterSpan(canvas, 11, 21, 19 + bob, "D");
-  rasterSpan(canvas, 10, 22, 20 + bob, "D");
+  // White shirt and black tie, framed by an oversized black street jacket.
+  rasterSpan(canvas, 12, 20, 13 + bob, "I");
+  rasterSpan(canvas, 11, 21, 14 + bob, "I");
+  rasterSpan(canvas, 12, 20, 15 + bob, "I");
+  rasterSpan(canvas, 13, 19, 16 + bob, "I");
+  rasterPixel(canvas, 16, 13 + bob, "L");
+  rasterPixel(canvas, 16, 14 + bob, "L");
+  rasterPixel(canvas, 17, 15 + bob, "L");
+  rasterPixel(canvas, 17, 16 + bob, "L");
+  rasterPixel(canvas, 16, 15 + bob, "O");
+
+  rasterSpan(canvas, 8, 12, 13 + bob, "A");
+  rasterSpan(canvas, 7, 12, 14 + bob, "K");
+  rasterSpan(canvas, 7, 11, 15 + bob, "K");
+  rasterSpan(canvas, 8, 12, 16 + bob, "N");
+  rasterSpan(canvas, 20, 24, 13 + bob, "A");
+  rasterSpan(canvas, 20, 25, 14 + bob, "K");
+  rasterSpan(canvas, 21, 25, 15 + bob, "K");
+  rasterSpan(canvas, 20, 24, 16 + bob, "N");
+  rasterRect(canvas, 6, 15 + bob, 4, 8, "K");
+  rasterRect(canvas, 23, 15 + bob, 4, 8, "K");
+  rasterRect(canvas, 5, 21 + bob, 6, 4, "N");
+  rasterRect(canvas, 22, 21 + bob, 6, 4, "N");
+  for (const x of [6, 9, 24, 27]) rasterPixel(canvas, x, 22 + bob, "O");
+  rasterPixel(canvas, 8, 17 + bob, "P");
+  rasterPixel(canvas, 24, 18 + bob, "D");
+
+  // Pink pleated skirt and dangling cat plush at the hip.
+  rasterSpan(canvas, 10, 22, 17 + bob, "B");
+  rasterSpan(canvas, 9, 23, 18 + bob, "C");
+  rasterSpan(canvas, 9, 23, 19 + bob, "D");
+  rasterSpan(canvas, 10, 22, 20 + bob, "C");
   rasterSpan(canvas, 11, 21, 21 + bob, "D");
-  for (const x of [12, 15, 18, 21]) rasterPixel(canvas, x, 21 + bob, "M");
+  for (const x of [11, 14, 17, 20]) rasterPixel(canvas, x, 21 + bob, "M");
+  rasterPixel(canvas, 22, 19 + bob, "O");
+  rasterRect(canvas, 23, 19 + bob, 2, 3, "O");
+  rasterPixel(canvas, 22, 18 + bob, "O");
+  rasterPixel(canvas, 24, 18 + bob, "O");
 
-  rasterRect(canvas, 7, 15 + bob, 4, 8, "A");
-  rasterRect(canvas, 22, 15 + bob, 4, 8, "A");
-  rasterRect(canvas, 6, 21 + bob, 6, 4, "N");
-  rasterRect(canvas, 21, 21 + bob, 6, 4, "N");
-  rasterPixel(canvas, 7, 22 + bob, "O");
-  rasterPixel(canvas, 9, 22 + bob, "O");
-  rasterPixel(canvas, 23, 22 + bob, "O");
-  rasterPixel(canvas, 25, 22 + bob, "O");
-
+  // Face, bangs and unmistakable round glasses.
   rasterRect(canvas, 14, 11 + bob, 5, 3, "F");
   rasterSpan(canvas, 11, 21, 6 + bob, "F");
   rasterSpan(canvas, 10, 22, 7 + bob, "F");
