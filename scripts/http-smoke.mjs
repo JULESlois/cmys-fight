@@ -35,7 +35,7 @@ try {
   await waitForServer();
   const health = await (await verify("/api/health", /json/)).json();
   assert.equal(health.ok, true);
-  assert.equal(health.version, "0.24.0");
+  assert.equal(health.version, "0.24.1");
   const html = await (await verify("/", /html/)).text();
   assert.match(html, /manifest\.webmanifest/);
   const manifest = await (await verify("/manifest.webmanifest", /manifest|json/)).json();

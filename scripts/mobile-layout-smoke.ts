@@ -40,6 +40,18 @@ const screenshotViewport = calculateTouchViewportOffsets(1536, 960);
 assert.equal(screenshotViewport.horizontalGutter, 128);
 assert.equal(screenshotViewport.sideOffset, 10);
 
+// Android Chrome screenshots include browser chrome outside the visual
+// viewport. Layout must use the visible content height, not the larger layout
+// viewport, otherwise the canvas and controls extend below the screen.
+const browserLandscape = calculateTouchViewportOffsets(1848, 681);
+assert.ok(browserLandscape.horizontalGutter > 400);
+assert.ok(browserLandscape.sideOffset > 100);
+assert.equal(browserLandscape.verticalGutter, 0);
+
+const browserPortrait = calculateTouchViewportOffsets(864, 1664);
+assert.ok(browserPortrait.verticalGutter > 500);
+assert.ok(browserPortrait.bottomOffset > 150);
+
 const landscape = calculateTouchViewportOffsets(1920, 1080);
 assert.equal(landscape.verticalGutter, 0);
 assert.equal(landscape.horizontalGutter, 240);
@@ -83,6 +95,9 @@ assert.match(canvasSource, /touch-dpad-notch-up/);
 assert.match(canvasSource, /GAMEPAD_TOUCH_LABELS[\s\S]*fire: "X"[\s\S]*interact: "A"[\s\S]*skillCancel: "B"[\s\S]*swapWeapon: "Y"/);
 assert.match(canvasSource, /buildTouchLabels[\s\S]*formatBinding\(bindings\.fire\)/);
 assert.match(canvasSource, /--touch-side-offset/);
+assert.match(canvasSource, /window\.visualViewport/);
+assert.match(canvasSource, /--visual-viewport-width/);
+assert.match(canvasSource, /--visual-viewport-height/);
 assert.match(canvasSource, /navigator\.vibrate/);
 assert.ok(canvasSource.indexOf("touch-menu-button") < canvasSource.indexOf("touch-action-cluster"));
 assert.doesNotMatch(canvasSource.slice(canvasSource.indexOf("touch-action-cluster")), /actionHandlers\("pause"\)/);
@@ -105,6 +120,9 @@ assert.match(cssSource, /--touch-safe-bottom: max\(var\(--touch-bottom-offset\),
 assert.match(cssSource, /left: max\(var\(--touch-side-offset\), calc\(env\(safe-area-inset-left/);
 assert.match(cssSource, /right: max\(var\(--touch-side-offset\), calc\(env\(safe-area-inset-right/);
 assert.match(cssSource, /\.game-shell[\s\S]*padding: 0/);
+assert.match(cssSource, /\.game-shell[\s\S]*position: fixed/);
+assert.match(cssSource, /width: var\(--visual-viewport-width, 100dvw\)/);
+assert.match(cssSource, /height: var\(--visual-viewport-height, 100dvh\)/);
 assert.doesNotMatch(cssSource, /padding-(top|right|bottom|left): env\(safe-area-inset/);
 assert.match(settingsSource, /"touchLayout"/);
 assert.match(settingsSource, /settings\.touchLayout/);
@@ -124,4 +142,5 @@ console.log(JSON.stringify({
   sharedGamepadPalette: "ok",
   dynamicControlLabels: "ok",
   safeViewportClamping: "ok",
+  visualViewportSizing: "android-browser-chrome-safe",
 }));

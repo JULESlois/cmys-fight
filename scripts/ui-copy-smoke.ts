@@ -33,6 +33,9 @@ assert.match(input, /action === "secondary"\) return this\.wasActionPressed\("fi
 assert.doesNotMatch(input, /wasPressed\("enter"\)|wasPressed\(" "\)|wasPressed\("r"\)/);
 assert.match(input, /action === "confirm"\) return formatBinding\(this\.bindings\.interact\)/);
 assert.match(input, /action === "secondary"\) return formatBinding\(this\.bindings\.fire\)/);
+assert.match(input, /nextRepeatAt = now \+ 420/);
+assert.match(input, /state\.blockedUntilNeutral = true/);
+assert.doesNotMatch(input, /virtualKeyJustPressed|setVirtualKey\("arrow/);
 
 assert.match(title, /opt === "newRun"[\s\S]*switchState\("character_select", \{ backState: "title" \}\)/);
 assert.match(title, /opt === "hub"[\s\S]*switchState\("hub"\)/);
@@ -75,7 +78,11 @@ assert.match(records, /common\.hidden/);
 assert.doesNotMatch(records, /wasPressed\("a"\)|wasPressed\("q"\)|wasPressed\("e"\)/);
 assert.doesNotMatch(dungeon, /dungeon\.retry/);
 assert.match(menu, /menu\.confirmRestore/);
-assert.match(menu, /menu\.confirmReset/);
+assert.match(menu, /"resume" \| "save" \| "restore" \| "settings"/);
+assert.doesNotMatch(menu, /"reset"|menu\.confirmReset|resetGameFromMenu/);
+assert.match(menu, /openSettingsFromMenu\(\)/);
+assert.match(engine, /openSettingsFromMenu\(\)[\s\S]*overlayState = "settings"/);
+assert.match(engine, /closeSettingsToMenu\(\)[\s\S]*overlayState = "menu"/);
 assert.match(engine, /resetGameFromMenu\(\)[\s\S]*rebuildStateAfterDataChange\("title"/);
 assert.match(engine, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S]*wasUiPressed\("cancel"\)/);
 assert.match(dungeon, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
@@ -88,6 +95,10 @@ assert.doesNotMatch(hud, /weapon\.name\.toUpperCase\(\)\.slice/);
 assert.match(hud, /skillReady[\s\S]*SKILL READY/);
 assert.match(hud, /index < BuffSystem\.MAX_BUFFS/);
 assert.match(dungeon, /ACTIVE_REWARD_BUFF_LIMIT/);
+assert.match(canvas, /window\.visualViewport/);
+assert.match(canvas, /--visual-viewport-height/);
+assert.match(css, /height: var\(--visual-viewport-height, 100dvh\)/);
+assert.match(css, /position: fixed/);
 
 console.log(JSON.stringify({
   streamlinedTitleFlow: "ok",

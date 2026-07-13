@@ -35,6 +35,7 @@ const OPTIONS = [
   "exportData",
   "importData",
   "resetTutorial",
+  "resetGame",
   "back",
 ] as const;
 
@@ -60,6 +61,7 @@ const OPTION_KEYS: Record<SettingOption, Parameters<typeof t>[1]> = {
   exportData: "settings.exportData",
   importData: "settings.importData",
   resetTutorial: "settings.resetTutorial",
+  resetGame: "settings.resetGame",
   back: "common.back",
 };
 
@@ -69,16 +71,22 @@ export class SettingsState extends GameState {
   private controlsOpen = false;
   private captureAction: InputAction | null = null;
   private message = "";
+  private overlayMode = false;
+  private resetConfirmation = false;
 
   constructor(engine: Engine) {
     super(engine);
   }
 
-  enter() {
+  enter(params?: { overlay?: boolean }) {
     this.engine.data.loadSettings();
     this.engine.applySettings();
+    this.overlayMode = params?.overlay === true;
+    this.selectedIndex = 0;
+    this.controlsOpen = false;
     this.message = "";
     this.captureAction = null;
+    this.resetConfirmation = false;
   }
 
   exit() {
@@ -93,29 +101,48 @@ export class SettingsState extends GameState {
     }
 
     if (this.engine.input.wasUiPressed("cancel")) {
-      this.engine.switchState("title");
+      if (this.resetConfirmation) {
+        this.resetConfirmation = false;
+        this.message = "";
+      } else {
+        this.leaveSettings();
+      }
       return;
     }
     if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + OPTIONS.length) % OPTIONS.length;
+      this.resetConfirmation = false;
+      this.message = "";
       audio.playShoot();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % OPTIONS.length;
+      this.resetConfirmation = false;
+      this.message = "";
       audio.playShoot();
     }
 
     const option = OPTIONS[this.selectedIndex];
     if (this.engine.input.wasUiPressed("left")) {
-      this.adjustSetting(option, -1);
+      if (this.resetConfirmation) {
+        this.resetConfirmation = false;
+        this.message = "";
+      } else {
+        this.adjustSetting(option, -1);
+      }
     }
     if (this.engine.input.wasUiPressed("right")) {
-      this.adjustSetting(option, 1);
+      if (this.resetConfirmation) {
+        this.resetConfirmation = false;
+        this.message = "";
+      } else {
+        this.adjustSetting(option, 1);
+      }
     }
     if (this.engine.input.wasUiPressed("confirm")) {
       const language = this.engine.data.settings.language;
       if (option === "back") {
-        this.engine.switchState("title");
+        this.leaveSettings();
       } else if (option === "controls") {
         this.controlsOpen = true;
         this.message = "";
@@ -132,10 +159,24 @@ export class SettingsState extends GameState {
       } else if (option === "resetTutorial") {
         this.engine.data.settings.tutorialCompleted = false;
         this.saveSettings(t(language, "settings.tutorialNextRun"));
+      } else if (option === "resetGame") {
+        if (!this.resetConfirmation) {
+          this.resetConfirmation = true;
+          this.message = t(language, "settings.confirmResetGame", {
+            confirm: this.engine.input.getConfirmPrompt(),
+          });
+        } else {
+          this.engine.resetGameFromMenu();
+        }
       } else {
         this.adjustSetting(option, 1);
       }
     }
+  }
+
+  private leaveSettings() {
+    if (this.overlayMode) this.engine.closeSettingsToMenu();
+    else this.engine.switchState("title");
   }
 
   private updateControls() {
@@ -275,6 +316,7 @@ export class SettingsState extends GameState {
     if (option === "exportData") return t(language, "common.download");
     if (option === "importData") return t(language, "common.select");
     if (option === "resetTutorial") return t(language, settings.tutorialCompleted ? "common.reset" : "common.ready");
+    if (option === "resetGame") return t(language, "common.reset");
     return this.engine.input.getConfirmPrompt();
   }
 
@@ -305,7 +347,7 @@ export class SettingsState extends GameState {
     });
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#F1C40F";
+    ctx.fillStyle = this.resetConfirmation ? "#E74C3C" : "#F1C40F";
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = "#7F8C8D";

@@ -73,6 +73,20 @@ export function GameCanvas() {
     if (!canvasRef.current || !containerRef.current) return;
 
     engineRef.current = new Engine();
+    const syncVisualViewport = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const viewport = window.visualViewport;
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      container.style.setProperty("--visual-viewport-width", `${Math.max(1, Math.round(width))}px`);
+      container.style.setProperty("--visual-viewport-height", `${Math.max(1, Math.round(height))}px`);
+    };
+    syncVisualViewport();
+    window.visualViewport?.addEventListener("resize", syncVisualViewport);
+    window.visualViewport?.addEventListener("scroll", syncVisualViewport);
+    window.addEventListener("resize", syncVisualViewport);
+
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
@@ -152,6 +166,9 @@ export function GameCanvas() {
       document.removeEventListener("game:import-data", importData);
       document.removeEventListener("game:fullscreen", toggleFullscreen);
       window.clearInterval(settingsTimer);
+      window.visualViewport?.removeEventListener("resize", syncVisualViewport);
+      window.visualViewport?.removeEventListener("scroll", syncVisualViewport);
+      window.removeEventListener("resize", syncVisualViewport);
       removeQaBridge();
       engineRef.current?.cleanup();
       resizeObserver.disconnect();

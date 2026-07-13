@@ -141,6 +141,22 @@ export class Engine {
     this.input.suppressUntilReleased();
   }
 
+  public openSettingsFromMenu() {
+    if (this.overlayState !== "menu") return;
+    this.states.menu.exit();
+    this.input.suppressUntilReleased();
+    this.overlayState = "settings";
+    this.states.settings.enter({ overlay: true });
+  }
+
+  public closeSettingsToMenu() {
+    if (this.overlayState !== "settings") return;
+    this.states.settings.exit();
+    this.input.suppressUntilReleased();
+    this.overlayState = "menu";
+    this.states.menu.enter({ fromSettings: true });
+  }
+
   public applySettings() {
     this.input.setBindings(this.data.settings.keyBindings);
     this.input.setTouchPromptMode(this.data.settings.touchLabelMode);

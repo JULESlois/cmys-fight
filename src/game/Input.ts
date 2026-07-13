@@ -7,6 +7,13 @@ import {
 
 export type InputDevice = "keyboard" | "gamepad" | "touch";
 export type UiAction = "confirm" | "cancel" | "up" | "down" | "left" | "right" | "secondary";
+type NavigationDirection = "up" | "down" | "left" | "right";
+
+interface AxisNavigationState {
+  direction: NavigationDirection | null;
+  nextRepeatAt: number;
+  blockedUntilNeutral: boolean;
+}
 
 const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
   fire: [2, 7],
@@ -53,10 +60,11 @@ export class Input {
   private touchUiJustPressed: Partial<Record<UiAction, boolean>> = {};
   private gamepadUiActions: Partial<Record<UiAction, boolean>> = {};
   private gamepadUiJustPressed: Partial<Record<UiAction, boolean>> = {};
-  private virtualKeys: Record<string, boolean> = {};
-  private virtualKeyJustPressed: Record<string, boolean> = {};
+  private axisUiJustPressed: Partial<Record<NavigationDirection, boolean>> = {};
   private touchAxis = { x: 0, y: 0 };
   private gamepadAxis = { x: 0, y: 0 };
+  private touchNavigation: AxisNavigationState = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: false };
+  private gamepadNavigation: AxisNavigationState = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: false };
   private previousGamepadButtons: boolean[] = [];
   private previousGamepadDirections = { up: false, down: false, left: false, right: false };
   private physicalKeysThisFrame: string[] = [];
@@ -178,6 +186,21 @@ export class Input {
 
   public beginFrame() {
     this.pollGamepad();
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    this.updateAxisNavigation(
+      this.gamepadNavigation,
+      this.gamepadAxis.x,
+      this.gamepadAxis.y,
+      now,
+      this.suppressGamepadAxisUntilNeutral,
+    );
+    this.updateAxisNavigation(
+      this.touchNavigation,
+      this.touchAxis.x,
+      this.touchAxis.y,
+      now,
+      this.suppressTouchAxisUntilNeutral,
+    );
   }
 
   public update() {
@@ -186,7 +209,7 @@ export class Input {
     this.gamepadJustPressed = {};
     this.touchUiJustPressed = {};
     this.gamepadUiJustPressed = {};
-    this.virtualKeyJustPressed = {};
+    this.axisUiJustPressed = {};
     this.physicalKeysThisFrame = [];
   }
 
@@ -201,10 +224,11 @@ export class Input {
     this.touchUiJustPressed = {};
     this.gamepadUiActions = {};
     this.gamepadUiJustPressed = {};
-    this.virtualKeys = {};
-    this.virtualKeyJustPressed = {};
+    this.axisUiJustPressed = {};
     this.touchAxis = { x: 0, y: 0 };
     this.gamepadAxis = { x: 0, y: 0 };
+    this.touchNavigation = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: false };
+    this.gamepadNavigation = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: false };
     this.previousGamepadButtons = [];
     this.previousGamepadDirections = { up: false, down: false, left: false, right: false };
     this.physicalKeysThisFrame = [];
@@ -222,7 +246,7 @@ export class Input {
     this.gamepadJustPressed = {};
     this.touchUiJustPressed = {};
     this.gamepadUiJustPressed = {};
-    this.virtualKeyJustPressed = {};
+    this.axisUiJustPressed = {};
     this.physicalKeysThisFrame = [];
   }
 
@@ -237,13 +261,13 @@ export class Input {
   public isDown(key: string): boolean {
     const normalized = this.normalizeKey(key);
     if (this.suppressedKeys.has(normalized)) return false;
-    return !!this.keys[normalized] || !!this.virtualKeys[normalized];
+    return !!this.keys[normalized];
   }
 
   public wasPressed(key: string): boolean {
     const normalized = this.normalizeKey(key);
     if (this.suppressedKeys.has(normalized)) return false;
-    return !!this.justPressed[normalized] || !!this.virtualKeyJustPressed[normalized];
+    return !!this.justPressed[normalized];
   }
 
   public isActionDown(action: InputAction): boolean {
@@ -258,13 +282,17 @@ export class Input {
 
   public wasUiPressed(action: UiAction): boolean {
     if (this.gamepadUiJustPressed[action] || this.touchUiJustPressed[action]) return true;
+    if (
+      (action === "up" || action === "down" || action === "left" || action === "right")
+      && this.axisUiJustPressed[action]
+    ) return true;
     if (action === "confirm") return this.wasActionPressed("interact");
     if (action === "cancel") return this.wasPressed("escape");
     if (action === "secondary") return this.wasActionPressed("fire");
-    if (action === "up") return !!this.virtualKeyJustPressed.arrowup || this.wasPressed(this.bindings.moveUp);
-    if (action === "down") return !!this.virtualKeyJustPressed.arrowdown || this.wasPressed(this.bindings.moveDown);
-    if (action === "left") return !!this.virtualKeyJustPressed.arrowleft || this.wasPressed(this.bindings.moveLeft);
-    return !!this.virtualKeyJustPressed.arrowright || this.wasPressed(this.bindings.moveRight);
+    if (action === "up") return this.wasPressed(this.bindings.moveUp);
+    if (action === "down") return this.wasPressed(this.bindings.moveDown);
+    if (action === "left") return this.wasPressed(this.bindings.moveLeft);
+    return this.wasPressed(this.bindings.moveRight);
   }
 
   public setTouchAxis(x: number, y: number) {
@@ -275,10 +303,6 @@ export class Input {
       if (!active) this.suppressTouchAxisUntilNeutral = false;
       this.touchAxis = { x: 0, y: 0 };
     }
-    this.setVirtualKey("arrowleft", !this.suppressTouchAxisUntilNeutral && this.touchAxis.x < -0.55);
-    this.setVirtualKey("arrowright", !this.suppressTouchAxisUntilNeutral && this.touchAxis.x > 0.55);
-    this.setVirtualKey("arrowup", !this.suppressTouchAxisUntilNeutral && this.touchAxis.y < -0.55);
-    this.setVirtualKey("arrowdown", !this.suppressTouchAxisUntilNeutral && this.touchAxis.y > 0.55);
     if (Math.abs(x) > 0.05 || Math.abs(y) > 0.05) this.lastDevice = "touch";
   }
 
@@ -298,13 +322,6 @@ export class Input {
     if (down) this.lastDevice = "touch";
   }
 
-  private setVirtualKey(key: string, down: boolean) {
-    const normalized = this.normalizeKey(key);
-    const wasDown = this.virtualKeys[normalized] === true;
-    this.virtualKeys[normalized] = down;
-    if (down && !wasDown) this.virtualKeyJustPressed[normalized] = true;
-  }
-
   private pollGamepad() {
     const pads = typeof navigator !== "undefined" && navigator.getGamepads
       ? Array.from(navigator.getGamepads()).filter((pad): pad is Gamepad => Boolean(pad && pad.connected))
@@ -319,7 +336,7 @@ export class Input {
       this.previousGamepadButtons = [];
       this.suppressedGamepadButtons.clear();
       this.suppressGamepadAxisUntilNeutral = false;
-      for (const key of ["arrowup", "arrowdown", "arrowleft", "arrowright"]) this.setVirtualKey(key, false);
+      this.gamepadNavigation = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: false };
       return;
     }
 
@@ -342,12 +359,6 @@ export class Input {
       if (!anyDirection) this.suppressGamepadAxisUntilNeutral = false;
       x = 0;
       y = 0;
-    }
-    const directionKeys: Array<[keyof typeof directions, string]> = [
-      ["up", "arrowup"], ["down", "arrowdown"], ["left", "arrowleft"], ["right", "arrowright"],
-    ];
-    for (const [direction, key] of directionKeys) {
-      this.setVirtualKey(key, !this.suppressGamepadAxisUntilNeutral && directions[direction]);
     }
     if (x === 0) x = directions.left ? -1 : directions.right ? 1 : 0;
     if (y === 0) y = directions.up ? -1 : directions.down ? 1 : 0;
@@ -384,6 +395,58 @@ export class Input {
 
     if (anyDirection || buttons.some(Boolean)) this.lastDevice = "gamepad";
     this.previousGamepadButtons = buttons;
+  }
+
+  private updateAxisNavigation(
+    state: AxisNavigationState,
+    x: number,
+    y: number,
+    now: number,
+    suppressed: boolean,
+  ): void {
+    const magnitude = Math.hypot(x, y);
+    const releaseThreshold = 0.35;
+    const engageThreshold = 0.68;
+
+    if (suppressed) {
+      state.direction = null;
+      state.nextRepeatAt = 0;
+      state.blockedUntilNeutral = magnitude >= releaseThreshold;
+      return;
+    }
+
+    if (magnitude < releaseThreshold) {
+      state.direction = null;
+      state.nextRepeatAt = 0;
+      state.blockedUntilNeutral = false;
+      return;
+    }
+
+    if (state.blockedUntilNeutral) return;
+
+    const direction: NavigationDirection = Math.abs(x) > Math.abs(y)
+      ? (x < 0 ? "left" : "right")
+      : (y < 0 ? "up" : "down");
+
+    if (!state.direction) {
+      if (magnitude < engageThreshold) return;
+      state.direction = direction;
+      state.nextRepeatAt = now + 420;
+      this.axisUiJustPressed[direction] = true;
+      return;
+    }
+
+    // A direct analog direction change is usually diagonal drift or stick
+    // bounce. Requiring neutral prevents one gesture from skipping entries.
+    if (direction !== state.direction) {
+      state.blockedUntilNeutral = true;
+      return;
+    }
+
+    if (now >= state.nextRepeatAt) {
+      this.axisUiJustPressed[direction] = true;
+      state.nextRepeatAt = now + 160;
+    }
   }
 
   public getAxis(): { x: number; y: number } {
@@ -427,10 +490,9 @@ export class Input {
     if (gamepadDirectionHeld || touchDirectionHeld) {
       this.gamepadAxis = { x: 0, y: 0 };
       this.touchAxis = { x: 0, y: 0 };
-      for (const key of ["arrowup", "arrowdown", "arrowleft", "arrowright"]) {
-        this.virtualKeys[key] = false;
-        this.virtualKeyJustPressed[key] = false;
-      }
+      this.axisUiJustPressed = {};
+      this.gamepadNavigation = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: true };
+      this.touchNavigation = { direction: null, nextRepeatAt: 0, blockedUntilNeutral: true };
     }
   }
 }

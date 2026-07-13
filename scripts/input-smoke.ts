@@ -43,6 +43,7 @@ const { Input } = await import("../src/game/Input");
 const { CharacterSelectState } = await import("../src/game/states/CharacterSelectState");
 const { DungeonState } = await import("../src/game/states/DungeonState");
 const { MenuState } = await import("../src/game/states/MenuState");
+const { SettingsState } = await import("../src/game/states/SettingsState");
 const { HubState } = await import("../src/game/states/HubState");
 const fs = await import("node:fs");
 
@@ -154,6 +155,43 @@ promptInput.beginFrame();
 promptInput.update();
 promptInput.cleanup();
 
+const touchNavigationInput = new Input();
+touchNavigationInput.setTouchAxis(0, 0.9);
+touchNavigationInput.beginFrame();
+assert.equal(touchNavigationInput.wasUiPressed("down"), true, "touch stick emits one immediate menu step");
+touchNavigationInput.update();
+touchNavigationInput.beginFrame();
+assert.equal(touchNavigationInput.wasUiPressed("down"), false, "held touch stick waits before repeating");
+touchNavigationInput.update();
+touchNavigationInput.setTouchAxis(0.9, 0.1);
+touchNavigationInput.beginFrame();
+assert.equal(touchNavigationInput.wasUiPressed("right"), false, "diagonal drift cannot skip to another menu axis");
+touchNavigationInput.update();
+touchNavigationInput.setTouchAxis(0, 0);
+touchNavigationInput.beginFrame();
+touchNavigationInput.update();
+touchNavigationInput.setTouchAxis(0.9, 0);
+touchNavigationInput.beginFrame();
+assert.equal(touchNavigationInput.wasUiPressed("right"), true, "touch stick re-arms after returning to neutral");
+touchNavigationInput.cleanup();
+
+const gamepadNavigationInput = new Input();
+gamepads = [{ ...createPad(false), axes: [0, 0.9, 0, 0] }];
+gamepadNavigationInput.beginFrame();
+assert.equal(gamepadNavigationInput.wasUiPressed("down"), true, "gamepad stick emits one immediate menu step");
+gamepadNavigationInput.update();
+gamepadNavigationInput.beginFrame();
+assert.equal(gamepadNavigationInput.wasUiPressed("down"), false, "held gamepad stick waits before repeating");
+gamepadNavigationInput.update();
+gamepads = [{ ...createPad(false), axes: [0, 0, 0, 0] }];
+gamepadNavigationInput.beginFrame();
+gamepadNavigationInput.update();
+gamepads = [{ ...createPad(false), axes: [-0.9, 0, 0, 0] }];
+gamepadNavigationInput.beginFrame();
+assert.equal(gamepadNavigationInput.wasUiPressed("left"), true, "gamepad stick re-arms after neutral");
+gamepadNavigationInput.cleanup();
+gamepads = [];
+
 const characterInput = new Input();
 let switchedState = "";
 const characterEngine = {
@@ -257,14 +295,14 @@ menuInput.cleanup();
 
 const destructiveMenuInput = new Input();
 let restoreCount = 0;
-let resetCount = 0;
+let settingsOpenCount = 0;
 const destructiveMenuEngine = {
   input: destructiveMenuInput,
   data: { settings: { language: "en" }, data: { player: { level: 1, hp: 5, maxHp: 5 } } },
   closeMenu() {},
   saveFromMenu() {},
   reloadSaveFromMenu() { restoreCount++; },
-  resetGameFromMenu() { resetCount++; },
+  openSettingsFromMenu() { settingsOpenCount++; },
 } as any;
 const destructiveMenu = new MenuState(destructiveMenuEngine) as any;
 destructiveMenu.enter();
@@ -283,15 +321,53 @@ destructiveMenu.enter();
 destructiveMenu.selection = 3;
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 destructiveMenu.update(0);
-assert.equal(resetCount, 0, "reset requires a second confirmation");
-destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
-windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-destructiveMenu.update(0);
-assert.equal(resetCount, 1);
+assert.equal(settingsOpenCount, 1, "pause menu exposes settings instead of reset game");
 destructiveMenuInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 destructiveMenuInput.cleanup();
+
+const settingsInput = new Input();
+let settingsResetCount = 0;
+let settingsOverlayCloseCount = 0;
+const settingsEngine = {
+  input: settingsInput,
+  data: {
+    settings: {
+      language: "en",
+      keyBindings: {
+        moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
+        fire: "j", interact: "k", skill: "l", swapWeapon: "i", pause: "escape",
+      },
+      tutorialCompleted: true,
+    },
+    loadSettings() {},
+    saveSettings() {},
+  },
+  applySettings() {},
+  switchState() {},
+  closeSettingsToMenu() { settingsOverlayCloseCount++; },
+  resetGameFromMenu() { settingsResetCount++; },
+} as any;
+const settingsState = new SettingsState(settingsEngine) as any;
+settingsState.enter({ overlay: true });
+windowTarget.dispatch("keydown", { key: "Escape", preventDefault() {} });
+settingsState.update(0);
+assert.equal(settingsOverlayCloseCount, 1, "pause settings returns to the system menu");
+settingsInput.update();
+windowTarget.dispatch("keyup", { key: "Escape", preventDefault() {} });
+settingsState.enter();
+settingsState.selectedIndex = 19;
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+settingsState.update(0);
+assert.equal(settingsResetCount, 0, "settings reset requires a second confirmation");
+settingsInput.update();
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
+settingsState.update(0);
+assert.equal(settingsResetCount, 1, "settings owns the destructive reset action");
+settingsInput.update();
+windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+settingsInput.cleanup();
 
 const shopInput = new Input();
 const shopEngine = { input: shopInput } as any;
@@ -450,4 +526,4 @@ runContract("keyboard", input => keyboardPulse(input, "k"));
 runContract("touch", touchPulse);
 runContract("gamepad", gamepadPulse);
 
-console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", coreKeyboardLayout: "ESC-WASD-JKLI", noEnterOrSpaceFallback: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "J-X-only", shopEscapeCapture: "ok", transitionReleaseGate: "keyboard-and-gamepad", destructiveMenuConfirmation: "ok", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));
+console.log(JSON.stringify({ keyboardRun: "ok", touchRun: "ok", gamepadRun: "ok", semanticUiActions: "ok", coreKeyboardLayout: "ESC-WASD-JKLI", noEnterOrSpaceFallback: "ok", contextualGamepadSkill: "B-skill-or-cancel", secondaryActionIsolation: "J-X-only", shopEscapeCapture: "ok", transitionReleaseGate: "keyboard-and-gamepad", axisNavigationDebounce: "neutral-gate-420ms-repeat", menuSafety: "restore-confirmed-reset-in-settings", touchPromptLabels: "ok", hubUnifiedMenu: "ok", cmysFormSelection: "identity-to-three-forms", kanamiSelection: "identity-to-finale" }));

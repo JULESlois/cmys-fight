@@ -1,12 +1,12 @@
 import { t, uiFont } from "../i18n";
 import { GameState } from "./GameState";
 
-type MenuOption = "resume" | "save" | "restore" | "reset";
-const OPTIONS: MenuOption[] = ["resume", "save", "restore", "reset"];
+type MenuOption = "resume" | "save" | "restore" | "settings";
+const OPTIONS: MenuOption[] = ["resume", "save", "restore", "settings"];
 
 export class MenuState extends GameState {
   private selection = 0;
-  private confirmation: "restore" | "reset" | null = null;
+  private confirmation: "restore" | null = null;
   private message = "";
 
   enter() {
@@ -52,16 +52,19 @@ export class MenuState extends GameState {
       this.message = t(language, "menu.saved");
       return;
     }
-    if (this.confirmation !== option) {
-      this.confirmation = option;
-      this.message = t(language, option === "restore" ? "menu.confirmRestore" : "menu.confirmReset", {
+    if (option === "settings") {
+      this.engine.openSettingsFromMenu();
+      return;
+    }
+    if (this.confirmation !== "restore") {
+      this.confirmation = "restore";
+      this.message = t(language, "menu.confirmRestore", {
         confirm: this.engine.input.getConfirmPrompt(),
       });
       return;
     }
     this.confirmation = null;
-    if (option === "restore") this.engine.reloadSaveFromMenu();
-    else this.engine.resetGameFromMenu();
+    this.engine.reloadSaveFromMenu();
   }
 
   draw(ctx: CanvasRenderingContext2D) {
