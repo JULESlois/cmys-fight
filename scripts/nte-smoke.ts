@@ -45,14 +45,20 @@ assert.equal(usesDetailedCharacterArt("esper_zero"), true);
 assert.equal(usesDetailedCharacterArt("nanally"), true);
 
 assert.equal(SkillController.getConfig("esper_zero").id, "appraise_engrave");
+assert.equal(SkillController.getConfig("esper_zero").name, "ENGRAVING APPRAISAL");
 assert.equal(SkillController.getConfig("esper_zero").duration, 5);
 assert.equal(SkillController.getConfig("nanally").id, "colucci_authority");
+assert.equal(SkillController.getConfig("nanally").name, "COLLINS HOWL ART");
 assert.equal(SkillController.getConfig("nanally").duration, 12);
 
 assert.equal(WEAPONS.zeroth_sense.exclusiveCharacterId, "esper_zero");
 assert.equal(WEAPONS.colucci_claws.exclusiveCharacterId, "nanally");
 assert.equal(WEAPONS.zeroth_sense.attackMode, "melee");
 assert.equal(WEAPONS.colucci_claws.attackMode, "melee");
+assert.equal(WEAPONS.zeroth_sense.name, "Appraiser's Edge");
+assert.equal(WEAPONS.colucci_claws.name, "Collins Heavy Fists");
+assert.equal(WEAPONS.colucci_claws.category, "special");
+assert.equal(WEAPONS.colucci_claws.dualWield, true);
 assert.equal(isWeaponAvailableForCharacter(WEAPONS.zeroth_sense, "esper_zero"), true);
 assert.equal(isWeaponAvailableForCharacter(WEAPONS.zeroth_sense, "nanally"), false);
 assert.equal(isWeaponAvailableForCharacter(WEAPONS.colucci_claws, "nanally"), true);
@@ -94,7 +100,7 @@ const authority = SkillController.activate(nanally, [], { x: 0, y: 0 }, 0);
 assert.equal(authority.activated, true);
 assert.equal(nanally.skillActiveTimer, 12);
 const authorityClaws = WeaponController.fire(nanally, 0, () => 0.99);
-assert.equal(authorityClaws.projectiles.length, 6, "Authority adds one full Underboss follow-up volley");
+assert.equal(authorityClaws.projectiles.length, 6, "Collins Howl Art adds one complete Anima follow-up volley");
 assert.deepEqual(authorityClaws.projectiles.map(projectile => projectile.damage), [2, 2, 2, 1, 1, 1]);
 assert.ok(authorityClaws.projectiles.slice(3).every(projectile => projectile.color === "#FF8FAE"));
 for (const projectile of authorityClaws.projectiles) releaseProjectile(projectile);
@@ -122,18 +128,21 @@ for (const [id, palette] of [
 assert.notDeepEqual(SPRITES.player_esper_zero_side_idle, SPRITES.player_nanally_side_idle);
 
 const zeroIdle = SPRITES.player_esper_zero_side_idle;
-assert.equal(zeroIdle[1][16], "L", "female Esper Zero keeps the official silver ahoge");
-assert.ok(zeroIdle[4].slice(11, 22).includes("P"), "female Esper Zero keeps the black headband");
+assert.equal(zeroIdle[0][16], "Q", "female Esper Zero keeps the official silver ahoge");
+assert.ok(zeroIdle[3].slice(12, 21).includes("P"), "female Esper Zero keeps the curved black headband");
+assert.equal(zeroIdle[7][14], "A", "female Esper Zero exposes the far eye");
+assert.equal(zeroIdle[8][18], "J", "female Esper Zero exposes the near violet iris");
 assert.ok(zeroIdle.slice(13, 17).some(row => row.slice(12, 21).includes("I")), "female Esper Zero keeps the fitted white blouse");
-assert.ok(zeroIdle.slice(13, 17).every(row => row.includes("J")), "female Esper Zero keeps the lavender tie");
+assert.ok(zeroIdle.slice(12, 17).filter(row => row.includes("J")).length >= 4, "female Esper Zero keeps the asymmetric lavender tie");
 assert.ok(zeroIdle.slice(13, 17).some(row => row.includes("B") && row.includes("C")), "female Esper Zero keeps the cropped tactical jacket");
 assert.ok(zeroIdle.slice(19, 22).some(row => row.includes("G") || row.includes("H")), "female Esper Zero keeps the dark pleated skirt");
 assert.equal(zeroIdle.flatMap(row => [...row.slice(0, 5)]).every(pixel => pixel === "."), true, "Esper Zero sprite does not bake in a duplicate sword");
 
 const nanallyIdle = SPRITES.player_nanally_side_idle;
-assert.equal(nanallyIdle[3][10], "A", "Nanally keeps the left black cat-ear accessory");
-assert.equal(nanallyIdle[3][21], "A", "Nanally keeps the right black cat-ear accessory");
-assert.ok(nanallyIdle[8].slice(12, 23).includes("P"), "Nanally keeps the round glasses");
+assert.equal(nanallyIdle[2][10], "A", "Nanally keeps the left black cat-ear accessory");
+assert.equal(nanallyIdle[2][21], "A", "Nanally keeps the right black cat-ear accessory");
+assert.equal(nanallyIdle[8][14], "P", "Nanally keeps the left blue-tinted round lens");
+assert.equal(nanallyIdle[9][20], "Q", "Nanally keeps the right amber iris inside the glasses");
 assert.ok(nanallyIdle.slice(13, 17).some(row => row.slice(11, 22).includes("I")), "Nanally keeps the white shirt");
 assert.ok(nanallyIdle.slice(13, 17).some(row => row.includes("L")), "Nanally keeps the black paw tie");
 assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("D")), "Nanally keeps the bright pink skirt panels");
@@ -146,6 +155,18 @@ for (const id of ["zeroth_sense", "colucci_claws"]) {
   assert.ok(WEAPON_PALETTES[id]);
   assert.ok(WEAPON_ART_ANCHORS[id]);
 }
+const zeroBladeMaxThickness = Math.max(
+  ...Array.from({ length: 20 }, (_, index) =>
+    WEAPON_SPRITES.zeroth_sense.filter(row => row[12 + index] !== ".").length,
+  ),
+);
+assert.ok(zeroBladeMaxThickness <= 8, "Appraiser's Edge remains a slim sword rather than a cleaver");
+assert.ok(
+  [15, 18, 21, 24].every(x =>
+    WEAPON_SPRITES.colucci_claws.slice(3, 8).some(row => row[x] === "5"),
+  ),
+  "Collins Heavy Fists expose four plated knuckles",
+);
 
 assert.equal(META_SAVE_VERSION, 7);
 const defaultMeta = createDefaultMetaProgress();
@@ -155,10 +176,10 @@ const migratedMeta = normalizeMetaProgress({ version: 6, unlockedCharacters: ["k
 for (const id of ["esper_zero", "nanally"]) assert.ok(migratedMeta.unlockedCharacters.includes(id));
 for (const id of ["zeroth_sense", "colucci_claws"]) assert.ok(migratedMeta.unlockedStarterWeapons.includes(id));
 
-assert.equal(getCharacterText("esper_zero", CHARACTERS.esper_zero, "zh-CN").title, "第零鉴定师");
-assert.equal(getCharacterText("nanally", CHARACTERS.nanally, "zh-CN").title, "科鲁奇初代目");
-assert.match(getWeaponMechanic("zeroth_sense", WEAPONS.zeroth_sense.mechanic, "zh-CN"), /鉴定刻印/);
-assert.match(getWeaponMechanic("colucci_claws", WEAPONS.colucci_claws.mechanic, "zh-CN"), /协同追击/);
+assert.equal(getCharacterText("esper_zero", CHARACTERS.esper_zero, "zh-CN").title, "伊波恩鉴定师");
+assert.equal(getCharacterText("nanally", CHARACTERS.nanally, "zh-CN").title, "伊波恩灵相重拳手");
+assert.match(getWeaponMechanic("zeroth_sense", WEAPONS.zeroth_sense.mechanic, "zh-CN"), /刻印鉴定/);
+assert.match(getWeaponMechanic("colucci_claws", WEAPONS.colucci_claws.mechanic, "zh-CN"), /灵相追击/);
 
 const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
@@ -189,9 +210,9 @@ console.log(JSON.stringify({
   },
   characters: ["esper_zero", "nanally"],
   exclusiveWeapons: ["zeroth_sense", "colucci_claws"],
-  esperZero: "five-second-appraisal-empower",
-  nanally: "twelve-second-underboss-follow-up",
-  detailedSprites: "32x32-six-frame-official-silhouettes",
-  officialArtFeatures: "zero-silver-tactical-nanally-pink-cat-streetwear",
+  esperZero: "female-five-second-engraving-appraisal",
+  nanally: "twelve-second-anima-follow-up",
+  detailedSprites: "32x32-six-frame-reference-driven-silhouettes",
+  officialArtFeatures: "zero-silver-bob-appraiser-nanally-pink-cat-streetwear",
   metaMigration: "v6-v7-auto-unlock",
 }));

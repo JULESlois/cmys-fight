@@ -46,7 +46,7 @@ export const CHARACTER_COLLECTIONS: Record<CharacterCollectionId, CharacterColle
     id: "nte",
     name: "NTE",
     color: "#C79CFF",
-    description: "Hethereau City's Espers turn appraisal and follow-up combat into explosive pressure.",
+    description: "Eibon's anomaly hunters convert appraisal marks and Anima follow-ups into sustained pressure.",
     characterIds: ["esper_zero", "nanally"],
   },
 };
@@ -138,7 +138,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
   esper_zero: {
     id: "esper_zero",
     name: "Esper Zero",
-    title: "The Zeroth Appraiser",
+    title: "Eibon Appraiser",
     color: "#BDA7FF",
     maxHp: 6,
     maxArmor: 5,
@@ -147,13 +147,13 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 11,
     speed: 106,
     starterWeapon: "zeroth_sense",
-    passive: "Appraise and Engrave empowers Zeroth Sense with stronger damage and an additional body of penetration",
+    passive: "Appraisal Mark: Engraving Appraisal strengthens Appraiser's Edge and lets each cut pierce one additional target",
     collectionId: "nte",
   },
   nanally: {
     id: "nanally",
     name: "Nanally",
-    title: "Colucci Ichi-daime",
+    title: "Eibon Anima Striker",
     color: "#FF668F",
     maxHp: 7,
     maxArmor: 5,
@@ -162,7 +162,7 @@ export const CHARACTERS: Record<string, CharacterConfig> = {
     manaRechargeRate: 10,
     speed: 102,
     starterWeapon: "colucci_claws",
-    passive: "Ichi-daime's Authority calls an Underboss follow-up strike with every claw combo",
+    passive: "Collins Follow-Up: Collins Howl Art repeats every heavy-fist combo with a rapid Anima follow-up",
     collectionId: "nte",
   },
   rogue: {

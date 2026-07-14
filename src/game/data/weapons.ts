@@ -508,19 +508,19 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
 
   zeroth_sense: {
-    id: "zeroth_sense", name: "Zeroth Sense", category: "sword", rarity: "rare",
+    id: "zeroth_sense", name: "Appraiser's Edge", category: "sword", rarity: "rare",
     damage: 5, fireRate: 2.8, bulletSpeed: 190, manaCost: 1.5, spread: 0.34,
     pelletCount: 2, knockback: 5, critChance: 0.2, critMultiplier: 2.2, color: "#BDA7FF",
     projectileRadius: 5, projectileLife: 0.24, pierce: 1, exclusiveCharacterId: "esper_zero",
-    mechanic: "Esper Zero-exclusive appraisal blade; Appraise and Engrave empowers its paired cuts with stronger damage and penetration.",
+    mechanic: "Zero's slim appraisal sword releases paired cuts; Engraving Appraisal raises their damage and lets them pierce one additional target.",
     projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.4,
   },
   colucci_claws: {
-    id: "colucci_claws", name: "Colucci Claws", category: "sword", rarity: "rare",
+    id: "colucci_claws", name: "Collins Heavy Fists", category: "special", rarity: "rare",
     damage: 2, fireRate: 4.6, bulletSpeed: 175, manaCost: 1, spread: 0.58,
     pelletCount: 3, knockback: 3, critChance: 0.15, critMultiplier: 2.1, color: "#FF668F",
-    projectileRadius: 4, projectileLife: 0.2, pierce: 1, exclusiveCharacterId: "nanally",
-    mechanic: "Nanally-exclusive paw gauntlets unleash rapid claw fans; Authority adds an Underboss follow-up to every combo.",
+    projectileRadius: 4, projectileLife: 0.2, pierce: 1, exclusiveCharacterId: "nanally", dualWield: true,
+    mechanic: "Nanally's oversized paired gauntlets drive three close-range impacts; Collins Howl Art repeats the combo as an Anima follow-up.",
     projectileStyle: "sword", attackMode: "melee", impactEffect: "slash", recoil: 0.2,
   },
 

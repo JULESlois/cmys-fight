@@ -467,8 +467,8 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "character.collection.cmys.description": "守御、奥术与疾行三种形态",
   "character.collection.strinova": "弦化行动者",
   "character.collection.strinova.description": "精确射击、控制与守护",
-  "character.collection.nte": "海特洛市异能者",
-  "character.collection.nte.description": "鉴定刻印与协同追击",
+  "character.collection.nte": "伊波恩异象猎人",
+  "character.collection.nte.description": "鉴定标记与灵相追击",
   "character.collectionCount": "可选角色：{count}",
   "character.collectionFooter": "[{horizontal}] 合集   [{confirm}] 打开   [{cancel}] 返回",
   "character.characterFooter": "[{horizontal}] 角色   [{vertical}] 武器   [{confirm}] 开始   [{cancel}] 合集",
@@ -653,8 +653,8 @@ const WEAPON_MECHANIC_ZH: Record<string, string> = {
   m4a1_s_cyrex: "带消音器的精准自动步枪，散布和后坐极低，并能穿透一个目标。",
   m4a4_coalition: "黑金传奇自动步枪，兼具高持续伤害、穿透能力和稳定暴击。",
   ultimate: "神话级双持电子击发武器，每次发射成对弹丸，射速极高；持续射击会积热并扩大散布，过热后短暂锁定。",
-  zeroth_sense: "零专属鉴定长剑，双重斩击兼具暴击与穿透；鉴定刻印生效时伤害提升并额外穿透一个目标。",
-  colucci_claws: "娜娜莉专属猫爪拳套，快速释放三段扇形爪击；初代目权限生效时每轮攻击都会追加干部协同追击。",
+  zeroth_sense: "零使用的轻型鉴定剑，连续释放两段斩击；发动「刻印鉴定」后伤害提高，并额外穿透一个目标。",
+  colucci_claws: "娜娜莉使用的成对重型机械拳套，连续轰出三段近身冲击；发动「科林斯咆哮术」后会追加一次灵相追击。",
   so_14: "神话级自适应三连射：首发为高伤高穿透压制弹，后两发快速稳定跟进。",
   aa_12: "全自动战斗霰弹枪，持续喷射六枚弹丸形成近距离压制。",
   awp_dragon_lore: "神话级重型狙击步枪，对生命高于 75% 的目标造成额外 75% 伤害，并穿透四个目标。",
@@ -695,8 +695,8 @@ const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
   michele: { title: "萌新搜查官", passive: "受到伤害后标记攻击者 2 秒；Inspector 对标记目标伤害 +35%。" },
   kanami: { title: "灵魂歌姬", passive: "Finale 命中时释放共鸣音波，对附近敌人造成范围伤害。" },
   celestia: { title: "守护星芒", passive: "护甲会更早且更快地恢复；守护星芒可提供持续 10 秒的临时护甲。" },
-  esper_zero: { title: "第零鉴定师", passive: "鉴定刻印生效期间，Zeroth Sense 伤害提高并额外穿透一个目标。" },
-  nanally: { title: "科鲁奇初代目", passive: "初代目权限生效期间，每次猫爪连击都会召唤干部追加一次协同追击。" },
+  esper_zero: { title: "伊波恩鉴定师", passive: "鉴定标记：发动「刻印鉴定」后，鉴定之刃伤害提高，并额外穿透一个目标。" },
+  nanally: { title: "伊波恩灵相重拳手", passive: "科林斯追击：发动「科林斯咆哮术」后，每轮重拳连击都会追加一次灵相追击。" },
 };
 
 export function normalizeLanguage(value: unknown): Language {

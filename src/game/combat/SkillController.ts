@@ -74,13 +74,13 @@ const SKILLS: Record<string, SkillConfig> = {
   },
   esper_zero: {
     id: "appraise_engrave",
-    name: "APPRAISE & ENGRAVE",
+    name: "ENGRAVING APPRAISAL",
     cooldown: 11,
     duration: 5,
   },
   nanally: {
     id: "colucci_authority",
-    name: "ICHI-DAIME'S AUTHORITY",
+    name: "COLLINS HOWL ART",
     cooldown: 15,
     duration: 12,
   },

@@ -121,9 +121,9 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
   unlock(meta.unlockedCharacters, "celestia", "Celestia");
   unlock(meta.unlockedStarterWeapons, "polaris", "Polaris");
   unlock(meta.unlockedCharacters, "esper_zero", "Esper Zero");
-  unlock(meta.unlockedStarterWeapons, "zeroth_sense", "Zeroth Sense");
+  unlock(meta.unlockedStarterWeapons, "zeroth_sense", "Appraiser's Edge");
   unlock(meta.unlockedCharacters, "nanally", "Nanally");
-  unlock(meta.unlockedStarterWeapons, "colucci_claws", "Colucci Claws");
+  unlock(meta.unlockedStarterWeapons, "colucci_claws", "Collins Heavy Fists");
 
   const difficultyStage = getDifficultyStageIndex(meta.highestStage);
   if (difficultyStage >= 5 || meta.currency >= 30) {
