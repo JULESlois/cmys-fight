@@ -90,6 +90,89 @@ function rasterPixel(canvas: PixelCanvas, x: number, y: number, color: string): 
   canvas[y][x] = color;
 }
 
+type RasterXMapper = (x: number, y: number) => number;
+
+/**
+ * Pull selected outer columns toward the character centre without resampling
+ * the face and torso as a bitmap. Pixels farther from the centre are written
+ * first, allowing central facial and costume details to retain priority when
+ * two authored columns collapse onto the same destination column.
+ */
+function remapRasterColumns(canvas: PixelCanvas, mapX: RasterXMapper): PixelCanvas {
+  const output = createCanvas();
+  const centreX = (CHARACTER_WIDTH - 1) / 2;
+
+  for (let y = 0; y < CHARACTER_HEIGHT; y++) {
+    const occupied = canvas[y]
+      .map((color, x) => ({ color, x }))
+      .filter(pixelData => pixelData.color !== ".")
+      .sort((left, right) => Math.abs(right.x - centreX) - Math.abs(left.x - centreX));
+
+    for (const pixelData of occupied) {
+      const targetX = Math.max(0, Math.min(CHARACTER_WIDTH - 1, mapX(pixelData.x, y)));
+      output[y][targetX] = pixelData.color;
+    }
+  }
+
+  return output;
+}
+
+function compactEsperZeroSilhouette(canvas: PixelCanvas): PixelCanvas {
+  return remapRasterColumns(canvas, (x, y) => {
+    // Preserve the eye spacing and centre fringe; only the outer bob is drawn in.
+    if (y <= 11) {
+      if (x <= 10) return x + 1;
+      if (x >= 22) return x - 1;
+      return x;
+    }
+
+    // Sleeves, cuffs and skirt panels supplied most of the unwanted width.
+    if (y <= 22) {
+      if (x <= 9) return x + 3;
+      if (x <= 12) return x + 1;
+      if (x >= 24) return x - 3;
+      if (x >= 21) return x - 1;
+      return x;
+    }
+
+    // Keep the authored stride while reducing the static wide-legged stance.
+    if (x <= 10) return x + 2;
+    if (x <= 12) return x + 1;
+    if (x >= 24) return x - 2;
+    if (x >= 21) return x - 1;
+    return x;
+  });
+}
+
+function compactNanallySilhouette(canvas: PixelCanvas, phase: number): PixelCanvas {
+  return remapRasterColumns(canvas, (x, y) => {
+    // Draw the cat ears and side hair inward while leaving both lenses intact.
+    if (y <= 11) {
+      if (x <= 10) return x + (phase === 2 ? 3 : 1);
+      if (x >= 22) return x - (phase === 2 ? 2 : 1);
+      return x;
+    }
+
+    // The oversized coat should hang vertically rather than spread sideways.
+    if (y <= 23) {
+      if (x <= 5) return x + 5;
+      if (x <= 10) return x + 3;
+      if (x <= 12) return x + 1;
+      if (x >= 28) return x - 4;
+      if (x >= 24) return x - 3;
+      if (x >= 21) return x - 1;
+      return x;
+    }
+
+    // Bring the boots beneath the hips without removing the asymmetric pose.
+    if (x <= 7) return x + 3;
+    if (x <= 13) return x + 1;
+    if (x >= 25) return x - 3;
+    if (x >= 21) return x - 1;
+    return x;
+  });
+}
+
 function rasterSpan(canvas: PixelCanvas, x0: number, x1: number, y: number, color: string): void {
   for (let x = x0; x <= x1; x++) rasterPixel(canvas, x, y, color);
 }
@@ -794,7 +877,7 @@ function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
   // Asymmetric thigh strap reinforces the appraiser utility outfit.
   rasterSpan(canvas, legPoses.rear[0] - 1, legPoses.rear[0] + 1, 24 + bob, "O");
 
-  return finish(canvas);
+  return finish(compactEsperZeroSilhouette(canvas));
 }
 
 function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
@@ -999,7 +1082,7 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterPixel(canvas, legPoses.front[2], 26, "H");
   rasterSpan(canvas, legPoses.front[3], legPoses.front[3] + 2, 30, "R");
 
-  return finish(canvas);
+  return finish(compactNanallySilhouette(canvas, phase));
 }
 
 export const MICHELE_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {

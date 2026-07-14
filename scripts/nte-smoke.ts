@@ -32,6 +32,56 @@ import {
 } from "../src/game/MetaProgress";
 import { getCharacterText, getWeaponMechanic } from "../src/game/i18n";
 
+type SpriteFrame = readonly string[];
+
+function getSpriteBounds(frame: SpriteFrame): {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  width: number;
+  height: number;
+} {
+  let minX = 32;
+  let maxX = -1;
+  let minY = 32;
+  let maxY = -1;
+  for (let y = 0; y < frame.length; y++) {
+    for (let x = 0; x < frame[y].length; x++) {
+      if (frame[y][x] === ".") continue;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
+}
+
+function countRegionPixels(
+  frame: SpriteFrame,
+  pixels: string,
+  minX: number,
+  maxX: number,
+  minY: number,
+  maxY: number,
+): number {
+  let count = 0;
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      if (pixels.includes(frame[y]?.[x] ?? ".")) count++;
+    }
+  }
+  return count;
+}
+
 assert.deepEqual(CHARACTER_COLLECTIONS.strinova.characterIds, ["michele", "kanami", "celestia"]);
 assert.deepEqual(CHARACTER_COLLECTIONS.nte.characterIds, ["esper_zero", "nanally"]);
 assert.equal(CHARACTERS.michele.collectionId, "strinova");
@@ -121,6 +171,13 @@ for (const [id, palette] of [
   assert.ok(frames.every(frame => frame.length === 32 && frame.every(row => row.length === 32)), `${id} 32x32 frames`);
   assert.notDeepEqual(frames[0], frames[1], `${id} idle animation must move`);
   assert.notDeepEqual(frames[2], frames[4], `${id} walk animation must cross-step`);
+  const bounds = frames.map(getSpriteBounds);
+  assert.ok(bounds.every(box => box.width <= 19), `${id} remains vertically proportioned in every frame`);
+  assert.ok(bounds.every(box => box.height >= 30), `${id} retains the authored full-height silhouette`);
+  assert.ok(bounds.every(box => box.height - box.width >= 11), `${id} must not regress to a compressed wide body`);
+  assert.ok(bounds[0].width <= 18, `${id} selection idle remains narrow beside Strinova characters`);
+  const frameWidths = bounds.map(box => box.width);
+  assert.ok(Math.max(...frameWidths) - Math.min(...frameWidths) <= 2, `${id} width remains stable across animation phases`);
   const used = new Set(frames.flat().join("").replaceAll(".", ""));
   assert.ok(used.size >= 12, `${id} needs a detailed palette`);
   for (const pixel of used) assert.ok(pixel in palette, `${id} palette pixel ${pixel}`);
@@ -143,20 +200,24 @@ assert.ok(zeroIdle.slice(27, 31).some(row => row.includes("R") && row.includes("
 assert.equal(zeroIdle.flatMap(row => [...row.slice(0, 5)]).every(pixel => pixel === "."), true, "Esper Zero sprite does not bake in a duplicate sword");
 
 const nanallyIdle = SPRITES.player_nanally_side_idle;
-assert.equal(nanallyIdle[2][10], "A", "Nanally keeps the left black cat-ear accessory");
-assert.equal(nanallyIdle[2][21], "A", "Nanally keeps the right black cat-ear accessory");
+assert.ok(countRegionPixels(nanallyIdle, "A", 8, 15, 1, 5) >= 3, "Nanally keeps the left black cat-ear accessory");
+assert.ok(countRegionPixels(nanallyIdle, "A", 18, 25, 1, 5) >= 3, "Nanally keeps the right black cat-ear accessory");
 assert.equal(nanallyIdle[8][14], "P", "Nanally keeps the left blue-tinted round lens");
 assert.equal(nanallyIdle[9][20], "Q", "Nanally keeps the right amber iris inside the glasses");
 assert.equal(nanallyIdle[8][21], "H", "Nanally keeps a brighter near-cheek plane behind the glasses");
 assert.ok(nanallyIdle.slice(13, 17).some(row => row.slice(11, 22).includes("I")), "Nanally keeps the white shirt");
 assert.ok(nanallyIdle.slice(13, 16).some(row => row.includes("O") && row.includes("S")), "Nanally shirt uses warm reflected shadow and a white highlight");
 assert.ok(nanallyIdle.slice(13, 17).some(row => row.includes("L")), "Nanally keeps the black paw tie");
-assert.ok(nanallyIdle[17].slice(12, 22).includes("A") && nanallyIdle[17].slice(12, 22).includes("B"), "Nanally keeps a dark waist break between coat and skirt");
+assert.ok(countRegionPixels(nanallyIdle, "AB", 11, 22, 16, 18) >= 8, "Nanally keeps a dark waist break between coat and skirt");
 assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("D")), "Nanally keeps the bright pink skirt panels");
 assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("C")), "Nanally keeps the darker pleated skirt folds");
-assert.ok(nanallyIdle.slice(18, 23).some(row => row.slice(4, 8).includes("C") || row.slice(4, 8).includes("D")), "Nanally keeps the cat tail");
-assert.ok(nanallyIdle.slice(18, 23).some(row => row.slice(21, 26).includes("O")), "Nanally keeps the dangling cat plush");
+assert.ok(countRegionPixels(nanallyIdle, "CD", 6, 12, 17, 24) >= 3, "Nanally keeps the cat tail");
+assert.ok(countRegionPixels(nanallyIdle, "O", 19, 26, 17, 25) >= 2, "Nanally keeps the dangling cat plush");
 assert.ok(nanallyIdle.slice(27, 31).some(row => row.includes("R") && row.includes("J")), "Nanally boots retain foreground highlights and rear-leg shadow");
+
+const zeroBounds = getSpriteBounds(zeroIdle);
+const nanallyBounds = getSpriteBounds(nanallyIdle);
+assert.deepEqual([zeroBounds.width, nanallyBounds.width], [18, 18], "NTE selection silhouettes match the slender 32px character standard");
 
 for (const id of ["zeroth_sense", "colucci_claws"]) {
   assert.ok(WEAPON_SPRITES[id]);
