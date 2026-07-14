@@ -23,6 +23,8 @@ export interface EnemyDefinition {
   hitboxOffsetY?: number;
   /** Optional authored ground shadow width in screen pixels. */
   shadowWidth?: number;
+  /** Runtime scale for authored pixel art. Defaults keep regulars near player size. */
+  renderScale?: number;
   attackDamage: number;
   attackInterval: number;
   attackWindup: number;
@@ -239,6 +241,12 @@ export function isEnemyId(value: unknown): value is string {
 
 export function getEnemyDefinition(id: string): EnemyDefinition {
   return ENEMIES[id] ?? ENEMIES.moss_brute;
+}
+
+export function getEnemyRenderScale(definition: EnemyDefinition, isElite = false): number {
+  const base = definition.renderScale ?? (definition.role === "boss" ? 0.78 : 0.74);
+  if (isElite && definition.role !== "boss") return Math.min(0.84, base + 0.08);
+  return base;
 }
 
 export function getEnemyPool(theme: EnemyTheme, role?: EnemyRole, stageIndex = 5): EnemyDefinition[] {

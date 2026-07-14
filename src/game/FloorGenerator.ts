@@ -64,6 +64,8 @@ export interface Room {
     weaponId?: string;
     blockedUntilPlayerLeaves?: boolean;
   }[];
+  /** Generated breakable tile indices already destroyed in this room. */
+  destroyedPropTiles?: number[];
 }
 
 export interface StageData {

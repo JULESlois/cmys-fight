@@ -158,22 +158,22 @@ export class ProjectileArtRenderer {
     ctx.save();
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(Math.atan2(p.vy, p.vx));
-    const radius = Math.max(2, Math.round(p.radius));
+    const radius = Math.max(1, Math.round(p.radius));
     ctx.fillStyle = "rgba(10,4,8,0.62)";
-    ctx.fillRect(-radius - 4, -radius - 2, radius * 2 + 7, radius * 2 + 5);
-    ctx.fillStyle = palette.shadow;
     ctx.fillRect(-radius - 2, -radius - 1, radius * 2 + 4, radius * 2 + 3);
+    ctx.fillStyle = palette.shadow;
+    ctx.fillRect(-radius - 1, -radius, radius * 2 + 2, radius * 2 + 1);
     ctx.fillStyle = palette.base;
     ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
     ctx.fillStyle = palette.highlight;
-    ctx.fillRect(0, -radius + 1, Math.max(2, radius), 2);
+    ctx.fillRect(0, -radius, Math.max(1, radius), 1);
     ctx.fillStyle = palette.accent;
-    ctx.fillRect(-radius - 3, -1, 3, 2);
+    ctx.fillRect(-radius - 2, 0, 2, 1);
     if ((p.sourceBoss || p.damage >= 3) && !reducedFlashing) {
       ctx.fillStyle = "rgba(255,203,92,0.5)";
-      ctx.fillRect(-1, -radius - 3, 2, 2);
-      ctx.fillRect(-1, radius + 1, 2, 2);
-      ctx.fillRect(radius + 1, -1, 2, 2);
+      ctx.fillRect(0, -radius - 2, 1, 1);
+      ctx.fillRect(0, radius + 1, 1, 1);
+      ctx.fillRect(radius + 1, 0, 1, 1);
     }
     ctx.restore();
   }

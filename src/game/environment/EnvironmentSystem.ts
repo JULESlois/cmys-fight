@@ -1,5 +1,5 @@
 import type { Room, StageData } from "../FloorGenerator";
-import { MAP_HEIGHT, MAP_WIDTH, TILE_SIZE } from "../MapData";
+import { isSolid, MAP_HEIGHT, MAP_WIDTH, TILE_SIZE } from "../MapData";
 import { createSeededRandom, hashSeed } from "../Random";
 import { getDifficultyStageIndex } from "../RunProgress";
 
@@ -41,7 +41,7 @@ export class EnvironmentSystem {
     if (room.type !== "combat" && room.type !== "boss") return [];
     const type = typeForChapter(stage.chapterIndex);
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? stage.seed, `environment:${type}`));
-    const walkableTiles = mapData.filter(tile => tile !== 1).length;
+    const walkableTiles = mapData.filter(tile => !isSolid(tile)).length;
     const walkableRatio = walkableTiles / Math.max(1, mapData.length);
     const stageGroups = 2 + Math.min(2, Math.floor(getDifficultyStageIndex(stage.globalStageIndex) / 6));
     const groupCount = room.type === "boss"
@@ -64,7 +64,7 @@ export class EnvironmentSystem {
           const y = tileY + dy;
           if (x <= 1 || x >= MAP_WIDTH - 2 || y <= 1 || y >= MAP_HEIGHT - 2) return false;
           if (isDoorSpine(x, y)) return false;
-          if (mapData[y * MAP_WIDTH + x] === 1) return false;
+          if (isSolid(mapData[y * MAP_WIDTH + x])) return false;
           if (occupied.has(`${x},${y}`)) return false;
           return Math.hypot(x - 10, y - 7.5) >= 3;
         });

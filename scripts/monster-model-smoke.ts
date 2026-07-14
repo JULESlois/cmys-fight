@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { ENEMIES } from "../src/game/data/enemies";
+import { ENEMIES, getEnemyRenderScale } from "../src/game/data/enemies";
+import { TILE_BREAKABLE, TILE_STRUCTURE, isSolid } from "../src/game/MapData";
 import {
   MONSTER_ANIMATION_FRAMES,
   MONSTER_MODEL_IDS,
@@ -16,6 +17,15 @@ const modelIds = [...MONSTER_MODEL_IDS].sort();
 assert.deepEqual(modelIds, enemyIds, "every enemy must have a dedicated model");
 assert.equal(new Set(modelIds).size, enemyIds.length);
 for (const id of enemyIds) assert.equal(hasMonsterModel(id), true, id);
+for (const definition of Object.values(ENEMIES)) {
+  const scale = getEnemyRenderScale(definition);
+  assert.ok(scale >= 0.7 && scale <= 0.8, `${definition.id} combat scale should remain compact`);
+  if (definition.role !== "boss") {
+    assert.ok(getEnemyRenderScale(definition, true) <= 0.84, `${definition.id} elite scale should remain bounded`);
+  }
+}
+assert.equal(isSolid(TILE_BREAKABLE), true, "breakable props must block movement until destroyed");
+assert.equal(isSolid(TILE_STRUCTURE), true, "chapter structures must participate in room collision");
 
 const nativeForestIds = [
   "moss_brute",
@@ -177,9 +187,20 @@ const renderer = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 assert.match(renderer, /MonsterModelRenderer\.draw/);
 assert.match(renderer, /const animOffset = nativeMonsterArt \? 0/, "native grounded monsters must not receive the legacy floating sine offset");
 assert.match(renderer, /enemyDefinition\.shadowWidth/, "authored monster shadows should be used");
-assert.match(renderer, /if \(enemy\.type === "boss"\) scale = nativeMonsterArt \? 1 : 2\.15/, "native bosses render at one-to-one pixel scale");
+assert.match(renderer, /const renderScale = getEnemyRenderScale/, "runtime monster scale should come from the compact chapter contract");
+assert.match(renderer, /nativeMonsterArt \? renderScale/, "native monsters should use the compact authored scale");
+assert.match(renderer, /enemy\.type === "boss" \? 36 : 14/, "health bars should shrink with the revised monster footprint");
 assert.doesNotMatch(renderer, /drawEnemyAccent/);
 assert.doesNotMatch(renderer, /enemy_\$\{enemy\.type\}_idle/);
+
+const projectileRenderer = fs.readFileSync("src/game/render/ProjectileArtRenderer.ts", "utf8");
+assert.match(projectileRenderer, /const radius = Math\.max\(1, Math\.round\(p\.radius\)\)/, "enemy projectiles may use a one-pixel core");
+assert.match(projectileRenderer, /radius \* 2 \+ 4/, "enemy projectile glow padding stays compact");
+
+const dungeonState = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
+assert.match(dungeonState, /radius \* \(enemy\.type === "boss" \? 0\.72 : 0\.68\)/, "enemy projectile collision radii should shrink at spawn");
+assert.match(dungeonState, /destroyBreakableTileAt/, "player projectiles should destroy authored room props");
+assert.match(dungeonState, /destroyedPropTiles/, "destroyed combat props must persist on room state");
 
 const roomRenderer = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
 assert.match(roomRenderer, /function drawForestFloorTile/, "forest floor has authored material variants");
@@ -207,6 +228,18 @@ assert.match(roomRenderer, /octagonal furnace iris and side pistons/, "lava star
 assert.match(roomRenderer, /ruptured foundry crucible/, "lava boss room uses a foundry crucible arena");
 assert.match(roomRenderer, /compact furnace iris replaces the old row of shutters/, "lava doors use a compact radial furnace iris");
 assert.match(roomRenderer, /Riveted iron grating spans molten channels/, "lava crossings use iron grating");
+assert.match(roomRenderer, /function drawForestStructureTile/, "forest combat rooms have root-ruin structures");
+assert.match(roomRenderer, /function drawDungeonStructureTile/, "dungeon combat rooms have crypt structures");
+assert.match(roomRenderer, /function drawSnowStructureTile/, "snow combat rooms have research modules");
+assert.match(roomRenderer, /function drawLavaStructureTile/, "lava combat rooms have foundry machinery");
+assert.match(roomRenderer, /function drawBreakableTile/, "combat rooms render chapter-specific breakable props");
+
+const roomVariants = fs.readFileSync("src/game/RoomVariantSystem.ts", "utf8");
+assert.match(roomVariants, /const wallClusterCount = room\.type === "boss" \? 2 : 3 \+/, "combat rooms should receive denser wall clusters");
+assert.match(roomVariants, /structureClusterCount/, "combat rooms should receive chapter architecture");
+assert.match(roomVariants, /breakableClusterCount/, "combat rooms should receive breakable cover");
+assert.match(roomVariants, /TILE_STRUCTURE/, "generated structures use their own collision tile");
+assert.match(roomVariants, /TILE_BREAKABLE/, "generated breakables use their own collision tile");
 
 const environment = fs.readFileSync("src/game/environment/EnvironmentSystem.ts", "utf8");
 assert.match(environment, /const poisonTiles = new Set/, "forest poison pools detect adjacent cells");

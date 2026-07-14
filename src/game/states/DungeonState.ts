@@ -7,7 +7,16 @@ import { RoomRenderer } from "../render/RoomRenderer";
 import { EntityRenderer } from "../render/EntityRenderer";
 import { Enemy } from "../entities/Enemy";
 import { updateEnemyAnimation } from "../EnemyAnimation";
-import { TILE_SIZE, getRoomTemplate, getMapData, MAP_WIDTH, MAP_HEIGHT, DOOR_ENTRY_POINTS } from "../MapData";
+import {
+  TILE_BREAKABLE,
+  TILE_SIZE,
+  getRoomTemplate,
+  getMapData,
+  isSolid,
+  MAP_WIDTH,
+  MAP_HEIGHT,
+  DOOR_ENTRY_POINTS,
+} from "../MapData";
 import { UIRenderer } from "../render/UIRenderer";
 import { PixelFxSystem } from "../render/PixelFxSystem";
 import { ArtDirectionRenderer } from "../render/ArtDirectionRenderer";
@@ -1406,12 +1415,45 @@ export class DungeonState extends GameState {
       
       if (tx >= 0 && tx < MAP_WIDTH && ty >= 0 && ty < MAP_HEIGHT) {
         const tileId = this.currentMapData[ty * MAP_WIDTH + tx];
-        if (tileId === 1) return true;
+        if (isSolid(tileId)) return true;
       } else {
         return true;
       }
     }
     return false;
+  }
+
+  private findBreakableTileAt(x: number, y: number, radius: number): number | null {
+    const minTileX = Math.max(0, Math.floor((x - radius) / TILE_SIZE));
+    const maxTileX = Math.min(MAP_WIDTH - 1, Math.floor((x + radius) / TILE_SIZE));
+    const minTileY = Math.max(0, Math.floor((y - radius) / TILE_SIZE));
+    const maxTileY = Math.min(MAP_HEIGHT - 1, Math.floor((y + radius) / TILE_SIZE));
+    for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+        const index = tileY * MAP_WIDTH + tileX;
+        if (this.currentMapData[index] !== TILE_BREAKABLE) continue;
+        const closestX = Math.max(tileX * TILE_SIZE, Math.min(x, tileX * TILE_SIZE + TILE_SIZE));
+        const closestY = Math.max(tileY * TILE_SIZE, Math.min(y, tileY * TILE_SIZE + TILE_SIZE));
+        if (Math.hypot(x - closestX, y - closestY) <= radius + 1) return index;
+      }
+    }
+    return null;
+  }
+
+  private destroyBreakableTileAt(x: number, y: number, radius: number): boolean {
+    const index = this.findBreakableTileAt(x, y, radius);
+    if (index === null) return false;
+    this.currentMapData[index] = 0;
+    const floor = this.engine.data.data.floor;
+    const currentRoom = floor.rooms.find((room: Room) =>
+      room.x === floor.currentRoomX && room.y === floor.currentRoomY
+    );
+    if (currentRoom) {
+      currentRoom.destroyedPropTiles ??= [];
+      if (!currentRoom.destroyedPropTiles.includes(index)) currentRoom.destroyedPropTiles.push(index);
+    }
+    this.engine.triggerScreenShake(0.6, 0.06);
+    return true;
   }
 
   private hasLineOfSight(startX: number, startY: number, endX: number, endY: number): boolean {
@@ -2014,12 +2056,13 @@ export class DungeonState extends GameState {
   }
 
   private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3) {
+    const projectileRadius = Math.max(enemy.type === "boss" ? 2.5 : 1.75, radius * (enemy.type === "boss" ? 0.72 : 0.68));
     const projectile = acquireProjectile(
       enemy.x,
       enemy.y,
       Math.cos(angle) * enemy.projectileSpeed,
       Math.sin(angle) * enemy.projectileSpeed,
-      radius,
+      projectileRadius,
       enemy.attackDamage,
       "enemy",
       life,
@@ -2422,14 +2465,15 @@ export class DungeonState extends GameState {
         const impactY = p.previousY + (proposedY - p.previousY) * environmentHitT;
         p.x = impactX;
         p.y = impactY;
+        const destroyedBreakable = p.faction === "player" && this.destroyBreakableTileAt(impactX, impactY, p.radius + 2);
         this.fx.emitProjectileImpact(p, p.critical, this.engine.isPerformanceDegraded());
 
-        if (p.linkedShotMode === "primer") {
+        if (!destroyedBreakable && p.linkedShotMode === "primer") {
           this.stickLinkedPrimer(p);
           continue;
         }
 
-        if (p.wallBouncesRemaining > 0) {
+        if (!destroyedBreakable && p.wallBouncesRemaining > 0) {
           const blockedX = proposedX < 0 || proposedX > 320 || this.isCollidingWithMap(proposedX, p.previousY, p.radius);
           const blockedY = proposedY < 0 || proposedY > 240 || this.isCollidingWithMap(p.previousX, proposedY, p.radius);
           if (blockedX || (!blockedX && !blockedY)) p.vx *= -1;

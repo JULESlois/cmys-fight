@@ -5,6 +5,7 @@ import { acquireEnemy } from "./EntityPools";
 import {
   getBossDefinition,
   getEnemyDefinition,
+  getEnemyRenderScale,
   getEnemyPool,
   getThemeForChapter,
   isEnemyId,
@@ -32,6 +33,7 @@ export class EnemyFactory {
   }
 
   static applyDefinition(enemy: Enemy, definition: EnemyDefinition): Enemy {
+    const renderScale = getEnemyRenderScale(definition);
     enemy.enemyId = definition.id;
     enemy.name = definition.name;
     enemy.type = definition.role;
@@ -41,16 +43,18 @@ export class EnemyFactory {
     enemy.hp = enemy.maxHp;
     enemy.speed = definition.speed;
     enemy.radius = Math.max(
-      definition.role === "boss" ? 7 : 4,
-      Math.round(definition.radius * (definition.role === "boss" ? 0.72 : 0.66)),
+      definition.role === "boss" ? 6 : 4,
+      Math.round(definition.radius * (definition.role === "boss" ? 0.62 : 0.56)),
     );
     enemy.hitboxRadius = Math.max(
-      definition.role === "boss" ? 30 : 14,
-      Math.round(definition.radius * (definition.role === "boss" ? 2.0 : 1.7)),
+      definition.role === "boss" ? 22 : 11,
+      Math.round(definition.radius * (definition.role === "boss" ? 1.55 : 1.35)),
     );
     enemy.hitboxOffsetY = -Math.round(enemy.hitboxRadius * (definition.role === "boss" ? 0.72 : 0.72));
-    if (definition.hitboxRadius !== undefined) enemy.hitboxRadius = definition.hitboxRadius;
-    if (definition.hitboxOffsetY !== undefined) enemy.hitboxOffsetY = definition.hitboxOffsetY;
+    if (definition.hitboxRadius !== undefined) {
+      enemy.hitboxRadius = Math.max(definition.role === "boss" ? 22 : 11, Math.round(definition.hitboxRadius * renderScale));
+    }
+    if (definition.hitboxOffsetY !== undefined) enemy.hitboxOffsetY = Math.round(definition.hitboxOffsetY * renderScale);
     enemy.attackDamage = definition.attackDamage;
     enemy.attackInterval = definition.attackInterval;
     enemy.attackWindup = definition.attackWindup;
@@ -79,7 +83,7 @@ export class EnemyFactory {
     enemy.projectileSpeed *= 1.08;
     enemy.attackInterval = Math.max(enemy.minimumAttackInterval, enemy.attackInterval * 0.84);
     enemy.attackWindup = Math.max(enemy.minimumWindup, enemy.attackWindup * 0.9);
-    enemy.hitboxRadius = Math.round(enemy.hitboxRadius * 1.12);
+    enemy.hitboxRadius = Math.round(enemy.hitboxRadius * 1.08);
     enemy.hitboxOffsetY = -Math.round(enemy.hitboxRadius * 0.72);
     enemy.eliteCoinReward = 18;
     return enemy;

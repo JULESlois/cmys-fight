@@ -394,10 +394,11 @@ assert.equal(dungeonHarness.pickups.length, 1, "full Energy must not consume a m
 const enemyFactory = fs.readFileSync("src/game/EnemyFactory.ts", "utf8");
 const renderer = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
-assert.match(enemyFactory, /definition\.role === "boss" \? 0\.72 : 0\.66/);
-assert.match(renderer, /enemy\.isElite \? 1\.62 : 1\.42/);
-assert.match(renderer, /if \(enemy\.type === "boss"\) scale = nativeMonsterArt \? 1 : 2\.15/);
-assert.match(renderer, /let scale = nativeMonsterArt \? 1 : enemy\.isElite \? 1\.62 : 1\.42/);
+assert.match(enemyFactory, /definition\.role === "boss" \? 0\.62 : 0\.56/);
+assert.match(enemyFactory, /getEnemyRenderScale\(definition\)/);
+assert.match(renderer, /enemy\.isElite \? 1\.42 : 1\.22/);
+assert.match(renderer, /if \(enemy\.type === "boss"\) scale = nativeMonsterArt \? renderScale : 1\.82/);
+assert.match(renderer, /let scale = nativeMonsterArt \? renderScale : enemy\.isElite \? 1\.42 : 1\.22/);
 assert.match(renderer, /weapon\?\.renderOffsetX/);
 assert.match(renderer, /weapon\?\.muzzleOffsetX/);
 assert.match(dungeonSource, /rangedAttackRange = normalMode \? Math\.min\(e\.attackRange, 128\) : e\.attackRange/);

@@ -5,6 +5,13 @@ import { applyRoomVariant } from "./RoomVariantSystem";
 export const TILE_SIZE = 16;
 export const MAP_WIDTH = 20;
 export const MAP_HEIGHT = 15;
+export const TILE_FLOOR = 0;
+export const TILE_WALL = 1;
+export const TILE_BRIDGE = 2;
+export const TILE_HAZARD = 3;
+export const TILE_PROP = 4;
+export const TILE_BREAKABLE = 5;
+export const TILE_STRUCTURE = 6;
 
 export const DOOR_ZONES = {
   left: { xMin: 0, xMax: 1, yMin: 6, yMax: 8 },
@@ -84,17 +91,30 @@ export function getMapData(currentRoom: Room | undefined, theme: string): number
     if (currentRoom.doors.down) applyDoor(DOOR_CORRIDORS.down);
     if (currentRoom.doors.left) applyDoor(DOOR_CORRIDORS.left);
     if (currentRoom.doors.right) applyDoor(DOOR_CORRIDORS.right);
+
+    // Destroyed combat props persist when the player revisits the room. The
+    // generated layout remains deterministic, while only the authored crate,
+    // urn, sample case or slag drum cells are removed.
+    for (const index of currentRoom.destroyedPropTiles ?? []) {
+      if (index >= 0 && index < data.length && data[index] === TILE_BREAKABLE) {
+        data[index] = TILE_FLOOR;
+      }
+    }
   }
   
   return data;
 }
 
 export function isSolid(tileId: number): boolean {
-  return tileId === 1;
+  return tileId === TILE_WALL || tileId === TILE_BREAKABLE || tileId === TILE_STRUCTURE;
 }
 
 export function isHazard(tileId: number): boolean {
-  return tileId === 3;
+  return tileId === TILE_HAZARD;
+}
+
+export function isBreakable(tileId: number): boolean {
+  return tileId === TILE_BREAKABLE;
 }
 
 export function validateTemplates() {

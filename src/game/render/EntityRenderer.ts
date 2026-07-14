@@ -11,7 +11,7 @@ import {
   PLAYER_PALETTE,
 } from "../data/sprites";
 import { usesDetailedCharacterArt } from "../data/characters";
-import { getEnemyDefinition } from "../data/enemies";
+import { getEnemyDefinition, getEnemyRenderScale } from "../data/enemies";
 import { SpriteRenderer } from "./SpriteRenderer";
 import { MonsterModelRenderer, usesNativeMonsterArt } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
@@ -404,22 +404,24 @@ export class EntityRenderer {
     }
     const nativeMonsterArt = usesNativeMonsterArt(enemy.enemyId);
     const enemyDefinition = getEnemyDefinition(enemy.enemyId);
+    const renderScale = getEnemyRenderScale(enemyDefinition, enemy.isElite);
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    const shadowWidth = enemyDefinition.shadowWidth ?? (nativeMonsterArt
+    const authoredShadowWidth = enemyDefinition.shadowWidth ?? (nativeMonsterArt
       ? enemy.type === "boss" ? 36 : 19
       : enemy.type === "boss" ? 23 : 13);
+    const shadowWidth = Math.max(enemy.type === "boss" ? 26 : 13, Math.round(authoredShadowWidth * renderScale));
     ctx.fillRect(-shadowWidth / 2, enemy.radius - 4, shadowWidth, 5);
 
     // Native pixel models author their own idle, walk and attack body motion.
     // Adding the legacy sine offset makes grounded enemies appear to float.
     const animOffset = nativeMonsterArt ? 0 : Math.round(Math.sin(time * 5 + enemy.x) * 2);
     ctx.translate(0, animOffset);
-    let scale = nativeMonsterArt ? 1 : enemy.isElite ? 1.62 : 1.42;
-    if (enemy.type === "boss") scale = nativeMonsterArt ? 1 : 2.15;
+    let scale = nativeMonsterArt ? renderScale : enemy.isElite ? 1.42 : 1.22;
+    if (enemy.type === "boss") scale = nativeMonsterArt ? renderScale : 1.82;
     MonsterModelRenderer.draw(ctx, enemy, time, reducedFlashing, scale);
     ctx.restore();
 
-    const barW = enemy.type === "boss" ? 40 : 16;
+    const barW = enemy.type === "boss" ? 36 : 14;
     const barH = 2;
     const barX = Math.round(enemy.x) - barW / 2;
     const barY = Math.round(enemy.hitboxY - enemy.hitboxRadius) - (enemy.type === "boss" ? 8 : 5);

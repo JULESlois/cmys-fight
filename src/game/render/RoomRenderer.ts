@@ -1,5 +1,14 @@
 import { Room } from "../FloorGenerator";
-import { getMapData, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, DOOR_ZONES } from "../MapData";
+import {
+  getMapData,
+  MAP_WIDTH,
+  MAP_HEIGHT,
+  TILE_SIZE,
+  DOOR_ZONES,
+  TILE_BREAKABLE,
+  TILE_PROP,
+  TILE_STRUCTURE,
+} from "../MapData";
 import { PALETTES } from "../data/palettes";
 
 interface Particle {
@@ -19,6 +28,196 @@ function tileHash(x: number, y: number): number {
 function isTile(mapData: number[], x: number, y: number, tileId: number): boolean {
   if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT) return false;
   return mapData[y * MAP_WIDTH + x] === tileId;
+}
+
+function drawForestStructureTile(ctx: CanvasRenderingContext2D, mapData: number[], x: number, y: number, hash: number): void {
+  const tx = x * TILE_SIZE;
+  const ty = y * TILE_SIZE;
+  const left = isTile(mapData, x - 1, y, TILE_STRUCTURE);
+  const right = isTile(mapData, x + 1, y, TILE_STRUCTURE);
+  const up = isTile(mapData, x, y - 1, TILE_STRUCTURE);
+  const down = isTile(mapData, x, y + 1, TILE_STRUCTURE);
+  ctx.fillStyle = "#25362B";
+  ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+  ctx.fillStyle = "#5A6750";
+  ctx.fillRect(tx + (left ? 0 : 1), ty + 4, TILE_SIZE - (left ? 0 : 1) - (right ? 0 : 1), 10);
+  ctx.fillStyle = "#77825D";
+  ctx.fillRect(tx + (left ? 0 : 2), ty + 3, TILE_SIZE - (left ? 0 : 2) - (right ? 0 : 2), 4);
+  ctx.fillStyle = "#354B35";
+  if (!up) ctx.fillRect(tx + 1, ty + 1, 14, 3);
+  if (!down) ctx.fillRect(tx + 2, ty + 13, 12, 3);
+  ctx.fillStyle = "#6D4A31";
+  ctx.fillRect(tx + 6, ty + 5, 3, 11);
+  ctx.fillRect(tx + 3, ty + 10, 5, 3);
+  if (left) ctx.fillRect(tx, ty + 11, 7, 2);
+  if (right) ctx.fillRect(tx + 8, ty + 11, 8, 2);
+  if (up) ctx.fillRect(tx + 7, ty, 2, 7);
+  if (down) ctx.fillRect(tx + 7, ty + 10, 2, 6);
+  ctx.fillStyle = "#9A6C3D";
+  ctx.fillRect(tx + 7, ty + 6, 1, 8);
+  if (left || right) ctx.fillRect(tx + (left ? 0 : 9), ty + 11, left && right ? 16 : 7, 1);
+  ctx.fillStyle = "#78A45A";
+  ctx.fillRect(tx + 1, ty + 3, 6, 3);
+  ctx.fillRect(tx + 10, ty + 5, 5, 3);
+  if (Math.floor(hash) % 3 === 0) {
+    ctx.fillStyle = "#E88AA7";
+    ctx.fillRect(tx + 11, ty + 2, 3, 3);
+    ctx.fillStyle = "#FFE77A";
+    ctx.fillRect(tx + 12, ty + 3, 1, 1);
+  }
+}
+
+function drawDungeonStructureTile(ctx: CanvasRenderingContext2D, mapData: number[], x: number, y: number, hash: number): void {
+  const tx = x * TILE_SIZE;
+  const ty = y * TILE_SIZE;
+  const left = isTile(mapData, x - 1, y, TILE_STRUCTURE);
+  const right = isTile(mapData, x + 1, y, TILE_STRUCTURE);
+  ctx.fillStyle = "#111824";
+  ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+  ctx.fillStyle = "#303A49";
+  ctx.fillRect(tx + (left ? 0 : 1), ty + 2, TILE_SIZE - (left ? 0 : 1) - (right ? 0 : 1), 13);
+  ctx.fillStyle = "#596473";
+  ctx.fillRect(tx + (left ? 0 : 2), ty + 2, TILE_SIZE - (left ? 0 : 2) - (right ? 0 : 2), 3);
+  ctx.fillStyle = "#1A202D";
+  ctx.fillRect(tx + 3, ty + 6, 10, 7);
+  ctx.fillStyle = "#434C5B";
+  ctx.fillRect(tx + 4, ty + 7, 8, 5);
+  ctx.fillStyle = "#7B8793";
+  ctx.fillRect(tx + 5, ty + 7, 6, 1);
+  ctx.fillStyle = "#202836";
+  ctx.fillRect(tx + 7, ty + 8, 2, 4);
+  if (Math.floor(hash) % 4 === 0) {
+    ctx.fillStyle = "#7B3E93";
+    ctx.fillRect(tx + 2, ty + 5, 2, 6);
+    ctx.fillStyle = "#C990E0";
+    ctx.fillRect(tx + 2, ty + 6, 1, 3);
+  }
+}
+
+function drawSnowStructureTile(ctx: CanvasRenderingContext2D, mapData: number[], x: number, y: number, hash: number): void {
+  const tx = x * TILE_SIZE;
+  const ty = y * TILE_SIZE;
+  const left = isTile(mapData, x - 1, y, TILE_STRUCTURE);
+  const right = isTile(mapData, x + 1, y, TILE_STRUCTURE);
+  ctx.fillStyle = "#1E3A49";
+  ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+  ctx.fillStyle = "#607E8A";
+  ctx.fillRect(tx + (left ? 0 : 1), ty + 3, TILE_SIZE - (left ? 0 : 1) - (right ? 0 : 1), 12);
+  ctx.fillStyle = "#AFC8CE";
+  ctx.fillRect(tx + (left ? 0 : 2), ty + 2, TILE_SIZE - (left ? 0 : 2) - (right ? 0 : 2), 4);
+  ctx.fillStyle = "#294D5D";
+  ctx.fillRect(tx + 3, ty + 7, 10, 5);
+  const moduleVariant = Math.floor(hash) % 3;
+  if (moduleVariant === 0) {
+    ctx.fillStyle = "#70D9E8";
+    ctx.fillRect(tx + 4, ty + 8, 8, 3);
+    ctx.fillStyle = "#D7FFFF";
+    ctx.fillRect(tx + 5, ty + 8, 3, 1);
+  } else if (moduleVariant === 1) {
+    ctx.fillStyle = "#183946";
+    ctx.fillRect(tx + 4, ty + 8, 8, 1);
+    ctx.fillRect(tx + 4, ty + 10, 8, 1);
+    ctx.fillStyle = "#8EADB5";
+    ctx.fillRect(tx + 5, ty + 9, 6, 1);
+  } else {
+    ctx.fillStyle = "#183946";
+    ctx.fillRect(tx + 4, ty + 8, 5, 3);
+    ctx.fillStyle = "#69D7E3";
+    ctx.fillRect(tx + 10, ty + 8, 2, 2);
+    ctx.fillStyle = "#E6B84B";
+    ctx.fillRect(tx + 10, ty + 11, 2, 1);
+  }
+  ctx.fillStyle = "#C64F59";
+  ctx.fillRect(tx + 2, ty + 13, 4, 2);
+  ctx.fillStyle = "#E4EEF0";
+  ctx.fillRect(tx, ty, TILE_SIZE, 2);
+  if (Math.floor(hash) % 3 === 0) ctx.fillRect(tx + 11, ty + 2, 4, 2);
+}
+
+function drawLavaStructureTile(ctx: CanvasRenderingContext2D, mapData: number[], x: number, y: number, hash: number): void {
+  const tx = x * TILE_SIZE;
+  const ty = y * TILE_SIZE;
+  const left = isTile(mapData, x - 1, y, TILE_STRUCTURE);
+  const right = isTile(mapData, x + 1, y, TILE_STRUCTURE);
+  ctx.fillStyle = "#151117";
+  ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+  ctx.fillStyle = "#4B454A";
+  ctx.fillRect(tx + (left ? 0 : 1), ty + 2, TILE_SIZE - (left ? 0 : 1) - (right ? 0 : 1), 13);
+  ctx.fillStyle = "#777C7E";
+  ctx.fillRect(tx + (left ? 0 : 2), ty + 2, TILE_SIZE - (left ? 0 : 2) - (right ? 0 : 2), 3);
+  ctx.fillStyle = "#2A2025";
+  ctx.fillRect(tx + 3, ty + 6, 10, 7);
+  ctx.fillStyle = "#7A2B20";
+  ctx.fillRect(tx + 5, ty + 7, 6, 5);
+  ctx.fillStyle = "#E6501F";
+  ctx.fillRect(tx + 6, ty + 7, 4, 4);
+  ctx.fillStyle = "#FFBD35";
+  ctx.fillRect(tx + 7, ty + 7, 2, 2);
+  ctx.fillStyle = "#9A9D99";
+  ctx.fillRect(tx + 2, ty + 4, 2, 2);
+  ctx.fillRect(tx + 12, ty + 12, 2, 2);
+  if (Math.floor(hash) % 3 === 0) {
+    ctx.fillStyle = "#32282D";
+    ctx.fillRect(tx + 12, ty + 4, 4, 3);
+    ctx.fillRect(tx + 13, ty + 7, 2, 6);
+  }
+}
+
+function drawBreakableTile(ctx: CanvasRenderingContext2D, theme: string, tx: number, ty: number): void {
+  if (theme === "forest") {
+    ctx.fillStyle = "#243027";
+    ctx.fillRect(tx + 2, ty + 4, 13, 12);
+    ctx.fillStyle = "#6B4B31";
+    ctx.fillRect(tx + 3, ty + 5, 11, 10);
+    ctx.fillStyle = "#986D42";
+    ctx.fillRect(tx + 4, ty + 6, 9, 3);
+    ctx.fillStyle = "#4A3425";
+    ctx.fillRect(tx + 4, ty + 10, 9, 2);
+    ctx.fillRect(tx + 7, ty + 5, 2, 10);
+    ctx.fillStyle = "#78A35B";
+    ctx.fillRect(tx + 2, ty + 3, 5, 3);
+  } else if (theme === "dungeon") {
+    ctx.fillStyle = "#111722";
+    ctx.fillRect(tx + 3, ty + 3, 11, 13);
+    ctx.fillStyle = "#4A5260";
+    ctx.fillRect(tx + 4, ty + 4, 9, 11);
+    ctx.fillStyle = "#78818B";
+    ctx.fillRect(tx + 5, ty + 5, 7, 3);
+    ctx.fillStyle = "#252C38";
+    ctx.fillRect(tx + 6, ty + 8, 5, 5);
+    ctx.fillStyle = "#C4C8C3";
+    ctx.fillRect(tx + 7, ty + 8, 3, 2);
+    ctx.fillRect(tx + 7, ty + 11, 3, 1);
+  } else if (theme === "snow") {
+    ctx.fillStyle = "#183442";
+    ctx.fillRect(tx + 2, ty + 4, 13, 12);
+    ctx.fillStyle = "#76919B";
+    ctx.fillRect(tx + 3, ty + 5, 11, 10);
+    ctx.fillStyle = "#B8D0D5";
+    ctx.fillRect(tx + 4, ty + 6, 9, 3);
+    ctx.fillStyle = "#3C7180";
+    ctx.fillRect(tx + 5, ty + 10, 7, 3);
+    ctx.fillStyle = "#7CE5EF";
+    ctx.fillRect(tx + 6, ty + 10, 5, 2);
+    ctx.fillStyle = "#C94D58";
+    ctx.fillRect(tx + 3, ty + 13, 4, 2);
+    ctx.fillStyle = "#F4FFFF";
+    ctx.fillRect(tx + 4, ty + 3, 9, 2);
+  } else {
+    ctx.fillStyle = "#151116";
+    ctx.fillRect(tx + 3, ty + 3, 11, 13);
+    ctx.fillStyle = "#4A4247";
+    ctx.fillRect(tx + 4, ty + 4, 9, 11);
+    ctx.fillStyle = "#777D7D";
+    ctx.fillRect(tx + 4, ty + 5, 9, 2);
+    ctx.fillRect(tx + 4, ty + 12, 9, 2);
+    ctx.fillStyle = "#6F241C";
+    ctx.fillRect(tx + 6, ty + 7, 5, 5);
+    ctx.fillStyle = "#E64D1D";
+    ctx.fillRect(tx + 7, ty + 7, 3, 4);
+    ctx.fillStyle = "#FFBC32";
+    ctx.fillRect(tx + 8, ty + 7, 1, 2);
+  }
 }
 
 function drawForestFloorTile(
@@ -783,7 +982,7 @@ export class RoomRenderer {
         const tx = x * TILE_SIZE;
         const ty = y * TILE_SIZE;
 
-        if (tileId === 0 || tileId === 2) {
+        if (tileId === 0 || tileId === 2 || tileId === TILE_PROP || tileId === TILE_BREAKABLE || tileId === TILE_STRUCTURE) {
           const hash = tileHash(x, y);
           if (theme === "forest") {
             drawForestFloorTile(ctx, tx, ty, hash);
@@ -1287,10 +1486,10 @@ export class RoomRenderer {
         const tileId = mapData[y * MAP_WIDTH + x];
         const tx = x * TILE_SIZE + 8;
         const ty = y * TILE_SIZE + 14;
-        if (tileId === 1) {
+        if (tileId === 1 || tileId === TILE_STRUCTURE) {
           ctx.fillRect(tx - 9, ty, 18, 5);
           ctx.fillRect(tx - 6, ty + 5, 12, 2);
-        } else if (tileId === 4) {
+        } else if (tileId === TILE_PROP || tileId === TILE_BREAKABLE) {
           ctx.fillRect(tx - 6, ty - 1, 12, 4);
           ctx.fillRect(tx - 3, ty + 3, 6, 2);
         }
@@ -1342,7 +1541,15 @@ export class RoomRenderer {
               }
             }
           }
-        } else if (tileId === 4) {
+        } else if (tileId === TILE_STRUCTURE) {
+          const hash = tileHash(x, y);
+          if (theme === "forest") drawForestStructureTile(ctx, mapData, x, y, hash);
+          else if (theme === "dungeon") drawDungeonStructureTile(ctx, mapData, x, y, hash);
+          else if (theme === "snow") drawSnowStructureTile(ctx, mapData, x, y, hash);
+          else drawLavaStructureTile(ctx, mapData, x, y, hash);
+        } else if (tileId === TILE_BREAKABLE) {
+          drawBreakableTile(ctx, theme, tx, ty);
+        } else if (tileId === TILE_PROP) {
           if (theme === "forest") {
             // A small carved spirit lantern replaces the generic metal post.
             ctx.fillStyle = "#17271F";
