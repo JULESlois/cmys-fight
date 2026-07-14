@@ -130,12 +130,16 @@ assert.notDeepEqual(SPRITES.player_esper_zero_side_idle, SPRITES.player_nanally_
 const zeroIdle = SPRITES.player_esper_zero_side_idle;
 assert.equal(zeroIdle[0][16], "Q", "female Esper Zero keeps the official silver ahoge");
 assert.ok(zeroIdle[3].slice(12, 21).includes("P"), "female Esper Zero keeps the curved black headband");
+assert.notEqual(zeroIdle[3][16], "P", "Esper Zero's fringe breaks the headband so it cannot flatten into a hat brim");
+assert.equal(zeroIdle[7][20], "S", "Esper Zero keeps a bright near-cheek plane for chibi head volume");
 assert.equal(zeroIdle[7][14], "A", "female Esper Zero exposes the far eye");
 assert.equal(zeroIdle[8][18], "J", "female Esper Zero exposes the near violet iris");
 assert.ok(zeroIdle.slice(13, 17).some(row => row.slice(12, 21).includes("I")), "female Esper Zero keeps the fitted white blouse");
+assert.ok(zeroIdle.slice(13, 17).some(row => row.includes("R") && row.includes("Q")), "Esper Zero blouse uses separate shadow and highlight planes");
 assert.ok(zeroIdle.slice(12, 17).filter(row => row.includes("J")).length >= 4, "female Esper Zero keeps the asymmetric lavender tie");
 assert.ok(zeroIdle.slice(13, 17).some(row => row.includes("B") && row.includes("C")), "female Esper Zero keeps the cropped tactical jacket");
 assert.ok(zeroIdle.slice(19, 22).some(row => row.includes("G") || row.includes("H")), "female Esper Zero keeps the dark pleated skirt");
+assert.ok(zeroIdle.slice(27, 31).some(row => row.includes("R") && row.includes("N")), "Esper Zero boots retain distinct lit and shadowed planes");
 assert.equal(zeroIdle.flatMap(row => [...row.slice(0, 5)]).every(pixel => pixel === "."), true, "Esper Zero sprite does not bake in a duplicate sword");
 
 const nanallyIdle = SPRITES.player_nanally_side_idle;
@@ -143,12 +147,16 @@ assert.equal(nanallyIdle[2][10], "A", "Nanally keeps the left black cat-ear acce
 assert.equal(nanallyIdle[2][21], "A", "Nanally keeps the right black cat-ear accessory");
 assert.equal(nanallyIdle[8][14], "P", "Nanally keeps the left blue-tinted round lens");
 assert.equal(nanallyIdle[9][20], "Q", "Nanally keeps the right amber iris inside the glasses");
+assert.equal(nanallyIdle[8][21], "H", "Nanally keeps a brighter near-cheek plane behind the glasses");
 assert.ok(nanallyIdle.slice(13, 17).some(row => row.slice(11, 22).includes("I")), "Nanally keeps the white shirt");
+assert.ok(nanallyIdle.slice(13, 16).some(row => row.includes("O") && row.includes("S")), "Nanally shirt uses warm reflected shadow and a white highlight");
 assert.ok(nanallyIdle.slice(13, 17).some(row => row.includes("L")), "Nanally keeps the black paw tie");
+assert.ok(nanallyIdle[17].slice(12, 22).includes("A") && nanallyIdle[17].slice(12, 22).includes("B"), "Nanally keeps a dark waist break between coat and skirt");
 assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("D")), "Nanally keeps the bright pink skirt panels");
 assert.ok(nanallyIdle.slice(17, 22).some(row => row.includes("C")), "Nanally keeps the darker pleated skirt folds");
 assert.ok(nanallyIdle.slice(18, 23).some(row => row.slice(4, 8).includes("C") || row.slice(4, 8).includes("D")), "Nanally keeps the cat tail");
 assert.ok(nanallyIdle.slice(18, 23).some(row => row.slice(21, 26).includes("O")), "Nanally keeps the dangling cat plush");
+assert.ok(nanallyIdle.slice(27, 31).some(row => row.includes("R") && row.includes("J")), "Nanally boots retain foreground highlights and rear-leg shadow");
 
 for (const id of ["zeroth_sense", "colucci_claws"]) {
   assert.ok(WEAPON_SPRITES[id]);

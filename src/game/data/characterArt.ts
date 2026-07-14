@@ -622,7 +622,7 @@ function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
   const hairSwing = idle ? (phase === 1 ? 1 : 0) : [1, 0, -1, 0][phase];
   const charmSwing = idle ? (phase === 1 ? 1 : 0) : [1, 0, -1, 0][phase];
   const legPoses = idle
-    ? { rear: [14, 25, 13, 12], front: [19, 25, 20, 21] }
+    ? { rear: [12, 25, 14, 11], front: [20, 24, 22, 23] }
     : [
         { rear: [13, 25, 10, 9], front: [19, 25, 22, 24] },
         { rear: [14, 25, 13, 12], front: [19, 25, 20, 21] },
@@ -636,27 +636,43 @@ function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
   rasterLine(canvas, legPoses.rear[0], legPoses.rear[1], legPoses.rear[2], 29, "A", 4);
   rasterLine(canvas, 14, 22 + bob, legPoses.rear[0], legPoses.rear[1], "E", 2);
   rasterLine(canvas, legPoses.rear[0], legPoses.rear[1], legPoses.rear[2], 28, "F", 2);
+  // Rear boot rises above the ankle and stays darker than the foreground boot.
+  rasterSpan(canvas, legPoses.rear[2] - 1, legPoses.rear[2] + 1, 27, "N");
+  rasterSpan(canvas, legPoses.rear[2] - 1, legPoses.rear[2] + 1, 28, "A");
   rasterSpan(canvas, legPoses.rear[3] - 2, legPoses.rear[3] + 2, 30, "N");
 
-  // Layered silver bob: rounded crown, lavender shadow at the nape and loose
-  // cheek locks. The black headband follows the crown instead of forming a hat.
-  rasterSpan(canvas, 13, 19, 3 + bob, "D");
-  rasterSpan(canvas, 11, 21, 4 + bob, "C");
-  rasterSpan(canvas, 10, 22, 5 + bob, "C");
-  rasterSpan(canvas, 10, 12, 6 + bob, "L");
-  rasterSpan(canvas, 20, 22, 6 + bob, "D");
-  rasterSpan(canvas, 10 + hairSwing, 12 + hairSwing, 7 + bob, "L");
-  rasterSpan(canvas, 20 - hairSwing, 22 - hairSwing, 7 + bob, "C");
-  rasterSpan(canvas, 11 + hairSwing, 12 + hairSwing, 8 + bob, "D");
-  rasterSpan(canvas, 20 - hairSwing, 21 - hairSwing, 8 + bob, "L");
-  rasterPixel(canvas, 11 + hairSwing, 9 + bob, "L");
-  rasterPixel(canvas, 21 - hairSwing, 9 + bob, "D");
+  // Layered silver bob. The crown is deliberately rounded and asymmetric:
+  // the far side is a compact lavender shadow while the near side receives a
+  // pale highlight and a longer cheek lock. This produces actual head volume
+  // instead of the previous flat horizontal cap.
+  rasterSpan(canvas, 14, 18, 2 + bob, "D");
+  rasterSpan(canvas, 12, 20, 3 + bob, "C");
+  rasterSpan(canvas, 10, 21, 4 + bob, "C");
+  rasterSpan(canvas, 9, 22, 5 + bob, "L");
+  rasterSpan(canvas, 9, 12, 6 + bob, "K");
+  rasterSpan(canvas, 20, 23, 6 + bob, "D");
+  rasterSpan(canvas, 9 + hairSwing, 12 + hairSwing, 7 + bob, "K");
+  rasterSpan(canvas, 20 - hairSwing, 23 - hairSwing, 7 + bob, "C");
+  rasterSpan(canvas, 10 + hairSwing, 12 + hairSwing, 8 + bob, "L");
+  rasterSpan(canvas, 20 - hairSwing, 22 - hairSwing, 8 + bob, "D");
+  rasterSpan(canvas, 10 + hairSwing, 11 + hairSwing, 9 + bob, "K");
+  rasterSpan(canvas, 21 - hairSwing, 22 - hairSwing, 9 + bob, "L");
+  rasterPixel(canvas, 11 + hairSwing, 10 + bob, "D");
+  rasterPixel(canvas, 21 - hairSwing, 10 + bob, "C");
   rasterPixel(canvas, 16, 0 + bob, "Q");
   rasterPixel(canvas, 17, 1 + bob, "Q");
   rasterPixel(canvas, 17, 2 + bob, "D");
-  for (const [x, y] of [[12, 4], [13, 3], [14, 3], [15, 3], [16, 3], [17, 3], [18, 3], [19, 4], [20, 5]] as const) {
+  // The headband is broken into two curved side segments; silver fringe cuts
+  // through the centre so it cannot read as a flat hat brim.
+  for (const [x, y] of [[12, 4], [13, 3], [14, 3], [15, 3], [18, 3], [19, 3], [20, 4]] as const) {
     rasterPixel(canvas, x, y + bob, "P");
   }
+  // Broken silver highlights across the crown preserve the curved head shape.
+  rasterSpan(canvas, 14, 15, 4 + bob, "Q");
+  rasterPixel(canvas, 16, 3 + bob, "D");
+  rasterPixel(canvas, 17, 3 + bob, "Q");
+  rasterPixel(canvas, 17, 4 + bob, "D");
+  rasterSpan(canvas, 19, 20, 5 + bob, "Q");
 
   // Face with two soft violet eyes and no profile nose.
   rasterSpan(canvas, 13, 19, 6 + bob, "F");
@@ -664,6 +680,13 @@ function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
   rasterSpan(canvas, 12, 20, 8 + bob, "F");
   rasterSpan(canvas, 13, 19, 9 + bob, "F");
   rasterSpan(canvas, 14, 18, 10 + bob, "E");
+  // Cool far-cheek shadow and a pale near-cheek plane give the face a rounded
+  // chibi volume while preserving the no-nose rule.
+  rasterPixel(canvas, 12, 7 + bob, "E");
+  rasterPixel(canvas, 12, 8 + bob, "E");
+  rasterPixel(canvas, 13, 9 + bob, "E");
+  rasterPixel(canvas, 20, 7 + bob, "S");
+  rasterPixel(canvas, 20, 8 + bob, "S");
   rasterPixel(canvas, 14, 7 + bob, "A");
   rasterPixel(canvas, 14, 8 + bob, "J");
   rasterPixel(canvas, 18, 7 + bob, "A");
@@ -684,51 +707,92 @@ function drawEsperZero(frame: number, idle: boolean): CharacterSpriteData {
   rasterSpan(canvas, 13, 20, 15 + bob, "I");
   rasterSpan(canvas, 14, 19, 16 + bob, "I");
   rasterSpan(canvas, 14, 19, 17 + bob, "I");
+  // White fabric is split into shadow, base and highlight planes rather than a
+  // single rectangular value block.
+  rasterPixel(canvas, 13, 13 + bob, "R");
+  rasterPixel(canvas, 13, 14 + bob, "R");
+  rasterPixel(canvas, 14, 15 + bob, "D");
+  rasterPixel(canvas, 15, 16 + bob, "D");
+  rasterPixel(canvas, 19, 13 + bob, "Q");
+  rasterPixel(canvas, 20, 14 + bob, "Q");
+  rasterPixel(canvas, 18, 15 + bob, "S");
+  rasterPixel(canvas, 18, 16 + bob, "S");
   rasterPixel(canvas, 16, 12 + bob, "J");
   rasterPixel(canvas, 17, 13 + bob, "J");
   rasterPixel(canvas, 17, 14 + bob, "J");
   rasterPixel(canvas, 18, 15 + bob, "J");
   rasterPixel(canvas, 18, 16 + bob, "K");
 
-  // Cropped motorcycle jacket, straps and fingerless gloves. The sleeves are
-  // separated from the blouse so the white hourglass torso remains readable.
+  // Cropped motorcycle jacket. The rear sleeve is nearly black and sits
+  // behind the torso; the near sleeve is wider, lighter and overlaps the chest.
+  // Diagonal lapels break up the broad white blouse and make the garment read
+  // as something worn around a body rather than painted onto a flat rectangle.
   rasterSpan(canvas, 9, 13, 12 + bob, "A");
   rasterSpan(canvas, 8, 12, 13 + bob, "B");
-  rasterSpan(canvas, 8, 12, 14 + bob, "B");
-  rasterSpan(canvas, 9, 13, 15 + bob, "C");
-  rasterSpan(canvas, 20, 24, 12 + bob, "A");
-  rasterSpan(canvas, 21, 25, 13 + bob, "B");
-  rasterSpan(canvas, 21, 25, 14 + bob, "B");
-  rasterSpan(canvas, 20, 24, 15 + bob, "C");
-  rasterLine(canvas, 9, 14 + bob, 8, 20 + bob, "A", 4);
-  rasterLine(canvas, 23, 14 + bob, 25, 20 + bob, "A", 4);
-  rasterLine(canvas, 9, 15 + bob, 8, 19 + bob, "C", 2);
-  rasterLine(canvas, 23, 15 + bob, 25, 19 + bob, "C", 2);
-  rasterRect(canvas, 6, 19 + bob, 4, 3, "P");
-  rasterRect(canvas, 24, 19 + bob, 4, 3, "P");
+  rasterSpan(canvas, 7, 11, 14 + bob, "B");
+  rasterSpan(canvas, 8, 12, 15 + bob, "C");
+  rasterSpan(canvas, 20, 24, 12 + bob, "B");
+  rasterSpan(canvas, 21, 25, 13 + bob, "C");
+  rasterSpan(canvas, 21, 26, 14 + bob, "C");
+  rasterSpan(canvas, 20, 25, 15 + bob, "N");
+  rasterLine(canvas, 9, 14 + bob, 7, 20 + bob, "A", 4);
+  rasterLine(canvas, 23, 14 + bob, 26, 20 + bob, "A", 5);
+  rasterLine(canvas, 9, 15 + bob, 7, 19 + bob, "B", 2);
+  rasterLine(canvas, 23, 15 + bob, 26, 19 + bob, "C", 3);
+  rasterLine(canvas, 12, 12 + bob, 15, 17 + bob, "C", 1);
+  rasterLine(canvas, 21, 12 + bob, 18, 17 + bob, "N", 1);
+  rasterPixel(canvas, 13, 14 + bob, "L");
+  rasterPixel(canvas, 20, 14 + bob, "D");
+  rasterRect(canvas, 5, 19 + bob, 4, 3, "P");
+  rasterRect(canvas, 25, 19 + bob, 4, 3, "P");
   rasterPixel(canvas, 8, 20 + bob, "F");
-  rasterPixel(canvas, 26, 20 + bob, "F");
+  rasterPixel(canvas, 27, 20 + bob, "F");
   rasterPixel(canvas, 10, 14 + bob, "M");
   rasterPixel(canvas, 23, 14 + bob, "N");
+  // Shoulder caps and jacket folds distinguish the nearer arm from the rear.
+  rasterSpan(canvas, 8, 10, 13 + bob, "A");
+  rasterPixel(canvas, 9, 16 + bob, "K");
+  rasterSpan(canvas, 23, 25, 13 + bob, "R");
+  rasterPixel(canvas, 25, 16 + bob, "N");
+  rasterPixel(canvas, 26, 18 + bob, "R");
 
-  // Utility belt and asymmetrical pleated skirt from the official female art.
+  // Utility belt and layered asymmetric skirt. The bright front panel, dark
+  // far panel and uneven hem establish three separate depth planes.
   rasterSpan(canvas, 11, 22, 18 + bob, "O");
-  rasterSpan(canvas, 11, 22, 19 + bob, "G");
-  rasterSpan(canvas, 10, 23, 20 + bob, "G");
-  rasterSpan(canvas, 10, 22, 21 + bob, "H");
-  rasterSpan(canvas, 12, 20, 22 + bob, "G");
-  for (const x of [11, 14, 17, 20]) rasterPixel(canvas, x, 21 + bob, x % 2 ? "C" : "H");
+  rasterSpan(canvas, 10, 22, 19 + bob, "G");
+  rasterSpan(canvas, 9, 23, 20 + bob, "G");
+  rasterSpan(canvas, 9, 13, 21 + bob, "H");
+  rasterSpan(canvas, 14, 19, 21 + bob, "G");
+  rasterSpan(canvas, 20, 22, 21 + bob, "C");
+  rasterSpan(canvas, 11, 14, 22 + bob, "H");
+  rasterSpan(canvas, 15, 19, 22 + bob, "G");
+  rasterSpan(canvas, 20, 21, 22 + bob, "C");
+  rasterPixel(canvas, 10, 20 + bob, "K");
+  rasterPixel(canvas, 13, 20 + bob, "C");
+  rasterPixel(canvas, 17, 20 + bob, "H");
+  rasterPixel(canvas, 21, 20 + bob, "L");
   rasterPixel(canvas, 12, 18 + bob, "N");
   rasterPixel(canvas, 20, 18 + bob, "M");
   rasterPixel(canvas, 22 + charmSwing, 19 + bob, "M");
   rasterPixel(canvas, 23 + charmSwing, 20 + bob, "J");
+  // Front skirt panel catches the light, while the far panel remains muted.
+  rasterPixel(canvas, 15, 19 + bob, "L");
+  rasterPixel(canvas, 16, 20 + bob, "L");
+  rasterPixel(canvas, 18, 21 + bob, "R");
+  rasterPixel(canvas, 20, 21 + bob, "K");
 
   // Foreground leg and boot.
   rasterLine(canvas, 19, 22 + bob, legPoses.front[0], legPoses.front[1], "A", 5);
   rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 29, "A", 5);
   rasterLine(canvas, 19, 22 + bob, legPoses.front[0], legPoses.front[1], "F", 3);
   rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 28, "F", 3);
+  rasterSpan(canvas, legPoses.front[2] - 1, legPoses.front[2] + 1, 27, "R");
+  rasterSpan(canvas, legPoses.front[2] - 1, legPoses.front[2] + 1, 28, "N");
   rasterSpan(canvas, legPoses.front[3] - 2, legPoses.front[3] + 2, 30, "N");
+  rasterPixel(canvas, legPoses.front[2], 27, "S");
+  rasterSpan(canvas, legPoses.front[3], legPoses.front[3] + 2, 30, "R");
+  // Asymmetric thigh strap reinforces the appraiser utility outfit.
+  rasterSpan(canvas, legPoses.rear[0] - 1, legPoses.rear[0] + 1, 24 + bob, "O");
 
   return finish(canvas);
 }
@@ -740,7 +804,7 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   const hairSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
   const tailSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
   const legPoses = idle
-    ? { rear: [14, 25, 13, 12], front: [19, 25, 20, 21] }
+    ? { rear: [13, 24, 15, 12], front: [20, 25, 22, 23] }
     : [
         { rear: [13, 25, 10, 9], front: [19, 25, 22, 24] },
         { rear: [14, 25, 13, 12], front: [19, 25, 20, 21] },
@@ -752,6 +816,11 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterLine(canvas, 10, 18 + bob, 6 + tailSwing, 19 + bob, "B", 2);
   rasterLine(canvas, 6 + tailSwing, 19 + bob, 5 + tailSwing, 22 + bob, "C", 2);
   rasterPixel(canvas, 6 + tailSwing, 23 + bob, "D");
+  // Rear hair is a dark, rounded mass. Separate illuminated front locks are
+  // added later, preventing the hairstyle from reading as two flat side bars.
+  rasterSpan(canvas, 11, 20, 3 + bob, "B");
+  rasterSpan(canvas, 9, 22, 4 + bob, "B");
+  rasterSpan(canvas, 8, 23, 5 + bob, "C");
   rasterSpan(canvas, 8 + hairSwing, 12 + hairSwing, 7 + bob, "B");
   rasterSpan(canvas, 7 + hairSwing, 11 + hairSwing, 8 + bob, "C");
   for (let y = 9; y <= 24; y++) {
@@ -760,6 +829,8 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
     rasterSpan(canvas, left, left + (y < 16 ? 4 : 3), y + bob, y % 4 === 0 ? "D" : "C");
     rasterSpan(canvas, right, right + 3, y + bob, y % 3 === 0 ? "D" : "B");
   }
+  rasterLine(canvas, 9 + hairSwing, 10 + bob, 10 + hairSwing, 21 + bob, "D", 1);
+  rasterLine(canvas, 23 - hairSwing, 9 + bob, 22 - hairSwing, 20 + bob, "B", 1);
   rasterPixel(canvas, 9 + hairSwing, 22 + bob, "D");
   rasterPixel(canvas, 23 - hairSwing, 23 + bob, "D");
 
@@ -771,7 +842,9 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterLine(canvas, legPoses.rear[2], 27, legPoses.rear[2], 29, "N", 3);
   rasterSpan(canvas, legPoses.rear[3] - 2, legPoses.rear[3] + 2, 30, "J");
 
-  // White shirt, long paw tie and bright pleated skirt.
+  // White shirt, long paw tie and bright pleated skirt. The shirt narrows at
+  // the waist and the skirt uses stepped, non-horizontal panels to avoid the
+  // previous flat pink bar across the entire body.
   rasterSpan(canvas, 13, 20, 12 + bob, "I");
   rasterSpan(canvas, 12, 21, 13 + bob, "I");
   rasterSpan(canvas, 12, 21, 14 + bob, "I");
@@ -783,29 +856,44 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterPixel(canvas, 17, 15 + bob, "L");
   rasterPixel(canvas, 17, 16 + bob, "L");
   rasterPixel(canvas, 16, 15 + bob, "M");
-  rasterSpan(canvas, 11, 22, 17 + bob, "B");
+  rasterSpan(canvas, 12, 21, 17 + bob, "B");
   rasterSpan(canvas, 10, 23, 18 + bob, "C");
   rasterSpan(canvas, 9, 24, 19 + bob, "D");
-  rasterSpan(canvas, 10, 23, 20 + bob, "C");
-  rasterSpan(canvas, 11, 22, 21 + bob, "D");
-  for (const x of [11, 14, 17, 20, 23]) rasterPixel(canvas, x, 20 + bob, x % 2 ? "B" : "M");
+  rasterSpan(canvas, 9, 13, 20 + bob, "D");
+  rasterSpan(canvas, 14, 18, 20 + bob, "C");
+  rasterSpan(canvas, 19, 23, 20 + bob, "D");
+  rasterSpan(canvas, 11, 14, 21 + bob, "C");
+  rasterSpan(canvas, 15, 18, 21 + bob, "D");
+  rasterSpan(canvas, 19, 22, 21 + bob, "C");
+  rasterPixel(canvas, 11, 19 + bob, "M");
+  rasterPixel(canvas, 14, 20 + bob, "B");
+  rasterPixel(canvas, 18, 20 + bob, "M");
+  rasterPixel(canvas, 22, 19 + bob, "B");
 
-  // Oversized patched street jacket. The sleeves hang below the skirt line,
-  // while the white shirt remains visible as a narrow central value block.
+  // Oversized patched street jacket. The far sleeve is darker and shorter;
+  // the near sleeve projects toward the viewer, using a lighter fold and an
+  // angled cuff. This creates depth without increasing the overall footprint.
   rasterSpan(canvas, 8, 13, 12 + bob, "A");
   rasterSpan(canvas, 7, 12, 13 + bob, "K");
-  rasterSpan(canvas, 6, 12, 14 + bob, "K");
-  rasterSpan(canvas, 6, 11, 15 + bob, "N");
-  rasterSpan(canvas, 20, 25, 12 + bob, "A");
-  rasterSpan(canvas, 21, 26, 13 + bob, "K");
-  rasterSpan(canvas, 21, 27, 14 + bob, "K");
-  rasterSpan(canvas, 22, 27, 15 + bob, "N");
-  rasterRect(canvas, 5, 15 + bob, 6, 8, "K");
-  rasterRect(canvas, 23, 15 + bob, 6, 8, "K");
-  rasterSpan(canvas, 5, 10, 21 + bob, "N");
-  rasterSpan(canvas, 23, 28, 21 + bob, "N");
-  rasterSpan(canvas, 6, 9, 23 + bob, "A");
+  rasterSpan(canvas, 6, 11, 14 + bob, "K");
+  rasterSpan(canvas, 6, 10, 15 + bob, "A");
+  rasterSpan(canvas, 20, 25, 12 + bob, "K");
+  rasterSpan(canvas, 21, 26, 13 + bob, "N");
+  rasterSpan(canvas, 21, 27, 14 + bob, "N");
+  rasterSpan(canvas, 22, 28, 15 + bob, "K");
+  rasterRect(canvas, 5, 15 + bob, 6, 6, "K");
+  rasterRect(canvas, 23, 15 + bob, 6, 7, "N");
+  rasterSpan(canvas, 5, 9, 21 + bob, "A");
+  rasterSpan(canvas, 6, 10, 22 + bob, "N");
+  rasterSpan(canvas, 24, 29, 21 + bob, "K");
+  rasterSpan(canvas, 23, 28, 22 + bob, "A");
+  rasterSpan(canvas, 7, 9, 23 + bob, "A");
   rasterSpan(canvas, 24, 27, 23 + bob, "A");
+  // Lapels and front seams sit over the white shirt.
+  rasterLine(canvas, 12, 12 + bob, 14, 17 + bob, "N", 1);
+  rasterLine(canvas, 21, 12 + bob, 19, 17 + bob, "K", 1);
+  rasterPixel(canvas, 12, 14 + bob, "D");
+  rasterPixel(canvas, 21, 14 + bob, "C");
   rasterPixel(canvas, 10, 20 + bob, "A");
   rasterPixel(canvas, 23, 20 + bob, "A");
   rasterPixel(canvas, 7, 16 + bob, "P");
@@ -815,6 +903,15 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterPixel(canvas, 9, 22 + bob, "O");
   rasterPixel(canvas, 25, 22 + bob, "O");
   rasterPixel(canvas, 28, 22 + bob, "O");
+  // Pink inner lining and a dark waist gap separate the coat from the skirt.
+  rasterPixel(canvas, 10, 17 + bob, "B");
+  rasterPixel(canvas, 10, 18 + bob, "D");
+  rasterPixel(canvas, 23, 17 + bob, "C");
+  rasterPixel(canvas, 23, 18 + bob, "D");
+  rasterPixel(canvas, 10, 19 + bob, "A");
+  rasterPixel(canvas, 23, 19 + bob, "A");
+  rasterSpan(canvas, 12, 21, 17 + bob, "A");
+  rasterSpan(canvas, 13, 20, 17 + bob, "B");
 
   // Cat plush hanging from the right pocket: ears, white face, pink body.
   rasterPixel(canvas, 23, 18 + bob, "O");
@@ -825,21 +922,37 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterPixel(canvas, 24, 19 + bob, "A");
   rasterPixel(canvas, 25, 19 + bob, "A");
 
-  // Warm face framed by vivid magenta bangs and black cat-ear accessories.
-  rasterSpan(canvas, 12, 20, 4 + bob, "B");
-  rasterSpan(canvas, 10, 22, 5 + bob, "C");
+  // Warm face framed by a rounded crown, vivid magenta bangs and black cat-ear
+  // accessories. A brighter near-side lock and dark far-side root add depth.
+  rasterSpan(canvas, 13, 19, 3 + bob, "B");
+  rasterSpan(canvas, 11, 21, 4 + bob, "B");
+  rasterSpan(canvas, 9, 23, 5 + bob, "C");
   rasterSpan(canvas, 10, 22, 6 + bob, "C");
   rasterSpan(canvas, 12, 20, 7 + bob, "F");
   rasterSpan(canvas, 11, 21, 8 + bob, "F");
   rasterSpan(canvas, 11, 21, 9 + bob, "F");
   rasterSpan(canvas, 12, 20, 10 + bob, "F");
   rasterSpan(canvas, 13, 19, 11 + bob, "E");
+  // The far cheek is warm and subdued; the near cheek is brighter. This keeps
+  // the glasses readable while giving the head a rounded plane change.
+  rasterPixel(canvas, 11, 8 + bob, "E");
+  rasterPixel(canvas, 11, 9 + bob, "E");
+  rasterPixel(canvas, 12, 10 + bob, "E");
+  rasterPixel(canvas, 21, 8 + bob, "H");
+  rasterPixel(canvas, 21, 9 + bob, "H");
   rasterSpan(canvas, 10, 14, 5 + bob, "D");
   rasterSpan(canvas, 18, 22, 5 + bob, "B");
   rasterSpan(canvas, 10, 12, 6 + bob, "D");
   rasterSpan(canvas, 20, 22, 6 + bob, "B");
+  rasterSpan(canvas, 12, 14, 4 + bob, "D");
+  rasterSpan(canvas, 18, 20, 4 + bob, "C");
   rasterPixel(canvas, 15, 6 + bob, "D");
   rasterPixel(canvas, 18, 6 + bob, "B");
+  // Crown highlight and dark root separate front bangs from rear hair mass.
+  rasterSpan(canvas, 13, 15, 4 + bob, "D");
+  rasterSpan(canvas, 18, 20, 4 + bob, "C");
+  rasterPixel(canvas, 10, 6 + bob, "B");
+  rasterPixel(canvas, 22, 6 + bob, "A");
 
   // Ear clips are compact triangular accents rather than broad horns.
   rasterPixel(canvas, 10 + hairSwing, 2 + bob, "A");
@@ -867,6 +980,12 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterPixel(canvas, 20, 8 + bob, "P");
   rasterPixel(canvas, 20, 9 + bob, "Q");
   rasterPixel(canvas, 17, 11 + bob, "E");
+  // Shirt highlight and pink reflected shadow make the torso cylindrical.
+  rasterPixel(canvas, 14, 13 + bob, "O");
+  rasterPixel(canvas, 14, 14 + bob, "O");
+  rasterPixel(canvas, 19, 13 + bob, "S");
+  rasterPixel(canvas, 19, 14 + bob, "S");
+  rasterPixel(canvas, 18, 15 + bob, "S");
 
   // Foreground leg.
   rasterLine(canvas, 19, 22 + bob, legPoses.front[0], legPoses.front[1], "A", 5);
@@ -874,7 +993,11 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   rasterLine(canvas, 19, 22 + bob, legPoses.front[0], legPoses.front[1], "F", 3);
   rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 27, "F", 3);
   rasterLine(canvas, legPoses.front[2], 27, legPoses.front[2], 29, "N", 3);
+  rasterPixel(canvas, legPoses.front[2] - 1, 27, "R");
+  rasterPixel(canvas, legPoses.front[2], 28, "J");
   rasterSpan(canvas, legPoses.front[3] - 2, legPoses.front[3] + 2, 30, "J");
+  rasterPixel(canvas, legPoses.front[2], 26, "H");
+  rasterSpan(canvas, legPoses.front[3], legPoses.front[3] + 2, 30, "R");
 
   return finish(canvas);
 }
@@ -994,7 +1117,7 @@ export const ESPER_ZERO_CHARACTER_PALETTE: Record<string, string> = {
   E: "#C88E7D", F: "#F4C7B3", G: "#4A405B", H: "#6D5C82",
   I: "#F4F5FA", J: "#A787EE", K: "#332953", L: "#DCCBFF",
   M: "#6DE4F1", N: "#8B90A2", O: "#2C2B38", P: "#0E1018",
-  Q: "#F2F0FA",
+  Q: "#F2F0FA", R: "#AAB1C2", S: "#FFFFFF",
 };
 
 export const NANALLY_CHARACTER_PALETTE: Record<string, string> = {
@@ -1003,7 +1126,7 @@ export const NANALLY_CHARACTER_PALETTE: Record<string, string> = {
   E: "#C98B7D", F: "#F6C4B0", G: "#D69A89", H: "#F0B7A1",
   I: "#F4F4F7", J: "#727A8C", K: "#34313B", L: "#8E273F",
   M: "#FF9DB7", N: "#413B49", O: "#FFB5C8", P: "#76C7E8",
-  Q: "#9B4C42",
+  Q: "#9B4C42", R: "#62566B", S: "#FFFFFF",
 };
 
 export const MICHELE_HIGH_RES_PALETTE = MICHELE_CHARACTER_PALETTE;
