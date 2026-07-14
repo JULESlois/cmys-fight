@@ -109,47 +109,181 @@ export class EnvironmentSystem {
   static draw(ctx: CanvasRenderingContext2D, hazards: EnvironmentHazard[], time: number): void {
     ctx.save();
     ctx.lineWidth = 1;
+    const poisonTiles = new Set(
+      hazards
+        .filter(hazard => hazard.type === "poison_pool")
+        .map(hazard => `${hazard.tileX},${hazard.tileY}`),
+    );
+    const spikeTiles = new Set(
+      hazards
+        .filter(hazard => hazard.type === "spikes")
+        .map(hazard => `${hazard.tileX},${hazard.tileY}`),
+    );
+    const iceTiles = new Set(
+      hazards
+        .filter(hazard => hazard.type === "ice")
+        .map(hazard => `${hazard.tileX},${hazard.tileY}`),
+    );
+    const lavaTiles = new Set(
+      hazards
+        .filter(hazard => hazard.type === "lava")
+        .map(hazard => `${hazard.tileX},${hazard.tileY}`),
+    );
     for (const hazard of hazards) {
       const left = hazard.tileX * TILE_SIZE + 1;
       const top = hazard.tileY * TILE_SIZE + 1;
       const size = TILE_SIZE - 2;
       if (hazard.type === "poison_pool") {
-        ctx.fillStyle = "rgba(82, 148, 62, 0.72)";
-        ctx.fillRect(left, top, size, size);
-        ctx.fillStyle = "#A6D96A";
-        ctx.fillRect(left + 2, top + 3, 4, 3);
-        ctx.fillRect(left + 9, top + 8, 3, 4);
-        ctx.fillStyle = "#395C2B";
-        ctx.fillRect(left + 7, top + 2, 2, 2);
+        // Stepped edges and moving spores make this read as toxic forest sap,
+        // not a translucent green square pasted over the floor.
+        ctx.fillStyle = "rgba(37, 66, 35, 0.86)";
+        ctx.fillRect(left + 2, top, size - 4, size);
+        ctx.fillRect(left, top + 2, size, size - 4);
+        ctx.fillStyle = "rgba(80, 139, 57, 0.88)";
+        ctx.fillRect(left + 3, top + 2, size - 6, size - 4);
+        ctx.fillRect(left + 2, top + 4, size - 4, size - 8);
+        ctx.fillStyle = "#77B957";
+        ctx.fillRect(left + 3, top + 4, 5, 3);
+        ctx.fillRect(left + 9, top + 9, 3, 3);
+        ctx.fillStyle = "#B5DD72";
+        const bubble = Math.floor((time + hazard.phase) * 4) % 3;
+        ctx.fillRect(left + 5 + bubble, top + 3, 2, 2);
+        ctx.fillRect(left + 10 - bubble, top + 8, 1, 1);
+        ctx.fillStyle = "#29472B";
+        ctx.fillRect(left + 8, top + 1, 2, 2);
+        ctx.fillRect(left + 1, top + 9, 2, 2);
+
+        const connectedLeft = poisonTiles.has(`${hazard.tileX - 1},${hazard.tileY}`);
+        const connectedRight = poisonTiles.has(`${hazard.tileX + 1},${hazard.tileY}`);
+        const connectedUp = poisonTiles.has(`${hazard.tileX},${hazard.tileY - 1}`);
+        const connectedDown = poisonTiles.has(`${hazard.tileX},${hazard.tileY + 1}`);
+        ctx.fillStyle = "rgba(80, 139, 57, 0.9)";
+        if (connectedLeft) ctx.fillRect(left - 2, top + 3, 6, size - 6);
+        if (connectedRight) ctx.fillRect(left + size - 3, top + 3, 6, size - 6);
+        if (connectedUp) ctx.fillRect(left + 3, top - 2, size - 6, 6);
+        if (connectedDown) ctx.fillRect(left + 3, top + size - 3, size - 6, 6);
+
+        // Outline only exposed pool edges so adjacent cells become one shape.
+        ctx.fillStyle = "rgba(22, 42, 25, 0.92)";
+        if (!connectedUp) ctx.fillRect(left + 2, top, size - 4, 1);
+        if (!connectedDown) ctx.fillRect(left + 2, top + size - 1, size - 4, 1);
+        if (!connectedLeft) ctx.fillRect(left, top + 2, 1, size - 4);
+        if (!connectedRight) ctx.fillRect(left + size - 1, top + 2, 1, size - 4);
       } else if (hazard.type === "lava") {
-        ctx.fillStyle = "#7A2E1B";
+        const connectedLeft = lavaTiles.has(`${hazard.tileX - 1},${hazard.tileY}`);
+        const connectedRight = lavaTiles.has(`${hazard.tileX + 1},${hazard.tileY}`);
+        const connectedUp = lavaTiles.has(`${hazard.tileX},${hazard.tileY - 1}`);
+        const connectedDown = lavaTiles.has(`${hazard.tileX},${hazard.tileY + 1}`);
+
+        // Adjacent molten cells fuse into a single slag pool with exposed crust rims.
+        ctx.fillStyle = "rgba(117, 35, 24, 0.96)";
         ctx.fillRect(left, top, size, size);
-        ctx.fillStyle = "#FF7A1A";
-        ctx.fillRect(left + 2, top + 5, 10, 3);
-        ctx.fillRect(left + 7, top + 2, 3, 10);
-        ctx.fillStyle = "#FFD54F";
-        ctx.fillRect(left + 8, top + 6, 2, 2);
+        ctx.fillStyle = "rgba(190, 52, 19, 0.96)";
+        ctx.fillRect(left + 2, top + 2, size - 4, size - 4);
+        if (connectedLeft) ctx.fillRect(left - 2, top + 2, 5, size - 4);
+        if (connectedRight) ctx.fillRect(left + size - 3, top + 2, 5, size - 4);
+        if (connectedUp) ctx.fillRect(left + 2, top - 2, size - 4, 5);
+        if (connectedDown) ctx.fillRect(left + 2, top + size - 3, size - 4, 5);
+
+        const flow = Math.floor((time + hazard.phase) * 4) % 4;
+        ctx.fillStyle = "#F0611D";
+        ctx.fillRect(left + 2 + flow, top + 4, 8, 3);
+        ctx.fillRect(left + 7 - flow, top + 9, 5, 2);
+        ctx.fillStyle = "#FFB42D";
+        ctx.fillRect(left + 3 + flow, top + 4, 4, 1);
+        ctx.fillRect(left + 8 - flow, top + 9, 3, 1);
+        ctx.fillStyle = "#FFE56A";
+        ctx.fillRect(left + 5 + flow, top + 5, 2, 1);
+
+        // Dark slag chunks stay inside the pool and move independently of the glow.
+        ctx.fillStyle = "#55241F";
+        ctx.fillRect(left + 2, top + 10, 4, 2);
+        ctx.fillRect(left + 10, top + 2, 2, 3);
+        ctx.fillStyle = "#2C2024";
+        if (!connectedUp) ctx.fillRect(left, top, size, 1);
+        if (!connectedDown) ctx.fillRect(left, top + size - 1, size, 1);
+        if (!connectedLeft) ctx.fillRect(left, top, 1, size);
+        if (!connectedRight) ctx.fillRect(left + size - 1, top, 1, size);
       } else if (hazard.type === "ice") {
-        ctx.fillStyle = "rgba(126, 196, 222, 0.82)";
+        const connectedLeft = iceTiles.has(`${hazard.tileX - 1},${hazard.tileY}`);
+        const connectedRight = iceTiles.has(`${hazard.tileX + 1},${hazard.tileY}`);
+        const connectedUp = iceTiles.has(`${hazard.tileX},${hazard.tileY - 1}`);
+        const connectedDown = iceTiles.has(`${hazard.tileX},${hazard.tileY + 1}`);
+
+        // Adjacent slick cells fuse into one frozen sheet with only exposed rims.
+        ctx.fillStyle = "rgba(65, 139, 164, 0.9)";
         ctx.fillRect(left, top, size, size);
-        ctx.fillStyle = "#E8F8FF";
-        ctx.fillRect(left + 2, top + 2, 8, 2);
-        ctx.fillRect(left + 5, top + 4, 2, 7);
-        ctx.fillStyle = "#5BA6C4";
-        ctx.fillRect(left + 7, top + 8, 5, 2);
+        ctx.fillStyle = "rgba(111, 188, 207, 0.92)";
+        ctx.fillRect(left + 2, top + 2, size - 4, size - 4);
+        if (connectedLeft) ctx.fillRect(left - 2, top + 2, 5, size - 4);
+        if (connectedRight) ctx.fillRect(left + size - 3, top + 2, 5, size - 4);
+        if (connectedUp) ctx.fillRect(left + 2, top - 2, size - 4, 5);
+        if (connectedDown) ctx.fillRect(left + 2, top + size - 3, size - 4, 5);
+
+        const glint = Math.floor((time + hazard.phase) * 3) % 4;
+        ctx.fillStyle = "#CDEFF4";
+        ctx.fillRect(left + 2 + glint, top + 3, 7, 2);
+        ctx.fillRect(left + 8 - glint, top + 10, 4, 1);
+        ctx.fillStyle = "#F0FEFF";
+        ctx.fillRect(left + 3 + glint, top + 3, 3, 1);
+
+        // Stepped fracture lines remain readable across the moving highlight.
+        ctx.fillStyle = "#397E98";
+        ctx.fillRect(left + 6, top + 5, 2, 5);
+        ctx.fillRect(left + 7, top + 9, 5, 2);
+        ctx.fillRect(left + 3, top + 11, 5, 1);
+        ctx.fillStyle = "#93D3DF";
+        ctx.fillRect(left + 7, top + 5, 1, 3);
+
+        ctx.fillStyle = "rgba(31, 75, 94, 0.9)";
+        if (!connectedUp) ctx.fillRect(left, top, size, 1);
+        if (!connectedDown) ctx.fillRect(left, top + size - 1, size, 1);
+        if (!connectedLeft) ctx.fillRect(left, top, 1, size);
+        if (!connectedRight) ctx.fillRect(left + size - 1, top, 1, size);
       } else {
         const active = EnvironmentSystem.isSpikeActive(hazard, time);
-        ctx.fillStyle = active ? "#7B2722" : "#46535A";
+        const connectedLeft = spikeTiles.has(`${hazard.tileX - 1},${hazard.tileY}`);
+        const connectedRight = spikeTiles.has(`${hazard.tileX + 1},${hazard.tileY}`);
+        const connectedUp = spikeTiles.has(`${hazard.tileX},${hazard.tileY - 1}`);
+        const connectedDown = spikeTiles.has(`${hazard.tileX},${hazard.tileY + 1}`);
+
+        // Joined iron pressure plates form one trap bed instead of isolated
+        // red squares pasted on top of the dungeon floor.
+        ctx.fillStyle = active ? "#4E2427" : "#303B46";
         ctx.fillRect(left, top, size, size);
-        ctx.fillStyle = active ? "#F2F3F4" : "#829096";
-        const height = active ? 5 : 2;
+        ctx.fillStyle = active ? "#713036" : "#46545F";
+        ctx.fillRect(left + 2, top + 2, size - 4, size - 4);
+        if (connectedLeft) ctx.fillRect(left - 2, top + 2, 5, size - 4);
+        if (connectedRight) ctx.fillRect(left + size - 3, top + 2, 5, size - 4);
+        if (connectedUp) ctx.fillRect(left + 2, top - 2, size - 4, 5);
+        if (connectedDown) ctx.fillRect(left + 2, top + size - 3, size - 4, 5);
+
+        ctx.fillStyle = active ? "#F1F1EA" : "#7B8990";
+        const height = active ? 6 : 2;
         for (const [ox, oy] of [[3, 3], [9, 3], [3, 9], [9, 9]] as const) {
-          ctx.fillRect(left + ox, top + oy + (5 - height), 3, height);
-          if (active) ctx.fillRect(left + ox + 1, top + oy, 1, 1);
+          ctx.fillRect(left + ox, top + oy + (6 - height), 3, height);
+          ctx.fillStyle = active ? "#FFFFFF" : "#9AA6AA";
+          ctx.fillRect(left + ox + 1, top + oy + (6 - height), 1, Math.max(1, height - 1));
+          ctx.fillStyle = active ? "#F1F1EA" : "#7B8990";
+          if (active) ctx.fillRect(left + ox + 1, top + oy - 1, 1, 2);
         }
+        ctx.fillStyle = active ? "#B35A52" : "#64717A";
+        ctx.fillRect(left + 6, top + 1, 2, size - 2);
+        ctx.fillRect(left + 1, top + 6, size - 2, 2);
+        ctx.fillStyle = active ? "#E0B55A" : "#98A1A2";
+        ctx.fillRect(left + 6, top + 6, 2, 2);
+
+        // Only exposed trap-bed edges receive a dark outline.
+        ctx.fillStyle = "rgba(8, 15, 28, 0.82)";
+        if (!connectedUp) ctx.fillRect(left, top, size, 1);
+        if (!connectedDown) ctx.fillRect(left, top + size - 1, size, 1);
+        if (!connectedLeft) ctx.fillRect(left, top, 1, size);
+        if (!connectedRight) ctx.fillRect(left + size - 1, top, 1, size);
       }
-      ctx.strokeStyle = "rgba(8, 15, 28, 0.75)";
-      ctx.strokeRect(left, top, size, size);
+      if (hazard.type !== "poison_pool" && hazard.type !== "spikes" && hazard.type !== "ice" && hazard.type !== "lava") {
+        ctx.strokeStyle = "rgba(8, 15, 28, 0.75)";
+        ctx.strokeRect(left, top, size, size);
+      }
     }
     ctx.restore();
   }

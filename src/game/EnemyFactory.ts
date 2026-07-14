@@ -49,6 +49,8 @@ export class EnemyFactory {
       Math.round(definition.radius * (definition.role === "boss" ? 2.0 : 1.7)),
     );
     enemy.hitboxOffsetY = -Math.round(enemy.hitboxRadius * (definition.role === "boss" ? 0.72 : 0.72));
+    if (definition.hitboxRadius !== undefined) enemy.hitboxRadius = definition.hitboxRadius;
+    if (definition.hitboxOffsetY !== undefined) enemy.hitboxOffsetY = definition.hitboxOffsetY;
     enemy.attackDamage = definition.attackDamage;
     enemy.attackInterval = definition.attackInterval;
     enemy.attackWindup = definition.attackWindup;

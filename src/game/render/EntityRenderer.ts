@@ -11,8 +11,9 @@ import {
   PLAYER_PALETTE,
 } from "../data/sprites";
 import { usesDetailedCharacterArt } from "../data/characters";
+import { getEnemyDefinition } from "../data/enemies";
 import { SpriteRenderer } from "./SpriteRenderer";
-import { MonsterModelRenderer } from "./MonsterModelRenderer";
+import { MonsterModelRenderer, usesNativeMonsterArt } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
 import { ProjectileArtRenderer } from "./ProjectileArtRenderer";
 
@@ -401,14 +402,20 @@ export class EntityRenderer {
       EntityRenderer.drawCornerFrame(ctx, enemy.hitboxRadius + 3, "rgba(241,196,15,0.9)", 6);
       ctx.restore();
     }
+    const nativeMonsterArt = usesNativeMonsterArt(enemy.enemyId);
+    const enemyDefinition = getEnemyDefinition(enemy.enemyId);
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    const shadowWidth = enemy.type === "boss" ? 23 : 13;
+    const shadowWidth = enemyDefinition.shadowWidth ?? (nativeMonsterArt
+      ? enemy.type === "boss" ? 36 : 19
+      : enemy.type === "boss" ? 23 : 13);
     ctx.fillRect(-shadowWidth / 2, enemy.radius - 4, shadowWidth, 5);
 
-    const animOffset = Math.round(Math.sin(time * 5 + enemy.x) * 2);
+    // Native pixel models author their own idle, walk and attack body motion.
+    // Adding the legacy sine offset makes grounded enemies appear to float.
+    const animOffset = nativeMonsterArt ? 0 : Math.round(Math.sin(time * 5 + enemy.x) * 2);
     ctx.translate(0, animOffset);
-    let scale = enemy.isElite ? 1.62 : 1.42;
-    if (enemy.type === "boss") scale = 2.15;
+    let scale = nativeMonsterArt ? 1 : enemy.isElite ? 1.62 : 1.42;
+    if (enemy.type === "boss") scale = nativeMonsterArt ? 1 : 2.15;
     MonsterModelRenderer.draw(ctx, enemy, time, reducedFlashing, scale);
     ctx.restore();
 

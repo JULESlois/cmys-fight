@@ -223,7 +223,7 @@ assert.match(dungeonSource, /kind === "boss" \? "boss" : "treasure"/);
 assert.match(dungeonSource, /createOrRestoreWeaponChest\(currentRoom, "boss"\)/);
 assert.match(dungeonSource, /currentRoom\.weaponChest = \{ \.\.\.this\.chest \}/);
 assert.match(rendererSource, /enemy\.isElite \? 1\.62 : 1\.42/);
-assert.match(rendererSource, /enemy\.type === "boss"\) scale = 2\.15/);
+assert.match(rendererSource, /if \(enemy\.type === "boss"\) scale = nativeMonsterArt \? 1 : 2\.15/);
 for (const weapon of legendaryWeapons) {
   assert.ok(WEAPON_SPRITES[weapon.id], `${weapon.id} dedicated model`);
   assert.ok(WEAPON_PALETTES[weapon.id], `${weapon.id} dedicated palette`);

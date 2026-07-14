@@ -6,6 +6,7 @@ import {
   MONSTER_MODEL_IDS,
   getMonsterAnimationPose,
   hasMonsterModel,
+  usesNativeMonsterArt,
 } from "../src/game/render/MonsterModelRenderer";
 import { Enemy } from "../src/game/entities/Enemy";
 import { updateEnemyAnimation } from "../src/game/EnemyAnimation";
@@ -15,6 +16,63 @@ const modelIds = [...MONSTER_MODEL_IDS].sort();
 assert.deepEqual(modelIds, enemyIds, "every enemy must have a dedicated model");
 assert.equal(new Set(modelIds).size, enemyIds.length);
 for (const id of enemyIds) assert.equal(hasMonsterModel(id), true, id);
+
+const nativeForestIds = [
+  "moss_brute",
+  "thorn_archer",
+  "boar_charger",
+  "dingdong_fowl",
+  "spore_mimic",
+  "forest_guardian",
+  "broadcast_rooster",
+] as const;
+for (const id of nativeForestIds) {
+  assert.equal(usesNativeMonsterArt(id), true, `${id} should use authored native-resolution art`);
+  assert.ok((ENEMIES[id].hitboxRadius ?? 0) >= (ENEMIES[id].role === "boss" ? 30 : 17), `${id} authored hitbox`);
+  assert.ok((ENEMIES[id].shadowWidth ?? 0) >= (ENEMIES[id].role === "boss" ? 35 : 18), `${id} authored shadow`);
+}
+const nativeDungeonIds = [
+  "bone_guard",
+  "bolt_cultist",
+  "grave_summoner",
+  "bark_hound",
+  "chain_jailer",
+  "crypt_overseer",
+  "kennel_warden",
+] as const;
+for (const id of nativeDungeonIds) {
+  assert.equal(usesNativeMonsterArt(id), true, `${id} should use authored native-resolution art`);
+  assert.ok((ENEMIES[id].hitboxRadius ?? 0) >= (ENEMIES[id].role === "boss" ? 34 : 18), `${id} authored hitbox`);
+  assert.ok((ENEMIES[id].shadowWidth ?? 0) >= (ENEMIES[id].role === "boss" ? 44 : 20), `${id} authored shadow`);
+}
+const nativeSnowIds = [
+  "frost_hound",
+  "ice_shaman",
+  "snow_turret",
+  "white_sampler",
+  "mirror_wisp",
+  "frost_titan",
+  "white_director",
+] as const;
+for (const id of nativeSnowIds) {
+  assert.equal(usesNativeMonsterArt(id), true, `${id} should use authored native-resolution art`);
+  assert.ok((ENEMIES[id].hitboxRadius ?? 0) >= (ENEMIES[id].role === "boss" ? 38 : 19), `${id} authored hitbox`);
+  assert.ok((ENEMIES[id].shadowWidth ?? 0) >= (ENEMIES[id].role === "boss" ? 48 : 21), `${id} authored shadow`);
+}
+const nativeLavaIds = [
+  "ember_knight",
+  "magma_spitter",
+  "cinder_oracle",
+  "code_horse",
+  "furnace_beetle",
+  "inferno_core",
+  "vat_horse_prime",
+] as const;
+for (const id of nativeLavaIds) {
+  assert.equal(usesNativeMonsterArt(id), true, `${id} should use authored native-resolution art`);
+  assert.ok((ENEMIES[id].hitboxRadius ?? 0) >= (ENEMIES[id].role === "boss" ? 42 : 21), `${id} authored hitbox`);
+  assert.ok((ENEMIES[id].shadowWidth ?? 0) >= (ENEMIES[id].role === "boss" ? 56 : 24), `${id} authored shadow`);
+}
 
 
 assert.deepEqual(MONSTER_ANIMATION_FRAMES, { idle: 2, walk: 4, attack: 4, hurt: 2 });
@@ -69,18 +127,85 @@ for (const id of enemyIds) {
 assert.doesNotMatch(source, /ctx\.arc\(|ctx\.ellipse\(/, "monster models must use pixel geometry");
 assert.match(source, /facing === "left" \? -scale : scale/, "left-facing models should mirror the complete model");
 assert.match(source, /previewStates[\s\S]*"idle"[\s\S]*"walk"[\s\S]*"attack"/, "codex preview should cycle animation states");
+assert.match(source, /nativePixelArt && state !== "hurt"/, "native models author their own body movement");
+assert.match(source, /!nativePixelArt && state === "attack"/, "legacy attack blocks must not cover native attack poses");
+assert.match(source, /role === "boss" \? 0\.78 : 1/, "native codex previews use integer-scale regular art and bounded bosses");
+assert.match(source, /const bite = state === "attack" \? \[0, 1, 4, 2\]/, "spore mimic bite remains controlled");
+assert.match(source, /Irregular heartwood fractures/, "guardian phase three uses organic fractures instead of a generic cross");
 assert.match(source, /dingdong_fowl[\s\S]*#E53935[\s\S]*#F9A825/, "ding-dong fowl comb and beak");
 assert.match(source, /bark_hound[\s\S]*#E57373/, "bark hound open mouth/tongue");
-assert.match(source, /white_sampler[\s\S]*#90CAF9[\s\S]*#1E88E5/, "white sampler face shield and suit stripes");
+assert.match(source, /bone_guard[\s\S]*Sword arm and stepped blade/, "bone guard authors its shield, bones and sword slash");
+assert.match(source, /bolt_cultist[\s\S]*Three ritual bolts form a fan/, "bolt cultist authors its scatter cast");
+assert.match(source, /grave_summoner[\s\S]*skeletal hand breaches the floor/, "grave summoner authors its summon pose");
+assert.match(source, /chain_jailer[\s\S]*Chain extends link-by-link/, "chain jailer authors its chain throw");
+assert.match(source, /crypt_overseer[\s\S]*Soul reliquary replaces the generic boss-phase overlay/, "crypt overseer authors its phase core");
+assert.match(source, /kennel_warden[\s\S]*Boss phases bolt extra kennel machinery/, "kennel warden authors its phase machinery");
+assert.match(source, /frost_hound[\s\S]*Frost breath fractures into three short shards/, "frost hound authors its charge bite and frost breath");
+assert.match(source, /ice_shaman[\s\S]*Stepped frost sigil warns the area attack/, "ice shaman authors its cast and ground sigil");
+assert.match(source, /snow_turret[\s\S]*Twin cryo barrels visibly recoil/, "snow turret authors its crawler and scatter burst");
+assert.match(source, /white_sampler[\s\S]*Sampling lance extends from the forearm/, "white sampler authors its face shield and sampling shot");
+assert.match(source, /mirror_wisp[\s\S]*Lower shards trail independently/, "mirror wisp authors its split attack");
+assert.match(source, /frost_titan[\s\S]*Boss phases grow new glacier spires/, "frost titan authors its phase silhouette");
+assert.match(source, /white_director[\s\S]*Boss phases add quarantine drones/, "white director authors its command phases");
+assert.match(source, /ember_knight[\s\S]*Sword arm performs a stepped forward slash/, "ember knight authors its shield and molten sword slash");
+assert.match(source, /magma_spitter[\s\S]*Five ember droplets fan directly out/, "magma spitter authors its throat inflation and scatter attack");
+assert.match(source, /cinder_oracle[\s\S]*Stepped cinder seal previews the area strike/, "cinder oracle authors its brazier crown and area cast");
+assert.match(source, /code_horse[\s\S]*Green code panel remains physically inset/, "code horse authors its data panel and charge pose");
+assert.match(source, /furnace_beetle[\s\S]*Furnace window opens vertically during the shot/, "furnace beetle authors its boiler shell and shot");
+assert.match(source, /inferno_core[\s\S]*Boss phases bolt forge vanes/, "inferno core authors its crucible phases");
+assert.match(source, /vat_horse_prime[\s\S]*Boss phases bolt extra vat armour/, "vat-horse prime authors its phase machinery");
 assert.match(source, /code_horse[\s\S]*#2ECC71/, "code horse code panel");
 assert.match(source, /broadcast_rooster[\s\S]*#F1C40F/, "broadcast rooster speaker/bell accents");
-assert.match(source, /white_director[\s\S]*#EF5350/, "white director megaphone");
-assert.match(source, /vat_horse_prime[\s\S]*#455A64/, "vat-horse mechanical tank");
+assert.match(source, /white_director[\s\S]*#D94F55/, "white director quarantine accents");
+assert.match(source, /vat_horse_prime[\s\S]*#405259/, "vat-horse mechanical vat");
 
 const renderer = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 assert.match(renderer, /MonsterModelRenderer\.draw/);
+assert.match(renderer, /const animOffset = nativeMonsterArt \? 0/, "native grounded monsters must not receive the legacy floating sine offset");
+assert.match(renderer, /enemyDefinition\.shadowWidth/, "authored monster shadows should be used");
+assert.match(renderer, /if \(enemy\.type === "boss"\) scale = nativeMonsterArt \? 1 : 2\.15/, "native bosses render at one-to-one pixel scale");
 assert.doesNotMatch(renderer, /drawEnemyAccent/);
 assert.doesNotMatch(renderer, /enemy_\$\{enemy\.type\}_idle/);
+
+const roomRenderer = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
+assert.match(roomRenderer, /function drawForestFloorTile/, "forest floor has authored material variants");
+assert.match(roomRenderer, /function drawForestStreamTile/, "forest streams have neighbour-aware banks");
+assert.match(roomRenderer, /function drawForestWallTile/, "forest walls use adjacency-aware tree and hedge edges");
+assert.match(roomRenderer, /living root gate/, "forest start room has a chapter-specific gate");
+assert.match(roomRenderer, /Root veins curve around the hollow center/, "forest boss altar avoids a generic square or cross decal");
+assert.match(roomRenderer, /if \(theme === "forest"\)[\s\S]*return;/, "forest doors use their own root-and-vine construction");
+assert.match(roomRenderer, /function drawDungeonFloorTile/, "dungeon floor has authored crypt slabs");
+assert.match(roomRenderer, /function drawDungeonAbyssTile/, "dungeon void cells have neighbour-aware stone lips");
+assert.match(roomRenderer, /function drawDungeonWallTile/, "dungeon walls use adjacency-aware masonry edges");
+assert.match(roomRenderer, /barred crypt arch/, "dungeon start room has a chapter-specific gate");
+assert.match(roomRenderer, /broken ossuary seal/, "dungeon boss room uses an ossuary altar");
+assert.match(roomRenderer, /real portcullis replaces the universal red energy barrier/, "dungeon doors use iron portcullises and chains");
+assert.match(roomRenderer, /function drawSnowFloorTile/, "snow floor has authored wind-packed material variants");
+assert.match(roomRenderer, /function drawSnowCrevasseTile/, "snow crevasses have neighbour-aware shelves");
+assert.match(roomRenderer, /function drawSnowWallTile/, "snow walls use adjacency-aware glacier edges");
+assert.match(roomRenderer, /frozen quarantine arch/, "snow start room has a chapter-specific gate");
+assert.match(roomRenderer, /ruptured glacier containment seal/, "snow boss room uses a containment arena");
+assert.match(roomRenderer, /Freezing quarantine shutters replace the universal red barrier/, "snow doors use ice-and-steel shutters");
+assert.match(roomRenderer, /function drawLavaFloorTile/, "lava floor has authored basalt plate variants");
+assert.match(roomRenderer, /function drawLavaFlowTile/, "lava channels have neighbour-aware slag lips");
+assert.match(roomRenderer, /function drawLavaWallTile/, "lava walls use adjacency-aware foundry edges");
+assert.match(roomRenderer, /foundry blast gate/, "lava start room has a chapter-specific gate");
+assert.match(roomRenderer, /ruptured foundry crucible/, "lava boss room uses a foundry crucible arena");
+assert.match(roomRenderer, /Interlocking blast shutters replace the universal red energy barrier/, "lava doors use blast shutters");
+assert.match(roomRenderer, /Riveted iron grating spans molten channels/, "lava crossings use iron grating");
+
+const environment = fs.readFileSync("src/game/environment/EnvironmentSystem.ts", "utf8");
+assert.match(environment, /const poisonTiles = new Set/, "forest poison pools detect adjacent cells");
+assert.match(environment, /connectedLeft[\s\S]*connectedRight[\s\S]*connectedUp[\s\S]*connectedDown/, "poison pool cells join into one readable hazard");
+assert.match(environment, /hazard\.type !== "poison_pool"/, "joined poison pools must not receive a square outline per cell");
+assert.match(environment, /const spikeTiles = new Set/, "dungeon spike beds detect adjacent cells");
+assert.match(environment, /hazard\.type !== "poison_pool" && hazard\.type !== "spikes"/, "joined spike beds must not receive a square outline per cell");
+assert.match(environment, /const iceTiles = new Set/, "snow ice sheets detect adjacent cells");
+assert.match(environment, /Adjacent slick cells fuse into one frozen sheet/, "snow ice cells join into one readable hazard");
+assert.match(environment, /hazard\.type !== "poison_pool" && hazard\.type !== "spikes" && hazard\.type !== "ice"/, "joined ice sheets must not receive a square outline per cell");
+assert.match(environment, /const lavaTiles = new Set/, "lava pools detect adjacent cells");
+assert.match(environment, /Adjacent molten cells fuse into a single slag pool/, "lava cells join into one readable hazard");
+assert.match(environment, /hazard\.type !== "poison_pool" && hazard\.type !== "spikes" && hazard\.type !== "ice" && hazard\.type !== "lava"/, "joined lava pools must not receive a square outline per cell");
 
 const themes = ["forest", "dungeon", "snow", "lava"] as const;
 for (const theme of themes) {
@@ -98,4 +223,12 @@ console.log(JSON.stringify({
   memeSilhouettes: "ok",
   directionalFacing: "ok",
   animationStates: "ok",
+  nativeForestArt: "ok",
+  forestEnvironmentArt: "ok",
+  nativeDungeonArt: "ok",
+  dungeonEnvironmentArt: "ok",
+  nativeSnowArt: "ok",
+  snowEnvironmentArt: "ok",
+  nativeLavaArt: "ok",
+  lavaEnvironmentArt: "ok",
 }));
