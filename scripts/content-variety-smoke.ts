@@ -12,17 +12,22 @@ import { getMapData, getRoomTemplate, isSolid, MAP_HEIGHT, MAP_WIDTH } from "../
 import { EncounterFactory } from "../src/game/EncounterFactory";
 
 const themes: EnemyTheme[] = ["forest", "dungeon", "snow", "lava"];
-assert.equal(Object.keys(ENEMIES).length, 28);
+assert.equal(Object.keys(ENEMIES).length, 36);
 for (const theme of themes) {
   assert.equal(getEnemyPool(theme, undefined, 1).length, 3, `${theme} stage 1 pool`);
-  assert.equal(getEnemyPool(theme, undefined, 2).length, 4, `${theme} stage 2 pool`);
-  assert.equal(getEnemyPool(theme, undefined, 3).length, 5, `${theme} stage 3 pool`);
+  assert.equal(getEnemyPool(theme, undefined, 2).length, 5, `${theme} stage 2 pool`);
+  assert.equal(getEnemyPool(theme, undefined, 3).length, 7, `${theme} stage 3 pool`);
   assert.ok(getEnemyPool(theme, "melee", 3).length >= 1);
   assert.ok(getEnemyPool(theme, "ranged", 3).length >= 2);
   assert.equal(getBossPool(theme).length, 2, `${theme} boss pool`);
 }
 assert.equal(new Set(themes.flatMap(theme => getBossPool(theme).map(boss => boss.bossPattern))).size, 8);
-for (const id of ["dingdong_fowl", "bark_hound", "white_sampler", "code_horse"]) assert.ok(ENEMIES[id]);
+for (const id of [
+  "dingdong_fowl", "root_lancer", "petal_moth",
+  "bark_hound", "coffin_lobber", "lantern_wraith",
+  "white_sampler", "icicle_sniper", "lab_servitor",
+  "code_horse", "magma_mortar", "heat_smith_drone",
+]) assert.ok(ENEMIES[id]);
 
 assert.equal(Object.keys(WEAPONS).length, 57);
 assert.equal(WEAPONS.code_scanner.pierce, 2);
@@ -155,7 +160,7 @@ for (const theme of themes) {
     const encounter = EncounterFactory.create({ stage, room, template: getRoomTemplate(room) });
     for (const wave of encounter.waves) for (const spawn of wave.spawns) if (spawn.enemyId) encountered.get(theme)!.add(spawn.enemyId);
   }
-  assert.equal(encountered.get(theme)!.size, 5, `${theme} encounter coverage`);
+  assert.equal(encountered.get(theme)!.size, 7, `${theme} encounter coverage`);
 
   const bossStageIndex = chapterIndex * STAGES_PER_CHAPTER;
   for (let sample = 1; sample <= 80; sample++) {
@@ -190,6 +195,7 @@ for (const file of [
   "src/game/environment/EnvironmentSystem.ts",
   "src/game/render/PortalRenderer.ts",
   "src/game/render/EntityRenderer.ts",
+  "src/game/render/SpecialRoomRenderer.ts",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   assert.doesNotMatch(source, /\.arc\(/, `${file} should use pixel geometry`);
@@ -213,6 +219,13 @@ assert.match(minimapSource, /for \(const room of visible\) \{[\s\S]*minX = Math\
 assert.doesNotMatch(minimapSource, /for \(const room of floor\.rooms\) \{\s*minX = Math\.min/);
 assert.match(gameDataSource, /room\.type === "legacy_rpg"[\s\S]*room\.type = "wish_fountain"/);
 assert.match(gameDataSource, /room\.type === "legacy_tactics"[\s\S]*room\.type = "photo_booth"/);
+const specialRoomSource = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
+const portalSource = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
+assert.match(specialRoomSource, /drawRoomStage/, "special interactions must own a complete background stage");
+assert.match(specialRoomSource, /drawMerchant/, "merchant owns a detailed stall and body model");
+assert.match(specialRoomSource, /drawWishFountain/, "wish fountain owns a detailed interactive model");
+assert.match(specialRoomSource, /drawForestStage[\s\S]*drawDungeonStage[\s\S]*drawSnowStage[\s\S]*drawLavaStage/, "special room grounds vary by chapter");
+assert.match(portalSource, /drawForestFrame[\s\S]*drawDungeonFrame[\s\S]*drawSnowFrame[\s\S]*drawLavaFrame/, "portal structure varies by chapter");
 
 console.log(JSON.stringify({
   enemies: Object.keys(ENEMIES).length,

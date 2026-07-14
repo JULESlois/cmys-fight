@@ -48,6 +48,7 @@ import { usesDetailedCharacterArt } from "../data/characters";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
+import { SpecialRoomRenderer } from "../render/SpecialRoomRenderer";
 import { StatusEffectSystem } from "../combat/StatusEffectSystem";
 import {
   EnvironmentSystem,
@@ -1849,14 +1850,32 @@ export class DungeonState extends GameState {
       } else if (e.type === "ranged") {
         const hasAttackLine = !e.requiresLineOfSight || this.hasLineOfSight(e.x, e.y, combatTarget.x, combatTarget.y);
         const canAttack = (e.behavior !== "summon" || this.enemies.length < 7) && hasAttackLine;
-        const rangedAttackRange = normalMode ? Math.min(e.attackRange, 128) : e.attackRange;
+        const normalRangeCap = e.behavior === "sniper" ? 176 : e.behavior === "lob" ? 148 : 128;
+        const rangedAttackRange = normalMode ? Math.min(e.attackRange, normalRangeCap) : e.attackRange;
         if (canAttack && e.attackCooldown <= 0 && dist <= rangedAttackRange) {
           this.beginEnemyAttack(e, e.attackWindup);
           updateEnemyAnimation(e, { dt, previousX, previousY, targetX: combatTarget.x });
           continue;
         }
 
-        if (dist > 112 || !hasAttackLine) {
+        if (e.behavior === "orbit" && hasAttackLine) {
+          const desired = 94;
+          const radialAngle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
+          const orbitSign = ((e.id + e.attackSequence) & 1) === 0 ? 1 : -1;
+          const radialPull = Math.max(-0.65, Math.min(0.65, (dist - desired) / 48));
+          nextX += (Math.cos(radialAngle) * radialPull + Math.cos(radialAngle + Math.PI / 2) * orbitSign) * currentSpeed * dt;
+          nextY += (Math.sin(radialAngle) * radialPull + Math.sin(radialAngle + Math.PI / 2) * orbitSign) * currentSpeed * dt;
+        } else if (e.behavior === "sniper") {
+          if (dist < 122) {
+            const angle = Math.atan2(e.y - combatTarget.y, e.x - combatTarget.x);
+            nextX += Math.cos(angle) * currentSpeed * dt;
+            nextY += Math.sin(angle) * currentSpeed * dt;
+          } else if (dist > 160 || !hasAttackLine) {
+            const angle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
+            nextX += Math.cos(angle) * currentSpeed * dt;
+            nextY += Math.sin(angle) * currentSpeed * dt;
+          }
+        } else if (dist > 112 || !hasAttackLine) {
           const angle = Math.atan2(combatTarget.y - e.y, combatTarget.x - e.x);
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
@@ -2009,6 +2028,39 @@ export class DungeonState extends GameState {
         this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset);
       }
       enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "sniper") {
+      const shot = this.spawnEnemyProjectile(enemy, enemy.attackAngle, 1.5, 2.4);
+      shot.vx = Math.cos(enemy.attackAngle) * enemy.projectileSpeed;
+      shot.vy = Math.sin(enemy.attackAngle) * enemy.projectileSpeed;
+      shot.weaponId = "enemy_needle";
+      shot.trailLength = 10;
+      shot.beamWidth = 1;
+      enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "lob") {
+      const count = Math.max(2, enemy.projectileCount);
+      for (let i = 0; i < count; i++) {
+        const offset = (i - (count - 1) / 2) * enemy.projectileSpread;
+        const shell = this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset, 3.5, 3.2);
+        shell.weaponId = "enemy_shell";
+        shell.acceleration = 82;
+        shell.drag = 0.14;
+        shell.spinRate = 8;
+      }
+      enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "orbit") {
+      const count = Math.max(3, enemy.projectileCount);
+      const rotatingBase = enemy.attackAngle + enemy.attackSequence * 0.47;
+      for (let i = 0; i < count; i++) {
+        const angle = rotatingBase + (Math.PI * 2 * i) / count;
+        const orb = this.spawnEnemyProjectile(enemy, angle, 2, 3.4);
+        orb.weaponId = "enemy_orbit";
+        orb.spinRate = 10;
+        orb.drag = 0.08;
+      }
+      enemy.attackCooldown = enemy.attackInterval;
+    } else if (enemy.behavior === "support") {
+      this.resolveSupportAttack(enemy);
+      enemy.attackCooldown = enemy.attackInterval;
     } else if (enemy.behavior === "summon") {
       this.spawnSummonedEnemy(enemy);
       enemy.attackCooldown = enemy.attackInterval;
@@ -2055,7 +2107,7 @@ export class DungeonState extends GameState {
     enemy.attackTimer = 0.16;
   }
 
-  private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3) {
+  private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3): Projectile {
     const projectileRadius = Math.max(enemy.type === "boss" ? 2.5 : 1.75, radius * (enemy.type === "boss" ? 0.72 : 0.68));
     const projectile = acquireProjectile(
       enemy.x,
@@ -2077,7 +2129,31 @@ export class DungeonState extends GameState {
     );
     projectile.sourceEnemyId = enemy.id;
     projectile.targetsMicheleTurret = enemy.attackTargetKind === "michele_turret";
+    if (enemy.projectileKind !== "standard") projectile.weaponId = `enemy_${enemy.projectileKind}`;
     this.projectiles.push(projectile);
+    return projectile;
+  }
+
+  private resolveSupportAttack(enemy: Enemy): void {
+    const allies = this.enemies
+      .filter(candidate => candidate !== enemy && candidate.hp > 0 && Math.hypot(candidate.x - enemy.x, candidate.y - enemy.y) <= 92)
+      .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))
+      .slice(0, 3);
+    const healAmount = enemy.isElite ? 3 : 2;
+    for (const ally of allies) {
+      ally.hp = Math.min(ally.maxHp, ally.hp + healAmount);
+      ally.hitFlash = Math.max(ally.hitFlash, 0.12);
+    }
+    const count = Math.max(4, enemy.projectileCount);
+    const base = enemy.attackSequence * 0.38;
+    for (let i = 0; i < count; i++) {
+      const angle = base + (Math.PI * 2 * i) / count;
+      const pulse = this.spawnEnemyProjectile(enemy, angle, 1.5, 2.4);
+      pulse.weaponId = "enemy_support";
+      pulse.vx *= 0.82;
+      pulse.vy *= 0.82;
+      pulse.damage = Math.max(1, enemy.attackDamage);
+    }
   }
 
   private resolveChargeAttack(enemy: Enemy) {
@@ -2906,74 +2982,41 @@ export class DungeonState extends GameState {
 
     if (currentRoom?.type === "shop") {
       const shop = this.getShopPosition(currentRoom);
-      ShopRenderer.drawMerchant(ctx, shop.x, shop.y, time);
+      ShopRenderer.drawMerchant(ctx, shop.x, shop.y, time, floor.theme || "forest");
     }
 
     if (currentRoom?.type === "npc") {
       const broadcast = this.getBroadcastPosition(currentRoom);
-      ctx.save();
-      ctx.translate(Math.round(broadcast.x), Math.round(broadcast.y));
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(-12, 9, 24, 4);
-      ctx.fillStyle = currentRoom.interactionCompleted ? "#4D5656" : "#8E44AD";
-      ctx.fillRect(-10, -14, 20, 24);
-      ctx.fillStyle = "#17202A";
-      ctx.fillRect(-7, -11, 14, 9);
-      const signal = Math.floor(time * 6) % 4;
-      const colors = ["#F1C40F", "#ECF0F1", "#2ECC71", "#FF7043"];
-      colors.forEach((color, index) => {
-        ctx.fillStyle = currentRoom.interactionCompleted ? "#566573" : color;
-        ctx.fillRect(-6 + index * 4, -9 + ((index + signal) % 2), 3, 5);
-      });
-      ctx.fillStyle = "#BDC3C7";
-      ctx.fillRect(-7, 1, 4, 5);
-      ctx.fillRect(3, 1, 4, 5);
-      ctx.fillStyle = "#09101A";
-      ctx.fillRect(-8, 10, 4, 5);
-      ctx.fillRect(4, 10, 4, 5);
-      ctx.restore();
+      SpecialRoomRenderer.drawBroadcastTerminal(
+        ctx,
+        broadcast.x,
+        broadcast.y,
+        time,
+        floor.theme || "forest",
+        currentRoom.interactionCompleted === true,
+      );
     }
 
     if (currentRoom?.type === "wish_fountain") {
       const special = this.getSpecialRoomPosition(currentRoom);
-      const pulse = Math.floor(time * 6) % 3;
-      ctx.save();
-      ctx.translate(special.x, special.y);
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(-18, 10, 36, 5);
-      ctx.fillStyle = currentRoom.interactionCompleted ? "#5B3A6E" : "#8E44AD";
-      ctx.fillRect(-16, 2, 32, 10);
-      ctx.fillRect(-11, -6, 22, 10);
-      ctx.fillStyle = "#D2B4DE";
-      ctx.fillRect(-9, -4, 18, 5);
-      ctx.fillStyle = currentRoom.interactionCompleted ? "#566573" : "#58D3F7";
-      ctx.fillRect(-7, -3, 14, 3);
-      if (!currentRoom.interactionCompleted) {
-        ctx.fillStyle = pulse === 0 ? "#FFFFFF" : "#F4D35E";
-        ctx.fillRect(-1, -12 - pulse, 2, 4);
-        ctx.fillRect(-7, -8 + pulse, 2, 2);
-        ctx.fillRect(5, -9 + (2 - pulse), 2, 2);
-      }
-      ctx.restore();
+      SpecialRoomRenderer.drawWishFountain(
+        ctx,
+        special.x,
+        special.y,
+        time,
+        floor.theme || "forest",
+        currentRoom.interactionCompleted === true,
+      );
     } else if (currentRoom?.type === "photo_booth") {
       const special = this.getSpecialRoomPosition(currentRoom);
-      const flash = !currentRoom.interactionCompleted && Math.floor(time * 2.5) % 4 === 0;
-      ctx.save();
-      ctx.translate(special.x, special.y);
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(-16, 12, 32, 5);
-      ctx.fillStyle = currentRoom.interactionCompleted ? "#4D5656" : "#8E44AD";
-      ctx.fillRect(-14, -18, 28, 31);
-      ctx.fillStyle = "#17202A";
-      ctx.fillRect(-10, -14, 20, 15);
-      ctx.fillStyle = flash ? "#FFFFFF" : "#D980FA";
-      ctx.fillRect(-6, -11, 12, 9);
-      ctx.fillStyle = "#F06CA8";
-      ctx.fillRect(-10, 4, 20, 5);
-      ctx.fillStyle = "#09101A";
-      ctx.fillRect(-11, 13, 5, 4);
-      ctx.fillRect(6, 13, 5, 4);
-      ctx.restore();
+      SpecialRoomRenderer.drawPhotoBooth(
+        ctx,
+        special.x,
+        special.y,
+        time,
+        floor.theme || "forest",
+        currentRoom.interactionCompleted === true,
+      );
     }
 
     for (const p of this.pickups) {

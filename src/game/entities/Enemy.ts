@@ -1,4 +1,4 @@
-import type { EnemyBehavior, EnemyRole } from "../data/enemies";
+import type { EnemyBehavior, EnemyProjectileKind, EnemyRole } from "../data/enemies";
 import type { ActiveStatusEffect, StatusEffectId } from "../combat/StatusEffectSystem";
 
 export type EnemyFacing = "left" | "right";
@@ -37,6 +37,7 @@ export class Enemy {
   public projectileSpeed: number = 90;
   public projectileCount: number = 1;
   public projectileSpread: number = 0.28;
+  public projectileKind: EnemyProjectileKind = "standard";
   public attackInterval: number = 1;
   public attackWindup: number = 0.4;
   public attackRange: number = 190;
@@ -90,6 +91,7 @@ export class Enemy {
     this.projectileSpeed = 90;
     this.projectileCount = 1;
     this.projectileSpread = 0.28;
+    this.projectileKind = "standard";
     this.attackInterval = 1;
     this.attackWindup = 0.4;
     this.attackRange = 190;

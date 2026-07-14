@@ -25,6 +25,8 @@ const NATIVE_PIXEL_MODELS = new Set([
   "boar_charger",
   "dingdong_fowl",
   "spore_mimic",
+  "root_lancer",
+  "petal_moth",
   "forest_guardian",
   "broadcast_rooster",
   "bone_guard",
@@ -32,6 +34,8 @@ const NATIVE_PIXEL_MODELS = new Set([
   "grave_summoner",
   "bark_hound",
   "chain_jailer",
+  "coffin_lobber",
+  "lantern_wraith",
   "crypt_overseer",
   "kennel_warden",
   "frost_hound",
@@ -39,6 +43,8 @@ const NATIVE_PIXEL_MODELS = new Set([
   "snow_turret",
   "white_sampler",
   "mirror_wisp",
+  "icicle_sniper",
+  "lab_servitor",
   "frost_titan",
   "white_director",
   "ember_knight",
@@ -46,6 +52,8 @@ const NATIVE_PIXEL_MODELS = new Set([
   "cinder_oracle",
   "code_horse",
   "furnace_beetle",
+  "magma_mortar",
+  "heat_smith_drone",
   "inferno_core",
   "vat_horse_prime",
 ]);
@@ -197,6 +205,16 @@ function drawAuthoredMonsterDetail(
       drawDetailPixels(ctx, "#8E2833", [[-8, -13 + bob, 3, 1], [-1, -11 + bob, 4, 1], [7, -14 + bob, 2, 1]]);
       drawDetailPixels(ctx, "#FFF7D8", [[-4, -16 + bob], [3, -16 + bob], [9, -15 + bob]]);
       break;
+    case "root_lancer":
+      drawDetailPixels(ctx, "#B98B5B", [[-5, -18 + bob, 1, 8], [2, -16 + bob, 1, 7], [8, -11 + bob, 1, 5]]);
+      drawDetailPixels(ctx, "#D9F2A2", [[-7, -30 + bob, 2, 1], [3, -32 + bob, 2, 1], [19, -18 + bob]]);
+      drawDetailPixels(ctx, "#49683A", [[-9, -23 + bob, 3, 2], [5, -25 + bob, 4, 1], [12, -16 + bob, 4, 1]]);
+      break;
+    case "petal_moth":
+      drawDetailPixels(ctx, "#FFD3E2", [[-15, -22 + bob, 4, 1], [12, -21 + bob, 4, 1], [-13, -10 + bob, 3, 1], [11, -9 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#8D5578", [[-9, -17 + bob], [8, -16 + bob], [-2, -27 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#F6D96B", [[-1, -18 + bob, 2, 2], [-18, -15 + bob], [17, -14 + bob]]);
+      break;
     case "forest_guardian":
       drawDetailPixels(ctx, "#B88A5E", [[-9, -31 + bob, 1, 8], [-4, -14 + bob, 1, 5], [8, -28 + bob, 2, 1], [11, -18 + bob, 1, 6]]);
       drawDetailPixels(ctx, "#36572B", [[-20, -41 + bob, 3, 1], [-7, -46 + bob, 2, 2], [18, -44 + bob, 2, 1]]);
@@ -237,6 +255,16 @@ function drawAuthoredMonsterDetail(
       drawDetailPixels(ctx, "#8798A0", [[-8, -16 + bob, 1, 7], [5, -14 + bob, 1, 6], [-8, -31 + bob, 5, 1]]);
       drawDetailPixels(ctx, "#E1B94E", [[-7, -6 + bob, 4, 1], [4, -6 + bob, 3, 1]]);
       drawDetailPixels(ctx, "#D8E0E1", [[-4, -26 + bob], [4, -26 + bob], [15, -2 + bob]]);
+      break;
+    case "coffin_lobber":
+      drawDetailPixels(ctx, "#81798B", [[-11, -18 + bob, 1, 12], [8, -17 + bob, 1, 10], [-8, -29 + bob, 7, 1]]);
+      drawDetailPixels(ctx, "#C9C2D0", [[-6, -25 + bob, 3, 1], [4, -24 + bob, 3, 1], [17, -15 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#B973D6", [[-1, -12 + bob, 3, 3], [21, -9 + bob], [-14, -7 + bob]]);
+      break;
+    case "lantern_wraith":
+      drawDetailPixels(ctx, "#E9D7F1", [[-5, -25 + bob, 3, 1], [4, -24 + bob, 2, 1], [-8, -11 + bob], [8, -10 + bob]]);
+      drawDetailPixels(ctx, "#7B4A91", [[-9, -17 + bob, 1, 8], [8, -16 + bob, 1, 7], [-3, -31 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#D9FFBF", [[-1, -18 + bob, 3, 3], [-14, -5 + bob], [13, -4 + bob]]);
       break;
     case "crypt_overseer":
       drawDetailPixels(ctx, "#72508C", [[-11, -18 + bob, 1, 17], [8, -17 + bob, 1, 14], [-10, -42 + bob, 6, 1]]);
@@ -281,6 +309,17 @@ function drawAuthoredMonsterDetail(
       drawDetailPixels(ctx, "#FFFFFF", [[0, -18 + hover, 2, 1], [-8, -5 + hover], [8, -4 + hover]]);
       break;
     }
+    case "icicle_sniper":
+      drawDetailPixels(ctx, "#E9FFFF", [[-7, -28 + bob, 5, 1], [5, -26 + bob, 3, 1], [19, -18 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#4F8395", [[-9, -16 + bob, 1, 9], [6, -15 + bob, 1, 8], [12, -17 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#74E5F2", [[-3, -22 + bob], [3, -22 + bob], [24, -17 + bob]]);
+      break;
+    case "lab_servitor":
+      drawDetailPixels(ctx, "#F1FFFF", [[-8, -27 + bob, 5, 1], [4, -26 + bob, 4, 1], [-10, -11 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#7397A1", [[-11, -17 + bob, 1, 8], [8, -16 + bob, 1, 7], [-4, -8 + bob, 9, 1]]);
+      drawDetailPixels(ctx, "#D8535D", [[-8, -13 + bob, 4, 2], [6, -12 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#65E0E9", [[-1, -19 + bob, 3, 3], [14, -15 + bob], [-15, -14 + bob]]);
+      break;
     case "frost_titan":
       drawDetailPixels(ctx, "#D9F9FC", [[-15, -33 + bob, 2, 12], [-7, -50 + bob, 5, 1], [7, -49 + bob, 4, 1], [11, -30 + bob, 1, 8]]);
       drawDetailPixels(ctx, "#245F7A", [[-19, -22 + bob, 4, 1], [9, -15 + bob, 4, 1], [-11, -4 + bob, 3, 1]]);
@@ -320,6 +359,16 @@ function drawAuthoredMonsterDetail(
       drawDetailPixels(ctx, "#A8402F", [[-12, -15 + bob, 5, 1], [5, -14 + bob, 4, 1], [-13, -5 + bob, 3, 1], [9, -4 + bob, 3, 1]]);
       drawDetailPixels(ctx, "#8E8580", [[-8, -24 + bob, 3, 1], [-7, -20 + bob], [15, -12 + bob]]);
       drawDetailPixels(ctx, "#FFE36B", [[-1, -8 + bob], [17, -10 + bob], [26, -6 + bob]]);
+      break;
+    case "magma_mortar":
+      drawDetailPixels(ctx, "#A34631", [[-12, -14 + bob, 5, 1], [4, -13 + bob, 4, 1], [-8, -25 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#8F8A86", [[-10, -20 + bob, 3, 1], [10, -18 + bob, 3, 1], [18, -24 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#FFE36A", [[-1, -9 + bob], [20, -27 + bob], [25, -22 + bob]]);
+      break;
+    case "heat_smith_drone":
+      drawDetailPixels(ctx, "#A74A32", [[-8, -18 + bob, 4, 1], [4, -17 + bob, 4, 1], [-2, -29 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#A6AAA6", [[-10, -8 + bob, 3, 1], [8, -7 + bob, 3, 1], [-14, -15 + bob], [13, -14 + bob]]);
+      drawDetailPixels(ctx, "#FFE572", [[-1, -17 + bob, 3, 3], [-17, -5 + bob], [16, -4 + bob]]);
       break;
     case "inferno_core":
       drawDetailPixels(ctx, "#A9432F", [[-19, -37 + bob, 7, 1], [11, -33 + bob, 6, 1], [-17, -8 + bob, 5, 1], [13, -4 + bob, 4, 1]]);
@@ -1819,6 +1868,315 @@ const models: Record<string, ModelDraw> = {
       rect(ctx, p.ink, 31 + vent, -8 + bob, 6, 6);
       rect(ctx, "#FFD95C", 32 + vent, -7 + bob, 4, 4);
       rect(ctx, "#FFF0A2", 34 + vent, -6 + bob, 2, 2);
+    }
+  },
+  root_lancer(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
+    const thrust = state === "attack" ? [0, 3, 10, 5][phase] : 0;
+
+    // Three root feet anchor a thin sniper silhouette.
+    for (const [x, shift] of [[-8, -stride], [0, stride], [7, -stride]] as const) {
+      rect(ctx, p.ink, x + shift, -3 + bob, 5, 8);
+      rect(ctx, "#604229", x + 1 + shift, -2 + bob, 3, 6);
+      rect(ctx, p.ink, x - 2 + shift, 3 + bob, 8, 3);
+      rect(ctx, "#7A5638", x - 1 + shift, 3 + bob, 6, 1);
+    }
+
+    // Bark torso, leaf mantle and seed-mask head.
+    rect(ctx, p.ink, -7, -24 + bob, 14, 22);
+    rect(ctx, "#5A3B27", -6, -23 + bob, 12, 20);
+    rect(ctx, "#805B3A", -4, -22 + bob, 5, 17);
+    rect(ctx, p.ink, -11, -25 + bob, 22, 7);
+    rect(ctx, "#48653A", -10, -24 + bob, 20, 5);
+    rect(ctx, "#7FA85C", -8, -25 + bob, 7, 4);
+    rect(ctx, "#91BB67", 3, -24 + bob, 6, 3);
+    rect(ctx, p.ink, -6, -34 + bob, 12, 11);
+    rect(ctx, "#6B4B31", -5, -33 + bob, 10, 9);
+    rect(ctx, "#9C774B", -3, -32 + bob, 5, 7);
+    drawPixelEye(ctx, p, -3, -29 + bob, "#D8FF8D");
+    drawPixelEye(ctx, p, 2, -29 + bob, "#D8FF8D");
+    rect(ctx, p.ink, -2, -25 + bob, 5, 2);
+
+    // The root lance telescopes in four visible segments during the sniper shot.
+    rect(ctx, p.ink, 6, -21 + bob, 8 + thrust, 7);
+    rect(ctx, "#6D4A30", 7, -20 + bob, 6 + thrust, 5);
+    rect(ctx, "#A07A4E", 9, -19 + bob, 4 + thrust, 2);
+    rect(ctx, p.ink, 13 + thrust, -20 + bob, 12, 5);
+    rect(ctx, "#93B75F", 14 + thrust, -19 + bob, 10, 3);
+    rect(ctx, "#D9F2A2", 22 + thrust, -18 + bob, 5, 1);
+    rect(ctx, p.ink, 25 + thrust, -20 + bob, 5, 5);
+    rect(ctx, "#E8F7B2", 26 + thrust, -19 + bob, 4, 3);
+  },
+  petal_moth(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const spread = state === "attack" ? [0, 2, 5, 3][phase] : 0;
+
+    // Four independently offset petal wings create a readable flying silhouette.
+    for (const [x, y, side, lower] of [[-17, -24, -1, false], [8, -24, 1, false], [-15, -10, -1, true], [7, -10, 1, true]] as const) {
+      const wingX = x + side * spread;
+      const wingY = y + hover + (lower ? Math.floor(spread / 3) : -Math.floor(spread / 4));
+      rect(ctx, p.ink, wingX - 1, wingY - 1, 11, lower ? 10 : 12);
+      rect(ctx, lower ? "#B75E88" : "#D978A2", wingX, wingY, 9, lower ? 8 : 10);
+      rect(ctx, "#F4A8C4", wingX + 2, wingY + 1, 5, lower ? 5 : 7);
+      rect(ctx, "#FFD7E4", wingX + (side < 0 ? 5 : 1), wingY + 2, 2, 3);
+      rect(ctx, "#81506E", wingX + 3, wingY + (lower ? 5 : 7), 3, 2);
+    }
+
+    // Segmented body and luminous pollen sac.
+    rect(ctx, p.ink, -6, -27 + hover, 12, 25);
+    rect(ctx, "#5A3855", -5, -26 + hover, 10, 23);
+    rect(ctx, "#88506E", -3, -24 + hover, 6, 18);
+    rect(ctx, p.ink, -7, -33 + hover, 14, 9);
+    rect(ctx, "#71435F", -6, -32 + hover, 12, 7);
+    drawPixelEye(ctx, p, -3, -29 + hover, "#FFF1A0");
+    drawPixelEye(ctx, p, 2, -29 + hover, "#FFF1A0");
+    rect(ctx, p.ink, -7, -39 + hover, 3, 8);
+    rect(ctx, p.ink, 4, -39 + hover, 3, 8);
+    rect(ctx, "#D98AA9", -6, -40 + hover, 2, 7);
+    rect(ctx, "#D98AA9", 5, -40 + hover, 2, 7);
+    rect(ctx, "#F0CF5C", -2, -16 + hover, 5, 6);
+    rect(ctx, "#FFF0A4", -1, -15 + hover, 3, 3);
+
+    if (state === "attack" && phase >= 2) {
+      for (const [x, y, color] of [[-24, -18, "#F5A7C3"], [21, -17, "#FFE071"], [-18, 1, "#D979A2"], [16, 1, "#F5A7C3"]] as const) {
+        rect(ctx, p.ink, x - 1, y - 1 + hover, 5, 5);
+        rect(ctx, color, x, y + hover, 3, 3);
+      }
+    }
+  },
+  coffin_lobber(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
+    const recoil = state === "attack" ? [0, -2, -6, -3][phase] : 0;
+
+    // Short skeletal legs carry a massive coffin chassis.
+    for (const [x, shift] of [[-9, -stride], [6, stride]] as const) {
+      rect(ctx, p.ink, x + shift, -4 + bob, 6, 10);
+      rect(ctx, "#D9D4C8", x + 1 + shift, -3 + bob, 4, 8);
+      rect(ctx, p.ink, x - 1 + shift, 4 + bob, 9, 3);
+    }
+    rect(ctx, p.ink, -16, -28 + bob, 31, 27);
+    rect(ctx, "#37303D", -15, -27 + bob, 29, 25);
+    rect(ctx, "#62586B", -12, -25 + bob, 23, 21);
+    rect(ctx, "#80768B", -9, -23 + bob, 17, 17);
+    rect(ctx, p.ink, -3, -25 + bob, 6, 21);
+    rect(ctx, "#B1A7BA", -1, -23 + bob, 2, 17);
+    rect(ctx, p.ink, -10, -20 + bob, 20, 5);
+    rect(ctx, "#4A4051", -8, -19 + bob, 16, 3);
+
+    // Masked operator is inset into the coffin lid.
+    rect(ctx, p.ink, -7, -35 + bob, 14, 10);
+    rect(ctx, "#D9D4C9", -6, -34 + bob, 12, 8);
+    rect(ctx, "#F0ECE0", -4, -33 + bob, 8, 5);
+    drawPixelEye(ctx, p, -3, -31 + bob, "#C890E3");
+    drawPixelEye(ctx, p, 2, -31 + bob, "#C890E3");
+
+    // Mortar throat tilts backward and ejects a heavy shell.
+    rect(ctx, p.ink, 8 + recoil, -31 + bob, 13, 19);
+    rect(ctx, "#4D4655", 9 + recoil, -30 + bob, 11, 17);
+    rect(ctx, "#81798B", 11 + recoil, -28 + bob, 7, 13);
+    rect(ctx, p.ink, 10 + recoil, -35 + bob, 13, 6);
+    rect(ctx, "#A39AAA", 11 + recoil, -34 + bob, 11, 4);
+    rect(ctx, "#1B1720", 14 + recoil, -33 + bob, 6, 3);
+    if (state === "attack" && phase >= 2) {
+      rect(ctx, p.ink, 11 + recoil, -44 + bob, 8, 8);
+      rect(ctx, "#8D6B9C", 12 + recoil, -43 + bob, 6, 6);
+      rect(ctx, "#D6A5E8", 14 + recoil, -42 + bob, 3, 3);
+    }
+  },
+  lantern_wraith(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const open = state === "attack" ? [0, 2, 4, 2][phase] : 0;
+
+    // Ragged robe tails and crescent sleeves establish a hovering spirit.
+    rect(ctx, p.ink, -11, -22 + hover, 22, 24);
+    rect(ctx, "#44334F", -10, -21 + hover, 20, 22);
+    rect(ctx, "#6D4B7E", -7, -20 + hover, 14, 19);
+    for (const [x, h] of [[-9, 10], [-4, 14], [2, 12], [7, 9]] as const) {
+      rect(ctx, p.ink, x, -2 + hover, 5, h);
+      rect(ctx, "#563D65", x + 1, -1 + hover, 3, h - 2);
+    }
+    for (const side of [-1, 1] as const) {
+      const x = side < 0 ? -18 - open : 10 + open;
+      rect(ctx, p.ink, x, -22 + hover, 9, 18);
+      rect(ctx, "#5A3E69", x + 1, -21 + hover, 7, 16);
+      rect(ctx, "#9D6FAD", x + (side < 0 ? 5 : 1), -18 + hover, 2, 9);
+    }
+
+    // Hood, face void and caged soul lantern.
+    rect(ctx, p.ink, -9, -34 + hover, 18, 14);
+    rect(ctx, "#593E67", -8, -33 + hover, 16, 12);
+    rect(ctx, "#16141C", -5, -30 + hover, 10, 8);
+    drawPixelEye(ctx, p, -3, -27 + hover, "#C8FFB1");
+    drawPixelEye(ctx, p, 2, -27 + hover, "#C8FFB1");
+    rect(ctx, p.ink, -6, -18 + hover, 12, 14);
+    rect(ctx, "#53405B", -5, -17 + hover, 10, 12);
+    rect(ctx, "#A66BC2", -3, -15 + hover, 6, 8);
+    rect(ctx, "#D8FFB6", -1, -13 + hover, 3, 4);
+    rect(ctx, "#F0FFDA", 0, -12 + hover, 1, 2);
+    for (const x of [-5, 0, 5]) rect(ctx, "#25202C", x, -17 + hover, 1, 12);
+
+    if (state === "attack" && phase >= 2) {
+      for (const [x, y] of [[-22, -20], [19, -18], [-16, 2], [15, 3]] as const) {
+        rect(ctx, p.ink, x - 1, y - 1 + hover, 6, 6);
+        rect(ctx, "#B879D0", x, y + hover, 4, 4);
+        rect(ctx, "#E5FFC9", x + 1, y + 1 + hover, 2, 2);
+      }
+    }
+  },
+  icicle_sniper(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
+    const recoil = state === "attack" ? [0, -2, -5, -2][phase] : 0;
+
+    // Narrow insulated legs and a tall hood keep the silhouette distinct from the sampler.
+    for (const [x, shift] of [[-6, -stride], [4, stride]] as const) {
+      rect(ctx, p.ink, x + shift, -5 + bob, 5, 11);
+      rect(ctx, "#527988", x + 1 + shift, -4 + bob, 3, 9);
+      rect(ctx, "#D9EFF1", x + shift, 3 + bob, 6, 3);
+    }
+    rect(ctx, p.ink, -8, -25 + bob, 16, 21);
+    rect(ctx, "#5D8794", -7, -24 + bob, 14, 19);
+    rect(ctx, "#A6C8CE", -5, -23 + bob, 10, 16);
+    rect(ctx, "#D84F59", -5, -14 + bob, 4, 3);
+    rect(ctx, p.ink, -9, -36 + bob, 18, 13);
+    rect(ctx, "#6E9AA4", -8, -35 + bob, 16, 11);
+    rect(ctx, "#D9F1F3", -5, -33 + bob, 10, 7);
+    rect(ctx, "#21414F", -4, -31 + bob, 8, 4);
+    drawPixelEye(ctx, p, -2, -30 + bob, "#79E7F2");
+    drawPixelEye(ctx, p, 2, -30 + bob, "#79E7F2");
+    rect(ctx, "#F0FFFF", -7, -39 + bob, 3, 5);
+    rect(ctx, "#F0FFFF", 4, -40 + bob, 3, 6);
+
+    // Long cryo rifle recoils as one continuous mechanical silhouette.
+    rect(ctx, p.ink, 5 + recoil, -22 + bob, 23, 8);
+    rect(ctx, "#355866", 6 + recoil, -21 + bob, 21, 6);
+    rect(ctx, "#88B9C1", 9 + recoil, -20 + bob, 14, 3);
+    rect(ctx, p.ink, 22 + recoil, -20 + bob, 15, 5);
+    rect(ctx, "#BFE6EA", 23 + recoil, -19 + bob, 13, 3);
+    rect(ctx, "#E9FFFF", 34 + recoil, -18 + bob, 5, 1);
+    rect(ctx, "#65D9E7", 13 + recoil, -25 + bob, 5, 5);
+    rect(ctx, "#E9FFFF", 14 + recoil, -24 + bob, 3, 2);
+    if (state === "attack" && phase >= 2) {
+      rect(ctx, p.ink, 39 + recoil, -21 + bob, 7, 7);
+      rect(ctx, "#8AEAF3", 40 + recoil, -20 + bob, 5, 5);
+      rect(ctx, "#FFFFFF", 43 + recoil, -19 + bob, 2, 2);
+    }
+  },
+  lab_servitor(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const deploy = state === "attack" ? [0, 2, 7, 4][phase] : 0;
+
+    // Twin stabilisers and medical canisters form a compact support drone.
+    for (const side of [-1, 1] as const) {
+      const x = side * (12 + deploy);
+      rect(ctx, p.ink, x - 5, -23 + hover, 10, 22);
+      rect(ctx, "#547681", x - 4, -22 + hover, 8, 20);
+      rect(ctx, "#A7C8CE", x - 2, -20 + hover, 4, 15);
+      rect(ctx, side < 0 ? "#D9535D" : "#62DDE7", x - 2, -17 + hover, 4, 7);
+      rect(ctx, "#E8FFFF", x - 1, -16 + hover, 2, 3);
+      rect(ctx, p.ink, x - 6, -3 + hover, 12, 5);
+      rect(ctx, "#6B8E97", x - 4, -2 + hover, 8, 3);
+    }
+    rect(ctx, p.ink, -11, -29 + hover, 22, 27);
+    rect(ctx, "#5B7C86", -10, -28 + hover, 20, 25);
+    rect(ctx, "#BBD7DB", -7, -25 + hover, 14, 18);
+    rect(ctx, "#E8F7F8", -5, -23 + hover, 10, 7);
+    rect(ctx, "#21414E", -4, -21 + hover, 8, 4);
+    drawPixelEye(ctx, p, -2, -20 + hover, "#68E3EC");
+    drawPixelEye(ctx, p, 2, -20 + hover, "#68E3EC");
+    rect(ctx, "#D84F59", -6, -12 + hover, 5, 4);
+    rect(ctx, "#E7B94F", 2, -12 + hover, 4, 4);
+    rect(ctx, p.ink, -3, -36 + hover, 6, 9);
+    rect(ctx, "#65DCE7", -2, -37 + hover, 4, 7);
+    rect(ctx, "#E9FFFF", -1, -36 + hover, 2, 3);
+
+    // Four repair emitters unfold during the healing pulse.
+    for (const [x, y] of [[-18 - deploy, -28], [13 + deploy, -28], [-17 - deploy, 2], [12 + deploy, 2]] as const) {
+      rect(ctx, p.ink, x, y + hover, 6, 8);
+      rect(ctx, "#7C9DA4", x + 1, y + 1 + hover, 4, 6);
+      rect(ctx, "#7EE8E9", x + 2, y + 2 + hover, 2, 3);
+    }
+  },
+  magma_mortar(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
+    const recoil = state === "attack" ? [0, -2, -7, -3][phase] : 0;
+
+    // Six low furnace legs support a squat artillery chassis.
+    for (const [x, y, shift] of [[-16, -3, -stride], [-14, 3, stride], [-6, 6, -stride], [10, -3, stride], [9, 3, -stride], [2, 6, stride]] as const) {
+      rect(ctx, p.ink, x + shift, y + bob, 8, 4);
+      rect(ctx, "#48292A", x + 1 + shift, y + 1 + bob, 6, 2);
+      rect(ctx, "#A43E2C", x + (x < 0 ? 0 : 5) + shift, y + 2 + bob, 4, 3);
+    }
+    rect(ctx, p.ink, -17, -19 + bob, 34, 21);
+    rect(ctx, "#3D292D", -16, -18 + bob, 32, 19);
+    rect(ctx, "#6A302E", -13, -16 + bob, 26, 15);
+    rect(ctx, "#A5412D", -9, -14 + bob, 18, 11);
+    rect(ctx, p.ink, -7, -12 + bob, 14, 9);
+    rect(ctx, "#D75226", -6, -11 + bob, 12, 7);
+    rect(ctx, "#FF8C27", -3, -10 + bob, 6, 5);
+    rect(ctx, "#FFE16A", -1, -9 + bob, 2, 3);
+
+    // Elevated mortar tube recoils and exposes a glowing shell throat.
+    rect(ctx, p.ink, -5 + recoil, -34 + bob, 16, 20);
+    rect(ctx, "#4E3D3D", -4 + recoil, -33 + bob, 14, 18);
+    rect(ctx, "#827878", -2 + recoil, -31 + bob, 10, 14);
+    rect(ctx, p.ink, -7 + recoil, -38 + bob, 20, 7);
+    rect(ctx, "#9A8E89", -6 + recoil, -37 + bob, 18, 5);
+    rect(ctx, "#2A1B20", -2 + recoil, -36 + bob, 10, 3);
+    if (state === "attack" && phase >= 2) {
+      rect(ctx, p.ink, -1 + recoil, -48 + bob, 9, 9);
+      rect(ctx, "#D94B25", 0 + recoil, -47 + bob, 7, 7);
+      rect(ctx, "#FF9B29", 2 + recoil, -46 + bob, 4, 4);
+      rect(ctx, "#FFE36B", 4 + recoil, -45 + bob, 2, 2);
+    }
+  },
+  heat_smith_drone(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const swing = state === "attack" ? [0, 3, 8, 4][phase] : 0;
+
+    // Central forge body with two tool arms and four exhaust fins.
+    rect(ctx, p.ink, -12, -27 + hover, 24, 26);
+    rect(ctx, "#3B2B30", -11, -26 + hover, 22, 24);
+    rect(ctx, "#655053", -8, -23 + hover, 16, 18);
+    rect(ctx, "#9A4A35", -5, -20 + hover, 10, 12);
+    rect(ctx, p.ink, -4, -18 + hover, 8, 9);
+    rect(ctx, "#E35A2A", -3, -17 + hover, 6, 7);
+    rect(ctx, "#FF9A28", -1, -16 + hover, 3, 5);
+    rect(ctx, "#FFE36A", 0, -15 + hover, 1, 3);
+    rect(ctx, p.ink, -7, -34 + hover, 14, 9);
+    rect(ctx, "#62595A", -6, -33 + hover, 12, 7);
+    drawPixelEye(ctx, p, -3, -30 + hover, "#FFE67B");
+    drawPixelEye(ctx, p, 2, -30 + hover, "#FFE67B");
+
+    for (const [x, y, side] of [[-18, -28, -1], [13, -28, 1], [-18, -7, -1], [13, -7, 1]] as const) {
+      rect(ctx, p.ink, x, y + hover, 6, 10);
+      rect(ctx, "#6C6767", x + 1, y + 1 + hover, 4, 8);
+      rect(ctx, "#D54C27", x + (side < 0 ? 1 : 3), y + 3 + hover, 2, 5);
+    }
+
+    // Hammer and tong arms visibly spread for the support pulse.
+    rect(ctx, p.ink, -22 - swing, -19 + hover, 13 + swing, 7);
+    rect(ctx, "#656364", -21 - swing, -18 + hover, 11 + swing, 5);
+    rect(ctx, "#A7AAA7", -24 - swing, -21 + hover, 7, 11);
+    rect(ctx, p.ink, 9, -18 + hover, 14 + swing, 6);
+    rect(ctx, "#6C6767", 10, -17 + hover, 12 + swing, 4);
+    rect(ctx, "#D9A33D", 20 + swing, -19 + hover, 6, 8);
+    if (state === "attack" && phase >= 2) {
+      for (const [x, y, color] of [[-27, -5, "#FF8A26"], [24, -4, "#FFE36A"], [-18, 6, "#E65327"], [16, 7, "#FFB23A"]] as const) {
+        rect(ctx, p.ink, x - 1, y - 1 + hover, 6, 6);
+        rect(ctx, color, x, y + hover, 4, 4);
+      }
     }
   },
   inferno_core(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {

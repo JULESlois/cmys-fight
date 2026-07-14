@@ -33,6 +33,8 @@ const nativeForestIds = [
   "boar_charger",
   "dingdong_fowl",
   "spore_mimic",
+  "root_lancer",
+  "petal_moth",
   "forest_guardian",
   "broadcast_rooster",
 ] as const;
@@ -47,6 +49,8 @@ const nativeDungeonIds = [
   "grave_summoner",
   "bark_hound",
   "chain_jailer",
+  "coffin_lobber",
+  "lantern_wraith",
   "crypt_overseer",
   "kennel_warden",
 ] as const;
@@ -61,6 +65,8 @@ const nativeSnowIds = [
   "snow_turret",
   "white_sampler",
   "mirror_wisp",
+  "icicle_sniper",
+  "lab_servitor",
   "frost_titan",
   "white_director",
 ] as const;
@@ -75,6 +81,8 @@ const nativeLavaIds = [
   "cinder_oracle",
   "code_horse",
   "furnace_beetle",
+  "magma_mortar",
+  "heat_smith_drone",
   "inferno_core",
   "vat_horse_prime",
 ] as const;
@@ -182,6 +190,14 @@ assert.match(source, /code_horse[\s\S]*#2ECC71/, "code horse code panel");
 assert.match(source, /broadcast_rooster[\s\S]*#F1C40F/, "broadcast rooster speaker/bell accents");
 assert.match(source, /white_director[\s\S]*#D94F55/, "white director quarantine accents");
 assert.match(source, /vat_horse_prime[\s\S]*#405259/, "vat-horse mechanical vat");
+assert.match(source, /root_lancer[\s\S]*root lance telescopes/, "root lancer authors a telescoping sniper weapon");
+assert.match(source, /petal_moth[\s\S]*Four independently offset petal wings/, "petal moth authors a four-wing orbit silhouette");
+assert.match(source, /coffin_lobber[\s\S]*Mortar throat tilts backward/, "coffin lobber authors a heavy artillery body");
+assert.match(source, /lantern_wraith[\s\S]*caged soul lantern/, "lantern wraith authors its orbiting soul identity");
+assert.match(source, /icicle_sniper[\s\S]*Long cryo rifle recoils/, "icicle sniper authors a long-range rifle silhouette");
+assert.match(source, /lab_servitor[\s\S]*repair emitters unfold/, "lab servitor authors a support-device attack pose");
+assert.match(source, /magma_mortar[\s\S]*Elevated mortar tube recoils/, "magma mortar authors a foundry artillery chassis");
+assert.match(source, /heat_smith_drone[\s\S]*Hammer and tong arms visibly spread/, "heat-smith drone authors a forge support pose");
 
 const renderer = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 assert.match(renderer, /MonsterModelRenderer\.draw/);
@@ -196,13 +212,23 @@ assert.doesNotMatch(renderer, /enemy_\$\{enemy\.type\}_idle/);
 const projectileRenderer = fs.readFileSync("src/game/render/ProjectileArtRenderer.ts", "utf8");
 assert.match(projectileRenderer, /const radius = Math\.max\(1, Math\.round\(p\.radius\)\)/, "enemy projectiles may use a one-pixel core");
 assert.match(projectileRenderer, /radius \* 2 \+ 4/, "enemy projectile glow padding stays compact");
+for (const kind of ["needle", "shell", "orbit", "support"] as const) {
+  assert.match(projectileRenderer, new RegExp(`enemy_${kind}`), `${kind} enemy projectiles have dedicated pixel art`);
+}
 
 const dungeonState = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 assert.match(dungeonState, /radius \* \(enemy\.type === "boss" \? 0\.72 : 0\.68\)/, "enemy projectile collision radii should shrink at spawn");
 assert.match(dungeonState, /destroyBreakableTileAt/, "player projectiles should destroy authored room props");
 assert.match(dungeonState, /destroyedPropTiles/, "destroyed combat props must persist on room state");
+for (const behavior of ["sniper", "lob", "support", "orbit"] as const) {
+  assert.match(dungeonState, new RegExp(`enemy\\.behavior === \\"${behavior}\\"`), `${behavior} has a dedicated runtime attack branch`);
+}
+assert.match(dungeonState, /resolveSupportAttack/, "support monsters heal allies and emit a defensive pulse");
+assert.match(dungeonState, /desired = 94/, "orbit monsters use tangential movement rather than standard kiting");
 
 const roomRenderer = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
+const specialRoomRenderer = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
+const portalRenderer = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
 assert.match(roomRenderer, /function drawForestFloorTile/, "forest floor has authored material variants");
 assert.match(roomRenderer, /function drawForestStreamTile/, "forest streams have neighbour-aware banks");
 assert.match(roomRenderer, /function drawForestWallTile/, "forest walls use adjacency-aware tree and hedge edges");
@@ -233,6 +259,11 @@ assert.match(roomRenderer, /function drawDungeonStructureTile/, "dungeon combat 
 assert.match(roomRenderer, /function drawSnowStructureTile/, "snow combat rooms have research modules");
 assert.match(roomRenderer, /function drawLavaStructureTile/, "lava combat rooms have foundry machinery");
 assert.match(roomRenderer, /function drawBreakableTile/, "combat rooms render chapter-specific breakable props");
+assert.match(roomRenderer, /SpecialRoomRenderer\.drawRoomStage/, "special interactions use authored room stages rather than flat decals");
+assert.match(specialRoomRenderer, /drawMerchant[\s\S]*Chapter-specific stall/, "merchant includes an authored stall and chapter goods");
+assert.match(specialRoomRenderer, /drawWishFountain/, "wish fountain is an authored object rather than a flat rectangle");
+assert.match(specialRoomRenderer, /drawForestStage[\s\S]*drawDungeonStage[\s\S]*drawSnowStage[\s\S]*drawLavaStage/, "special room backgrounds vary by chapter");
+assert.match(portalRenderer, /drawForestFrame[\s\S]*drawDungeonFrame[\s\S]*drawSnowFrame[\s\S]*drawLavaFrame/, "portal frames vary structurally by chapter");
 
 const roomVariants = fs.readFileSync("src/game/RoomVariantSystem.ts", "utf8");
 assert.match(roomVariants, /const wallClusterCount = room\.type === "boss" \? 2 : 3 \+/, "combat rooms should receive denser wall clusters");
@@ -257,7 +288,7 @@ assert.match(environment, /hazard\.type !== "poison_pool" && hazard\.type !== "s
 const themes = ["forest", "dungeon", "snow", "lava"] as const;
 for (const theme of themes) {
   const themed = enemyIds.filter(id => ENEMIES[id].theme === theme);
-  assert.equal(themed.length, 7, `${theme} should have five regular models and two bosses`);
+  assert.equal(themed.length, 9, `${theme} should have seven regular models and two bosses`);
 }
 
 console.log(JSON.stringify({

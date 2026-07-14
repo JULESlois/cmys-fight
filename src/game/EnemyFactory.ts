@@ -65,6 +65,7 @@ export class EnemyFactory {
     enemy.projectileSpeed = definition.projectileSpeed ?? enemy.projectileSpeed;
     enemy.projectileCount = definition.projectileCount ?? enemy.projectileCount;
     enemy.projectileSpread = definition.projectileSpread ?? enemy.projectileSpread;
+    enemy.projectileKind = definition.projectileKind ?? "standard";
     enemy.chargeDistance = definition.chargeDistance ?? enemy.chargeDistance;
     enemy.areaRadius = definition.areaRadius ?? enemy.areaRadius;
     enemy.summonEnemyId = definition.summonEnemyId;

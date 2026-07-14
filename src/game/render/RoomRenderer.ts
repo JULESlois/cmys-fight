@@ -10,6 +10,7 @@ import {
   TILE_STRUCTURE,
 } from "../MapData";
 import { PALETTES } from "../data/palettes";
+import { SpecialRoomRenderer } from "./SpecialRoomRenderer";
 
 interface Particle {
   x: number;
@@ -1050,13 +1051,7 @@ export class RoomRenderer {
 
     // Room identity decals make special rooms readable without relying on the HUD.
     if (currentRoom?.type === "shop") {
-      ctx.fillStyle = theme === "lava" ? "rgba(122, 45, 26, 0.65)" : "rgba(56, 41, 78, 0.58)";
-      ctx.fillRect(112, 84, 96, 72);
-      ctx.strokeStyle = "rgba(241, 196, 15, 0.68)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(116, 88, 88, 64);
-      ctx.fillStyle = "rgba(241, 196, 15, 0.22)";
-      for (let x = 124; x < 204; x += 16) ctx.fillRect(x, 92, 4, 56);
+      SpecialRoomRenderer.drawRoomStage(ctx, currentRoom.type, theme, this.windTime, false);
     } else if (currentRoom?.type === "boss") {
       if (theme === "forest") {
         // A root-ring altar gives the forest bosses a physical arena rather
@@ -1391,30 +1386,19 @@ export class RoomRenderer {
         ctx.strokeRect(140, 100, 40, 40);
         ctx.fillRect(156, 116, 8, 8);
       }
-    } else if (currentRoom?.type === "npc") {
-      ctx.fillStyle = "rgba(155, 89, 182, 0.15)";
-      ctx.fillRect(128, 88, 64, 64);
-      ctx.strokeStyle = "rgba(217, 128, 250, 0.5)";
-      ctx.strokeRect(132, 92, 56, 56);
-      for (let x = 140; x <= 180; x += 8) {
-        ctx.fillStyle = x % 16 === 0 ? "rgba(0,242,254,0.25)" : "rgba(241,196,15,0.2)";
-        ctx.fillRect(x, 98, 4, 44);
-      }
-    } else if (currentRoom?.type === "wish_fountain") {
-      ctx.fillStyle = "rgba(142, 68, 173, 0.18)";
-      ctx.fillRect(112, 80, 96, 80);
-      ctx.strokeStyle = "rgba(210, 180, 222, 0.62)";
-      ctx.strokeRect(120, 88, 80, 64);
-      ctx.strokeRect(136, 100, 48, 40);
-      ctx.fillStyle = "rgba(88, 211, 247, 0.16)";
-      ctx.fillRect(136, 112, 48, 20);
-    } else if (currentRoom?.type === "photo_booth") {
-      ctx.fillStyle = "rgba(142, 68, 173, 0.18)";
-      ctx.fillRect(112, 80, 96, 80);
-      ctx.strokeStyle = "rgba(217, 128, 250, 0.58)";
-      ctx.strokeRect(120, 88, 80, 64);
-      ctx.fillStyle = "rgba(240, 108, 168, 0.16)";
-      for (let x = 124; x <= 196; x += 12) ctx.fillRect(x, 92, 5, 56);
+    } else if (
+      currentRoom?.type === "exit" ||
+      currentRoom?.type === "npc" ||
+      currentRoom?.type === "wish_fountain" ||
+      currentRoom?.type === "photo_booth"
+    ) {
+      SpecialRoomRenderer.drawRoomStage(
+        ctx,
+        currentRoom.type,
+        theme,
+        this.windTime,
+        currentRoom.interactionCompleted === true,
+      );
     } else if (currentRoom?.type === "treasure") {
       ctx.strokeStyle = "rgba(241, 196, 15, 0.3)";
       ctx.strokeRect(136, 96, 48, 48);

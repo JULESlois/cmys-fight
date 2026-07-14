@@ -1,9 +1,10 @@
 import type { StatusEffectId } from "../combat/StatusEffectSystem";
 
 export type EnemyRole = "melee" | "ranged" | "boss";
-export type EnemyBehavior = "melee" | "charge" | "shoot" | "scatter" | "summon" | "area" | "boss";
+export type EnemyBehavior = "melee" | "charge" | "shoot" | "scatter" | "summon" | "area" | "sniper" | "lob" | "support" | "orbit" | "boss";
 export type EnemyTheme = "forest" | "dungeon" | "snow" | "lava";
-export type EnemyVisual = "brute" | "archer" | "beast" | "bird" | "mushroom" | "guard" | "cultist" | "summoner" | "jailer" | "hound" | "shaman" | "turret" | "hazmat" | "wisp" | "knight" | "spitter" | "oracle" | "horse" | "beetle" | "boss";
+export type EnemyVisual = "brute" | "archer" | "beast" | "bird" | "mushroom" | "lancer" | "moth" | "guard" | "cultist" | "summoner" | "jailer" | "hound" | "coffin" | "lantern" | "shaman" | "turret" | "hazmat" | "wisp" | "sniper" | "servitor" | "knight" | "spitter" | "oracle" | "horse" | "beetle" | "mortar" | "smith" | "boss";
+export type EnemyProjectileKind = "standard" | "needle" | "shell" | "orbit" | "support";
 export type BossPattern = "grove" | "broadcast" | "crypt" | "kennel" | "frost" | "sample" | "inferno" | "code";
 
 export interface EnemyDefinition {
@@ -35,6 +36,7 @@ export interface EnemyDefinition {
   projectileSpeed?: number;
   projectileCount?: number;
   projectileSpread?: number;
+  projectileKind?: EnemyProjectileKind;
   chargeDistance?: number;
   areaRadius?: number;
   summonEnemyId?: string;
@@ -75,6 +77,18 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
     attackDamage: 2, attackInterval: 2.2, attackWindup: 0.82,
     attackRange: 145, minimumWindup: 0.65, minimumAttackInterval: 1.55, requiresLineOfSight: true,
     areaRadius: 20, statusEffect: "poison", statusDuration: 3,
+  }),
+  root_lancer: enemy({
+    id: "root_lancer", name: "Root Lancer", theme: "forest", role: "ranged", behavior: "sniper", visual: "lancer", introducedAtStage: 2,
+    color: "#6F9F4B", maxHp: 9, speed: 18, radius: 7, hitboxRadius: 19, hitboxOffsetY: -18, shadowWidth: 21,
+    attackDamage: 3, attackInterval: 1.9, attackWindup: 0.88, attackRange: 178, requiresLineOfSight: true,
+    projectileSpeed: 205, projectileKind: "needle", statusEffect: "root", statusDuration: 0.35,
+  }),
+  petal_moth: enemy({
+    id: "petal_moth", name: "Petal Moth", theme: "forest", role: "ranged", behavior: "orbit", visual: "moth", introducedAtStage: 3,
+    color: "#E98FB2", maxHp: 7, speed: 38, radius: 7, hitboxRadius: 18, hitboxOffsetY: -17, shadowWidth: 20,
+    attackDamage: 1, attackInterval: 1.15, attackWindup: 0.42, attackRange: 150,
+    projectileSpeed: 92, projectileCount: 3, projectileSpread: 0.48, projectileKind: "orbit", statusEffect: "poison", statusDuration: 1.8,
   }),
   forest_guardian: enemy({
     id: "forest_guardian", name: "Forest Guardian", theme: "forest", role: "boss", behavior: "boss", visual: "boss", bossPattern: "grove",
@@ -118,6 +132,18 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
     attackDamage: 2, attackInterval: 2.15, attackWindup: 0.85,
     attackRange: 140, minimumWindup: 0.7, minimumAttackInterval: 1.55, requiresLineOfSight: true,
     areaRadius: 18, statusEffect: "root", statusDuration: 0.65,
+  }),
+  coffin_lobber: enemy({
+    id: "coffin_lobber", name: "Coffin Lobber", theme: "dungeon", role: "ranged", behavior: "lob", visual: "coffin", introducedAtStage: 2,
+    color: "#6E6578", maxHp: 14, speed: 16, radius: 9, hitboxRadius: 23, hitboxOffsetY: -17, shadowWidth: 29,
+    attackDamage: 3, attackInterval: 2.15, attackWindup: 0.78, attackRange: 155, requiresLineOfSight: true,
+    projectileSpeed: 46, projectileCount: 3, projectileSpread: 0.22, projectileKind: "shell",
+  }),
+  lantern_wraith: enemy({
+    id: "lantern_wraith", name: "Lantern Wraith", theme: "dungeon", role: "ranged", behavior: "orbit", visual: "lantern", introducedAtStage: 3,
+    color: "#A66BCE", maxHp: 8, speed: 35, radius: 7, hitboxRadius: 19, hitboxOffsetY: -18, shadowWidth: 21,
+    attackDamage: 2, attackInterval: 1.3, attackWindup: 0.5, attackRange: 150,
+    projectileSpeed: 86, projectileCount: 4, projectileSpread: 0.62, projectileKind: "orbit",
   }),
   crypt_overseer: enemy({
     id: "crypt_overseer", name: "Crypt Overseer", theme: "dungeon", role: "boss", behavior: "boss", visual: "boss", bossPattern: "crypt",
@@ -163,6 +189,18 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
     attackDamage: 2, attackInterval: 1.3, attackWindup: 0.44,
     projectileSpeed: 120, projectileCount: 2, projectileSpread: 0.52,
   }),
+  icicle_sniper: enemy({
+    id: "icicle_sniper", name: "Icicle Sniper", theme: "snow", role: "ranged", behavior: "sniper", visual: "sniper", introducedAtStage: 2,
+    color: "#8FD9E8", maxHp: 9, speed: 19, radius: 7, hitboxRadius: 20, hitboxOffsetY: -19, shadowWidth: 21,
+    attackDamage: 3, attackInterval: 1.82, attackWindup: 0.9, attackRange: 184, requiresLineOfSight: true,
+    projectileSpeed: 220, projectileKind: "needle", statusEffect: "slow", statusDuration: 0.9,
+  }),
+  lab_servitor: enemy({
+    id: "lab_servitor", name: "Lab Servitor", theme: "snow", role: "ranged", behavior: "support", visual: "servitor", introducedAtStage: 3,
+    color: "#D8EDF0", maxHp: 13, speed: 23, radius: 8, hitboxRadius: 21, hitboxOffsetY: -17, shadowWidth: 24,
+    attackDamage: 1, attackInterval: 2.55, attackWindup: 0.72, attackRange: 135,
+    projectileSpeed: 72, projectileCount: 4, projectileSpread: 1.57, projectileKind: "support",
+  }),
   frost_titan: enemy({
     id: "frost_titan", name: "Frost Titan", theme: "snow", role: "boss", behavior: "boss", visual: "boss", bossPattern: "frost",
     color: "#0288D1", maxHp: 64, speed: 25, radius: 16, hitboxRadius: 39, hitboxOffsetY: -28, shadowWidth: 53,
@@ -207,6 +245,18 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
     attackDamage: 4, attackInterval: 1.65, attackWindup: 0.5,
     projectileSpeed: 76, statusEffect: "burn", statusDuration: 2.8,
   }),
+  magma_mortar: enemy({
+    id: "magma_mortar", name: "Magma Mortar", theme: "lava", role: "ranged", behavior: "lob", visual: "mortar", introducedAtStage: 2,
+    color: "#D9582D", maxHp: 15, speed: 15, radius: 9, hitboxRadius: 23, hitboxOffsetY: -15, shadowWidth: 31,
+    attackDamage: 4, attackInterval: 2.05, attackWindup: 0.74, attackRange: 158, requiresLineOfSight: true,
+    projectileSpeed: 52, projectileCount: 3, projectileSpread: 0.24, projectileKind: "shell", statusEffect: "burn", statusDuration: 2.3,
+  }),
+  heat_smith_drone: enemy({
+    id: "heat_smith_drone", name: "Heat-Smith Drone", theme: "lava", role: "ranged", behavior: "support", visual: "smith", introducedAtStage: 3,
+    color: "#F08A35", maxHp: 14, speed: 25, radius: 8, hitboxRadius: 21, hitboxOffsetY: -17, shadowWidth: 25,
+    attackDamage: 2, attackInterval: 2.45, attackWindup: 0.68, attackRange: 138,
+    projectileSpeed: 78, projectileCount: 4, projectileSpread: 1.57, projectileKind: "support", statusEffect: "burn", statusDuration: 1.5,
+  }),
   inferno_core: enemy({
     id: "inferno_core", name: "Inferno Core", theme: "lava", role: "boss", behavior: "boss", visual: "boss", bossPattern: "inferno",
     color: "#E64A19", maxHp: 70, speed: 29, radius: 16, hitboxRadius: 42, hitboxOffsetY: -28, shadowWidth: 56,
@@ -222,10 +272,10 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
 };
 
 const CHAPTER_POOLS: Record<EnemyTheme, string[]> = {
-  forest: ["moss_brute", "thorn_archer", "boar_charger", "dingdong_fowl", "spore_mimic"],
-  dungeon: ["bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer"],
-  snow: ["frost_hound", "ice_shaman", "snow_turret", "white_sampler", "mirror_wisp"],
-  lava: ["ember_knight", "magma_spitter", "cinder_oracle", "code_horse", "furnace_beetle"],
+  forest: ["moss_brute", "thorn_archer", "boar_charger", "dingdong_fowl", "spore_mimic", "root_lancer", "petal_moth"],
+  dungeon: ["bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith"],
+  snow: ["frost_hound", "ice_shaman", "snow_turret", "white_sampler", "mirror_wisp", "icicle_sniper", "lab_servitor"],
+  lava: ["ember_knight", "magma_spitter", "cinder_oracle", "code_horse", "furnace_beetle", "magma_mortar", "heat_smith_drone"],
 };
 
 const CHAPTER_BOSSES: Record<EnemyTheme, string[]> = {

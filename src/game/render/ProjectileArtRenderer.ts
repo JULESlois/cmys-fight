@@ -159,6 +159,64 @@ export class ProjectileArtRenderer {
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(Math.atan2(p.vy, p.vx));
     const radius = Math.max(1, Math.round(p.radius));
+    if (p.weaponId === "enemy_needle") {
+      ctx.fillStyle = "rgba(10,4,8,0.68)";
+      ctx.fillRect(-8, -2, 12, 5);
+      ctx.fillStyle = palette.shadow;
+      ctx.fillRect(-7, -1, 11, 3);
+      ctx.fillStyle = palette.base;
+      ctx.fillRect(-5, -1, 9, 2);
+      ctx.fillStyle = palette.highlight;
+      ctx.fillRect(-2, -1, 6, 1);
+      ctx.fillStyle = palette.accent;
+      ctx.fillRect(-9, 0, 3, 1);
+      ctx.restore();
+      return;
+    }
+    if (p.weaponId === "enemy_shell") {
+      ctx.fillStyle = "rgba(10,4,8,0.68)";
+      ctx.fillRect(-5, -4, 10, 9);
+      ctx.fillStyle = palette.shadow;
+      ctx.fillRect(-4, -3, 8, 7);
+      ctx.fillStyle = palette.base;
+      ctx.fillRect(-3, -3, 6, 6);
+      ctx.fillStyle = palette.highlight;
+      ctx.fillRect(-1, -2, 3, 2);
+      ctx.fillStyle = palette.accent;
+      ctx.fillRect(-7, -1, 3, 3);
+      ctx.fillRect(-9, 0, 2, 1);
+      ctx.restore();
+      return;
+    }
+    if (p.weaponId === "enemy_orbit") {
+      ctx.fillStyle = "rgba(10,4,8,0.65)";
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.fillStyle = palette.shadow;
+      ctx.fillRect(-3, -3, 6, 6);
+      ctx.fillStyle = palette.base;
+      ctx.fillRect(-2, -3, 4, 6);
+      ctx.fillRect(-3, -2, 6, 4);
+      ctx.fillStyle = palette.highlight;
+      ctx.fillRect(-1, -2, 2, 2);
+      ctx.fillStyle = palette.accent;
+      ctx.fillRect(-6, 0, 2, 1);
+      ctx.restore();
+      return;
+    }
+    if (p.weaponId === "enemy_support") {
+      ctx.fillStyle = "rgba(10,4,8,0.58)";
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.fillStyle = palette.shadow;
+      ctx.fillRect(-1, -3, 3, 7);
+      ctx.fillRect(-3, -1, 7, 3);
+      ctx.fillStyle = palette.base;
+      ctx.fillRect(0, -2, 1, 5);
+      ctx.fillRect(-2, 0, 5, 1);
+      ctx.fillStyle = palette.highlight;
+      ctx.fillRect(0, 0, 1, 1);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = "rgba(10,4,8,0.62)";
     ctx.fillRect(-radius - 2, -radius - 1, radius * 2 + 4, radius * 2 + 3);
     ctx.fillStyle = palette.shadow;

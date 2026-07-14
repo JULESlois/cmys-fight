@@ -401,7 +401,8 @@ assert.match(renderer, /if \(enemy\.type === "boss"\) scale = nativeMonsterArt \
 assert.match(renderer, /let scale = nativeMonsterArt \? renderScale : enemy\.isElite \? 1\.42 : 1\.22/);
 assert.match(renderer, /weapon\?\.renderOffsetX/);
 assert.match(renderer, /weapon\?\.muzzleOffsetX/);
-assert.match(dungeonSource, /rangedAttackRange = normalMode \? Math\.min\(e\.attackRange, 128\) : e\.attackRange/);
+assert.match(dungeonSource, /normalRangeCap = e\.behavior === "sniper" \? 176 : e\.behavior === "lob" \? 148 : 128/);
+assert.match(dungeonSource, /rangedAttackRange = normalMode \? Math\.min\(e\.attackRange, normalRangeCap\) : e\.attackRange/);
 assert.match(dungeonSource, /hasLineOfSight/);
 assert.match(dungeonSource, /p\.type === "mana" && this\.player\.mana >= this\.player\.maxMana/);
 

@@ -12,6 +12,7 @@ import {
   type Language,
 } from "../i18n";
 import type { ShopItem, ShopPurchaseFailure } from "../shop/ShopSystem";
+import { SpecialRoomRenderer } from "./SpecialRoomRenderer";
 
 const RARITY_COLORS: Record<string, string> = {
   common: "#BDC3C7",
@@ -44,23 +45,8 @@ function getItemText(item: ShopItem, language: Language): { name: string; descri
 }
 
 export class ShopRenderer {
-  static drawMerchant(ctx: CanvasRenderingContext2D, x: number, y: number, time: number) {
-    ctx.save();
-    ctx.translate(Math.round(x), Math.round(y + Math.sin(time * 2.5)));
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.fillRect(-9, 9, 18, 4);
-    ctx.fillStyle = "#8E44AD";
-    ctx.fillRect(-8, -4, 16, 14);
-    ctx.fillStyle = "#F5CBA7";
-    ctx.fillRect(-6, -12, 12, 9);
-    ctx.fillStyle = "#F1C40F";
-    ctx.fillRect(-8, -14, 16, 3);
-    ctx.fillStyle = "#1A1C2C";
-    ctx.fillRect(-3, -8, 2, 2);
-    ctx.fillRect(2, -8, 2, 2);
-    ctx.fillStyle = "#F39C12";
-    ctx.fillRect(-12, -2, 4, 4);
-    ctx.restore();
+  static drawMerchant(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme = "forest") {
+    SpecialRoomRenderer.drawMerchant(ctx, x, y, time, theme);
   }
 
   static drawOverlay(

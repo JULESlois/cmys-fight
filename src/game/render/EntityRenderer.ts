@@ -388,6 +388,36 @@ export class EntityRenderer {
       } else if (enemy.behavior === "scatter") {
         const spread = Math.max(0.18, enemy.projectileSpread * Math.max(1, enemy.projectileCount - 1));
         for (const offset of [-spread / 2, 0, spread / 2]) EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle + offset, 34, lineColor);
+      } else if (enemy.behavior === "sniper") {
+        EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle, Math.min(150, enemy.attackRange), lineColor);
+        const endX = Math.round(Math.cos(enemy.attackAngle) * Math.min(150, enemy.attackRange));
+        const endY = Math.round(Math.sin(enemy.attackAngle) * Math.min(150, enemy.attackRange));
+        EntityRenderer.drawCornerFrame(ctx, 5 + (blink ? 1 : 0), lineColor, 3);
+        ctx.fillStyle = lineColor;
+        ctx.fillRect(endX - 3, endY - 3, 7, 1);
+        ctx.fillRect(endX, endY - 6, 1, 7);
+      } else if (enemy.behavior === "lob") {
+        const localX = enemy.attackTargetX - enemy.x;
+        const localY = enemy.attackTargetY - enemy.y;
+        EntityRenderer.drawAreaTiles(ctx, localX, localY, 14, tileColor, lineColor);
+        for (const offset of [-14, 14]) {
+          ctx.fillStyle = tileColor;
+          ctx.fillRect(Math.round(localX + offset) - 5, Math.round(localY) - 5, 10, 10);
+          ctx.strokeStyle = lineColor;
+          ctx.strokeRect(Math.round(localX + offset) - 5, Math.round(localY) - 5, 10, 10);
+        }
+      } else if (enemy.behavior === "support") {
+        EntityRenderer.drawCornerFrame(ctx, 18 + (blink ? 2 : 0), lineColor, 7);
+        ctx.fillStyle = tileColor;
+        ctx.fillRect(-3, -24, 6, 48);
+        ctx.fillRect(-24, -3, 48, 6);
+      } else if (enemy.behavior === "orbit") {
+        const orbitRadius = 21 + (blink ? 2 : 0);
+        for (let index = 0; index < 8; index++) {
+          const angle = enemy.attackSequence * 0.4 + index * Math.PI / 4;
+          ctx.fillStyle = index % 2 === 0 ? lineColor : tileColor;
+          ctx.fillRect(Math.round(Math.cos(angle) * orbitRadius) - 2, Math.round(Math.sin(angle) * orbitRadius) - 2, 4, 4);
+        }
       } else if (enemy.behavior === "shoot") {
         EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle, 34, lineColor);
       } else if (enemy.behavior === "boss") {
