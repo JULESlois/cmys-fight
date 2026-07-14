@@ -1462,94 +1462,171 @@ export class RoomRenderer {
       ctx.fillRect(145, 12, 3, 3);
       ctx.fillRect(178, 11, 3, 3);
     } else if (theme === "dungeon" && currentRoom?.type === "start") {
-      // A barred crypt arch establishes the chapter entrance immediately.
-      ctx.fillStyle = "#101722";
-      ctx.fillRect(137, 12, 9, 39);
-      ctx.fillRect(174, 12, 9, 39);
-      ctx.fillRect(140, 8, 40, 8);
-      ctx.fillRect(145, 5, 30, 5);
+      // Dungeon alone keeps the prison vocabulary: a pointed ossuary arch,
+      // descending portcullis, hanging chain and soul-lock keystone.
+      ctx.fillStyle = "#0D131D";
+      ctx.fillRect(136, 15, 10, 37);
+      ctx.fillRect(174, 15, 10, 37);
+      ctx.fillRect(140, 10, 40, 8);
+      ctx.fillRect(145, 7, 30, 5);
+      ctx.fillRect(151, 4, 18, 4);
       ctx.fillStyle = "#354258";
-      ctx.fillRect(139, 13, 6, 37);
-      ctx.fillRect(175, 13, 6, 37);
-      ctx.fillRect(142, 9, 36, 6);
-      ctx.fillRect(148, 6, 24, 4);
-      ctx.fillStyle = "#647188";
-      ctx.fillRect(140, 14, 2, 28);
-      ctx.fillRect(176, 14, 2, 28);
-      ctx.fillRect(145, 10, 30, 2);
+      ctx.fillRect(139, 16, 6, 35);
+      ctx.fillRect(175, 16, 6, 35);
+      ctx.fillRect(143, 11, 34, 5);
+      ctx.fillRect(149, 8, 22, 4);
+      ctx.fillRect(155, 5, 10, 3);
+      ctx.fillStyle = "#718095";
+      ctx.fillRect(140, 17, 2, 27);
+      ctx.fillRect(178, 17, 2, 27);
+      ctx.fillRect(146, 12, 28, 2);
       ctx.fillStyle = "#151D28";
-      for (const x of [149, 156, 163, 170]) ctx.fillRect(x, 15, 3, 34);
+      for (const x of [149, 156, 163, 170]) {
+        ctx.fillRect(x, 17, 3, 32);
+        ctx.fillRect(x - 1, 46, 5, 3);
+      }
+      ctx.fillRect(146, 31, 28, 3);
       ctx.fillStyle = "#75828C";
-      for (const x of [150, 157, 164, 171]) ctx.fillRect(x, 16, 1, 30);
+      for (const x of [150, 157, 164, 171]) ctx.fillRect(x, 18, 1, 27);
+      ctx.fillRect(148, 32, 24, 1);
+      // Offset chain links avoid a generic symmetrical cage silhouette.
+      ctx.fillStyle = "#0E151E";
+      ctx.fillRect(145, 20, 7, 4);
+      ctx.fillRect(150, 23, 4, 7);
+      ctx.fillRect(168, 18, 7, 4);
+      ctx.fillRect(166, 21, 4, 7);
+      ctx.fillStyle = "#7B8993";
+      ctx.fillRect(147, 21, 3, 1);
+      ctx.fillRect(169, 19, 3, 1);
       ctx.fillStyle = "#1B1326";
-      ctx.fillRect(156, 24, 9, 10);
-      ctx.fillStyle = "#A25DCC";
-      ctx.fillRect(158, 26, 5, 6);
-      ctx.fillStyle = "#E1B6F4";
-      ctx.fillRect(160, 27, 2, 3);
-    } else if (theme === "snow" && currentRoom?.type === "start") {
-      // A frozen quarantine arch merges glacier masonry with expedition hardware.
-      ctx.fillStyle = "#27495C";
-      ctx.fillRect(136, 12, 10, 39);
-      ctx.fillRect(174, 12, 10, 39);
-      ctx.fillRect(139, 8, 42, 8);
-      ctx.fillRect(145, 5, 30, 5);
-      ctx.fillStyle = "#668B9A";
-      ctx.fillRect(138, 13, 7, 37);
-      ctx.fillRect(175, 13, 7, 37);
-      ctx.fillRect(141, 9, 38, 6);
-      ctx.fillRect(148, 6, 24, 4);
-      ctx.fillStyle = "#D7E7EA";
-      ctx.fillRect(137, 11, 10, 5);
-      ctx.fillRect(173, 11, 12, 5);
-      ctx.fillRect(142, 7, 37, 4);
-      ctx.fillStyle = "#F4FAFB";
-      ctx.fillRect(139, 11, 7, 2);
-      ctx.fillRect(150, 6, 19, 2);
-      ctx.fillStyle = "#294957";
-      for (const x of [150, 158, 166]) ctx.fillRect(x, 15, 4, 34);
-      ctx.fillStyle = "#8BA7AE";
-      for (const x of [151, 159, 167]) ctx.fillRect(x, 16, 1, 30);
-      ctx.fillStyle = "#21485A";
       ctx.fillRect(155, 24, 11, 11);
-      ctx.fillStyle = "#57B9C8";
+      ctx.fillStyle = "#A25DCC";
       ctx.fillRect(157, 26, 7, 7);
-      ctx.fillStyle = "#D8FFFF";
+      ctx.fillStyle = "#E1B6F4";
       ctx.fillRect(160, 27, 2, 4);
+    } else if (theme === "snow" && currentRoom?.type === "start") {
+      // A sealed hexagonal research airlock replaces every trace of a barred
+      // prison gate. Two insulated slabs meet at a lit quarantine seam.
+      ctx.fillStyle = "#1B394A";
+      ctx.fillRect(134, 17, 12, 34);
+      ctx.fillRect(174, 17, 12, 34);
+      ctx.fillRect(139, 10, 42, 10);
+      ctx.fillRect(146, 6, 28, 6);
+      ctx.fillStyle = "#5D8392";
+      ctx.fillRect(137, 18, 8, 32);
+      ctx.fillRect(175, 18, 8, 32);
+      ctx.fillRect(141, 11, 38, 7);
+      ctx.fillRect(149, 7, 22, 5);
+      ctx.fillStyle = "#D6E8EB";
+      ctx.fillRect(136, 16, 10, 5);
+      ctx.fillRect(174, 16, 11, 5);
+      ctx.fillRect(142, 9, 36, 4);
+      ctx.fillRect(149, 5, 22, 3);
+      ctx.fillStyle = "#274B5A";
+      // Left and right pressure-door slabs, stepped into an octagonal opening.
+      ctx.fillRect(146, 17, 13, 33);
+      ctx.fillRect(161, 17, 13, 33);
+      ctx.fillRect(143, 22, 16, 23);
+      ctx.fillRect(161, 22, 16, 23);
+      ctx.fillStyle = "#6F9EAA";
+      ctx.fillRect(147, 19, 10, 28);
+      ctx.fillRect(163, 19, 10, 28);
+      ctx.fillStyle = "#A9CED5";
+      ctx.fillRect(148, 20, 2, 25);
+      ctx.fillRect(170, 20, 2, 25);
+      ctx.fillStyle = "#173643";
+      ctx.fillRect(158, 18, 4, 31);
+      ctx.fillStyle = "#54BBC9";
+      ctx.fillRect(159, 20, 2, 27);
+      // Diagonal structural braces and frost wedges break the rectangular mass.
+      ctx.fillStyle = "#365F6F";
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(149 + i * 2, 24 + i * 4, 4, 3);
+        ctx.fillRect(168 - i * 2, 24 + i * 4, 4, 3);
+      }
+      ctx.fillStyle = "#EFFBFC";
+      ctx.fillRect(144, 14, 8, 2);
+      ctx.fillRect(169, 13, 8, 2);
+      ctx.fillRect(152, 10, 16, 2);
       ctx.fillStyle = "#C94C55";
-      ctx.fillRect(143, 18, 5, 3);
-      ctx.fillRect(172, 18, 5, 3);
+      ctx.fillRect(140, 25, 4, 4);
+      ctx.fillRect(176, 25, 4, 4);
+      ctx.fillStyle = "#FFD16A";
+      ctx.fillRect(141, 26, 2, 2);
+      ctx.fillRect(177, 26, 2, 2);
+      ctx.fillStyle = "#D8FFFF";
+      ctx.fillRect(159, 28, 2, 7);
+      // Pressure handles remain legible at native room scale.
+      ctx.fillStyle = "#173643";
+      ctx.fillRect(153, 31, 3, 7);
+      ctx.fillRect(165, 31, 3, 7);
+      ctx.fillStyle = "#A9CED5";
+      ctx.fillRect(154, 32, 1, 5);
+      ctx.fillRect(166, 32, 1, 5);
     } else if (theme === "lava" && currentRoom?.type === "start") {
-      // A foundry blast gate establishes the final chapter as an industrial volcano.
-      ctx.fillStyle = "#151116";
-      ctx.fillRect(135, 12, 11, 40);
-      ctx.fillRect(174, 12, 11, 40);
-      ctx.fillRect(138, 8, 44, 8);
-      ctx.fillRect(145, 5, 30, 5);
-      ctx.fillStyle = "#463640";
-      ctx.fillRect(137, 13, 8, 38);
-      ctx.fillRect(175, 13, 8, 38);
-      ctx.fillRect(140, 9, 40, 6);
-      ctx.fillRect(148, 6, 24, 4);
-      ctx.fillStyle = "#747B7D";
-      ctx.fillRect(139, 14, 3, 34);
-      ctx.fillRect(178, 14, 3, 34);
-      ctx.fillRect(143, 10, 34, 2);
+      // An octagonal furnace iris and side pistons establish the foundry. The
+      // silhouette is radial and solid, never another set of prison bars.
+      ctx.fillStyle = "#120E13";
+      ctx.fillRect(133, 18, 13, 33);
+      ctx.fillRect(174, 18, 13, 33);
+      ctx.fillRect(139, 10, 42, 10);
+      ctx.fillRect(146, 6, 28, 6);
+      ctx.fillStyle = "#493740";
+      ctx.fillRect(136, 19, 9, 31);
+      ctx.fillRect(175, 19, 9, 31);
+      ctx.fillRect(142, 11, 36, 7);
+      ctx.fillRect(149, 7, 22, 5);
+      ctx.fillStyle = "#767D7F";
+      ctx.fillRect(138, 21, 3, 25);
+      ctx.fillRect(179, 21, 3, 25);
+      ctx.fillRect(145, 12, 30, 2);
+      // Octagonal outer furnace ring.
       ctx.fillStyle = "#21181E";
-      for (const x of [149, 157, 165, 173]) ctx.fillRect(x, 15, 4, 35);
-      ctx.fillStyle = "#6F7475";
-      for (const x of [150, 158, 166, 174]) ctx.fillRect(x, 16, 1, 31);
-      ctx.fillStyle = "#5E211B";
-      ctx.fillRect(154, 24, 13, 12);
+      ctx.fillRect(146, 17, 28, 34);
+      ctx.fillRect(142, 22, 36, 24);
+      ctx.fillStyle = "#5C454C";
+      ctx.fillRect(148, 19, 24, 30);
+      ctx.fillRect(144, 24, 32, 20);
+      ctx.fillStyle = "#2B2026";
+      ctx.fillRect(151, 21, 18, 26);
+      ctx.fillRect(147, 26, 26, 16);
+      // Six overlapping iris blades point toward the furnace eye.
+      ctx.fillStyle = "#8A3B2B";
+      ctx.fillRect(150, 23, 9, 7);
+      ctx.fillRect(161, 23, 9, 7);
+      ctx.fillRect(148, 30, 10, 7);
+      ctx.fillRect(162, 30, 10, 7);
+      ctx.fillRect(151, 37, 9, 7);
+      ctx.fillRect(160, 37, 9, 7);
+      ctx.fillStyle = "#B74A2D";
+      ctx.fillRect(152, 24, 5, 2);
+      ctx.fillRect(163, 24, 5, 2);
+      ctx.fillRect(150, 32, 5, 2);
+      ctx.fillRect(165, 32, 5, 2);
+      ctx.fillRect(153, 40, 5, 2);
+      ctx.fillRect(162, 40, 5, 2);
+      ctx.fillStyle = "#5A211C";
+      ctx.fillRect(155, 27, 11, 13);
+      ctx.fillStyle = "#E34F1E";
+      ctx.fillRect(157, 29, 7, 9);
+      ctx.fillStyle = "#FFB52C";
+      ctx.fillRect(159, 30, 4, 6);
+      ctx.fillStyle = "#FFE86E";
+      ctx.fillRect(161, 31, 1, 3);
+      // Hydraulic rams make the entrance read as machinery rather than masonry.
+      ctx.fillStyle = "#2A2027";
+      ctx.fillRect(135, 27, 10, 8);
+      ctx.fillRect(175, 27, 10, 8);
+      ctx.fillStyle = "#8B8583";
+      ctx.fillRect(137, 29, 8, 3);
+      ctx.fillRect(175, 29, 8, 3);
       ctx.fillStyle = "#D94B1F";
-      ctx.fillRect(156, 26, 9, 8);
-      ctx.fillStyle = "#FFB52B";
-      ctx.fillRect(159, 27, 4, 5);
-      ctx.fillStyle = "#FFE76E";
-      ctx.fillRect(161, 27, 1, 3);
-      ctx.fillStyle = "#B9442D";
-      ctx.fillRect(142, 19, 6, 3);
-      ctx.fillRect(172, 19, 6, 3);
+      ctx.fillRect(141, 28, 3, 5);
+      ctx.fillRect(176, 28, 3, 5);
+      ctx.fillStyle = "#B6AAA5";
+      for (const [rx, ry] of [[147, 20], [171, 20], [145, 42], [173, 42]] as const) {
+        ctx.fillRect(rx, ry, 2, 2);
+      }
     }
 
     if (currentRoom) {
@@ -1737,34 +1814,38 @@ export class RoomRenderer {
            }
 
            if (isLocked) {
-             // Freezing quarantine shutters replace the universal red barrier.
-             ctx.fillStyle = "#3D7286";
-             if (horizontal) {
-               for (let i = x + 4; i < x + w - 3; i += 8) {
-                 ctx.fillRect(i, y + 3, 5, h - 6);
-                 ctx.fillStyle = "#8FC6D2";
-                 ctx.fillRect(i + 1, y + 4, 2, h - 8);
-                 ctx.fillStyle = "#3D7286";
-               }
-             } else {
-               for (let i = y + 4; i < y + h - 3; i += 8) {
-                 ctx.fillRect(x + 3, i, w - 6, 5);
-                 ctx.fillStyle = "#8FC6D2";
-                 ctx.fillRect(x + 4, i + 1, w - 8, 2);
-                 ctx.fillStyle = "#3D7286";
-               }
-             }
+             // A solid two-piece quarantine airlock replaces the old repeated
+             // bars. Stepped corners, a pressure seam and warning lamps make it
+             // read as research hardware even at the room edge.
              const cx = x + Math.floor(w / 2);
              const cy = y + Math.floor(h / 2);
-             ctx.fillStyle = "#CDECF1";
+             ctx.fillStyle = "#284E5E";
              if (horizontal) {
-               ctx.fillRect(cx - 13, cy - 2, 26, 4);
-               ctx.fillRect(cx - 7, cy - 6, 4, 12);
-               ctx.fillRect(cx + 4, cy - 6, 4, 12);
+               ctx.fillRect(x + 4, y + 3, w - 8, h - 6);
+               ctx.fillRect(x + 8, y + 2, w - 16, h - 4);
+               ctx.fillStyle = "#719EAA";
+               ctx.fillRect(x + 6, y + 4, Math.max(3, cx - x - 8), h - 8);
+               ctx.fillRect(cx + 2, y + 4, Math.max(3, x + w - cx - 8), h - 8);
+               ctx.fillStyle = "#173744";
+               ctx.fillRect(cx - 2, y + 3, 4, h - 6);
+               ctx.fillStyle = "#55BBC9";
+               ctx.fillRect(cx - 1, y + 4, 2, h - 8);
+               ctx.fillStyle = "#B7D9DF";
+               ctx.fillRect(x + 7, y + 4, 2, h - 8);
+               ctx.fillRect(x + w - 9, y + 4, 2, h - 8);
              } else {
-               ctx.fillRect(cx - 2, cy - 13, 4, 26);
-               ctx.fillRect(cx - 6, cy - 7, 12, 4);
-               ctx.fillRect(cx - 6, cy + 4, 12, 4);
+               ctx.fillRect(x + 3, y + 4, w - 6, h - 8);
+               ctx.fillRect(x + 2, y + 8, w - 4, h - 16);
+               ctx.fillStyle = "#719EAA";
+               ctx.fillRect(x + 4, y + 6, w - 8, Math.max(3, cy - y - 8));
+               ctx.fillRect(x + 4, cy + 2, w - 8, Math.max(3, y + h - cy - 8));
+               ctx.fillStyle = "#173744";
+               ctx.fillRect(x + 3, cy - 2, w - 6, 4);
+               ctx.fillStyle = "#55BBC9";
+               ctx.fillRect(x + 4, cy - 1, w - 8, 2);
+               ctx.fillStyle = "#B7D9DF";
+               ctx.fillRect(x + 4, y + 7, w - 8, 2);
+               ctx.fillRect(x + 4, y + h - 9, w - 8, 2);
              }
              ctx.fillStyle = "#21485A";
              ctx.fillRect(cx - 5, cy - 5, 11, 11);
@@ -1773,9 +1854,21 @@ export class RoomRenderer {
              ctx.fillStyle = "#E2FFFF";
              ctx.fillRect(cx, cy - 2, 2, 4);
              ctx.fillStyle = "#C94C55";
-             ctx.fillRect(cx - 1, cy + 5, 3, 2);
+             ctx.fillRect(cx - 8, cy - 1, 3, 3);
+             ctx.fillRect(cx + 6, cy - 1, 3, 3);
+             ctx.fillStyle = "#FFD16A";
+             ctx.fillRect(cx - 7, cy, 1, 1);
+             ctx.fillRect(cx + 7, cy, 1, 1);
+             ctx.fillStyle = "#173744";
+             if (horizontal) {
+               ctx.fillRect(cx - 7, cy - 3, 3, 7);
+               ctx.fillRect(cx + 4, cy - 3, 3, 7);
+             } else {
+               ctx.fillRect(cx - 3, cy - 7, 7, 3);
+               ctx.fillRect(cx - 3, cy + 4, 7, 3);
+             }
            } else {
-             // Open shutters leave short icicle teeth and the insulated frame.
+             // Open airlocks leave insulated pockets and short frost wedges.
              ctx.fillStyle = "#A9D4DC";
              if (horizontal) {
                ctx.fillRect(x + 5, y + 4, 3, 6);
@@ -1824,34 +1917,37 @@ export class RoomRenderer {
            }
 
            if (isLocked) {
-             // Interlocking blast shutters replace the universal red energy barrier.
-             ctx.fillStyle = "#2A2027";
-             if (horizontal) {
-               for (let i = x + 4; i < x + w - 3; i += 8) {
-                 ctx.fillRect(i, y + 3, 6, h - 6);
-                 ctx.fillStyle = "#5F4B52";
-                 ctx.fillRect(i + 1, y + 4, 2, h - 8);
-                 ctx.fillStyle = "#2A2027";
-               }
-             } else {
-               for (let i = y + 4; i < y + h - 3; i += 8) {
-                 ctx.fillRect(x + 3, i, w - 6, 6);
-                 ctx.fillStyle = "#5F4B52";
-                 ctx.fillRect(x + 4, i + 1, w - 8, 2);
-                 ctx.fillStyle = "#2A2027";
-               }
-             }
+             // A compact furnace iris replaces the old row of shutters. Six
+             // overlapping hot plates converge on a central combustion lock.
              const cx = x + Math.floor(w / 2);
              const cy = y + Math.floor(h / 2);
-             ctx.fillStyle = "#9B3A29";
+             ctx.fillStyle = "#261C22";
              if (horizontal) {
-               ctx.fillRect(cx - 14, cy - 2, 28, 4);
-               ctx.fillRect(cx - 8, cy - 6, 4, 12);
-               ctx.fillRect(cx + 5, cy - 6, 4, 12);
+               ctx.fillRect(x + 4, y + 3, w - 8, h - 6);
+               ctx.fillStyle = "#5B454C";
+               ctx.fillRect(x + 7, y + 4, Math.max(4, cx - x - 8), h - 8);
+               ctx.fillRect(cx + 1, y + 4, Math.max(4, x + w - cx - 8), h - 8);
+               ctx.fillStyle = "#913B2C";
+               ctx.fillRect(cx - 14, y + 3, 9, 5);
+               ctx.fillRect(cx + 5, y + 3, 9, 5);
+               ctx.fillRect(cx - 10, y + h - 8, 8, 5);
+               ctx.fillRect(cx + 2, y + h - 8, 8, 5);
+               ctx.fillStyle = "#8A8583";
+               ctx.fillRect(x + 5, cy - 1, 8, 3);
+               ctx.fillRect(x + w - 13, cy - 1, 8, 3);
              } else {
-               ctx.fillRect(cx - 2, cy - 14, 4, 28);
-               ctx.fillRect(cx - 6, cy - 8, 12, 4);
-               ctx.fillRect(cx - 6, cy + 5, 12, 4);
+               ctx.fillRect(x + 3, y + 4, w - 6, h - 8);
+               ctx.fillStyle = "#5B454C";
+               ctx.fillRect(x + 4, y + 7, w - 8, Math.max(4, cy - y - 8));
+               ctx.fillRect(x + 4, cy + 1, w - 8, Math.max(4, y + h - cy - 8));
+               ctx.fillStyle = "#913B2C";
+               ctx.fillRect(x + 3, cy - 14, 5, 9);
+               ctx.fillRect(x + 3, cy + 5, 5, 9);
+               ctx.fillRect(x + w - 8, cy - 10, 5, 8);
+               ctx.fillRect(x + w - 8, cy + 2, 5, 8);
+               ctx.fillStyle = "#8A8583";
+               ctx.fillRect(cx - 1, y + 5, 3, 8);
+               ctx.fillRect(cx - 1, y + h - 13, 3, 8);
              }
              ctx.fillStyle = "#5A211C";
              ctx.fillRect(cx - 5, cy - 5, 11, 11);
@@ -1861,8 +1957,16 @@ export class RoomRenderer {
              ctx.fillRect(cx - 1, cy - 2, 4, 4);
              ctx.fillStyle = "#FFE86E";
              ctx.fillRect(cx + 1, cy - 1, 1, 2);
+             ctx.fillStyle = "#B2A6A1";
+             if (horizontal) {
+               ctx.fillRect(x + 7, cy - 1, 2, 2);
+               ctx.fillRect(x + w - 9, cy - 1, 2, 2);
+             } else {
+               ctx.fillRect(cx - 1, y + 7, 2, 2);
+               ctx.fillRect(cx - 1, y + h - 9, 2, 2);
+             }
            } else {
-             // Open gates retain short heat teeth and heavy iron rails.
+             // Open furnace irises retain hydraulic sockets and hot teeth.
              ctx.fillStyle = "#8C4A37";
              if (horizontal) {
                ctx.fillRect(x + 5, y + 4, 3, 6);

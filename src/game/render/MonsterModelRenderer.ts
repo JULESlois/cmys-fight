@@ -139,6 +139,206 @@ function drawChainLink(ctx: CanvasRenderingContext2D, p: Palette, x: number, y: 
   rect(ctx, "#2D3842", x + (vertical ? 1 : 2), y + (vertical ? 1 : 0), 1, vertical ? 2 : 1);
 }
 
+function drawDetailPixels(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  points: ReadonlyArray<readonly [number, number, number?, number?]>,
+): void {
+  for (const [x, y, width = 1, height = 1] of points) rect(ctx, color, x, y, width, height);
+}
+
+const INVERSE_DETAIL_BOB_IDS = new Set(["bark_hound", "kennel_warden", "frost_hound"]);
+
+/**
+ * Authored one-pixel material pass. The base models establish silhouette and
+ * animation; this pass adds the high-frequency information that survives at
+ * native 1x: bark grain, bone fractures, stitching, rivets, frost facets,
+ * warning labels, molten seams and phase damage. Nothing here is random, so
+ * details remain stable instead of sparkling between animation frames.
+ */
+function drawAuthoredMonsterDetail(
+  ctx: CanvasRenderingContext2D,
+  enemyId: string,
+  state: EnemyAnimationState,
+  stateFrame: number,
+  bossPhase: 1 | 2 | 3 = 1,
+): void {
+  const phase = phaseOf(state, stateFrame);
+  const bob = state === "idle"
+    ? [0, -1][phase]
+    : state === "walk"
+      ? INVERSE_DETAIL_BOB_IDS.has(enemyId) ? [0, -1, 0, 1][phase] : [0, 1, 0, -1][phase]
+      : 0;
+
+  switch (enemyId) {
+    case "moss_brute":
+      drawDetailPixels(ctx, "#B4895D", [[-5, -13 + bob, 1, 5], [1, -16 + bob, 2, 1], [5, -10 + bob, 1, 4]]);
+      drawDetailPixels(ctx, "#2D4928", [[-8, -29 + bob, 2, 1], [4, -30 + bob, 3, 1], [8, -15 + bob, 2, 2]]);
+      drawDetailPixels(ctx, "#D7F08A", [[-11, -18 + bob, 2, 1], [8, -31 + bob, 2, 1], [10, -12 + bob]]);
+      drawDetailPixels(ctx, "#F0C45C", [[-9, -24 + bob, 2, 2]]);
+      break;
+    case "thorn_archer":
+      drawDetailPixels(ctx, "#9FCB67", [[-9, -14 + bob, 1, 4], [-5, -11 + bob, 3, 1], [2, -8 + bob, 1, 5]]);
+      drawDetailPixels(ctx, "#2E4028", [[-3, -16 + bob, 1, 4], [1, -24 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#D7EF9B", [[12, -23 + bob], [12, 0 + bob], [4, -29 + bob]]);
+      break;
+    case "boar_charger":
+      drawDetailPixels(ctx, "#A87956", [[-9, -16 + bob, 5, 1], [-5, -12 + bob, 1, 5], [2, -17 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#3A2825", [[-12, -7 + bob, 2, 1], [6, -10 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#FFF3C5", [[18, -3 + bob, 2, 1], [15, 0 + bob]]);
+      break;
+    case "dingdong_fowl":
+      drawDetailPixels(ctx, "#D7C99F", [[-3, -17 + bob, 1, 4], [2, -15 + bob, 1, 5], [6, -11 + bob, 1, 3]]);
+      drawDetailPixels(ctx, "#FFFBEA", [[-2, -28 + bob, 4, 1], [-6, -18 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#8A5A16", [[-2, -9 + bob, 5, 1], [0, -5 + bob]]);
+      break;
+    case "spore_mimic":
+      drawDetailPixels(ctx, "#F6C85A", [[-9, -28 + bob, 2, 2], [-2, -30 + bob], [7, -27 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#8E2833", [[-8, -13 + bob, 3, 1], [-1, -11 + bob, 4, 1], [7, -14 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#FFF7D8", [[-4, -16 + bob], [3, -16 + bob], [9, -15 + bob]]);
+      break;
+    case "forest_guardian":
+      drawDetailPixels(ctx, "#B88A5E", [[-9, -31 + bob, 1, 8], [-4, -14 + bob, 1, 5], [8, -28 + bob, 2, 1], [11, -18 + bob, 1, 6]]);
+      drawDetailPixels(ctx, "#36572B", [[-20, -41 + bob, 3, 1], [-7, -46 + bob, 2, 2], [18, -44 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#F4D67D", [[-17, -39 + bob], [23, -41 + bob], [-1, -16 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#EE8CB3", [[-12, -35 + bob], [13, -33 + bob], [-18, -11 + bob], [18, -13 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFF7B2", [[-8, -21 + bob, 3, 1], [5, -20 + bob, 3, 1], [0, -29 + bob, 1, 4]]);
+      break;
+    case "broadcast_rooster":
+      drawDetailPixels(ctx, "#5F7077", [[-22, -23 + bob], [-18, -23 + bob], [-14, -23 + bob], [17, -37 + bob, 1, 8]]);
+      drawDetailPixels(ctx, "#FFF1A0", [[-4, -16 + bob, 8, 1], [-2, -8 + bob, 4, 1], [17, -34 + bob, 1, 5]]);
+      drawDetailPixels(ctx, "#A76017", [[-14, -12 + bob, 1, 6], [14, -18 + bob, 1, 7]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#FFF59D", [[-28, -19 + bob], [21, -15 + bob], [-18, -31 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FF7043", [[-5, -13 + bob, 11, 1], [-25, -29 + bob], [24, -28 + bob]]);
+      break;
+
+    case "bone_guard":
+      drawDetailPixels(ctx, "#F5F5EA", [[-5, -26 + bob, 3, 1], [3, -18 + bob, 2, 1], [-5, -12 + bob, 2, 1], [3, -8 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#8B999E", [[-12, -14 + bob], [-11, -7 + bob], [-8, -29 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#57452B", [[-13, -3 + bob], [11, -3 + bob]]);
+      drawDetailPixels(ctx, "#DCE4E2", [[-13, -17 + bob, 2, 5], [-4, -15 + bob, 1, 6]]);
+      break;
+    case "bolt_cultist":
+      drawDetailPixels(ctx, "#70418C", [[-6, -8 + bob, 1, 8], [4, -7 + bob, 1, 6], [-6, -25 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#F0D8F7", [[-2, -20 + bob], [3, -20 + bob], [-1, -5 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#C878E3", [[-8, -12 + bob], [6, -10 + bob], [0, 2 + bob]]);
+      break;
+    case "grave_summoner":
+      drawDetailPixels(ctx, "#645078", [[-7, -13 + bob, 1, 12], [5, -10 + bob, 1, 9], [-5, -29 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#9C919F", [[9, -26 + bob, 8, 1], [12, -20 + bob], [13, -8 + bob, 1, 5]]);
+      drawDetailPixels(ctx, "#86F2C5", [[-3, -21 + bob], [3, -21 + bob], [13, -24 + bob]]);
+      break;
+    case "bark_hound":
+      drawDetailPixels(ctx, "#A98269", [[-9, -12 + bob, 5, 1], [-1, -10 + bob, 1, 4], [8, -15 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#C2CBCC", [[-7, -16 + bob], [1, -16 + bob], [15, -11 + bob], [19, -11 + bob]]);
+      drawDetailPixels(ctx, "#E6BB4B", [[-10, -8 + bob], [5, -8 + bob], [0, -7 + bob]]);
+      break;
+    case "chain_jailer":
+      drawDetailPixels(ctx, "#8798A0", [[-8, -16 + bob, 1, 7], [5, -14 + bob, 1, 6], [-8, -31 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#E1B94E", [[-7, -6 + bob, 4, 1], [4, -6 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#D8E0E1", [[-4, -26 + bob], [4, -26 + bob], [15, -2 + bob]]);
+      break;
+    case "crypt_overseer":
+      drawDetailPixels(ctx, "#72508C", [[-11, -18 + bob, 1, 17], [8, -17 + bob, 1, 14], [-10, -42 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#E9E5DA", [[-9, -37 + bob, 3, 1], [5, -37 + bob, 3, 1], [-2, -28 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#E7B8FF", [[-1, -9 + bob, 2, 5], [-7, -32 + bob], [7, -32 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#B66CDE", [[-23, -37 + bob], [19, -34 + bob], [-19, -8 + bob], [21, -5 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#F6D9FF", [[-2, -56 + bob, 5, 1], [-30, -15 + bob], [30, -13 + bob]]);
+      break;
+    case "kennel_warden":
+      drawDetailPixels(ctx, "#9CA8AA", [[-17, -26 + bob], [-10, -26 + bob], [-3, -26 + bob], [4, -26 + bob]]);
+      drawDetailPixels(ctx, "#A37A3A", [[-18, -12 + bob, 6, 1], [-5, -12 + bob, 5, 1], [9, -12 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#F1C75A", [[-15, -11 + bob], [-4, -11 + bob], [9, -11 + bob], [34, -22 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#B5C1C3", [[-19, -33 + bob, 3, 1], [-2, -34 + bob, 3, 1]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FF9B65", [[-17, -34 + bob, 2, 1], [1, -35 + bob, 2, 1], [-29, -13 + bob]]);
+      break;
+
+    case "frost_hound":
+      drawDetailPixels(ctx, "#DDF8FC", [[-10, -17 + bob, 4, 1], [-4, -21 + bob], [2, -18 + bob, 3, 1], [8, -15 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#3E7890", [[-8, -9 + bob, 1, 4], [5, -12 + bob, 1, 5]]);
+      drawDetailPixels(ctx, "#F8FFFF", [[14, -17 + bob], [20, -16 + bob], [-21, -21 + bob]]);
+      break;
+    case "ice_shaman":
+      drawDetailPixels(ctx, "#F8FFFF", [[-8, -17 + bob, 4, 1], [4, -15 + bob, 2, 1], [-8, -36 + bob], [-3, -39 + bob], [4, -38 + bob]]);
+      drawDetailPixels(ctx, "#68AABC", [[-6, -11 + bob, 1, 8], [4, -10 + bob, 1, 7]]);
+      drawDetailPixels(ctx, "#D9FAFF", [[-2, -22 + bob], [3, -22 + bob], [13, -32 + bob]]);
+      break;
+    case "snow_turret":
+      drawDetailPixels(ctx, "#AFCBD2", [[-11, 1, 4, 1], [-3, 1, 4, 1], [5, 1, 4, 1], [13, 1]]);
+      drawDetailPixels(ctx, "#1B4051", [[-6, -9, 2, 1], [1, -9], [13, -8, 1, 4]]);
+      drawDetailPixels(ctx, "#E7FEFF", [[-4, -13], [4, -13], [23, -10]]);
+      break;
+    case "white_sampler":
+      drawDetailPixels(ctx, "#7FA9B3", [[-13, -13 + bob, 1, 7], [5, -17 + bob, 1, 9], [-6, -31 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#D34C52", [[-7, -12 + bob, 4, 2], [3, -12 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#E9FFFF", [[-5, -28 + bob, 5, 1], [8, -28 + bob], [22, -13 + bob]]);
+      drawDetailPixels(ctx, "#64D9E7", [[8, -19 + bob, 2, 3]]);
+      break;
+    case "mirror_wisp": {
+      const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+      drawDetailPixels(ctx, "#E7FDFF", [[-5, -22 + hover], [4, -23 + hover], [-2, -29 + hover], [3, -8 + hover]]);
+      drawDetailPixels(ctx, "#4C8A9B", [[-7, -18 + hover, 1, 5], [7, -17 + hover, 1, 4]]);
+      drawDetailPixels(ctx, "#FFFFFF", [[0, -18 + hover, 2, 1], [-8, -5 + hover], [8, -4 + hover]]);
+      break;
+    }
+    case "frost_titan":
+      drawDetailPixels(ctx, "#D9F9FC", [[-15, -33 + bob, 2, 12], [-7, -50 + bob, 5, 1], [7, -49 + bob, 4, 1], [11, -30 + bob, 1, 8]]);
+      drawDetailPixels(ctx, "#245F7A", [[-19, -22 + bob, 4, 1], [9, -15 + bob, 4, 1], [-11, -4 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#FFFFFF", [[-5, -45 + bob], [5, -45 + bob], [-1, -19 + bob, 3, 1]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#E8FDFF", [[-26, -52 + bob], [23, -50 + bob], [-24, -27 + bob], [23, -25 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFFFFF", [[-3, -74 + bob, 7, 1], [-41, 7 + bob], [41, 5 + bob]]);
+      break;
+    case "white_director":
+      drawDetailPixels(ctx, "#8FAAB0", [[-27, -26 + bob, 1, 15], [25, -26 + bob, 1, 15], [8, -31 + bob, 1, 15]]);
+      drawDetailPixels(ctx, "#D34C52", [[-14, -36 + bob, 7, 1], [7, -36 + bob, 7, 1], [-17, -22 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#E9FFFF", [[-10, -48 + bob, 8, 1], [9, -47 + bob, 3, 1], [29, -27 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#D94F55", [[-27, -47 + bob], [36, -45 + bob], [-24, -38 + bob], [25, -37 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#D9FFFF", [[-34, -11 + bob, 2, 6], [31, -10 + bob, 2, 6], [-2, -65 + bob, 5, 1]]);
+      break;
+
+    case "ember_knight":
+      drawDetailPixels(ctx, "#A84831", [[-12, -15 + bob, 1, 8], [-5, -17 + bob, 1, 6], [4, -15 + bob, 1, 7]]);
+      drawDetailPixels(ctx, "#FFB52E", [[-14, -9 + bob], [-2, -15 + bob, 2, 3], [2, -24 + bob], [14, -18 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#2A1C22", [[-6, -7 + bob, 3, 1], [3, -6 + bob, 2, 1]]);
+      break;
+    case "magma_spitter":
+      drawDetailPixels(ctx, "#FF9A24", [[-8, -11 + bob, 3, 1], [-1, -14 + bob], [5, -9 + bob, 2, 1], [12, -12 + bob]]);
+      drawDetailPixels(ctx, "#421B1B", [[-10, -5 + bob, 4, 1], [2, -5 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#FFE36B", [[-2, -6 + bob], [15, -13 + bob], [22, -5 + bob]]);
+      break;
+    case "cinder_oracle":
+      drawDetailPixels(ctx, "#A9412C", [[-8, -17 + bob, 1, 10], [4, -15 + bob, 1, 9], [-5, -29 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#FFB52D", [[-4, -16 + bob], [-1, -36 + bob], [5, -33 + bob], [12, -27 + bob]]);
+      drawDetailPixels(ctx, "#2C1B20", [[-7, -10 + bob, 4, 1], [2, -8 + bob, 3, 1]]);
+      break;
+    case "code_horse":
+      drawDetailPixels(ctx, "#8A3A32", [[-14, -18 + bob, 5, 1], [-3, -17 + bob, 1, 6], [5, -15 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#8CFF83", [[-8, -14 + bob], [-5, -12 + bob], [-2, -10 + bob], [11, -29 + bob]]);
+      drawDetailPixels(ctx, "#1B3028", [[-9, -12 + bob, 2, 1], [-6, -10 + bob, 2, 1]]);
+      break;
+    case "furnace_beetle":
+      drawDetailPixels(ctx, "#A8402F", [[-12, -15 + bob, 5, 1], [5, -14 + bob, 4, 1], [-13, -5 + bob, 3, 1], [9, -4 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#8E8580", [[-8, -24 + bob, 3, 1], [-7, -20 + bob], [15, -12 + bob]]);
+      drawDetailPixels(ctx, "#FFE36B", [[-1, -8 + bob], [17, -10 + bob], [26, -6 + bob]]);
+      break;
+    case "inferno_core":
+      drawDetailPixels(ctx, "#A9432F", [[-19, -37 + bob, 7, 1], [11, -33 + bob, 6, 1], [-17, -8 + bob, 5, 1], [13, -4 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#7C7776", [[-21, -20 + bob], [20, -16 + bob], [-10, -49 + bob], [10, -47 + bob]]);
+      drawDetailPixels(ctx, "#FFE36B", [[-8, -22 + bob], [7, -19 + bob], [-20, -10 + bob], [18, -35 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#D85A32", [[-31, -41 + bob], [30, -40 + bob], [-28, 8 + bob], [27, 7 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFF3A2", [[-14, -32 + bob], [12, -9 + bob], [-2, -54 + bob, 5, 1]]);
+      break;
+    case "vat_horse_prime":
+      drawDetailPixels(ctx, "#8A4140", [[-28, -31 + bob, 8, 1], [10, -29 + bob, 7, 1], [-21, -12 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#A7B1AE", [[-25, -7 + bob], [-12, -5 + bob], [11, -6 + bob], [23, -4 + bob], [13, -41 + bob]]);
+      drawDetailPixels(ctx, "#9BFF9C", [[-16, -39 + bob], [-11, -38 + bob], [-5, -40 + bob], [35, -35 + bob]]);
+      drawDetailPixels(ctx, "#FF9B29", [[-40, -22 + bob], [21, -49 + bob], [28, -47 + bob], [24, -40 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#D35836", [[-34, -38 + bob], [-29, -18 + bob], [17, -18 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFF0A0", [[-5, -52 + bob], [-22, -4 + bob], [18, -6 + bob]]);
+      break;
+  }
+}
+
 const models: Record<string, ModelDraw> = {
   moss_brute(ctx, p, _limbFrame, state, stateFrame) {
     const phase = phaseOf(state, stateFrame);
@@ -1824,6 +2024,7 @@ function drawBossPhaseFrame(ctx: CanvasRenderingContext2D, palette: Palette, pha
 
 function drawModelWithPose(
   ctx: CanvasRenderingContext2D,
+  enemyId: string,
   model: ModelDraw,
   palette: Palette,
   state: EnemyAnimationState,
@@ -1841,6 +2042,7 @@ function drawModelWithPose(
   ctx.scale(facing === "left" ? -scale : scale, scale);
   ctx.translate(pose.x, nativePixelArt ? pose.y : pose.y - 1);
   model(ctx, palette, pose.limbFrame, state, frame, bossPhase);
+  if (nativePixelArt) drawAuthoredMonsterDetail(ctx, enemyId, state, frame, bossPhase);
   if (!nativePixelArt && state === "attack") drawAttackFrame(ctx, palette, behavior, frame);
   if (!nativePixelArt && bossPhase) drawBossPhaseFrame(ctx, palette, bossPhase, frame);
   ctx.restore();
@@ -1862,6 +2064,7 @@ export class MonsterModelRenderer {
     };
     drawModelWithPose(
       ctx,
+      enemy.enemyId,
       model,
       palette,
       enemy.animState,
@@ -1900,6 +2103,7 @@ export class MonsterModelRenderer {
     const facing: EnemyFacing = Math.floor(time / 4.8) % 2 === 0 ? "right" : "left";
     drawModelWithPose(
       ctx,
+      enemyId,
       model,
       palette,
       state,

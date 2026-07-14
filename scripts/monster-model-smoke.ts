@@ -130,6 +130,20 @@ assert.match(source, /previewStates[\s\S]*"idle"[\s\S]*"walk"[\s\S]*"attack"/, "
 assert.match(source, /nativePixelArt && state !== "hurt"/, "native models author their own body movement");
 assert.match(source, /!nativePixelArt && state === "attack"/, "legacy attack blocks must not cover native attack poses");
 assert.match(source, /role === "boss" \? 0\.78 : 1/, "native codex previews use integer-scale regular art and bounded bosses");
+assert.match(source, /function drawAuthoredMonsterDetail/, "native monsters receive a deterministic authored detail pass");
+assert.match(source, /nativePixelArt\) drawAuthoredMonsterDetail/, "authored detail pass follows the native model transform");
+assert.doesNotMatch(
+  source.slice(source.indexOf("function drawAuthoredMonsterDetail"), source.indexOf("const models:")),
+  /Math\.random|tileHash/,
+  "monster detail pixels must remain stable between animation frames",
+);
+for (const id of enemyIds) {
+  assert.match(
+    source.slice(source.indexOf("function drawAuthoredMonsterDetail"), source.indexOf("const models:")),
+    new RegExp(`case \\"${id}\\"`),
+    `${id} authored material detail`,
+  );
+}
 assert.match(source, /const bite = state === "attack" \? \[0, 1, 4, 2\]/, "spore mimic bite remains controlled");
 assert.match(source, /Irregular heartwood fractures/, "guardian phase three uses organic fractures instead of a generic cross");
 assert.match(source, /dingdong_fowl[\s\S]*#E53935[\s\S]*#F9A825/, "ding-dong fowl comb and beak");
@@ -177,21 +191,21 @@ assert.match(roomRenderer, /if \(theme === "forest"\)[\s\S]*return;/, "forest do
 assert.match(roomRenderer, /function drawDungeonFloorTile/, "dungeon floor has authored crypt slabs");
 assert.match(roomRenderer, /function drawDungeonAbyssTile/, "dungeon void cells have neighbour-aware stone lips");
 assert.match(roomRenderer, /function drawDungeonWallTile/, "dungeon walls use adjacency-aware masonry edges");
-assert.match(roomRenderer, /barred crypt arch/, "dungeon start room has a chapter-specific gate");
+assert.match(roomRenderer, /Dungeon alone keeps the prison vocabulary/, "dungeon start room uniquely keeps the portcullis language");
 assert.match(roomRenderer, /broken ossuary seal/, "dungeon boss room uses an ossuary altar");
 assert.match(roomRenderer, /real portcullis replaces the universal red energy barrier/, "dungeon doors use iron portcullises and chains");
 assert.match(roomRenderer, /function drawSnowFloorTile/, "snow floor has authored wind-packed material variants");
 assert.match(roomRenderer, /function drawSnowCrevasseTile/, "snow crevasses have neighbour-aware shelves");
 assert.match(roomRenderer, /function drawSnowWallTile/, "snow walls use adjacency-aware glacier edges");
-assert.match(roomRenderer, /frozen quarantine arch/, "snow start room has a chapter-specific gate");
+assert.match(roomRenderer, /sealed hexagonal research airlock/, "snow start room uses a solid research airlock rather than bars");
 assert.match(roomRenderer, /ruptured glacier containment seal/, "snow boss room uses a containment arena");
-assert.match(roomRenderer, /Freezing quarantine shutters replace the universal red barrier/, "snow doors use ice-and-steel shutters");
+assert.match(roomRenderer, /solid two-piece quarantine airlock replaces the old repeated/, "snow doors use solid ice-and-steel pressure slabs");
 assert.match(roomRenderer, /function drawLavaFloorTile/, "lava floor has authored basalt plate variants");
 assert.match(roomRenderer, /function drawLavaFlowTile/, "lava channels have neighbour-aware slag lips");
 assert.match(roomRenderer, /function drawLavaWallTile/, "lava walls use adjacency-aware foundry edges");
-assert.match(roomRenderer, /foundry blast gate/, "lava start room has a chapter-specific gate");
+assert.match(roomRenderer, /octagonal furnace iris and side pistons/, "lava start room uses a radial furnace mechanism rather than bars");
 assert.match(roomRenderer, /ruptured foundry crucible/, "lava boss room uses a foundry crucible arena");
-assert.match(roomRenderer, /Interlocking blast shutters replace the universal red energy barrier/, "lava doors use blast shutters");
+assert.match(roomRenderer, /compact furnace iris replaces the old row of shutters/, "lava doors use a compact radial furnace iris");
 assert.match(roomRenderer, /Riveted iron grating spans molten channels/, "lava crossings use iron grating");
 
 const environment = fs.readFileSync("src/game/environment/EnvironmentSystem.ts", "utf8");
