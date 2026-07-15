@@ -1,12 +1,9 @@
 import { t, uiFont, type Language } from "../i18n";
+import { drawPixelPanel, UI_COLORS } from "./PixelUi";
 
 export class PromptRenderer {
   static draw(ctx: CanvasRenderingContext2D, target: any, time: number, interactPrompt = "K", language: Language = "en") {
     if (!target) return;
-
-    ctx.save();
-    const floatY = Math.sin(time * 3) * 2;
-    const yBase = target.y - 20 + floatY;
 
     let action = "";
     if (target.type === "portal") action = t(language, "prompt.descend");
@@ -17,24 +14,36 @@ export class PromptRenderer {
     else if (target.type === "broadcast") action = t(language, "prompt.tuneIn");
     else if (target.type === "wish_fountain") action = t(language, "prompt.makeWish");
     else if (target.type === "photo_booth") action = t(language, "prompt.takePhoto");
-    const msg = action ? `[${interactPrompt}] ${action}` : "";
+    if (!action) return;
 
-    if (msg) {
-      ctx.font = uiFont(language, 8);
-      const textWidth = ctx.measureText(msg).width;
-      const padX = 4;
-      const padY = 4;
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect(target.x - textWidth / 2 - padX, yBase - 8 - padY, textWidth + padX * 2, 10 + padY * 2);
-      ctx.beginPath();
-      ctx.moveTo(target.x - 3, yBase + 2);
-      ctx.lineTo(target.x + 3, yBase + 2);
-      ctx.lineTo(target.x, yBase + 5);
-      ctx.fill();
-      ctx.fillStyle = "#FFF";
-      ctx.textAlign = "center";
-      ctx.fillText(msg, target.x, yBase);
-    }
+    ctx.save();
+    const floatY = Math.round(Math.sin(time * 3));
+    const yBase = Math.round(target.y - 24 + floatY);
+    ctx.font = uiFont(language, 7, true);
+    const actionWidth = Math.ceil(ctx.measureText(action).width);
+    ctx.font = uiFont(language, 6, true);
+    const keyWidth = Math.max(15, Math.ceil(ctx.measureText(interactPrompt).width) + 8);
+    const width = Math.max(58, actionWidth + keyWidth + 15);
+    const x = Math.round(target.x - width / 2);
+    drawPixelPanel(ctx, x, yBase - 11, width, 18, "cyan", true);
+
+    ctx.fillStyle = UI_COLORS.cyan;
+    ctx.fillRect(x + 4, yBase - 7, keyWidth, 10);
+    ctx.fillStyle = "#071018";
+    ctx.font = uiFont(language, 6, true);
+    ctx.textAlign = "center";
+    ctx.fillText(interactPrompt, x + 4 + keyWidth / 2, yBase + 1);
+
+    ctx.fillStyle = UI_COLORS.white;
+    ctx.font = uiFont(language, 7, true);
+    ctx.textAlign = "left";
+    ctx.fillText(action, x + keyWidth + 9, yBase + 1);
+    ctx.fillStyle = UI_COLORS.cyan;
+    ctx.beginPath();
+    ctx.moveTo(target.x - 3, yBase + 8);
+    ctx.lineTo(target.x + 3, yBase + 8);
+    ctx.lineTo(target.x, yBase + 11);
+    ctx.fill();
     ctx.restore();
   }
 }

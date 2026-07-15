@@ -82,6 +82,7 @@ const settingsSource = fs.readFileSync("src/game/states/SettingsState.ts", "utf8
 const titleSource = fs.readFileSync("src/game/states/TitleState.ts", "utf8");
 const buffSource = fs.readFileSync("src/game/render/BuffSelectionRenderer.ts", "utf8");
 const shopSource = fs.readFileSync("src/game/render/ShopRenderer.ts", "utf8");
+const pixelUiSource = fs.readFileSync("src/game/render/PixelUi.ts", "utf8");
 const recordsSource = fs.readFileSync("src/game/states/RecordsState.ts", "utf8");
 const pauseSource = fs.readFileSync("src/game/render/PauseOverlayRenderer.ts", "utf8");
 const hudSource = fs.readFileSync("src/game/render/UIRenderer.ts", "utf8");
@@ -90,7 +91,8 @@ assert.match(settingsSource, /settings\.language/);
 assert.match(titleSource, /title\.newRun|title\.\$\{option\}/);
 assert.match(buffSource, /getBuffText/);
 assert.match(shopSource, /getWeaponMechanic/);
-assert.match(shopSource, /myth: "#D66BFF"/);
+assert.match(shopSource, /myth: UI_COLORS\.purple/);
+assert.match(pixelUiSource, /purple: "#[0-9A-Fa-f]{6}"/);
 assert.match(hudSource, /rarity === "myth"[\s\S]*#D66BFF/);
 assert.match(recordsSource, /getAchievementText/);
 assert.match(pauseSource, /projectileLabel/);

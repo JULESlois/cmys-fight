@@ -36,6 +36,14 @@ const SPECIAL_PALETTES: Record<EnemyTheme, SpecialPalette> = {
   },
 };
 
+// The broadcast network uses one recognizable archive-terminal design in
+// every chapter. It should not inherit biome colors or chapter machinery.
+const BROADCAST_PALETTE: SpecialPalette = {
+  floor: "#29333F", floorLight: "#647486", floorDark: "#111821",
+  frame: "#485563", frameLight: "#A7B4BF", frameDark: "#171F29",
+  energy: "#62D8E8", energyLight: "#E8FFFF", warning: "#F0B84A",
+};
+
 function palette(theme: string): SpecialPalette {
   return SPECIAL_PALETTES[theme as EnemyTheme] ?? SPECIAL_PALETTES.forest;
 }
@@ -125,49 +133,74 @@ function drawChapterStage(ctx: CanvasRenderingContext2D, theme: string, cx: numb
   else drawForestStage(ctx, p, cx, cy);
 }
 
+function drawBroadcastStage(ctx: CanvasRenderingContext2D, cx: number, cy: number): void {
+  const p = BROADCAST_PALETTE;
+  for (const side of [-1, 1] as const) {
+    const x = cx + side * 39;
+    rect(ctx, p.frameDark, x - 7, cy - 23, 14, 44);
+    rect(ctx, p.frame, x - 5, cy - 21, 10, 40);
+    rect(ctx, p.frameLight, x - 3, cy - 19, 6, 3);
+    rect(ctx, p.floorDark, x - 3, cy - 11, 6, 17);
+    rect(ctx, p.energy, x - 2, cy - 9, 4, 8);
+    rect(ctx, p.warning, x - 3, cy + 10, 2, 2);
+    rect(ctx, "#E65B52", x + 1, cy + 10, 2, 2);
+  }
+  rect(ctx, p.frameDark, cx - 27, cy + 22, 54, 5);
+  rect(ctx, p.frameLight, cx - 23, cy + 23, 46, 1);
+}
+
 export class SpecialRoomRenderer {
   static drawRoomStage(ctx: CanvasRenderingContext2D, roomType: RoomType, theme: string, time: number, completed = false): void {
-    const p = palette(theme);
+    const p = roomType === "npc" ? BROADCAST_PALETTE : palette(theme);
     const pulse = Math.floor(time * 5) % 3;
     const cx = 160;
     const cy = 120;
-    const bounds = roomType === "shop" ? [102, 78, 116, 86] : roomType === "exit" ? [112, 84, 96, 72] : [103, 78, 114, 86];
+    const bounds = roomType === "shop" ? [118, 88, 84, 62] : roomType === "exit" ? [122, 91, 76, 56] : [119, 88, 82, 62];
     plate(ctx, p, bounds[0], bounds[1], bounds[2], bounds[3]);
 
     if (roomType === "exit") {
-      rect(ctx, p.floorDark, 126, 96, 68, 48);
-      rect(ctx, p.floorLight, 130, 99, 60, 3);
-      for (const [x, y] of [[132, 109], [188, 109], [132, 137], [188, 137]] as const) {
+      rect(ctx, p.floorDark, 133, 99, 54, 39);
+      rect(ctx, p.floorLight, 137, 102, 46, 2);
+      for (const [x, y] of [[138, 109], [182, 109], [138, 133], [182, 133]] as const) {
         rect(ctx, p.frameDark, x - 4, y - 4, 8, 8);
         rect(ctx, p.energy, x - 2, y - 2, 4, 4);
         rect(ctx, p.energyLight, x - 1, y - 1, 2, 2);
       }
     } else if (roomType === "shop") {
-      rect(ctx, p.floorDark, 112, 91, 96, 52);
-      rect(ctx, p.frameDark, 116, 137, 88, 12);
-      rect(ctx, p.frame, 119, 139, 82, 8);
-      for (let x = 122; x <= 194; x += 12) {
-        rect(ctx, p.frameDark, x, 141, 7, 4);
-        rect(ctx, p.warning, x + 1, 142, 5, 2);
+      rect(ctx, p.floorDark, 126, 96, 68, 39);
+      rect(ctx, p.frameDark, 126, 134, 68, 9);
+      rect(ctx, p.frame, 129, 136, 62, 5);
+      for (let x = 132; x <= 184; x += 11) {
+        rect(ctx, p.frameDark, x, 137, 7, 4);
+        rect(ctx, p.warning, x + 1, 138, 5, 2);
       }
     } else if (roomType === "npc") {
-      rect(ctx, p.floorDark, 122, 95, 76, 51);
-      for (let x = 128; x <= 188; x += 12) {
-        rect(ctx, p.frameDark, x, 101, 7, 36);
-        rect(ctx, p.energy, x + 2, 104 + ((x / 12 + pulse) % 2), 3, 24);
+      rect(ctx, p.floorDark, 130, 97, 60, 40);
+      for (let x = 135; x <= 179; x += 11) {
+        rect(ctx, p.frameDark, x, 102, 6, 29);
+        rect(ctx, p.energy, x + 2, 105 + ((x / 11 + pulse) % 2), 2, 19);
       }
     } else if (roomType === "wish_fountain") {
-      rect(ctx, p.floorDark, 116, 91, 88, 60);
-      for (const [x, y] of [[120, 95], [196, 95], [120, 143], [196, 143]] as const) {
+      rect(ctx, p.floorDark, 127, 96, 66, 43);
+      for (const [x, y] of [[132, 101], [188, 101], [132, 134], [188, 134]] as const) {
         rect(ctx, p.frameDark, x - 4, y - 4, 8, 8);
         rect(ctx, completed ? p.floorLight : p.energy, x - 2, y - 2, 4, 4);
       }
     } else if (roomType === "photo_booth") {
-      rect(ctx, p.floorDark, 118, 91, 84, 61);
-      rect(ctx, p.frameDark, 124, 96, 72, 7);
-      for (let x = 127; x <= 190; x += 9) rect(ctx, (x / 9 + pulse) % 2 === 0 ? p.energy : p.warning, x, 98, 5, 3);
+      rect(ctx, p.floorDark, 128, 96, 64, 44);
+      rect(ctx, p.frameDark, 133, 100, 54, 5);
+      for (let x = 136; x <= 180; x += 8) rect(ctx, (x / 8 + pulse) % 2 === 0 ? p.energy : p.warning, x, 101, 4, 2);
     }
-    drawChapterStage(ctx, theme, cx, cy);
+    if (roomType === "npc") {
+      drawBroadcastStage(ctx, cx, cy);
+    } else {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(0.82, 0.82);
+      ctx.translate(-cx, -cy);
+      drawChapterStage(ctx, theme, cx, cy);
+      ctx.restore();
+    }
   }
 
   static drawWishFountain(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string, completed: boolean): void {
@@ -175,7 +208,7 @@ export class SpecialRoomRenderer {
     const pulse = Math.floor(time * 6) % 3;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(1.38, 1.38);
+    ctx.scale(1.06, 1.06);
     rect(ctx, "rgba(0,0,0,0.35)", -22, 11, 44, 6);
     rect(ctx, p.frameDark, -20, 2, 40, 12);
     rect(ctx, p.frame, -18, 1, 36, 11);
@@ -195,12 +228,12 @@ export class SpecialRoomRenderer {
     ctx.restore();
   }
 
-  static drawBroadcastTerminal(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string, completed: boolean): void {
-    const p = palette(theme);
+  static drawBroadcastTerminal(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, _theme: string, completed: boolean): void {
+    const p = BROADCAST_PALETTE;
     const signal = Math.floor(time * 7) % 4;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(1.28, 1.28);
+    ctx.scale(1.02, 1.02);
     rect(ctx, "rgba(0,0,0,0.35)", -15, 10, 30, 5);
     rect(ctx, p.frameDark, -13, -17, 26, 29);
     rect(ctx, p.frame, -11, -15, 22, 25);
@@ -224,7 +257,7 @@ export class SpecialRoomRenderer {
     const flash = !completed && Math.floor(time * 2.5) % 4 === 0;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(1.28, 1.28);
+    ctx.scale(1.06, 1.06);
     rect(ctx, "rgba(0,0,0,0.35)", -18, 13, 36, 5);
     rect(ctx, p.frameDark, -16, -21, 32, 35);
     rect(ctx, p.frame, -14, -19, 28, 31);
@@ -243,7 +276,7 @@ export class SpecialRoomRenderer {
     const bob = Math.round(Math.sin(time * 2.5));
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y + bob));
-    ctx.scale(1.24, 1.24);
+    ctx.scale(1.06, 1.06);
     rect(ctx, "rgba(0,0,0,0.35)", -26, 10, 52, 6);
     // Chapter-specific stall, displayed goods and tool packs surround the vendor.
     rect(ctx, p.frameDark, -26, 0, 52, 13);

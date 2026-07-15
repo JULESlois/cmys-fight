@@ -1,4 +1,5 @@
 import { t, uiFont } from "../i18n";
+import { drawMeter, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { GameState } from "./GameState";
 
 type MenuOption = "resume" | "save" | "restore" | "settings";
@@ -69,65 +70,58 @@ export class MenuState extends GameState {
 
   draw(ctx: CanvasRenderingContext2D) {
     const language = this.engine.data.settings.language;
-    ctx.fillStyle = "rgba(10, 15, 25, 0.78)";
+    ctx.fillStyle = "rgba(3, 7, 13, 0.9)";
     ctx.fillRect(0, 0, 320, 240);
+    drawPixelPanel(ctx, 32, 24, 256, 190, "purple", true);
+    ctx.fillStyle = UI_COLORS.white;
+    ctx.font = uiFont(language, 12, true);
+    ctx.textAlign = "left";
+    ctx.fillText(t(language, "menu.title"), 47, 47);
+    ctx.fillStyle = UI_COLORS.purple;
+    ctx.fillRect(47, 53, 226, 1);
 
-    const vigGrad = ctx.createRadialGradient(160, 120, 110, 160, 120, 230);
-    vigGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
-    vigGrad.addColorStop(1, "rgba(0, 0, 0, 0.85)");
-    ctx.fillStyle = vigGrad;
-    ctx.fillRect(0, 0, 320, 240);
-
-    ctx.fillStyle = "rgba(12, 18, 30, 0.96)";
-    ctx.strokeStyle = "rgba(142, 68, 173, 0.75)";
-    ctx.lineWidth = 1.5;
-    ctx.fillRect(70, 30, 180, 180);
-    ctx.strokeRect(70, 30, 180, 180);
-
-    ctx.fillStyle = "#FFD700";
-    ctx.font = uiFont(language, 10, true);
-    ctx.textAlign = "center";
-    ctx.fillText(t(language, "menu.title"), 160, 49);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-    ctx.beginPath();
-    ctx.moveTo(85, 57);
-    ctx.lineTo(235, 57);
-    ctx.stroke();
+    drawPixelPanel(ctx, 43, 62, 131, 112, "neutral");
+    drawSectionLabel(ctx, "SYSTEM", 52, 76, 113, language, "cyan");
 
     OPTIONS.forEach((option, index) => {
-      const y = 80 + index * 21;
+      const y = 84 + index * 20;
       const selected = index === this.selection;
-      ctx.fillStyle = selected ? "rgba(0, 242, 254, 0.15)" : "transparent";
-      if (selected) ctx.fillRect(86, y - 11, 148, 16);
+      drawPixelButton(ctx, 51, y - 10, 115, 16, selected, option === "restore" ? "red" : "cyan");
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? "#FFFFFF" : "#8E9EAB";
-      ctx.font = uiFont(language, 8, selected);
-      ctx.fillText(`${selected ? ">" : " "} ${t(language, `menu.${option}` as Parameters<typeof t>[1])}`, 91, y);
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.font = uiFont(language, 7, selected);
+      ctx.fillText(`${selected ? ">" : " "} ${t(language, `menu.${option}` as Parameters<typeof t>[1])}`, 58, y);
     });
+
+    drawPixelPanel(ctx, 181, 62, 96, 112, "cyan");
+    drawSectionLabel(ctx, "RUN DATA", 190, 76, 78, language, "yellow");
+    const p = this.engine.data.data.player;
+    ctx.textAlign = "left";
+    ctx.fillStyle = UI_COLORS.muted;
+    ctx.font = uiFont(language, 6, true);
+    ctx.fillText(t(language, "menu.level", { level: p.level }), 190, 93);
+    ctx.fillText(t(language, "menu.health", { hp: p.hp, max: p.maxHp }), 190, 110);
+    drawMeter(ctx, 190, 116, 77, 6, p.maxHp > 0 ? p.hp / p.maxHp : 0, UI_COLORS.red, 0);
+    ctx.fillStyle = UI_COLORS.yellow;
+    ctx.fillText(`COINS ${p.coins}`, 190, 137);
+    ctx.fillStyle = UI_COLORS.text;
+    ctx.fillText(`WEAPON ${String(p.currentWeaponId ?? "-").toUpperCase()}`, 190, 153);
 
     if (this.message) {
       ctx.textAlign = "center";
-      ctx.fillStyle = this.confirmation ? "#E74C3C" : "#F1C40F";
+      ctx.fillStyle = this.confirmation ? UI_COLORS.red : UI_COLORS.yellow;
       ctx.font = uiFont(language, 6, true);
-      ctx.fillText(this.message, 160, 171);
+      ctx.fillText(this.message, 160, 190);
     }
 
-    const p = this.engine.data.data.player;
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#BDC3C7";
-    ctx.font = uiFont(language, 7);
-    ctx.fillText(t(language, "menu.level", { level: p.level }), 86, 186);
-    ctx.fillText(t(language, "menu.health", { hp: p.hp, max: p.maxHp }), 86, 198);
-
     ctx.textAlign = "center";
-    ctx.fillStyle = "#7F8C8D";
+    ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "menu.footer", {
       vertical: this.engine.input.getNavigationPrompt("vertical"),
       confirm: this.engine.input.getConfirmPrompt(),
       cancel: this.engine.input.getCancelPrompt(),
-    }), 160, 205);
+    }), 160, 204);
     ctx.textAlign = "left";
   }
 }

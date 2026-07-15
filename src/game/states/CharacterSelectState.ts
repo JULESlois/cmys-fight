@@ -23,6 +23,7 @@ import { WEAPONS, isWeaponAvailableForCharacter, type WeaponData } from "../data
 import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont, wrapLocalized } from "../i18n";
 import { SkillController } from "../combat/SkillController";
+import { drawBadge, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 
 type SelectionMode = "collection" | "character" | "form";
 const CMYS_FORM_IDS = ["knight", "mage", "rogue"] as const;
@@ -232,185 +233,143 @@ export class CharacterSelectState extends GameState {
   private drawCollectionScreen(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
     const cardW = 92;
-    const cardH = 132;
+    const cardH = 136;
     const gap = 8;
     const startX = 160 - (cardW * CHARACTER_COLLECTION_IDS.length + gap * (CHARACTER_COLLECTION_IDS.length - 1)) / 2;
-    const startY = 48;
+    const startY = 47;
 
     CHARACTER_COLLECTION_IDS.forEach((id, index) => {
       const collection = CHARACTER_COLLECTIONS[id];
       const x = startX + index * (cardW + gap);
       const selected = index === this.selectedIndex;
-      ctx.fillStyle = selected ? "rgba(0, 242, 254, 0.18)" : "rgba(10, 15, 25, 0.9)";
-      ctx.fillRect(x, startY, cardW, cardH);
-      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
-      ctx.lineWidth = selected ? 2 : 1;
-      ctx.strokeRect(x, startY, cardW, cardH);
-      this.drawCollectionPreview(ctx, id, x + cardW / 2, startY + 38);
+      drawPixelPanel(ctx, x, selected ? startY - 2 : startY, cardW, cardH, selected ? "cyan" : "neutral", selected);
+      const cardY = selected ? startY - 2 : startY;
+      if (selected) {
+        ctx.strokeStyle = UI_COLORS.white;
+        ctx.strokeRect(x + 2, cardY + 2, cardW - 4, cardH - 4);
+      }
+      ctx.fillStyle = UI_COLORS.dark;
+      ctx.fillRect(x + 8, cardY + 10, cardW - 16, 54);
+      ctx.strokeStyle = collection.color;
+      ctx.strokeRect(x + 8, cardY + 10, cardW - 16, 54);
+      this.drawCollectionPreview(ctx, id, x + cardW / 2, cardY + 39);
       ctx.textAlign = "center";
       ctx.fillStyle = collection.color;
       ctx.font = uiFont(language, id === "strinova" ? 9 : 11, true);
-      ctx.fillText(collection.name, x + cardW / 2, startY + 76);
-      ctx.fillStyle = "#BDC3C7";
+      ctx.fillText(collection.name, x + cardW / 2, cardY + 79);
+      ctx.fillStyle = UI_COLORS.text;
       ctx.font = uiFont(language, 6, true);
-      ctx.fillText(t(language, `character.collection.${id}` as Parameters<typeof t>[1]), x + cardW / 2, startY + 89);
-      ctx.fillStyle = "#7F8C8D";
+      ctx.fillText(t(language, `character.collection.${id}` as Parameters<typeof t>[1]), x + cardW / 2, cardY + 91);
+      ctx.fillStyle = UI_COLORS.muted;
       ctx.font = uiFont(language, 6);
       wrapLocalized(t(language, `character.collection.${id}.description` as Parameters<typeof t>[1]), language === "zh-CN" ? 12 : 18)
         .slice(0, 3)
-        .forEach((line, lineIndex) => ctx.fillText(line, x + cardW / 2, startY + 103 + lineIndex * 8));
+        .forEach((line, lineIndex) => ctx.fillText(line, x + cardW / 2, cardY + 105 + lineIndex * 8));
+      drawBadge(ctx, String(collection.characterIds.length), x + 33, cardY + 124, 26, language, selected ? "cyan" : "neutral");
     });
 
     const selected = CHARACTER_COLLECTIONS[this.selectedCollectionId];
     ctx.textAlign = "center";
     ctx.fillStyle = selected.color;
     ctx.font = uiFont(language, 8, true);
-    ctx.fillText(t(language, "character.collectionCount", { count: selected.characterIds.length }), 160, 197);
-    ctx.fillStyle = "#BDC3C7";
+    ctx.fillText(t(language, "character.collectionCount", { count: selected.characterIds.length }), 160, 200);
+    ctx.fillStyle = UI_COLORS.text;
     ctx.font = uiFont(language, 7);
     ctx.fillText(t(language, "character.collectionFooter", {
       horizontal: this.engine.input.getNavigationPrompt("horizontal"),
       confirm: this.engine.input.getConfirmPrompt(),
       cancel: this.engine.input.getCancelPrompt(),
-    }), 160, 232);
+    }), 160, 234);
   }
 
-  private drawCharacterCards(ctx: CanvasRenderingContext2D): void {
+  private drawCharacterDetail(
+    ctx: CanvasRenderingContext2D,
+    characters: CharacterConfig[],
+    selectedIndex: number,
+    footerKey: "character.characterFooter" | "character.formFooter",
+  ): void {
     const language = this.engine.data.settings.language;
-    const characters = this.selectedCollectionCharacters;
-    const cardW = characters.length === 2 ? 112 : 88;
-    const cardH = 132;
-    const gap = 9;
-    const totalW = cardW * characters.length + gap * (characters.length - 1);
-    const startX = 160 - totalW / 2;
-    const startY = 48;
-
+    const tabWidth = Math.min(90, Math.floor(280 / characters.length) - 5);
+    const tabGap = 5;
+    const tabTotal = tabWidth * characters.length + tabGap * (characters.length - 1);
+    const tabStart = Math.round(160 - tabTotal / 2);
     characters.forEach((character, index) => {
-      const x = startX + index * (cardW + gap);
-      const selected = index === this.selectedCharacterIndex;
-      const unlocked = this.engine.data.isCharacterUnlocked(character.id);
-      ctx.fillStyle = selected ? "rgba(0, 242, 254, 0.18)" : "rgba(10, 15, 25, 0.9)";
-      ctx.fillRect(x, startY, cardW, cardH);
-      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
-      ctx.lineWidth = selected ? 2 : 1;
-      ctx.strokeRect(x, startY, cardW, cardH);
-      if (!unlocked) ctx.globalAlpha = 0.35;
-      this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 30, 1, character.color);
-      ctx.fillStyle = "#FFFFFF";
-      this.drawFittedCenteredText(ctx, character.name.toUpperCase(), x + cardW / 2, startY + 67, cardW - 8, language, 10, 6);
-      ctx.fillStyle = character.color;
-      this.drawFittedCenteredText(
-        ctx,
-        getCharacterText(character.id, character, language).title,
-        x + cardW / 2,
-        startY + 80,
-        cardW - 8,
-        language,
-        5,
-      );
-      ctx.textAlign = "left";
-      this.drawStats(ctx, character, x + 7, startY + 94, cardW - 48);
-      ctx.globalAlpha = 1;
-      if (!unlocked) {
-        ctx.fillStyle = "#E74C3C";
-        ctx.textAlign = "center";
-        ctx.font = uiFont(language, 8, true);
-        ctx.fillText(t(language, "common.locked"), x + cardW / 2, startY + 91);
-      }
-    });
-
-    const character = this.selectedCharacter;
-    const localized = getCharacterText(character.id, character, language);
-    ctx.textAlign = "center";
-    ctx.fillStyle = character.color;
-    ctx.font = uiFont(language, 8, true);
-    ctx.fillText(`${localized.title} // ${SkillController.getConfig(character.id).name}`, 160, 194);
-    ctx.fillStyle = "#F1C40F";
-    ctx.font = uiFont(language, 7);
-    wrapLocalized(localized.passive, language === "zh-CN" ? 36 : 52).slice(0, 2)
-      .forEach((line, lineIndex) => ctx.fillText(line, 160, 205 + lineIndex * 8));
-    const weapon = this.getUnlockedWeapons(character.id)[this.selectedWeaponIndex] ?? WEAPONS[character.starterWeapon];
-    ctx.fillStyle = "#00F2FE";
-    ctx.font = uiFont(language, 8, true);
-    ctx.fillText(`↑↓  ${weapon.name.toUpperCase()}`, 160, 224);
-    ctx.fillStyle = "#BDC3C7";
-    ctx.font = uiFont(language, 7);
-    ctx.fillText(t(language, "character.characterFooter", {
-      horizontal: this.engine.input.getNavigationPrompt("horizontal"),
-      vertical: this.engine.input.getNavigationPrompt("vertical"),
-      confirm: this.engine.input.getConfirmPrompt(),
-      cancel: this.engine.input.getCancelPrompt(),
-    }), 160, 238);
-  }
-
-  private drawFormScreen(ctx: CanvasRenderingContext2D): void {
-    const language = this.engine.data.settings.language;
-    const cardW = 88;
-    const cardH = 130;
-    const gap = 8;
-    const totalW = cardW * CMYS_FORM_IDS.length + gap * (CMYS_FORM_IDS.length - 1);
-    const startX = 160 - totalW / 2;
-    const startY = 52;
-
-    CMYS_FORM_IDS.forEach((id, index) => {
-      const character = CHARACTERS[id];
-      const x = startX + index * (cardW + gap);
-      const selected = index === this.selectedFormIndex;
-      const unlocked = this.engine.data.isCharacterUnlocked(character.id);
-      ctx.fillStyle = selected ? "rgba(0, 242, 254, 0.18)" : "rgba(10, 15, 25, 0.9)";
-      ctx.fillRect(x, startY, cardW, cardH);
-      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
-      ctx.lineWidth = selected ? 2 : 1;
-      ctx.strokeRect(x, startY, cardW, cardH);
-      if (!unlocked) ctx.globalAlpha = 0.35;
-      this.drawCharacterSprite(ctx, character.id, x + cardW / 2, startY + 23, 2, character.color);
-      ctx.fillStyle = "#FFFFFF";
+      const selected = index === selectedIndex;
+      const x = tabStart + index * (tabWidth + tabGap);
+      drawPixelButton(ctx, x, 46, tabWidth, 18, selected, selected ? "cyan" : "neutral");
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.font = uiFont(language, 6, selected);
       ctx.textAlign = "center";
-      ctx.font = uiFont(language, 10, true);
-      ctx.fillText("CMYS", x + cardW / 2, startY + 45);
-      const localized = getCharacterText(character.id, character, language);
-      ctx.fillStyle = character.color;
-      ctx.font = uiFont(language, 7, true);
-      ctx.fillText(localized.title, x + cardW / 2, startY + 56);
-      ctx.textAlign = "left";
-      this.drawStats(ctx, character, x + 5, startY + 72, 43);
-      ctx.globalAlpha = 1;
-      if (!unlocked) {
-        ctx.fillStyle = "#E74C3C";
-        ctx.textAlign = "center";
-        ctx.font = uiFont(language, 8, true);
-        ctx.fillText(t(language, "common.locked"), x + cardW / 2, startY + 66);
-      }
+      this.drawFittedCenteredText(ctx, character.name.toUpperCase(), x + tabWidth / 2, 58, tabWidth - 10, language, 7, 5);
     });
 
-    const character = this.selectedForm;
+    const character = characters[selectedIndex] ?? characters[0];
     const unlocked = this.engine.data.isCharacterUnlocked(character.id);
     const localized = getCharacterText(character.id, character, language);
+    drawPixelPanel(ctx, 20, 70, 105, 126, unlocked ? "cyan" : "red", true);
+    ctx.fillStyle = UI_COLORS.dark;
+    ctx.fillRect(29, 80, 87, 78);
+    ctx.strokeStyle = character.color;
+    ctx.strokeRect(29, 80, 87, 78);
+    if (!unlocked) ctx.globalAlpha = 0.35;
+    this.drawCharacterSprite(ctx, character.id, 72, 135, usesDetailedCharacterArt(character.id) ? 2 : 3, character.color);
+    ctx.globalAlpha = 1;
     ctx.textAlign = "center";
+    ctx.fillStyle = UI_COLORS.white;
+    this.drawFittedCenteredText(ctx, character.name.toUpperCase(), 72, 171, 89, language, 10, 6);
     ctx.fillStyle = character.color;
-    ctx.font = uiFont(language, 9, true);
-    ctx.fillText(`${localized.title} // ${SkillController.getConfig(character.id).name}`, 160, 194);
-    ctx.fillStyle = unlocked ? "#F1C40F" : "#E74C3C";
+    this.drawFittedCenteredText(ctx, localized.title, 72, 183, 89, language, 6, 5);
+    if (!unlocked) drawBadge(ctx, t(language, "common.locked"), 43, 185, 58, language, "red");
+
+    drawPixelPanel(ctx, 132, 70, 168, 126, "neutral", true);
+    drawSectionLabel(ctx, "PROFILE", 142, 84, 148, language, "cyan");
+    ctx.textAlign = "left";
+    this.drawStats(ctx, character, 143, 100, 77);
+    drawSectionLabel(ctx, SkillController.getConfig(character.id).name, 142, 160, 148, language, "purple");
+    ctx.fillStyle = unlocked ? UI_COLORS.yellow : UI_COLORS.red;
     ctx.font = uiFont(language, 7);
     const detail = unlocked
       ? localized.passive
       : character.id === "mage"
         ? t(language, "character.unlockMage")
         : t(language, "character.unlockRogue");
-    wrapLocalized(detail, language === "zh-CN" ? 36 : 52).slice(0, 2)
-      .forEach((line, lineIndex) => ctx.fillText(line, 160, 205 + lineIndex * 8));
-    const weapon = this.getUnlockedWeapons(character.id)[this.selectedWeaponIndex] ?? WEAPONS.pistol;
-    ctx.fillStyle = "#00F2FE";
+    wrapLocalized(detail, language === "zh-CN" ? 23 : 34).slice(0, 3)
+      .forEach((line, lineIndex) => ctx.fillText(line, 142, 174 + lineIndex * 8));
+
+    const weapon = this.getUnlockedWeapons(character.id)[this.selectedWeaponIndex] ?? WEAPONS[character.starterWeapon];
+    drawPixelPanel(ctx, 20, 201, 280, 27, "yellow");
+    SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, 47, 216, 1);
+    ctx.textAlign = "left";
+    ctx.fillStyle = UI_COLORS.yellow;
+    ctx.font = uiFont(language, 6, true);
+    ctx.fillText("↑↓ LOADOUT", 70, 211);
+    ctx.fillStyle = UI_COLORS.white;
     ctx.font = uiFont(language, 8, true);
-    ctx.fillText(`↑↓  ${weapon.name.toUpperCase()}`, 160, 224);
-    ctx.fillStyle = unlocked ? "#BDC3C7" : "#E74C3C";
-    ctx.font = uiFont(language, 7);
-    ctx.fillText(t(language, "character.formFooter", {
+    ctx.fillText(weapon.name.toUpperCase(), 70, 222);
+    drawBadge(ctx, unlocked ? this.engine.input.getConfirmPrompt() : t(language, "common.locked"), 246, 209, 45, language, unlocked ? "green" : "red");
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = unlocked ? UI_COLORS.text : UI_COLORS.red;
+    ctx.font = uiFont(language, 6);
+    ctx.fillText(t(language, footerKey, {
       horizontal: this.engine.input.getNavigationPrompt("horizontal"),
       vertical: this.engine.input.getNavigationPrompt("vertical"),
       confirm: this.engine.input.getConfirmPrompt(),
       cancel: this.engine.input.getCancelPrompt(),
-    }), 160, 237);
+    }), 160, 236);
+  }
+
+  private drawCharacterCards(ctx: CanvasRenderingContext2D): void {
+    this.drawCharacterDetail(ctx, this.selectedCollectionCharacters, this.selectedCharacterIndex, "character.characterFooter");
+  }
+
+  private drawFormScreen(ctx: CanvasRenderingContext2D): void {
+    this.drawCharacterDetail(
+      ctx,
+      CMYS_FORM_IDS.map(id => CHARACTERS[id]),
+      this.selectedFormIndex,
+      "character.formFooter",
+    );
   }
 
   draw(ctx: CanvasRenderingContext2D) {

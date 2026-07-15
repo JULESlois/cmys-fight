@@ -11,6 +11,7 @@ import { GameState } from "./GameState";
 import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 import { CHALLENGES, getDailyChallengeId } from "../ChallengeSystem";
 import { getChallengeText, getMetaUpgradeText, t, uiFont } from "../i18n";
+import { drawBadge, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 
 type HubAction = "start" | "hard" | "challenge" | "refund";
 const HUB_ACTIONS: HubAction[] = ["start", "hard", "challenge", "refund"];
@@ -157,18 +158,10 @@ export class HubState extends GameState {
     const backdropTime = this.engine.data.settings.dynamicBackground && !this.engine.isPerformanceDegraded() ? Date.now() / 1000 : 0;
     MenuBackdropRenderer.draw(ctx, "hub", backdropTime, this.engine.isPerformanceDegraded());
 
-    ctx.strokeStyle = "rgba(0, 242, 254, 0.08)";
-    for (let x = 0; x <= 320; x += 16) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 240); ctx.stroke();
-    }
-    for (let y = 0; y <= 240; y += 16) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke();
-    }
-
     const language = this.engine.data.settings.language;
-    MenuRenderer.drawTitle(ctx, t(language, "hub.title"), 160, 20, language);
+    MenuRenderer.drawTitle(ctx, t(language, "hub.title"), 160, 22, language, 20);
     ctx.textAlign = "center";
-    ctx.fillStyle = "#F1C40F";
+    ctx.fillStyle = UI_COLORS.yellow;
     ctx.font = uiFont(language, 7, true);
     ctx.fillText(t(language, "hub.header", {
       shards: meta.currency,
@@ -176,46 +169,42 @@ export class HubState extends GameState {
       trials: meta.completedChallenges,
     }), 160, 34);
 
+    drawPixelPanel(ctx, 16, 42, 190, 157, "cyan", true);
+    drawSectionLabel(ctx, "PERMANENT UPGRADES", 25, 57, 172, language, "cyan");
+
     META_UPGRADE_IDS.forEach((id, index) => {
       const definition = META_UPGRADES[id];
       const localized = getMetaUpgradeText(id, definition, language);
       const level = meta.upgrades[id];
       const cost = getUpgradeCost(id, level);
-      const y = 48 + index * 17;
+      const y = 66 + index * 18;
       const selected = index === this.selectedIndex;
-      ctx.fillStyle = selected ? "rgba(0, 242, 254, 0.18)" : "rgba(10, 15, 25, 0.88)";
-      ctx.fillRect(28, y - 10, 264, 14);
-      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
-      ctx.strokeRect(28, y - 10, 264, 14);
+      drawPixelButton(ctx, 24, y - 10, 174, 15, selected, "cyan");
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? "#FFFFFF" : "#BDC3C7";
-      ctx.font = uiFont(language, 7, true);
-      ctx.fillText(`${selected ? ">" : " "} ${localized.name}`, 34, y);
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#2ECC71";
-      ctx.fillText(t(language, "hub.level", { level, max: definition.maxLevel }), 212, y);
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.font = uiFont(language, 6, selected);
+      ctx.fillText(`${selected ? ">" : " "} ${localized.name}`, 30, y);
       ctx.textAlign = "right";
-      ctx.fillStyle = cost === null ? "#7F8C8D" : meta.currency >= cost ? "#F1C40F" : "#E74C3C";
-      ctx.fillText(cost === null ? t(language, "common.max") : `${cost} S`, 284, y);
+      ctx.fillStyle = UI_COLORS.green;
+      ctx.fillText(`${level}/${definition.maxLevel}`, 164, y);
+      ctx.fillStyle = cost === null ? UI_COLORS.muted : meta.currency >= cost ? UI_COLORS.yellow : UI_COLORS.red;
+      ctx.fillText(cost === null ? t(language, "common.max") : `${cost} S`, 193, y);
     });
 
+    drawPixelPanel(ctx, 212, 42, 92, 157, "purple", true);
+    drawSectionLabel(ctx, "RUN SETUP", 220, 57, 76, language, "purple");
     HUB_ACTIONS.forEach((action, actionIndex) => {
       const index = META_UPGRADE_IDS.length + actionIndex;
-      const y = 151 + actionIndex * 12;
+      const y = 76 + actionIndex * 29;
       const selected = index === this.selectedIndex;
-      ctx.fillStyle = selected ? "rgba(142, 68, 173, 0.24)" : "rgba(10, 15, 25, 0.82)";
-      ctx.fillRect(48, y - 8, 224, 10);
-      ctx.strokeStyle = selected ? "#D66BFF" : "#34495E";
-      ctx.strokeRect(48, y - 8, 224, 10);
+      drawPixelButton(ctx, 220, y - 12, 76, 22, selected, action === "refund" ? "red" : action === "start" ? "green" : "purple");
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(language, 6, selected);
-      ctx.fillText(`${selected ? ">" : " "} ${t(language, `hub.action.${action}` as Parameters<typeof t>[1])}`, 54, y);
+      ctx.fillText(`${selected ? ">" : " "} ${t(language, `hub.action.${action}` as Parameters<typeof t>[1])}`, 225, y - 1);
       const value = this.getActionValue(action);
       if (value) {
-        ctx.textAlign = "right";
-        ctx.fillStyle = action === "refund" && this.refundArmed ? "#E74C3C" : "#F1C40F";
-        ctx.fillText(value, 266, y);
+        drawBadge(ctx, value, 249, y + 1, 41, language, action === "refund" && this.refundArmed ? "red" : "yellow");
       }
     });
 
@@ -223,23 +212,24 @@ export class HubState extends GameState {
     const selectedUpgrade = this.selectedIndex < META_UPGRADE_IDS.length
       ? META_UPGRADE_IDS[this.selectedIndex]
       : undefined;
-    ctx.fillStyle = "#8E9EAB";
+    drawPixelPanel(ctx, 16, 203, 288, 24, this.refundArmed ? "red" : "neutral");
+    ctx.fillStyle = UI_COLORS.text;
     ctx.font = uiFont(language, 6);
     if (selectedUpgrade) {
-      ctx.fillText(getMetaUpgradeText(selectedUpgrade, META_UPGRADES[selectedUpgrade], language).description, 160, 213);
+      ctx.fillText(getMetaUpgradeText(selectedUpgrade, META_UPGRADES[selectedUpgrade], language).description, 160, 214);
     }
     if (this.message) {
-      ctx.fillStyle = this.refundArmed ? "#E74C3C" : "#00F2FE";
+      ctx.fillStyle = this.refundArmed ? UI_COLORS.red : UI_COLORS.cyan;
       ctx.font = uiFont(language, 6, true);
-      ctx.fillText(this.message, 160, 224);
+      ctx.fillText(this.message, 160, 222);
     }
-    ctx.fillStyle = "#BDC3C7";
+    ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "hub.footer", {
       vertical: this.engine.input.getNavigationPrompt("vertical"),
       confirm: this.engine.input.getConfirmPrompt(),
       cancel: this.engine.input.getCancelPrompt(),
-    }), 160, 237);
+    }), 160, 236);
     ctx.textAlign = "left";
   }
 }

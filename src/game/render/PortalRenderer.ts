@@ -116,50 +116,31 @@ export class PortalRenderer {
     ctx.save();
     ctx.translate(Math.round(portal.x), Math.round(portal.y));
 
-    let scale = 1;
-    let alpha = 1;
-    if (portal.state === "spawning") {
-      const progress = Math.min(1, (0.6 - portal.timer) / 0.6);
-      scale = Math.max(0.1, progress);
-      alpha = progress;
-    } else if (portal.state === "activating") {
-      const progress = Math.min(1, (0.4 - portal.timer) / 0.4);
-      scale = 1 + progress * 2;
-      alpha = 1 - progress;
-    }
-    ctx.scale(scale, scale);
-    ctx.globalAlpha = alpha;
-
     const pulse = Math.floor(time * 6) % 3;
     rect(ctx, "rgba(0,0,0,0.35)", -27, 17, 54, 6);
     drawThemeFrame(ctx, theme, portalColor, pulse);
 
-    const outerOffset = Math.floor(time * 8) % OUTER_STEPS.length;
     OUTER_STEPS.forEach(([x, y], index) => {
-      ctx.fillStyle = (index + outerOffset) % 3 === 0 ? "#FFFFFF" : portalColor;
+      ctx.fillStyle = index % 4 === 0 ? "#FFFFFF" : portalColor;
       const size = portal.state === "hovered" && index % 2 === 0 ? 3 : 2;
       ctx.fillRect(x - Math.floor(size / 2), y - Math.floor(size / 2), size, size);
     });
 
-    const innerOffset = Math.floor(time * 11) % INNER_STEPS.length;
     INNER_STEPS.forEach(([x, y], index) => {
-      ctx.globalAlpha = alpha * ((index + innerOffset) % 2 === 0 ? 0.85 : 0.4);
-      ctx.fillStyle = "#FFFFFF";
+      ctx.fillStyle = index % 2 === 0 ? "#FFFFFF" : portalColor;
       ctx.fillRect(x - 1, y - 1, 2, 2);
     });
 
-    ctx.globalAlpha = alpha * (portal.state === "hovered" ? 1 : 0.72);
-    rect(ctx, portalColor, -6, -7, 12, 14);
+    rect(ctx, portal.state === "hovered" ? "#FFFFFF" : portalColor, -6, -7, 12, 14);
     rect(ctx, "rgba(9,16,26,0.55)", -4, -5, 8, 10);
     rect(ctx, portalColor, -3, -4, 6, 8);
     rect(ctx, "#FFFFFF", -1, -3, 3, 6);
 
     if (portal.state === "hovered" || portal.state === "activating") {
-      const distance = 12 - (Math.floor(time * 20) % 12);
-      rect(ctx, "#FFFFFF", -1, -distance - 1, 3, 3);
-      rect(ctx, "#FFFFFF", distance - 1, -1, 3, 3);
-      rect(ctx, "#FFFFFF", -1, distance - 1, 3, 3);
-      rect(ctx, "#FFFFFF", -distance - 1, -1, 3, 3);
+      rect(ctx, "#FFFFFF", -1, -22, 3, 3);
+      rect(ctx, "#FFFFFF", 20, -1, 3, 3);
+      rect(ctx, "#FFFFFF", -1, 20, 3, 3);
+      rect(ctx, "#FFFFFF", -22, -1, 3, 3);
     }
     ctx.restore();
   }

@@ -225,7 +225,14 @@ assert.match(specialRoomSource, /drawRoomStage/, "special interactions must own 
 assert.match(specialRoomSource, /drawMerchant/, "merchant owns a detailed stall and body model");
 assert.match(specialRoomSource, /drawWishFountain/, "wish fountain owns a detailed interactive model");
 assert.match(specialRoomSource, /drawForestStage[\s\S]*drawDungeonStage[\s\S]*drawSnowStage[\s\S]*drawLavaStage/, "special room grounds vary by chapter");
+assert.match(specialRoomSource, /const bounds = roomType === "shop" \? \[118, 88, 84, 62\]/, "special room base plates remain compact");
+assert.match(specialRoomSource, /ctx\.scale\(0\.82, 0\.82\)/, "chapter side scenery is reduced behind the interaction model");
+assert.match(specialRoomSource, /const BROADCAST_PALETTE/, "broadcast terminal uses one archive palette");
+assert.match(specialRoomSource, /roomType === "npc" \? BROADCAST_PALETTE : palette\(theme\)/, "broadcast room ignores biome palette changes");
+assert.match(specialRoomSource, /drawBroadcastStage\(ctx, cx, cy\)/, "broadcast room uses one stable stage design");
+assert.match(specialRoomSource, /drawBroadcastTerminal[\s\S]*_theme: string[\s\S]*const p = BROADCAST_PALETTE/, "broadcast terminal ignores chapter theme");
 assert.match(portalSource, /drawForestFrame[\s\S]*drawDungeonFrame[\s\S]*drawSnowFrame[\s\S]*drawLavaFrame/, "portal structure varies by chapter");
+assert.doesNotMatch(portalSource, /ctx\.globalAlpha|ctx\.scale\(scale, scale\)|outerOffset|innerOffset/, "portal no longer uses fade, zoom or rotating blur animation");
 
 console.log(JSON.stringify({
   enemies: Object.keys(ENEMIES).length,

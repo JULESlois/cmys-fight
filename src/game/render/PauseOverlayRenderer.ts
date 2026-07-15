@@ -1,118 +1,136 @@
-import type { Input } from "../Input";
-import type { Player } from "../entities/Player";
-import { SkillController } from "../combat/SkillController";
 import { BuffSystem } from "../combat/BuffSystem";
+import { SkillController } from "../combat/SkillController";
 import { WeaponController } from "../combat/WeaponController";
 import { WEAPONS } from "../data/weapons";
+import type { Player } from "../entities/Player";
+import type { Input } from "../Input";
 import { getWeaponMechanic, projectileLabel, t, uiFont, wrapLocalized, type Language } from "../i18n";
+import { drawBadge, drawMeter, drawPixelPanel, drawSectionLabel, UI_COLORS } from "./PixelUi";
+import { SpriteRenderer } from "./SpriteRenderer";
 
 export class PauseOverlayRenderer {
   static draw(ctx: CanvasRenderingContext2D, input: Input, player?: Player, language: Language = "en") {
-    ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
+    ctx.fillStyle = "rgba(3, 7, 13, 0.92)";
     ctx.fillRect(0, 0, 320, 240);
-    ctx.fillStyle = "#FFF";
-    ctx.font = uiFont(language, 18, true);
-    ctx.textAlign = "center";
-    ctx.fillText(t(language, "pause.title"), 160, 35);
+    drawPixelPanel(ctx, 12, 16, 296, 207, "cyan", true);
 
-    ctx.strokeStyle = "rgba(0, 242, 254, 0.5)";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(18, 48, 284, 157);
-    ctx.fillStyle = "rgba(0, 242, 254, 0.04)";
-    ctx.fillRect(18, 48, 284, 157);
+    ctx.fillStyle = UI_COLORS.white;
+    ctx.font = uiFont(language, 16, true);
+    ctx.textAlign = "left";
+    ctx.fillText(t(language, "pause.title"), 25, 39);
+    ctx.fillStyle = UI_COLORS.cyan;
+    ctx.fillRect(25, 45, 270, 1);
 
+    drawPixelPanel(ctx, 22, 54, 86, 132, "neutral");
+    drawSectionLabel(ctx, t(language, "common.move"), 29, 68, 70, language, "yellow");
     const rows = [
       [input.getLastDevice() === "gamepad" ? "L-STICK" : input.getLastDevice() === "touch" ? "JOYSTICK" : "WASD", t(language, "common.move")],
       [input.getPrompt("fire"), t(language, "action.fire")],
       [input.getPrompt("interact"), t(language, "action.interact")],
-      [input.getPrompt("skill"), t(language, "pause.useSkill")],
+      [input.getPrompt("skill"), t(language, "action.skill")],
       [input.getPrompt("swapWeapon"), t(language, "pause.swapWeapon")],
     ];
-    ctx.font = uiFont(language, 7);
     rows.forEach(([prompt, action], index) => {
-      const y = 69 + index * 16;
-      ctx.textAlign = "right";
-      ctx.fillStyle = "#F1C40F";
-      ctx.fillText(prompt, 85, y);
+      const y = 84 + index * 19;
+      ctx.fillStyle = UI_COLORS.dark;
+      ctx.fillRect(29, y - 10, 24, 12);
+      ctx.strokeStyle = UI_COLORS.yellow;
+      ctx.strokeRect(29, y - 10, 24, 12);
+      ctx.fillStyle = UI_COLORS.yellow;
+      ctx.font = uiFont(language, 5, true);
+      ctx.textAlign = "center";
+      ctx.fillText(prompt, 41, y - 2);
       ctx.textAlign = "left";
-      ctx.fillStyle = "#BDC3C7";
-      ctx.fillText(action, 94, y);
+      ctx.fillStyle = UI_COLORS.text;
+      ctx.font = uiFont(language, 6, true);
+      ctx.fillText(action, 58, y - 2);
     });
 
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.beginPath();
-    ctx.moveTo(150, 68);
-    ctx.lineTo(150, 188);
-    ctx.stroke();
-
+    drawPixelPanel(ctx, 114, 54, 90, 132, "purple");
     if (player) {
       const skill = SkillController.getConfig(player.characterId);
-      const totalCooldown = skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
-      const skillState = player.skillActiveTimer > 0
-        ? t(language, "pause.active", { seconds: player.skillActiveTimer.toFixed(1) })
-        : player.skillCooldown <= 0
-          ? t(language, "common.ready")
-          : t(language, "pause.cooldown", { remaining: player.skillCooldown.toFixed(1), total: totalCooldown.toFixed(1) });
+      const totalCooldown = Math.max(0.01, skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player));
+      const skillRatio = Math.max(0, Math.min(1, 1 - player.skillCooldown / totalCooldown));
+      drawSectionLabel(ctx, t(language, "pause.skill"), 121, 68, 76, language, "purple");
+      ctx.fillStyle = UI_COLORS.white;
+      ctx.font = uiFont(language, 8, true);
       ctx.textAlign = "left";
-      ctx.fillStyle = "#00F2FE";
-      ctx.font = uiFont(language, 7, true);
-      ctx.fillText(t(language, "pause.skill"), 163, 69);
-      ctx.fillStyle = "#FFF";
-      ctx.fillText(skill.name, 163, 81);
-      ctx.fillStyle = player.skillCooldown <= 0 ? "#2ECC71" : "#F1C40F";
-      ctx.font = uiFont(language, 6);
-      ctx.fillText(skillState, 163, 92);
+      wrapLocalized(skill.name, language === "zh-CN" ? 12 : 15).slice(0, 2)
+        .forEach((line, index) => ctx.fillText(line, 121, 84 + index * 9));
+      drawMeter(ctx, 121, 103, 76, 7, skillRatio, player.skillCooldown <= 0 ? UI_COLORS.green : UI_COLORS.purple, 0);
+      ctx.fillStyle = player.skillCooldown <= 0 ? UI_COLORS.green : UI_COLORS.yellow;
+      ctx.font = uiFont(language, 6, true);
+      ctx.fillText(player.skillCooldown <= 0 ? t(language, "common.ready") : `${player.skillCooldown.toFixed(1)} / ${totalCooldown.toFixed(1)}S`, 121, 120);
+
+      let special = "";
       if (player.characterId === "mage") {
-        ctx.fillStyle = "#C792EA";
-        ctx.font = uiFont(language, 5, true);
-        ctx.fillText(t(language, "pause.mageEcho", {
+        special = t(language, "pause.mageEcho", {
           charge: Math.min(SkillController.MAGE_ECHO_THRESHOLD, Math.floor(player.mageArcaneCharge * 10) / 10),
           threshold: SkillController.MAGE_ECHO_THRESHOLD,
-        }), 163, 102);
+        });
       } else if (player.characterId === "michele" && player.micheleMarkTimer > 0) {
-        ctx.fillStyle = "#F4D35E";
+        special = t(language, "pause.micheleMark", { seconds: player.micheleMarkTimer.toFixed(1) });
+      }
+      if (special) {
+        ctx.fillStyle = UI_COLORS.yellow;
         ctx.font = uiFont(language, 5, true);
-        ctx.fillText(t(language, "pause.micheleMark", {
-          seconds: player.micheleMarkTimer.toFixed(1),
-        }), 163, 102);
+        wrapLocalized(special, language === "zh-CN" ? 14 : 18).slice(0, 2)
+          .forEach((line, index) => ctx.fillText(line, 121, 136 + index * 8));
       }
 
-      ctx.fillStyle = "#00F2FE";
-      ctx.font = uiFont(language, 7, true);
-      ctx.fillText(t(language, "pause.loadout"), 163, 113);
+      const armorRatio = player.maxArmor > 0 ? player.armor / player.maxArmor : 0;
+      ctx.fillStyle = UI_COLORS.muted;
+      ctx.font = uiFont(language, 6, true);
+      ctx.fillText(`HP ${Math.floor(player.hp)}/${player.maxHp}`, 121, 161);
+      drawMeter(ctx, 121, 166, 76, 5, player.hp / player.maxHp, UI_COLORS.red, 0);
+      if (player.maxArmor > 0) drawMeter(ctx, 121, 174, 76, 5, armorRatio, UI_COLORS.cyan, 0);
+    }
+
+    drawPixelPanel(ctx, 210, 54, 88, 132, "yellow");
+    drawSectionLabel(ctx, t(language, "pause.loadout"), 217, 68, 74, language, "yellow");
+    if (player) {
       player.weaponSlots.forEach((weaponId, index) => {
-        if (!weaponId) return;
-        const weapon = WEAPONS[weaponId];
+        const y = 79 + index * 42;
+        const weapon = weaponId ? WEAPONS[weaponId] : undefined;
         const active = player.activeWeaponSlot === index;
-        ctx.fillStyle = active ? "#FFF" : "#7F8C8D";
-        ctx.font = uiFont(language, 7, active);
-        ctx.fillText(`${active ? ">" : " "}${index + 1} ${weapon?.name?.toUpperCase() ?? weaponId.toUpperCase()}`, 163, 127 + index * 13);
+        ctx.fillStyle = active ? "rgba(240,196,91,0.12)" : UI_COLORS.dark;
+        ctx.fillRect(217, y, 74, 35);
+        ctx.strokeStyle = active ? UI_COLORS.yellow : UI_COLORS.edge;
+        ctx.strokeRect(217, y, 74, 35);
+        ctx.fillStyle = active ? UI_COLORS.yellow : UI_COLORS.muted;
+        ctx.font = uiFont(language, 5, true);
+        ctx.textAlign = "left";
+        ctx.fillText(`${active ? ">" : " "}${index + 1}`, 221, y + 8);
+        if (!weapon) {
+          ctx.fillText("EMPTY", 237, y + 22);
+          return;
+        }
+        SpriteRenderer.drawPixelSprite(ctx, `weapon_${weapon.id}`, 236, y + 22, 1);
+        ctx.fillStyle = active ? UI_COLORS.white : UI_COLORS.text;
+        ctx.font = uiFont(language, 5, true);
+        wrapLocalized(weapon.name.toUpperCase(), 12).slice(0, 2)
+          .forEach((line, lineIndex) => ctx.fillText(line, 249, y + 14 + lineIndex * 8));
       });
 
       const activeWeapon = WEAPONS[player.currentWeaponId];
       if (activeWeapon) {
-        ctx.fillStyle = "#F1C40F";
-        ctx.font = uiFont(language, 6, true);
-        ctx.fillText(t(language, "pause.weaponStats", {
-          style: projectileLabel(activeWeapon.projectileStyle, language),
-          damage: activeWeapon.damage,
-          energy: WeaponController.formatEnergyCost(WeaponController.getEnergyCost(player, activeWeapon.id)),
-        }), 163, 160);
-        ctx.fillStyle = "#9AA7B2";
-        ctx.font = uiFont(language, language === "zh-CN" ? 6 : 5);
+        drawBadge(ctx, `${projectileLabel(activeWeapon.projectileStyle, language)} · D${activeWeapon.damage}`, 217, 166, 74, language, "yellow");
+        ctx.fillStyle = UI_COLORS.muted;
+        ctx.font = uiFont(language, 5);
         const mechanic = getWeaponMechanic(activeWeapon.id, activeWeapon.mechanic, language);
-        wrapLocalized(mechanic, language === "zh-CN" ? 26 : 30).slice(0, 2)
-          .forEach((text, index) => ctx.fillText(text, 163, 171 + index * 9));
+        wrapLocalized(mechanic, language === "zh-CN" ? 13 : 16).slice(0, 2)
+          .forEach((line, index) => ctx.fillText(line, 217, 181 + index * 7));
+        void WeaponController.getEnergyCost(player, activeWeapon.id);
       }
     }
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#7F8C8D";
+    ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "pause.footer", {
       cancel: input.getCancelPrompt(),
       menu: input.getConfirmPrompt(),
-    }), 160, 197);
+    }), 160, 207);
     ctx.textAlign = "left";
   }
 }
