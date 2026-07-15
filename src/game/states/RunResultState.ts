@@ -6,8 +6,6 @@ import { GameState } from "./GameState";
 import { ACHIEVEMENTS, type AchievementId } from "../AchievementSystem";
 import { CHALLENGES } from "../ChallengeSystem";
 import { getAchievementText, getChallengeText, t, uiFont } from "../i18n";
-import { drawBadge, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
-import { SpriteRenderer } from "../render/SpriteRenderer";
 
 function formatTime(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
@@ -51,7 +49,7 @@ export class RunResultState extends GameState {
 
     const victory = summary.outcome === "victory";
     const language = this.engine.data.settings.language;
-    ctx.fillStyle = UI_COLORS.backdrop;
+    ctx.fillStyle = "#080D16";
     ctx.fillRect(0, 0, 320, 240);
 
     ctx.strokeStyle = victory ? "rgba(241, 196, 15, 0.12)" : "rgba(231, 76, 60, 0.12)";
@@ -64,7 +62,7 @@ export class RunResultState extends GameState {
 
     MenuRenderer.drawTitle(ctx, t(language, victory ? "result.complete" : "result.terminated"), 160, 30, language);
     ctx.textAlign = "center";
-    ctx.fillStyle = victory ? UI_COLORS.yellow : UI_COLORS.red;
+    ctx.fillStyle = victory ? "#F1C40F" : "#E74C3C";
     ctx.font = uiFont(language, 12, true);
     ctx.fillText(t(language, victory ? "result.victoryLine" : "result.defeatLine"), 160, 50);
     if (this.engine.data.data.run.hardMode) {
@@ -73,8 +71,10 @@ export class RunResultState extends GameState {
       ctx.fillText(t(language, "result.hardBonus"), 160, 59);
     }
 
-    drawPixelPanel(ctx, 22, 61, 132, 121, victory ? "yellow" : "red", true);
-    drawSectionLabel(ctx, "RUN SUMMARY", 31, 76, 114, language, victory ? "yellow" : "red");
+    ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
+    ctx.strokeStyle = victory ? "#F1C40F" : "#E74C3C";
+    ctx.fillRect(48, 64, 224, 112);
+    ctx.strokeRect(48, 64, 224, 112);
 
     const stage = getStageLabel(createRunProgressFromGlobalStage(summary.highestStage));
     const rows: Array<[string, string]> = [
@@ -86,75 +86,44 @@ export class RunResultState extends GameState {
       [t(language, "result.bosses"), String(summary.bossKills)],
     ];
 
-    ctx.font = uiFont(language, 7);
+    ctx.font = uiFont(language, 8);
     rows.forEach(([label, value], index) => {
-      const y = 91 + index * 14;
+      const y = 79 + index * 13;
       ctx.textAlign = "left";
-      ctx.fillStyle = UI_COLORS.muted;
-      ctx.fillText(label, 31, y);
+      ctx.fillStyle = "#7F8C8D";
+      ctx.fillText(label, 62, y);
       ctx.textAlign = "right";
-      ctx.fillStyle = UI_COLORS.white;
-      ctx.fillText(value, 145, y);
+      ctx.fillStyle = "#ECF0F1";
+      ctx.fillText(value, 258, y);
     });
 
-    drawPixelPanel(ctx, 164, 61, 134, 121, "cyan", true);
-    drawSectionLabel(ctx, "FINAL BUILD", 173, 76, 116, language, "cyan");
-    const player = this.engine.data.data.player;
-    ctx.textAlign = "left";
-    ctx.fillStyle = UI_COLORS.white;
-    ctx.font = uiFont(language, 8, true);
-    ctx.fillText(String(player.characterId ?? "UNKNOWN").toUpperCase(), 173, 92);
-    ctx.fillStyle = UI_COLORS.muted;
-    ctx.font = uiFont(language, 6, true);
-    ctx.fillText(`LV ${player.level ?? 1}`, 173, 104);
-    const weaponId = player.currentWeaponId;
-    if (weaponId) {
-      ctx.fillStyle = UI_COLORS.dark;
-      ctx.fillRect(173, 112, 116, 34);
-      ctx.strokeStyle = UI_COLORS.cyan;
-      ctx.strokeRect(173, 112, 116, 34);
-      SpriteRenderer.drawPixelSprite(ctx, `weapon_${weaponId}`, 195, 131, 1);
-      ctx.fillStyle = UI_COLORS.white;
-      ctx.font = uiFont(language, 6, true);
-      ctx.fillText(String(weaponId).replaceAll("_", " ").toUpperCase().slice(0, 16), 214, 132);
-    }
-    const buildBuffs = (player.buffs ?? []).slice(0, 6);
-    buildBuffs.forEach((buffId: string, index: number) => {
-      const x = 173 + (index % 3) * 39;
-      const y = 153 + Math.floor(index / 3) * 13;
-      drawBadge(ctx, String(buffId).slice(0, 5).toUpperCase(), x, y, 35, language, "purple");
-    });
-
-    drawPixelPanel(ctx, 22, 186, 276, 43, "green", true);
-    ctx.textAlign = "left";
-    ctx.fillStyle = UI_COLORS.green;
-    ctx.font = uiFont(language, 9, true);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#00F2FE";
+    ctx.font = uiFont(language, 10, true);
     const rewardLabel = summary.alreadyClaimed
       ? t(language, "result.claimed")
       : t(language, "result.reward", { amount: summary.rewardEarned });
-    ctx.fillText(rewardLabel, 34, 199);
-    ctx.fillStyle = UI_COLORS.text;
-    ctx.font = uiFont(language, 6);
-    ctx.fillText(t(language, "result.total", { amount: summary.totalCurrency }), 34, 212);
+    ctx.fillText(rewardLabel, 160, 163);
+    ctx.fillStyle = "#BDC3C7";
+    ctx.font = uiFont(language, 7);
+    ctx.fillText(t(language, "result.total", { amount: summary.totalCurrency }), 160, 173);
 
     if (!summary.alreadyClaimed) {
-      ctx.textAlign = "center";
-      ctx.fillStyle = UI_COLORS.muted;
+      ctx.fillStyle = "#7F8C8D";
       ctx.font = uiFont(language, 6);
       ctx.fillText(t(language, "result.breakdown", {
         run: summary.baseReward,
         challenge: summary.challengeReward,
         achievement: summary.achievementReward,
-      }), 160, 223);
+      }), 160, 182);
     }
 
     if (summary.challengeCompleted && this.engine.data.data.run.challengeId) {
       const challenge = CHALLENGES[this.engine.data.data.run.challengeId];
       const localized = getChallengeText(challenge.id, challenge, language);
-      ctx.fillStyle = UI_COLORS.yellow;
-      ctx.font = uiFont(language, 6, true);
-      ctx.textAlign = "right";
-      ctx.fillText(t(language, "result.challenge", { name: localized.name }), 286, 199);
+      ctx.fillStyle = "#F1C40F";
+      ctx.font = uiFont(language, 7, true);
+      ctx.fillText(t(language, "result.challenge", { name: localized.name }), 160, 191);
     }
 
     const achievementNames = summary.newAchievements
@@ -165,19 +134,26 @@ export class RunResultState extends GameState {
       .filter(Boolean);
     const notices = [...achievementNames, ...summary.newUnlocks];
     if (notices.length > 0) {
-      ctx.fillStyle = UI_COLORS.green;
-      ctx.font = uiFont(language, 6, true);
+      ctx.fillStyle = "#2ECC71";
+      ctx.font = uiFont(language, 7, true);
       const firstLine = notices.slice(0, 2).join(" / ");
-      ctx.textAlign = "right";
-      ctx.fillText(t(language, "result.unlocked", { items: firstLine }), 286, 212);
+      const secondLine = notices.slice(2, 4).join(" / ");
+      ctx.fillText(t(language, "result.unlocked", { items: firstLine }), 160, 200);
+      if (secondLine) ctx.fillText(secondLine, 160, 209);
     }
 
-    ctx.textAlign = "center";
-    ctx.fillStyle = UI_COLORS.muted;
+    ctx.fillStyle = "rgba(0,242,254,0.18)";
+    ctx.fillRect(105, 214, 110, 17);
+    ctx.strokeStyle = "#00F2FE";
+    ctx.strokeRect(105, 214, 110, 17);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = uiFont(language, 7, true);
+    ctx.fillText(t(language, "result.hubButton"), 160, 226);
+    ctx.fillStyle = "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "result.footer", {
       confirm: this.engine.input.getConfirmPrompt(),
-    }), 160, 236);
+    }), 160, 238);
     ctx.textAlign = "left";
   }
 }

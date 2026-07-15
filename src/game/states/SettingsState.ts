@@ -14,7 +14,6 @@ import {
   type TouchLabelMode,
 } from "../Settings";
 import { actionLabel, t, uiFont } from "../i18n";
-import { drawBadge, drawMeter, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 
 const SETTING_OPTIONS = [
   "language",
@@ -428,10 +427,10 @@ export class SettingsState extends GameState {
 
   draw(ctx: CanvasRenderingContext2D) {
     const language = this.engine.data.settings.language;
-    ctx.fillStyle = UI_COLORS.backdrop;
+    ctx.fillStyle = "#0A0F19";
     ctx.fillRect(0, 0, 320, 240);
-    MenuRenderer.drawTitle(ctx, t(language, this.getTitleKey()), 160, 22, language, 20);
-    drawPixelPanel(ctx, 20, 28, 280, 197, "cyan", true);
+    MenuRenderer.drawTitle(ctx, t(language, this.getTitleKey()), 160, 20, language);
+    MenuRenderer.drawPanel(ctx, 24, 27, 272, 197);
 
     if (this.view === "keyBindings") {
       this.drawControls(ctx);
@@ -444,21 +443,19 @@ export class SettingsState extends GameState {
   private drawRoot(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
     ROOT_OPTIONS.forEach((option, index) => {
-      const column = index % 2;
-      const row = Math.floor(index / 2);
-      const x = 34 + column * 130;
-      const y = 54 + row * 69;
+      const y = 52 + index * 39;
       const selected = index === this.selectedIndex;
-      drawPixelButton(ctx, x, y, 122, 54, selected, option === "back" ? "neutral" : "cyan");
+      ctx.fillStyle = selected ? "rgba(0,242,254,0.18)" : "rgba(10,15,25,0.82)";
+      ctx.fillRect(48, y, 224, 27);
+      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
+      ctx.strokeRect(48, y, 224, 27);
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 8, true);
-      ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, x + 10, y + 20);
-      ctx.fillStyle = selected ? UI_COLORS.cyan : UI_COLORS.muted;
-      ctx.font = uiFont(language, 6, true);
-      ctx.fillText(this.getValue(option), x + 10, y + 39);
-      ctx.fillStyle = UI_COLORS.edge;
-      ctx.fillRect(x + 10, y + 45, 102, 1);
+      ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, 60, y + 17);
+      ctx.textAlign = "right";
+      ctx.fillStyle = selected ? "#00F2FE" : "#647481";
+      ctx.fillText(this.getValue(option), 260, y + 17);
     });
     this.drawFooter(ctx, false);
   }
@@ -466,25 +463,21 @@ export class SettingsState extends GameState {
   private drawSubmenu(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
     const options = this.getCurrentOptions();
-    const visibleRows = 8;
-    const start = Math.max(0, Math.min(options.length - visibleRows, this.selectedIndex - 3));
-    const visible = options.slice(start, start + visibleRows);
-    drawSectionLabel(ctx, `${start + 1}-${Math.min(options.length, start + visibleRows)} / ${options.length}`, 35, 47, 250, language, "cyan");
-    visible.forEach((option, localIndex) => {
-      const index = start + localIndex;
-      const y = 57 + localIndex * 18;
+    const spacing = Math.min(14, Math.floor(154 / Math.max(1, options.length - 1)));
+    options.forEach((option, index) => {
+      const y = 47 + index * spacing;
       const selected = index === this.selectedIndex;
-      drawPixelButton(ctx, 32, y - 10, 256, 15, selected, option === "resetGame" ? "red" : "cyan");
+      if (selected) {
+        ctx.fillStyle = "rgba(0,242,254,0.16)";
+        ctx.fillRect(32, y - 8, 256, 11);
+      }
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 6, true);
       ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, 36, y);
-      const value = this.getValue(option);
       ctx.textAlign = "right";
-      ctx.fillStyle = option === "resetGame" ? UI_COLORS.red : UI_COLORS.cyan;
-      ctx.fillText(value, 282, y);
-      const percent = /^\d+%$/.test(value) ? Number.parseInt(value, 10) : Number.NaN;
-      if (Number.isFinite(percent)) drawMeter(ctx, 210, y + 3, 71, 3, percent / 100, UI_COLORS.cyan, 0);
+      ctx.fillStyle = "#00F2FE";
+      ctx.fillText(this.getValue(option), 282, y);
     });
     this.drawFooter(ctx, true);
   }
@@ -493,11 +486,11 @@ export class SettingsState extends GameState {
     const language = this.engine.data.settings.language;
     ctx.textAlign = "center";
     if (showMessage && this.message) {
-      ctx.fillStyle = this.resetConfirmation ? UI_COLORS.red : UI_COLORS.yellow;
+      ctx.fillStyle = this.resetConfirmation ? "#E74C3C" : "#F1C40F";
       ctx.font = uiFont(language, 6);
       ctx.fillText(this.message, 160, 211);
     }
-    ctx.fillStyle = UI_COLORS.muted;
+    ctx.fillStyle = "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "settings.footer", {
       vertical: this.engine.input.getNavigationPrompt("vertical"),
@@ -511,31 +504,21 @@ export class SettingsState extends GameState {
   private drawControls(ctx: CanvasRenderingContext2D) {
     const settings = this.engine.data.settings;
     const language = settings.language;
-    const visibleRows = 8;
-    const start = Math.max(0, Math.min(INPUT_ACTIONS.length - visibleRows, this.controlIndex - 3));
-    drawSectionLabel(ctx, `${start + 1}-${Math.min(INPUT_ACTIONS.length, start + visibleRows)} / ${INPUT_ACTIONS.length}`, 35, 47, 250, language, "cyan");
-    INPUT_ACTIONS.slice(start, start + visibleRows).forEach((action, localIndex) => {
-      const index = start + localIndex;
-      const y = 58 + localIndex * 18;
+    INPUT_ACTIONS.forEach((action, index) => {
+      const y = 51 + index * 16;
       const selected = index === this.controlIndex;
-      drawPixelButton(ctx, 32, y - 11, 256, 16, selected, this.captureAction === action ? "yellow" : "cyan");
+      ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
+      if (selected) ctx.fillRect(34, y - 10, 252, 14);
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 7, true);
       ctx.fillText(`${selected ? ">" : " "} ${actionLabel(action, language)}`, 40, y);
       ctx.textAlign = "right";
-      drawBadge(
-        ctx,
-        this.captureAction === action ? t(language, "settings.pressKeyShort") : formatBinding(settings.keyBindings[action]),
-        226,
-        y - 8,
-        55,
-        language,
-        this.captureAction === action ? "yellow" : "cyan",
-      );
+      ctx.fillStyle = this.captureAction === action ? "#F1C40F" : "#00F2FE";
+      ctx.fillText(this.captureAction === action ? t(language, "settings.pressKeyShort") : formatBinding(settings.keyBindings[action]), 278, y);
     });
     ctx.textAlign = "center";
-    ctx.fillStyle = this.captureAction ? UI_COLORS.yellow : UI_COLORS.muted;
+    ctx.fillStyle = this.captureAction ? "#F1C40F" : "#7F8C8D";
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 204);
     ctx.fillText(t(language, "settings.controlsFooter", {

@@ -1,6 +1,5 @@
 import { GameState } from "./GameState";
 import { Engine } from "../Engine";
-import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
 import {
   CELESTIA_PLAYER_PALETTE,
@@ -23,7 +22,7 @@ import { WEAPONS, isWeaponAvailableForCharacter, type WeaponData } from "../data
 import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont, wrapLocalized } from "../i18n";
 import { SkillController } from "../combat/SkillController";
-import { drawBadge, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
+import { drawBadge, drawMeter, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 
 type SelectionMode = "collection" | "character" | "form";
 const CMYS_FORM_IDS = ["knight", "mage", "rogue"] as const;
@@ -191,11 +190,38 @@ export class CharacterSelectState extends GameState {
     });
   }
 
+  private drawStatBar(
+    ctx: CanvasRenderingContext2D,
+    label: string,
+    value: number,
+    max: number,
+    x: number,
+    y: number,
+    color: string,
+    width: number,
+  ): void {
+    ctx.fillStyle = UI_COLORS.white;
+    ctx.font = "7px monospace";
+    ctx.fillText(label, x, y);
+    const ratio = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+    drawMeter(ctx, x + 27, y - 7, width, 5, ratio, color, 5);
+  }
+
   private drawStats(ctx: CanvasRenderingContext2D, character: CharacterConfig, x: number, y: number, width: number): void {
-    MenuRenderer.drawStatBar(ctx, "HP", character.maxHp, 10, x, y, "#E74C3C", width);
-    MenuRenderer.drawStatBar(ctx, "AR", character.maxArmor, 10, x, y + 15, "#BDC3C7", width);
-    MenuRenderer.drawStatBar(ctx, "MP", character.maxMana, MAX_PLAYER_MANA, x, y + 30, "#3498DB", width);
-    MenuRenderer.drawStatBar(ctx, "SP", character.speed, 150, x, y + 45, "#F1C40F", width);
+    this.drawStatBar(ctx, "HP", character.maxHp, 10, x, y, "#E74C3C", width);
+    this.drawStatBar(ctx, "AR", character.maxArmor, 10, x, y + 15, "#BDC3C7", width);
+    this.drawStatBar(ctx, "MP", character.maxMana, MAX_PLAYER_MANA, x, y + 30, "#3498DB", width);
+    this.drawStatBar(ctx, "SP", character.speed, 150, x, y + 45, "#F1C40F", width);
+  }
+
+  private drawScreenTitle(ctx: CanvasRenderingContext2D, text: string, language: "en" | "zh-CN"): void {
+    ctx.fillStyle = UI_COLORS.cyan;
+    ctx.font = uiFont(language, 24, true);
+    ctx.textAlign = "center";
+    ctx.fillText(text, 160, 28);
+    ctx.fillStyle = "rgba(232, 91, 101, 0.52)";
+    ctx.fillText(text, 162, 28);
+    ctx.textAlign = "left";
   }
 
   private drawFittedCenteredText(
@@ -381,7 +407,7 @@ export class CharacterSelectState extends GameState {
       : this.mode === "form"
         ? t(language, "character.chooseForm")
         : CHARACTER_COLLECTIONS[this.selectedCollectionId].name;
-    MenuRenderer.drawTitle(ctx, title, 160, 28, language);
+    this.drawScreenTitle(ctx, title, language);
     ctx.fillStyle = this.engine.data.meta.preferredHardMode ? "#E74C3C" : "#7F8C8D";
     ctx.textAlign = "center";
     ctx.font = uiFont(language, 6, true);
