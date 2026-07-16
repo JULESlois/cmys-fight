@@ -1,4 +1,5 @@
 import { Engine } from "../Engine";
+import { UI_COLORS } from "../render/PixelUi";
 import { generateStage, Room } from "../FloorGenerator";
 import { isCombatCleared, isCombatRoom, markCombatCleared, normalizeRoomState } from "../RoomState";
 import { Player, MAX_PLAYER_MANA } from "../entities/Player";
@@ -2887,6 +2888,60 @@ export class DungeonState extends GameState {
      }
   }
 
+  private drawAlertBanner(ctx: CanvasRenderingContext2D, mainText: string, subText: string, mainColor: string, borderColor: string, progress: number, language: any) {
+    ctx.save();
+    
+    let scaleY = 1.0;
+    let alpha = 1.0;
+    
+    if (progress < 0.15) {
+      const p = progress / 0.15;
+      scaleY = 1 - Math.pow(1 - p, 3);
+      alpha = p;
+    } else if (progress > 0.85) {
+      const p = (progress - 0.85) / 0.15;
+      scaleY = 1 - Math.pow(p, 3);
+      alpha = 1.0 - p;
+    }
+    
+    ctx.globalAlpha = alpha;
+    
+    const centerY = 120;
+    const bgHeight = 44 * scaleY;
+    
+    ctx.fillStyle = "rgba(10, 16, 27, 0.85)";
+    ctx.fillRect(0, centerY - bgHeight/2, 320, bgHeight);
+    
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    for (let y = centerY - bgHeight/2; y < centerY + bgHeight/2; y += 4) {
+      ctx.fillRect(0, y, 320, 1);
+    }
+    
+    ctx.fillStyle = borderColor;
+    ctx.fillRect(0, centerY - bgHeight/2, 320, 2);
+    ctx.fillRect(0, centerY + bgHeight/2 - 2, 320, 2);
+    
+    if (scaleY > 0.5) {
+      const textAlpha = Math.min(1.0, (scaleY - 0.5) / 0.5);
+      ctx.globalAlpha = alpha * textAlpha;
+      ctx.textAlign = "center";
+      
+      ctx.font = uiFont(language, 20, true);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+      ctx.fillText(mainText, 160, centerY + 4 + 2);
+      ctx.fillStyle = mainColor;
+      ctx.fillText(mainText, 160, centerY + 4);
+      
+      if (subText) {
+        ctx.font = uiFont(language, 8);
+        ctx.fillStyle = "#C4D0DA";
+        ctx.fillText(subText, 160, centerY + 16);
+      }
+    }
+    
+    ctx.restore();
+  }
+
   draw(ctx: CanvasRenderingContext2D) {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -3052,27 +3107,39 @@ export class DungeonState extends GameState {
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
     this.tutorial.draw(ctx, this.engine.input, this.engine.data.settings.language);
     
+
+
+
     if (this.roomPhase === "cleared" && this.phaseTimer > 0) {
-      ctx.save();
-      const alpha = Math.min(1, this.phaseTimer);
-      ctx.fillStyle = `rgba(241, 196, 15, ${alpha})`;
-      ctx.font = uiFont(this.engine.data.settings.language, 24, true);
-      ctx.textAlign = "center";
-      const yOffset = (1.0 - this.phaseTimer) * 10;
-      ctx.fillText(t(this.engine.data.settings.language, "dungeon.roomClear"), 160, 100 - yOffset);
-      ctx.restore();
+      const totalTime = 1.0;
+      const progress = 1.0 - (this.phaseTimer / totalTime);
+      const mainText = t(this.engine.data.settings.language, "dungeon.roomClear");
+      this.drawAlertBanner(ctx, mainText, "THREAT ELIMINATED", UI_COLORS.yellow, UI_COLORS.yellow, progress, this.engine.data.settings.language);
     }
 
-    if (this.roomPhase === "intro" && currentRoom) {
-       ctx.save();
-       ctx.fillStyle = "rgba(0,0,0,0.5)";
-       ctx.fillRect(0, 90, 320, 30);
-       ctx.fillStyle = "#FFF";
-       ctx.font = "bold 16px monospace";
-       ctx.textAlign = "center";
-       ctx.fillText(`${currentRoom.type.toUpperCase()}`, 160, 110);
-       ctx.restore();
+    if ((this.roomPhase === "intro" || this.roomPhase === "locking") && currentRoom) {
+      const totalTime = 1.5;
+      const timeLeft = this.roomPhase === "intro" ? this.phaseTimer + 0.5 : this.phaseTimer;
+      const progress = 1.0 - (timeLeft / totalTime);
+      
+      let mainColor = UI_COLORS.cyan;
+      let borderColor = UI_COLORS.cyan;
+      let mainText = currentRoom.type.toUpperCase();
+      let subText = "STANDBY";
+      
+      if (currentRoom.type === "combat" || currentRoom.type === "boss") {
+        mainColor = UI_COLORS.red;
+        borderColor = UI_COLORS.red;
+        subText = currentRoom.type === "boss" ? "EXTREME DANGER" : "ENGAGEMENT PROTOCOL";
+      } else if (["treasure", "shop", "start", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"].includes(currentRoom.type)) {
+        mainColor = UI_COLORS.cyan;
+        borderColor = UI_COLORS.cyan;
+        subText = "SAFE ZONE";
+      }
+      
+      this.drawAlertBanner(ctx, mainText, subText, mainColor, borderColor, progress, this.engine.data.settings.language);
     }
+
     
     MinimapRenderer.draw(ctx, floor);
     PromptRenderer.draw(ctx, this.getInteractTarget(), time, this.engine.input.getPrompt("interact"), this.engine.data.settings.language);

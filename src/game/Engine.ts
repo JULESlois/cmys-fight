@@ -42,6 +42,11 @@ export class Engine {
   private shakeIntensity = 0;
   private showDebugOverlay = false;
 
+  private transitionTimer = 0;
+  private readonly TRANSITION_DURATION = 0.75;
+  private transitionTarget: { newState: string, params?: any } | null = null;
+  private transitionOrder: number[] = [];
+
   constructor() {
     this.input = new Input();
     this.data = new GameData();
@@ -52,6 +57,7 @@ export class Engine {
     audio.setMusicVolume(this.data.settings.musicVolume / 100);
     audio.setMusicMode(this.data.settings.musicMode);
 
+    for (let i = 0; i < 300; i++) this.transitionOrder.push(i);
     this.states = {
       splash: new SplashState(this),
       title: new TitleState(this),
@@ -111,6 +117,27 @@ export class Engine {
   }
 
   public switchState(newState: string, params?: any) {
+    if (newState === "menu") {
+      this.openMenu();
+      return;
+    }
+    if (this.currentState === "splash" && newState === "title") {
+      this.doSwitchState(newState, params);
+      return;
+    }
+    if (this.transitionTimer > 0) return;
+    
+    // Shuffle transition order
+    for (let i = 299; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.transitionOrder[i], this.transitionOrder[j]] = [this.transitionOrder[j], this.transitionOrder[i]];
+    }
+
+    this.transitionTarget = { newState, params };
+    this.transitionTimer = this.TRANSITION_DURATION;
+  }
+
+  public doSwitchState(newState: string, params?: any) {
     if (newState === "menu") {
       this.openMenu();
       return;
@@ -273,6 +300,16 @@ export class Engine {
     this.input.beginFrame();
     this.shakeTimer = Math.max(0, this.shakeTimer - cappedDt);
 
+    if (this.transitionTimer > 0) {
+      this.transitionTimer -= cappedDt;
+      if (this.transitionTarget && this.transitionTimer <= this.TRANSITION_DURATION * 0.3) {
+        this.doSwitchState(this.transitionTarget.newState, this.transitionTarget.params);
+        this.transitionTarget = null;
+      }
+      this.input.update(); // flush input so it's ignored
+      return;
+    }
+
     if (this.overlayState) {
       this.states[this.overlayState].update(cappedDt);
       this.input.update();
@@ -391,7 +428,40 @@ export class Engine {
     }
 
     if (this.isDebugOverlayVisible()) this.drawDebugOverlay(this.ctx);
-
+    
+    if (this.transitionTimer > 0) {
+      this.ctx.fillStyle = "#39D9E8";
+      let progress = 1.0 - Math.max(0, this.transitionTimer / this.TRANSITION_DURATION);
+      let ratio = 0;
+      let isFill = true;
+      if (progress < 0.7) {
+        let x = progress / 0.7;
+        ratio = 1 - Math.pow(1 - x, 3);
+        isFill = true;
+      } else {
+        let x = (progress - 0.7) / 0.3;
+        ratio = Math.pow(1 - x, 3);
+        isFill = false;
+      }
+      let count = Math.floor(ratio * 300);
+      
+      if (isFill) {
+        for (let i = 0; i < count; i++) {
+          let blockIdx = this.transitionOrder[i];
+          let bx = (blockIdx % 20) * 16;
+          let by = Math.floor(blockIdx / 20) * 16;
+          this.ctx.fillRect(bx, by, 16, 16);
+        }
+      } else {
+        for (let i = 300 - count; i < 300; i++) {
+          let blockIdx = this.transitionOrder[i];
+          let bx = (blockIdx % 20) * 16;
+          let by = Math.floor(blockIdx / 20) * 16;
+          this.ctx.fillRect(bx, by, 16, 16);
+        }
+      }
+    }
+    
     this.ctx.restore();
     
     // Draw letterbox borders
