@@ -118,10 +118,9 @@ export function GameCanvas() {
       setTouchEnabled(settings?.touchControls !== false);
       setTouchHandedness(settings?.touchHandedness === "left" ? "left" : "right");
       setTouchScale(settings?.touchScale ?? 1);
-      const labelMode: TouchLabelMode = settings?.touchLabelMode === "keyboard" ? "keyboard" : "gamepad";
-      setTouchLabelMode(labelMode);
+      
       if (settings) {
-        const nextLabels = buildTouchLabels(labelMode, settings.keyBindings);
+        const nextLabels = buildTouchLabels(touchLabelMode, settings.keyBindings);
         setTouchLabels(previous => sameTouchLabels(previous, nextLabels) ? previous : nextLabels);
       }
     }, 300);
@@ -288,7 +287,7 @@ export function GameCanvas() {
       {touchEnabled && (
         <div
           className={`touch-controls touch-layout-${touchHandedness} touch-labels-${touchLabelMode} absolute inset-0 pointer-events-none select-none`}
-          style={{ "--touch-scale": touchScale } as CSSProperties}
+          style={{ "--touch-scale": touchScale * 1.3 } as CSSProperties}
           onContextMenu={event => event.preventDefault()}
           onDragStart={event => event.preventDefault()}
           onSelect={event => event.preventDefault()}

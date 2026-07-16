@@ -8,9 +8,10 @@ export interface TouchViewportOffsets {
 
 const GAME_ASPECT_HEIGHT = 0.75;
 const MAX_TOUCH_SCALE = 1.15;
-const ACTION_CLUSTER_HEIGHT = 116 * MAX_TOUCH_SCALE;
-const ACTION_CLUSTER_WIDTH = 116 * MAX_TOUCH_SCALE;
-const MENU_HEIGHT = 26 * MAX_TOUCH_SCALE;
+const BASE_TOUCH_SCALE = 1.3;
+const ACTION_CLUSTER_HEIGHT = 116 * MAX_TOUCH_SCALE * BASE_TOUCH_SCALE;
+const ACTION_CLUSTER_WIDTH = 116 * MAX_TOUCH_SCALE * BASE_TOUCH_SCALE;
+const MENU_HEIGHT = 26 * MAX_TOUCH_SCALE * BASE_TOUCH_SCALE;
 
 export function calculateTouchViewportOffsets(width: number, height: number): TouchViewportOffsets {
   const safeWidth = Math.max(0, Number.isFinite(width) ? width : 0);

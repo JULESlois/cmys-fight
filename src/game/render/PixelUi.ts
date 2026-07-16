@@ -2,9 +2,9 @@ import { uiFont, type Language } from "../i18n";
 
 export const UI_COLORS = {
   backdrop: "#070B12",
-  panel: "rgba(10, 16, 27, 0.94)",
-  panelSoft: "rgba(16, 24, 38, 0.88)",
-  panelRaised: "rgba(20, 31, 48, 0.96)",
+  panel: "rgba(10, 16, 27, 0.75)",
+  panelSoft: "rgba(16, 24, 38, 0.65)",
+  panelRaised: "rgba(20, 31, 48, 0.85)",
   edge: "#34465A",
   edgeSoft: "#223041",
   cyan: "#39D9E8",

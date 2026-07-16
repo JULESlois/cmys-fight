@@ -8,6 +8,7 @@ import { LegacyDialogState } from "./states/LegacyDialogState";
 import { MenuState } from "./states/MenuState";
 import { DungeonState } from "./states/DungeonState";
 import { TitleState } from "./states/TitleState";
+import { SplashState } from "./states/SplashState";
 import { CharacterSelectState } from "./states/CharacterSelectState";
 import { SettingsState } from "./states/SettingsState";
 import { RunResultState } from "./states/RunResultState";
@@ -25,7 +26,7 @@ export class Engine {
   public input: Input;
   public data: GameData;
   public states: { [key: string]: GameState } = {};
-  public currentState: string = "title";
+  public currentState: string = "splash";
   public isPaused: boolean = false;
   public readonly performanceMonitor = new PerformanceMonitor();
   public readonly debugMode = isDebugMode();
@@ -52,6 +53,7 @@ export class Engine {
     audio.setMusicMode(this.data.settings.musicMode);
 
     this.states = {
+      splash: new SplashState(this),
       title: new TitleState(this),
       character_select: new CharacterSelectState(this),
       settings: new SettingsState(this),
@@ -118,7 +120,7 @@ export class Engine {
     this.states[this.currentState].exit();
     this.input.suppressUntilReleased();
     this.currentState = newState;
-    if (["title", "character_select", "settings", "run_result", "hub", "records"].includes(newState)) {
+    if (["splash", "title", "character_select", "settings", "run_result", "hub", "records"].includes(newState)) {
        this.isPaused = false;
     }
     this.states[this.currentState].enter(params);
@@ -194,6 +196,7 @@ export class Engine {
   private syncStateMusic(params?: any) {
     if (this.currentState === "dungeon") return;
     const stateScenes: Record<string, MusicScene> = {
+      splash: "title",
       title: "title",
       character_select: "hub",
       hub: "hub",

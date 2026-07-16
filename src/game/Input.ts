@@ -69,6 +69,7 @@ export class Input {
   private previousGamepadDirections = { up: false, down: false, left: false, right: false };
   private physicalKeysThisFrame: string[] = [];
   private lastDevice: InputDevice = "keyboard";
+  private lastPhysicalDevice: "keyboard" | "gamepad" = "gamepad";
   private touchPromptMode: TouchLabelMode = "gamepad";
   private suppressedKeys = new Set<string>();
   private suppressedGamepadButtons = new Set<number>();
@@ -112,6 +113,7 @@ export class Input {
     }
     this.keys[nk] = true;
     this.lastDevice = "keyboard";
+    this.lastPhysicalDevice = "keyboard";
   }
 
   private onKeyUp(e: KeyboardEvent) {
@@ -132,7 +134,7 @@ export class Input {
   public getPrompt(action: InputAction): string {
     if (this.lastDevice === "gamepad") return GAMEPAD_PROMPTS[action] ?? action.toUpperCase();
     if (this.lastDevice === "touch") {
-      return this.touchPromptMode === "keyboard"
+      return this.lastPhysicalDevice === "keyboard"
         ? formatBinding(this.bindings[action])
         : TOUCH_GAMEPAD_PROMPTS[action] ?? action.toUpperCase();
     }
@@ -140,7 +142,7 @@ export class Input {
   }
 
   public setTouchPromptMode(mode: TouchLabelMode): void {
-    this.touchPromptMode = mode;
+    this.lastPhysicalDevice = mode;
   }
 
   public getCancelPrompt(): string {
@@ -152,7 +154,7 @@ export class Input {
   }
 
   public getUiPrompt(action: UiAction): string {
-    if (this.lastDevice === "gamepad" || (this.lastDevice === "touch" && this.touchPromptMode === "gamepad")) {
+    if (this.lastDevice === "gamepad" || (this.lastDevice === "touch" && this.lastPhysicalDevice === "gamepad")) {
       if (action === "confirm") return "A";
       if (action === "cancel") return "B";
       if (action === "secondary") return "X";
@@ -168,7 +170,7 @@ export class Input {
   }
 
   public getNavigationPrompt(axis: "horizontal" | "vertical"): string {
-    if (this.lastDevice === "gamepad" || (this.lastDevice === "touch" && this.touchPromptMode === "gamepad")) {
+    if (this.lastDevice === "gamepad" || (this.lastDevice === "touch" && this.lastPhysicalDevice === "gamepad")) {
       return "D-PAD";
     }
     return axis === "horizontal"
@@ -178,6 +180,9 @@ export class Input {
 
   public getLastDevice(): InputDevice {
     return this.lastDevice;
+  }
+  public getLastPhysicalDevice(): "keyboard" | "gamepad" {
+    return this.lastPhysicalDevice;
   }
 
   public consumePhysicalKey(): string | undefined {
@@ -393,7 +398,10 @@ export class Input {
       if (just(index)) this.gamepadUiJustPressed[action] = true;
     }
 
-    if (anyDirection || buttons.some(Boolean)) this.lastDevice = "gamepad";
+    if (anyDirection || buttons.some(Boolean)) {
+      this.lastDevice = "gamepad";
+      this.lastPhysicalDevice = "gamepad";
+    }
     this.previousGamepadButtons = buttons;
   }
 

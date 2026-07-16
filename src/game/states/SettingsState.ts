@@ -62,9 +62,7 @@ const OPERATION_OPTIONS: readonly SettingsMenuOption[] = [
   "touchControls",
   "touchLayout",
   "touchSize",
-  "touchLabels",
   "controls",
-  "resetTutorial",
   "categoryBack",
 ];
 const ACCOUNT_DATA_OPTIONS: readonly SettingsMenuOption[] = [
@@ -452,7 +450,7 @@ export class SettingsState extends GameState {
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 8, true);
-      ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, 60, y + 17);
+      ctx.fillText(this.getLabel(option), 60, y + 17);
       ctx.textAlign = "right";
       ctx.fillStyle = selected ? "#00F2FE" : "#647481";
       ctx.fillText(this.getValue(option), 260, y + 17);
@@ -474,7 +472,7 @@ export class SettingsState extends GameState {
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 6, true);
-      ctx.fillText(`${selected ? ">" : " "} ${this.getLabel(option)}`, 36, y);
+      ctx.fillText(this.getLabel(option), 36, y);
       ctx.textAlign = "right";
       ctx.fillStyle = "#00F2FE";
       ctx.fillText(this.getValue(option), 282, y);
@@ -512,7 +510,7 @@ export class SettingsState extends GameState {
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 7, true);
-      ctx.fillText(`${selected ? ">" : " "} ${actionLabel(action, language)}`, 40, y);
+      ctx.fillText(actionLabel(action, language), 40, y);
       ctx.textAlign = "right";
       ctx.fillStyle = this.captureAction === action ? "#F1C40F" : "#00F2FE";
       ctx.fillText(this.captureAction === action ? t(language, "settings.pressKeyShort") : formatBinding(settings.keyBindings[action]), 278, y);

@@ -21,7 +21,7 @@ export class PauseOverlayRenderer {
     ctx.fillStyle = UI_COLORS.cyan;
     ctx.fillRect(25, 45, 270, 1);
 
-    drawPixelPanel(ctx, 22, 54, 86, 132, "neutral");
+    drawPixelPanel(ctx, 22, 54, 86, 142, "neutral");
     drawSectionLabel(ctx, t(language, "common.move"), 29, 68, 70, language, "yellow");
     const rows = [
       [input.getLastDevice() === "gamepad" ? "L-STICK" : input.getLastDevice() === "touch" ? "JOYSTICK" : "WASD", t(language, "common.move")],
@@ -46,7 +46,7 @@ export class PauseOverlayRenderer {
       ctx.fillText(action, 58, y - 2);
     });
 
-    drawPixelPanel(ctx, 114, 54, 90, 132, "purple");
+    drawPixelPanel(ctx, 114, 54, 90, 142, "purple");
     if (player) {
       const skill = SkillController.getConfig(player.characterId);
       const totalCooldown = Math.max(0.01, skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player));
@@ -86,7 +86,7 @@ export class PauseOverlayRenderer {
       if (player.maxArmor > 0) drawMeter(ctx, 121, 174, 76, 5, armorRatio, UI_COLORS.cyan, 0);
     }
 
-    drawPixelPanel(ctx, 210, 54, 88, 132, "yellow");
+    drawPixelPanel(ctx, 210, 54, 88, 142, "yellow");
     drawSectionLabel(ctx, t(language, "pause.loadout"), 217, 68, 74, language, "yellow");
     if (player) {
       player.weaponSlots.forEach((weaponId, index) => {
