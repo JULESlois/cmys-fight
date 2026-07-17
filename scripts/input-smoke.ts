@@ -304,38 +304,25 @@ new MenuState(menuEngine).update(0);
 assert.equal(menuClosed, 1, "gamepad B closes the system menu");
 menuInput.cleanup();
 
-const destructiveMenuInput = new Input();
-let restoreCount = 0;
+const systemMenuInput = new Input();
 let settingsOpenCount = 0;
-const destructiveMenuEngine = {
-  input: destructiveMenuInput,
+const systemMenuEngine = {
+  input: systemMenuInput,
   data: { settings: { language: "en" }, data: { player: { level: 1, hp: 5, maxHp: 5 } } },
   closeMenu() {},
   saveFromMenu() {},
-  reloadSaveFromMenu() { restoreCount++; },
   openSettingsFromMenu() { settingsOpenCount++; },
+  switchState() {},
 } as any;
-const destructiveMenu = new MenuState(destructiveMenuEngine) as any;
-destructiveMenu.enter();
-destructiveMenu.selection = 2;
+const systemMenu = new MenuState(systemMenuEngine) as any;
+systemMenu.enter();
+systemMenu.selection = 2;
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-destructiveMenu.update(0);
-assert.equal(restoreCount, 0, "restore requires a second confirmation");
-destructiveMenuInput.update();
+systemMenu.update(0);
+assert.equal(settingsOpenCount, 1, "pause menu exposes settings without a destructive restore action");
+systemMenuInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
-windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-destructiveMenu.update(0);
-assert.equal(restoreCount, 1);
-destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
-destructiveMenu.enter();
-destructiveMenu.selection = 3;
-windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-destructiveMenu.update(0);
-assert.equal(settingsOpenCount, 1, "pause menu exposes settings instead of reset game");
-destructiveMenuInput.update();
-windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
-destructiveMenuInput.cleanup();
+systemMenuInput.cleanup();
 
 const settingsInput = new Input();
 let settingsResetCount = 0;
@@ -451,11 +438,12 @@ const createHubEngine = (input: InstanceType<typeof Input>) => {
 const hubKeyboardInput = new Input();
 const hubKeyboard = createHubEngine(hubKeyboardInput);
 const hubKeyboardState = new HubState(hubKeyboard.engine) as any;
+hubKeyboardState.mode = "upgrades";
 hubKeyboardState.selectedIndex = 0;
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 hubKeyboardState.update();
-assert.equal(hubKeyboard.getPurchases(), 1, "default K interact binding purchases a meta upgrade");
-assert.equal(hubKeyboard.getSwitchedState(), "", "buy input must not start a run");
+assert.equal(hubKeyboard.getPurchases(), 1, "default K interact binding purchases a meta upgrade in the workshop panel");
+assert.equal(hubKeyboard.getSwitchedState(), "", "workshop confirmation must not start a run");
 hubKeyboardInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
@@ -472,19 +460,25 @@ hubKeyboardInput.cleanup();
 
 const hubGamepadInput = new Input();
 const hubGamepad = createHubEngine(hubGamepadInput);
+const hubGamepadState = new HubState(hubGamepad.engine) as any;
+hubGamepadState.mode = "expedition";
+hubGamepadState.selectedIndex = 1;
 gamepads = [createPad(true)];
 hubGamepadInput.beginFrame();
-new HubState(hubGamepad.engine).update();
+hubGamepadState.update();
 assert.equal(hubGamepad.getPurchases(), 0);
-assert.equal(hubGamepad.getSwitchedState(), "character_select", "gamepad A activates the selected Start Run entry");
+assert.equal(hubGamepad.getSwitchedState(), "character_select", "gamepad A activates New Run in the expedition panel");
 hubGamepadInput.cleanup();
 
 const hubTouchInput = new Input();
 const hubTouch = createHubEngine(hubTouchInput);
+const hubTouchState = new HubState(hubTouch.engine) as any;
+hubTouchState.mode = "expedition";
+hubTouchState.selectedIndex = 1;
 hubTouchInput.setTouchAction("interact", true);
-new HubState(hubTouch.engine).update();
+hubTouchState.update();
 assert.equal(hubTouch.getPurchases(), 0);
-assert.equal(hubTouch.getSwitchedState(), "character_select", "touch A activates the selected Start Run entry");
+assert.equal(hubTouch.getSwitchedState(), "character_select", "touch A activates New Run in the expedition panel");
 hubTouchInput.cleanup();
 
 const touchMenuInput = new Input();

@@ -237,7 +237,7 @@ assert.ok(
   "Collins Heavy Fists expose four plated knuckles",
 );
 
-assert.equal(META_SAVE_VERSION, 7);
+assert.equal(META_SAVE_VERSION, 8);
 const defaultMeta = createDefaultMetaProgress();
 for (const id of ["esper_zero", "nanally"]) assert.ok(defaultMeta.unlockedCharacters.includes(id));
 for (const id of ["zeroth_sense", "colucci_claws"]) assert.ok(defaultMeta.unlockedStarterWeapons.includes(id));
@@ -283,5 +283,5 @@ console.log(JSON.stringify({
   nanally: "twelve-second-anima-follow-up",
   detailedSprites: "32x32-six-frame-reference-driven-silhouettes",
   officialArtFeatures: "zero-silver-bob-appraiser-nanally-pink-cat-streetwear",
-  metaMigration: "v6-v7-auto-unlock",
+  metaMigration: "v6-v8-auto-unlock-and-hub-progress",
 }));

@@ -35,9 +35,10 @@ export class RecordsState extends GameState {
   private selectedIndex = 0;
   private backState: "title" | "hub" = "title";
 
-  enter(params?: { backState?: "title" | "hub" }) {
+  enter(params?: { backState?: "title" | "hub"; initialPage?: RecordsPage }) {
     this.engine.data.loadMeta();
     this.selectedIndex = 0;
+    if (params?.initialPage && PAGES.includes(params.initialPage)) this.pageIndex = PAGES.indexOf(params.initialPage);
     this.backState = params?.backState === "hub" ? "hub" : "title";
   }
 

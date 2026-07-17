@@ -28,12 +28,12 @@ export class SplashState extends GameState {
     this.elapsed += dt;
     
     if (this.canSkip && (Object.keys(this.engine.input['keysJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['touchJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['touchUiJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['gamepadJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['gamepadUiJustPressed'] || {}).length > 0 || this.engine.input.wasUiPressed("confirm"))) {
-      this.engine.switchState("title", { fromSplash: true });
+      this.engine.switchState("hub", { spawnAnchor: "rebirth_spring", fromSplash: true });
       return;
     }
     
     if (this.engine.input.wasUiPressed("confirm") || this.engine.input.wasUiPressed("cancel") || this.engine.input.wasActionPressed("fire") || this.engine.input.wasActionPressed("pause")) {
-      this.engine.switchState("title", { fromSplash: true });
+      this.engine.switchState("hub", { spawnAnchor: "rebirth_spring", fromSplash: true });
       return;
     }
 
@@ -45,7 +45,7 @@ export class SplashState extends GameState {
     }
 
     if (this.currentPhaseIndex >= this.phases.length) {
-      this.engine.switchState("title", { fromSplash: true });
+      this.engine.switchState("hub", { spawnAnchor: "rebirth_spring", fromSplash: true });
     }
   }
 

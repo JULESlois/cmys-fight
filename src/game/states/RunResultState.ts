@@ -40,7 +40,7 @@ export class RunResultState extends GameState {
   }
 
   update() {
-    if (this.engine.input.wasUiPressed("confirm")) this.engine.switchState("hub");
+    if (this.engine.input.wasUiPressed("confirm")) this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
   }
 
   draw(ctx: CanvasRenderingContext2D) {

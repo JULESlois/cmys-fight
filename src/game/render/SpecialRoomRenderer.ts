@@ -53,13 +53,6 @@ function rect(ctx: CanvasRenderingContext2D, color: string, x: number, y: number
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-function plate(ctx: CanvasRenderingContext2D, p: SpecialPalette, x: number, y: number, w: number, h: number): void {
-  rect(ctx, p.floorDark, x - 2, y - 2, w + 4, h + 4);
-  rect(ctx, p.floor, x, y, w, h);
-  rect(ctx, p.floorLight, x + 2, y + 2, w - 4, 3);
-  rect(ctx, p.floorDark, x + 3, y + h - 5, w - 6, 3);
-}
-
 function drawForestStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
   for (const [x, y, w, h] of [
     [cx - 54, cy + 25, 24, 4], [cx - 38, cy + 19, 6, 12], [cx + 31, cy + 23, 26, 4],
@@ -86,8 +79,6 @@ function drawDungeonStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: 
     rect(ctx, p.energyLight, x - 1, cy - 12, 2, 5);
     rect(ctx, p.floorDark, x - 9, cy + 22, 18, 8);
   }
-  rect(ctx, p.frameDark, cx - 31, cy + 27, 62, 5);
-  for (let x = cx - 27; x <= cx + 27; x += 9) rect(ctx, p.frameLight, x, cy + 28, 5, 1);
 }
 
 function drawSnowStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
@@ -103,8 +94,6 @@ function drawSnowStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: num
     rect(ctx, "#E8B64E", x + 1, cy + 7, 3, 3);
     rect(ctx, p.frameDark, x - 10, cy + 22, 20, 7);
   }
-  rect(ctx, p.frameDark, cx - 34, cy + 27, 68, 6);
-  rect(ctx, p.frameLight, cx - 31, cy + 28, 62, 2);
 }
 
 function drawLavaStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
@@ -121,8 +110,6 @@ function drawLavaStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: num
     rect(ctx, p.frameDark, x + 7, cy - 16, 7, 24);
     rect(ctx, p.frameLight, x + 9, cy - 14, 2, 18);
   }
-  rect(ctx, p.frameDark, cx - 36, cy + 27, 72, 6);
-  for (let x = cx - 31; x <= cx + 28; x += 12) rect(ctx, p.frameLight, x, cy + 28, 7, 2);
 }
 
 function drawChapterStage(ctx: CanvasRenderingContext2D, theme: string, cx: number, cy: number): void {
@@ -145,8 +132,6 @@ function drawBroadcastStage(ctx: CanvasRenderingContext2D, cx: number, cy: numbe
     rect(ctx, p.warning, x - 3, cy + 10, 2, 2);
     rect(ctx, "#E65B52", x + 1, cy + 10, 2, 2);
   }
-  rect(ctx, p.frameDark, cx - 27, cy + 22, 54, 5);
-  rect(ctx, p.frameLight, cx - 23, cy + 23, 46, 1);
 }
 
 export class SpecialRoomRenderer {
@@ -155,41 +140,39 @@ export class SpecialRoomRenderer {
     const pulse = Math.floor(time * 5) % 3;
     const cx = 160;
     const cy = 120;
-    const bounds = roomType === "shop" ? [118, 88, 84, 62] : roomType === "exit" ? [122, 91, 76, 56] : [119, 88, 82, 62];
-    plate(ctx, p, bounds[0], bounds[1], bounds[2], bounds[3]);
 
     if (roomType === "exit") {
-      rect(ctx, p.floorDark, 133, 99, 54, 39);
-      rect(ctx, p.floorLight, 137, 102, 46, 2);
-      for (const [x, y] of [[138, 109], [182, 109], [138, 133], [182, 133]] as const) {
-        rect(ctx, p.frameDark, x - 4, y - 4, 8, 8);
-        rect(ctx, p.energy, x - 2, y - 2, 4, 4);
+      // Four independent anchor seals frame the portal without placing it on
+      // a large rectangular platform.
+      for (const [x, y] of [[138, 105], [182, 105], [138, 137], [182, 137]] as const) {
+        rect(ctx, p.frameDark, x - 3, y - 3, 6, 6);
+        rect(ctx, p.energy, x - 1, y - 1, 3, 3);
         rect(ctx, p.energyLight, x - 1, y - 1, 2, 2);
       }
     } else if (roomType === "shop") {
-      rect(ctx, p.floorDark, 126, 96, 68, 39);
-      rect(ctx, p.frameDark, 126, 134, 68, 9);
-      rect(ctx, p.frame, 129, 136, 62, 5);
-      for (let x = 132; x <= 184; x += 11) {
-        rect(ctx, p.frameDark, x, 137, 7, 4);
-        rect(ctx, p.warning, x + 1, 138, 5, 2);
-      }
+      // Small supply bundles sit at the sides; the merchant stall itself is
+      // the focal object and no longer shares a full-room plinth.
+      rect(ctx, p.frameDark, 124, 137, 18, 5);
+      rect(ctx, p.frame, 126, 135, 14, 5);
+      rect(ctx, p.warning, 129, 134, 4, 3);
+      rect(ctx, p.frameDark, 178, 137, 18, 5);
+      rect(ctx, p.frame, 180, 135, 14, 5);
+      rect(ctx, p.energy, 187, 133, 4, 4);
     } else if (roomType === "npc") {
-      rect(ctx, p.floorDark, 130, 97, 60, 40);
-      for (let x = 135; x <= 179; x += 11) {
-        rect(ctx, p.frameDark, x, 102, 6, 29);
-        rect(ctx, p.energy, x + 2, 105 + ((x / 11 + pulse) % 2), 2, 19);
+      for (let x = 136; x <= 184; x += 12) {
+        rect(ctx, p.frameDark, x, 137, 6, 3);
+        rect(ctx, p.energy, x + 2, 135 + ((x / 12 + pulse) % 2), 2, 4);
       }
     } else if (roomType === "wish_fountain") {
-      rect(ctx, p.floorDark, 127, 96, 66, 43);
-      for (const [x, y] of [[132, 101], [188, 101], [132, 134], [188, 134]] as const) {
-        rect(ctx, p.frameDark, x - 4, y - 4, 8, 8);
-        rect(ctx, completed ? p.floorLight : p.energy, x - 2, y - 2, 4, 4);
+      for (const [x, y] of [[132, 105], [188, 105], [132, 137], [188, 137]] as const) {
+        rect(ctx, p.frameDark, x - 3, y - 3, 6, 6);
+        rect(ctx, completed ? p.floorLight : p.energy, x - 1, y - 1, 3, 3);
       }
     } else if (roomType === "photo_booth") {
-      rect(ctx, p.floorDark, 128, 96, 64, 44);
-      rect(ctx, p.frameDark, 133, 100, 54, 5);
-      for (let x = 136; x <= 180; x += 8) rect(ctx, (x / 8 + pulse) % 2 === 0 ? p.energy : p.warning, x, 101, 4, 2);
+      for (let x = 136; x <= 180; x += 11) {
+        rect(ctx, p.frameDark, x, 137, 6, 3);
+        rect(ctx, (x / 11 + pulse) % 2 === 0 ? p.energy : p.warning, x + 1, 136, 4, 2);
+      }
     }
     if (roomType === "npc") {
       drawBroadcastStage(ctx, cx, cy);
@@ -271,40 +254,4 @@ export class SpecialRoomRenderer {
     ctx.restore();
   }
 
-  static drawMerchant(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string): void {
-    const p = palette(theme);
-    const bob = Math.round(Math.sin(time * 2.5));
-    ctx.save();
-    ctx.translate(Math.round(x), Math.round(y + bob));
-    ctx.scale(1.06, 1.06);
-    rect(ctx, "rgba(0,0,0,0.35)", -26, 10, 52, 6);
-    // Chapter-specific stall, displayed goods and tool packs surround the vendor.
-    rect(ctx, p.frameDark, -26, 0, 52, 13);
-    rect(ctx, p.frame, -24, -1, 48, 12);
-    rect(ctx, p.frameLight, -22, 0, 44, 3);
-    rect(ctx, p.floorDark, -23, 5, 46, 5);
-    for (const [gx, color] of [[-19, p.energy], [-11, p.warning], [12, p.energyLight], [18, p.energy]] as const) {
-      rect(ctx, p.frameDark, gx - 1, -4, 7, 8);
-      rect(ctx, color, gx, -3, 5, 6);
-      rect(ctx, p.energyLight, gx + 1, -2, 2, 2);
-    }
-    rect(ctx, p.frameDark, -10, -20, 20, 22);
-    rect(ctx, "#5B3C69", -8, -18, 16, 19);
-    rect(ctx, "#8E55A8", -6, -17, 12, 15);
-    rect(ctx, p.frameDark, -8, -32, 16, 14);
-    rect(ctx, "#E6B995", -6, -30, 12, 10);
-    rect(ctx, p.frameDark, -10, -35, 20, 5);
-    rect(ctx, p.warning, -8, -34, 16, 3);
-    rect(ctx, p.frameDark, -4, -27, 3, 3);
-    rect(ctx, p.frameDark, 2, -27, 3, 3);
-    rect(ctx, p.energyLight, -3, -27, 1, 1);
-    rect(ctx, p.energyLight, 3, -27, 1, 1);
-    rect(ctx, p.frameDark, -14, -16, 6, 15);
-    rect(ctx, p.frame, -13, -15, 4, 13);
-    rect(ctx, p.energy, -13, -13, 3, 5);
-    rect(ctx, p.frameDark, 8, -15, 7, 14);
-    rect(ctx, p.frame, 9, -14, 5, 12);
-    rect(ctx, p.warning, 10, -12, 3, 5);
-    ctx.restore();
-  }
 }

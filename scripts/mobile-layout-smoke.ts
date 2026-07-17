@@ -27,8 +27,8 @@ assert.equal(normalizeSettings({ touchLabelMode: "invalid" }).touchLabelMode, "g
 const portrait = calculateTouchViewportOffsets(960, 1700);
 assert.equal(portrait.verticalGutter, 490);
 assert.equal(portrait.horizontalGutter, 0);
-assert.ok(Math.abs(portrait.bottomOffset - 178.3) < 0.001);
-assert.ok(Math.abs(portrait.topOffset - 230.05) < 0.001);
+assert.ok(Math.abs(portrait.bottomOffset - 158.29) < 0.001);
+assert.ok(Math.abs(portrait.topOffset - 225.565) < 0.001);
 assert.equal(portrait.sideOffset, 10);
 
 const compactPortrait = calculateTouchViewportOffsets(390, 844);
@@ -57,12 +57,12 @@ assert.equal(landscape.verticalGutter, 0);
 assert.equal(landscape.horizontalGutter, 240);
 assert.equal(landscape.bottomOffset, 10);
 assert.equal(landscape.topOffset, 7);
-assert.ok(Math.abs(landscape.sideOffset - 53.3) < 0.001);
+assert.ok(Math.abs(landscape.sideOffset - 33.29) < 0.001);
 
 // The calculated anchors reserve enough room for the maximum configured
 // touch scale. CSS then applies safe-area-aware minimum edge gaps.
-const maxTouchScale = 1.15;
-const maxActionSize = 116 * maxTouchScale;
+const renderedTouchScale = 1.15 * 1.3;
+const maxActionSize = 116 * renderedTouchScale;
 for (const [width, height] of [[320, 568], [320, 240], [240, 320], [200, 200]]) {
   const offsets = calculateTouchViewportOffsets(width, height);
   assert.ok(offsets.sideOffset >= 10);
@@ -70,7 +70,7 @@ for (const [width, height] of [[320, 568], [320, 240], [240, 320], [200, 200]]) 
   assert.ok(offsets.sideOffset + maxActionSize <= width, `${width}x${height} keeps ABXY inside horizontally`);
   assert.ok(offsets.bottomOffset + maxActionSize <= height, `${width}x${height} keeps ABXY inside vertically`);
 }
-const narrowResponsiveScale = 1.15 * 0.78;
+const narrowResponsiveScale = 1.15 * 1.3 * 0.78;
 const narrowJoystickRight = 10 + 110 * narrowResponsiveScale;
 const narrowActionLeft = 320 - 10 - 116 * narrowResponsiveScale;
 assert.ok(narrowActionLeft - narrowJoystickRight > 20, "320px viewport keeps movement and ABXY hit regions separate");

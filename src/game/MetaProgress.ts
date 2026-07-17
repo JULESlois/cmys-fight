@@ -3,6 +3,7 @@ import { createDefaultCodex, normalizeCodex, type CodexProgress } from "./Codex"
 import { isAchievementId, type AchievementId } from "./AchievementSystem";
 import { isChallengeId, type ChallengeId } from "./ChallengeSystem";
 import { getDifficultyStageIndex, migrateLegacyGlobalStage } from "./RunProgress";
+import { createDefaultHubProgress, normalizeHubProgress, type HubProgress } from "./hub/HubProgress";
 
 export interface MetaProgress {
   version: number;
@@ -26,9 +27,10 @@ export interface MetaProgress {
   unlockedAchievements: AchievementId[];
   claimedAchievementRewards: AchievementId[];
   codex: CodexProgress;
+  hubProgress: HubProgress;
 }
 
-export const META_SAVE_VERSION = 7;
+export const META_SAVE_VERSION = 8;
 
 export function createDefaultMetaProgress(): MetaProgress {
   return {
@@ -53,6 +55,7 @@ export function createDefaultMetaProgress(): MetaProgress {
     unlockedAchievements: [],
     claimedAchievementRewards: [],
     codex: createDefaultCodex(),
+    hubProgress: createDefaultHubProgress(),
   };
 }
 
@@ -76,7 +79,7 @@ export function normalizeMetaProgress(value: unknown): MetaProgress {
   const meta: MetaProgress = {
     version: META_SAVE_VERSION,
     currency: Math.max(0, Math.floor(Number(raw.currency) || 0)),
-    highestStage: loadedVersion < META_SAVE_VERSION
+    highestStage: loadedVersion < 7
       ? migrateLegacyGlobalStage(rawHighestStage)
       : rawHighestStage,
     bestVictoryTime: Number.isFinite(bestVictoryTime) && bestVictoryTime > 0 ? bestVictoryTime : null,
@@ -97,6 +100,7 @@ export function normalizeMetaProgress(value: unknown): MetaProgress {
     unlockedAchievements: uniqueStrings(raw.unlockedAchievements).filter(isAchievementId),
     claimedAchievementRewards: uniqueStrings(raw.claimedAchievementRewards).filter(isAchievementId),
     codex: normalizeCodex(raw.codex),
+    hubProgress: normalizeHubProgress(raw.hubProgress),
   };
   if (!meta.unlockedCharacters.includes("knight")) meta.unlockedCharacters.unshift("knight");
   if (!meta.unlockedStarterWeapons.includes("pistol")) meta.unlockedStarterWeapons.unshift("pistol");
@@ -144,4 +148,3 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
   }
   return unlocks;
 }
-

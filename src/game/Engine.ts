@@ -121,7 +121,7 @@ export class Engine {
       this.openMenu();
       return;
     }
-    if (this.currentState === "splash" && newState === "title") {
+    if (this.currentState === "splash" && (newState === "title" || newState === "hub")) {
       this.doSwitchState(newState, params);
       return;
     }

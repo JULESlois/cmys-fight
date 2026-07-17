@@ -110,16 +110,18 @@ export class SettingsState extends GameState {
   private captureAction: InputAction | null = null;
   private message = "";
   private overlayMode = false;
+  private backState: "title" | "hub" = "title";
   private resetConfirmation = false;
 
   constructor(engine: Engine) {
     super(engine);
   }
 
-  enter(params?: { overlay?: boolean }) {
+  enter(params?: { overlay?: boolean; backState?: "title" | "hub" }) {
     this.engine.data.loadSettings();
     this.engine.applySettings();
     this.overlayMode = params?.overlay === true;
+    this.backState = params?.backState === "hub" ? "hub" : "title";
     this.view = "root";
     this.selectedIndex = 0;
     this.controlIndex = 0;
@@ -256,7 +258,7 @@ export class SettingsState extends GameState {
 
   private leaveSettings() {
     if (this.overlayMode) this.engine.closeSettingsToMenu();
-    else this.engine.switchState("title");
+    else this.engine.switchState(this.backState);
   }
 
   private updateControls() {

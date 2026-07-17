@@ -16,7 +16,7 @@ function rect(ctx: CanvasRenderingContext2D, color: string, x: number, y: number
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-function drawForestFrame(ctx: CanvasRenderingContext2D, color: string, pulse: number): void {
+function drawForestFrame(ctx: CanvasRenderingContext2D, color: string): void {
   rect(ctx, "#231B16", -22, -17, 7, 32);
   rect(ctx, "#5C3D29", -20, -18, 5, 31);
   rect(ctx, "#8B6340", -18, -16, 2, 25);
@@ -33,10 +33,10 @@ function drawForestFrame(ctx: CanvasRenderingContext2D, color: string, pulse: nu
   rect(ctx, "#5C3D29", -26, 13, 13, 3);
   rect(ctx, "#231B16", 12, 12, 15, 5);
   rect(ctx, "#5C3D29", 13, 13, 13, 3);
-  rect(ctx, pulse % 2 === 0 ? "#C9FFD1" : color, -1, -28, 3, 4);
+  rect(ctx, color, -1, -28, 3, 4);
 }
 
-function drawDungeonFrame(ctx: CanvasRenderingContext2D, color: string, pulse: number): void {
+function drawDungeonFrame(ctx: CanvasRenderingContext2D, color: string): void {
   rect(ctx, "#121722", -24, -20, 8, 37);
   rect(ctx, "#464F5D", -22, -19, 6, 35);
   rect(ctx, "#8994A0", -20, -18, 2, 27);
@@ -58,10 +58,10 @@ function drawDungeonFrame(ctx: CanvasRenderingContext2D, color: string, pulse: n
       rect(ctx, "#303946", x - 1, y + 1, 2, 1);
     }
   }
-  rect(ctx, pulse % 2 === 0 ? "#F1D8FF" : color, -2, -33, 5, 4);
+  rect(ctx, color, -2, -33, 5, 4);
 }
 
-function drawSnowFrame(ctx: CanvasRenderingContext2D, color: string, pulse: number): void {
+function drawSnowFrame(ctx: CanvasRenderingContext2D, color: string): void {
   for (const side of [-1, 1] as const) {
     const x = side * 21;
     rect(ctx, "#173543", x - 7, -22, 14, 41);
@@ -78,10 +78,10 @@ function drawSnowFrame(ctx: CanvasRenderingContext2D, color: string, pulse: numb
   rect(ctx, "#D4E9EC", -17, -27, 34, 2);
   rect(ctx, "#173543", -12, 16, 24, 5);
   rect(ctx, "#9DBCC3", -10, 17, 20, 2);
-  rect(ctx, pulse % 2 === 0 ? "#FFFFFF" : color, -2, -33, 5, 4);
+  rect(ctx, color, -2, -33, 5, 4);
 }
 
-function drawLavaFrame(ctx: CanvasRenderingContext2D, color: string, pulse: number): void {
+function drawLavaFrame(ctx: CanvasRenderingContext2D, color: string): void {
   const plates = [
     [-20, -26, 14, 8], [6, -26, 14, 8], [-28, -16, 9, 13], [19, -16, 9, 13],
     [-28, 4, 9, 13], [19, 4, 9, 13], [-20, 16, 14, 7], [6, 16, 14, 7],
@@ -100,14 +100,56 @@ function drawLavaFrame(ctx: CanvasRenderingContext2D, color: string, pulse: numb
     rect(ctx, color, x - 2, 12, 4, 6);
   }
   rect(ctx, "#3C1F20", -8, -31, 16, 6);
-  rect(ctx, pulse % 2 === 0 ? "#FFF0A1" : color, -3, -30, 6, 4);
+  rect(ctx, color, -3, -30, 6, 4);
 }
 
-function drawThemeFrame(ctx: CanvasRenderingContext2D, theme: string, color: string, pulse: number): void {
-  if (theme === "dungeon") drawDungeonFrame(ctx, color, pulse);
-  else if (theme === "snow") drawSnowFrame(ctx, color, pulse);
-  else if (theme === "lava") drawLavaFrame(ctx, color, pulse);
-  else drawForestFrame(ctx, color, pulse);
+function drawThemeFrame(ctx: CanvasRenderingContext2D, theme: string, color: string): void {
+  if (theme === "dungeon") drawDungeonFrame(ctx, color);
+  else if (theme === "snow") drawSnowFrame(ctx, color);
+  else if (theme === "lava") drawLavaFrame(ctx, color);
+  else drawForestFrame(ctx, color);
+}
+
+function drawPortalBody(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  time: number,
+  state: PortalState,
+): void {
+  const speed = state === "activating" ? 18 : state === "spawning" ? 14 : 10;
+  const phase = Math.floor(time * speed);
+  const drift = [-1, 0, 1, 0][phase % 4];
+
+  // The aperture and all motion remain behind the chapter-specific frame.
+  rect(ctx, "#050910", -14, -18, 28, 36);
+  rect(ctx, "rgba(9,16,26,0.72)", -12, -16, 24, 32);
+
+  // Discrete scan bands flow vertically and laterally without scaling or
+  // rotating the frame, preserving crisp pixel edges.
+  for (let row = 0; row < 7; row++) {
+    const y = -14 + row * 5;
+    const inset = Math.abs(3 - row) * 2;
+    const width = 22 - inset;
+    const offset = ((phase + row * 2) % 5) - 2;
+    rect(ctx, row % 2 === 0 ? color : "#FFFFFF", -Math.floor(width / 2) + offset, y, width, 2);
+    if ((phase + row) % 3 === 0) rect(ctx, "#FFFFFF", drift + offset - 1, y, 3, 2);
+  }
+
+  // Energy motes advance through fixed pixel paths, creating rotation in the
+  // portal body while the structural frame remains completely static.
+  for (let index = 0; index < 8; index++) {
+    const [x, y] = OUTER_STEPS[(index * 2 + phase) % OUTER_STEPS.length];
+    rect(ctx, index % 3 === 0 ? "#FFFFFF" : color, x - 1, y - 1, 2, 2);
+  }
+  for (let index = 0; index < 6; index++) {
+    const [x, y] = INNER_STEPS[(index * 2 + phase * 2) % INNER_STEPS.length];
+    rect(ctx, index % 2 === 0 ? "#FFFFFF" : color, x - 1, y - 1, 2, 2);
+  }
+
+  const coreWidth = state === "hovered" || state === "activating" ? 8 : 6;
+  rect(ctx, color, -Math.floor(coreWidth / 2) + drift, -8, coreWidth, 16);
+  rect(ctx, "rgba(9,16,26,0.6)", -2 + drift, -6, 4, 12);
+  rect(ctx, "#FFFFFF", drift, -4 + (phase % 3), 2, 8);
 }
 
 export class PortalRenderer {
@@ -116,25 +158,13 @@ export class PortalRenderer {
     ctx.save();
     ctx.translate(Math.round(portal.x), Math.round(portal.y));
 
-    const pulse = Math.floor(time * 6) % 3;
-    rect(ctx, "rgba(0,0,0,0.35)", -27, 17, 54, 6);
-    drawThemeFrame(ctx, theme, portalColor, pulse);
-
-    OUTER_STEPS.forEach(([x, y], index) => {
-      ctx.fillStyle = index % 4 === 0 ? "#FFFFFF" : portalColor;
-      const size = portal.state === "hovered" && index % 2 === 0 ? 3 : 2;
-      ctx.fillRect(x - Math.floor(size / 2), y - Math.floor(size / 2), size, size);
-    });
-
-    INNER_STEPS.forEach(([x, y], index) => {
-      ctx.fillStyle = index % 2 === 0 ? "#FFFFFF" : portalColor;
-      ctx.fillRect(x - 1, y - 1, 2, 2);
-    });
-
-    rect(ctx, portal.state === "hovered" ? "#FFFFFF" : portalColor, -6, -7, 12, 14);
-    rect(ctx, "rgba(9,16,26,0.55)", -4, -5, 8, 10);
-    rect(ctx, portalColor, -3, -4, 6, 8);
-    rect(ctx, "#FFFFFF", -1, -3, 3, 6);
+    // Fragmented contact shadows ground the frame without reading as a
+    // rectangular portal platform.
+    rect(ctx, "rgba(0,0,0,0.35)", -25, 18, 16, 3);
+    rect(ctx, "rgba(0,0,0,0.35)", -7, 20, 14, 3);
+    rect(ctx, "rgba(0,0,0,0.35)", 9, 18, 16, 3);
+    drawPortalBody(ctx, portalColor, time, portal.state);
+    drawThemeFrame(ctx, theme, portalColor);
 
     if (portal.state === "hovered" || portal.state === "activating") {
       rect(ctx, "#FFFFFF", -1, -22, 3, 3);

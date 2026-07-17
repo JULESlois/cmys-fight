@@ -36,6 +36,7 @@ import {
 import {
   applyMetaUnlocks,
   createDefaultMetaProgress,
+  META_SAVE_VERSION,
   normalizeMetaProgress,
   type MetaProgress,
 } from "./MetaProgress";
@@ -473,6 +474,39 @@ export class GameData {
       : "pistol";
   }
 
+  public setHubLoadout(characterId: string, starterWeaponId?: string): void {
+    const character = CHARACTERS[characterId];
+    const selectedCharacter = character && this.isCharacterUnlocked(character.id)
+      ? character
+      : CHARACTERS.knight;
+    const requestedWeapon = starterWeaponId && isWeaponId(starterWeaponId)
+      ? WEAPONS[starterWeaponId]
+      : undefined;
+    const selectedWeapon = requestedWeapon
+      && this.isStarterWeaponUnlocked(requestedWeapon.id)
+      && isWeaponAvailableForCharacter(requestedWeapon, selectedCharacter.id)
+      ? requestedWeapon.id
+      : this.getStarterWeaponForCharacter(selectedCharacter.id);
+    this.meta.hubProgress.selectedCharacterId = selectedCharacter.id;
+    this.meta.hubProgress.selectedStarterWeaponId = selectedWeapon;
+    this.saveMeta();
+  }
+
+  public getHubLoadout(): { characterId: string; starterWeaponId: string } {
+    const progress = this.meta.hubProgress;
+    const character = CHARACTERS[progress.selectedCharacterId];
+    const characterId = character && this.isCharacterUnlocked(character.id) ? character.id : "knight";
+    const requestedWeapon = isWeaponId(progress.selectedStarterWeaponId)
+      ? WEAPONS[progress.selectedStarterWeaponId]
+      : undefined;
+    const starterWeaponId = requestedWeapon
+      && this.isStarterWeaponUnlocked(requestedWeapon.id)
+      && isWeaponAvailableForCharacter(requestedWeapon, characterId)
+      ? requestedWeapon.id
+      : this.getStarterWeaponForCharacter(characterId);
+    return { characterId, starterWeaponId };
+  }
+
   public purchaseMetaUpgrade(id: MetaUpgradeId): { success: boolean; cost: number; reason?: "max" | "currency" } {
     const definition = META_UPGRADES[id];
     const level = this.meta.upgrades[id];
@@ -722,7 +756,7 @@ export class GameData {
     try {
       const parsed = JSON.parse(saved);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Meta envelope is invalid.");
-      const migrated = Number(parsed?.version || 0) < 3;
+      const migrated = Number(parsed?.version || 0) < META_SAVE_VERSION;
       this.meta = normalizeMetaProgress(parsed);
       if (migrated) this.saveMeta();
       return true;

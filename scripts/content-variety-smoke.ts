@@ -196,6 +196,8 @@ for (const file of [
   "src/game/render/PortalRenderer.ts",
   "src/game/render/EntityRenderer.ts",
   "src/game/render/SpecialRoomRenderer.ts",
+  "src/game/render/MerchantRenderer.ts",
+  "src/game/render/ChestRenderer.ts",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   assert.doesNotMatch(source, /\.arc\(/, `${file} should use pixel geometry`);
@@ -221,11 +223,17 @@ assert.match(gameDataSource, /room\.type === "legacy_rpg"[\s\S]*room\.type = "wi
 assert.match(gameDataSource, /room\.type === "legacy_tactics"[\s\S]*room\.type = "photo_booth"/);
 const specialRoomSource = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalSource = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
+const merchantSource = fs.readFileSync("src/game/render/MerchantRenderer.ts", "utf8");
+const chestSource = fs.readFileSync("src/game/render/ChestRenderer.ts", "utf8");
+const shopRendererSource = fs.readFileSync("src/game/render/ShopRenderer.ts", "utf8");
 assert.match(specialRoomSource, /drawRoomStage/, "special interactions must own a complete background stage");
-assert.match(specialRoomSource, /drawMerchant/, "merchant owns a detailed stall and body model");
+assert.match(merchantSource, /drawStallBack[\s\S]*drawMerchantBody[\s\S]*drawCounterFront/, "merchant uses separated stall, body and foreground layers");
+assert.match(merchantSource, /const IDENTITY/, "merchant keeps a stable identity palette across chapters");
+assert.doesNotMatch(merchantSource, /ctx\.scale\(/, "merchant uses native integer-pixel sizing");
+assert.match(shopRendererSource, /MerchantRenderer\.drawMerchant/, "shop delegates world merchant art to the dedicated renderer");
 assert.match(specialRoomSource, /drawWishFountain/, "wish fountain owns a detailed interactive model");
 assert.match(specialRoomSource, /drawForestStage[\s\S]*drawDungeonStage[\s\S]*drawSnowStage[\s\S]*drawLavaStage/, "special room grounds vary by chapter");
-assert.match(specialRoomSource, /const bounds = roomType === "shop" \? \[118, 88, 84, 62\]/, "special room base plates remain compact");
+assert.doesNotMatch(specialRoomSource, /function plate|const bounds = roomType ===/, "special rooms must not use a shared rectangular base plate");
 assert.match(specialRoomSource, /ctx\.scale\(0\.82, 0\.82\)/, "chapter side scenery is reduced behind the interaction model");
 assert.match(specialRoomSource, /const BROADCAST_PALETTE/, "broadcast terminal uses one archive palette");
 assert.match(specialRoomSource, /roomType === "npc" \? BROADCAST_PALETTE : palette\(theme\)/, "broadcast room ignores biome palette changes");
@@ -233,6 +241,12 @@ assert.match(specialRoomSource, /drawBroadcastStage\(ctx, cx, cy\)/, "broadcast 
 assert.match(specialRoomSource, /drawBroadcastTerminal[\s\S]*_theme: string[\s\S]*const p = BROADCAST_PALETTE/, "broadcast terminal ignores chapter theme");
 assert.match(portalSource, /drawForestFrame[\s\S]*drawDungeonFrame[\s\S]*drawSnowFrame[\s\S]*drawLavaFrame/, "portal structure varies by chapter");
 assert.doesNotMatch(portalSource, /ctx\.globalAlpha|ctx\.scale\(scale, scale\)|outerOffset|innerOffset/, "portal no longer uses fade, zoom or rotating blur animation");
+assert.match(portalSource, /function drawPortalBody[\s\S]*Math\.floor\(time \* speed\)/, "portal energy body advances through discrete animation phases");
+assert.match(portalSource, /drawPortalBody\(ctx, portalColor, time, portal\.state\);[\s\S]*drawThemeFrame\(ctx, theme, portalColor\);/, "dynamic portal body renders behind a static chapter frame");
+assert.match(chestSource, /drawClosedTreasureChest[\s\S]*drawOpenTreasureChest/, "treasure chest has distinct closed and open structures");
+assert.match(chestSource, /drawClosedBossChest[\s\S]*drawOpenBossChest/, "Boss chest has a dedicated reinforced model and open state");
+assert.match(dungeonSource, /ChestRenderer\.drawChest/, "Dungeon delegates chest art to the dedicated renderer");
+assert.doesNotMatch(dungeonSource, /fillRect\(this\.chest\.x - 9/, "Dungeon no longer draws chests as inline flat rectangles");
 
 console.log(JSON.stringify({
   enemies: Object.keys(ENEMIES).length,

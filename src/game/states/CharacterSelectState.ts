@@ -34,13 +34,15 @@ export class CharacterSelectState extends GameState {
   private selectedFormIndex = 0;
   private mode: SelectionMode = "collection";
   private backState: "title" | "hub" = "hub";
+  private hubMode = false;
 
   constructor(engine: Engine) {
     super(engine);
   }
 
-  enter(params?: { backState?: "title" | "hub" }) {
+  enter(params?: { backState?: "title" | "hub"; hubMode?: boolean }) {
     this.backState = params?.backState === "title" ? "title" : "hub";
+    this.hubMode = params?.hubMode === true;
     this.mode = "collection";
     this.selectedIndex = 0;
     this.selectedCharacterIndex = 0;
@@ -97,7 +99,13 @@ export class CharacterSelectState extends GameState {
       return;
     }
     const weapons = this.getUnlockedWeapons(character.id);
-    this.engine.data.startNewRun(character.id, weapons[this.selectedWeaponIndex]?.id);
+    const starterWeaponId = weapons[this.selectedWeaponIndex]?.id;
+    if (this.hubMode) {
+      this.engine.data.setHubLoadout(character.id, starterWeaponId);
+      this.engine.switchState("hub");
+      return;
+    }
+    this.engine.data.startNewRun(character.id, starterWeaponId);
     this.engine.switchState("dungeon");
   }
 

@@ -50,6 +50,7 @@ import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
 import { ShopSystem, type ShopPurchaseFailure } from "../shop/ShopSystem";
 import { ShopRenderer } from "../render/ShopRenderer";
 import { SpecialRoomRenderer } from "../render/SpecialRoomRenderer";
+import { ChestRenderer } from "../render/ChestRenderer";
 import { StatusEffectSystem } from "../combat/StatusEffectSystem";
 import {
   EnvironmentSystem,
@@ -3024,15 +3025,7 @@ export class DungeonState extends GameState {
     }
 
     if (this.chest) {
-       const bossChest = this.chest.kind === "boss";
-       ctx.fillStyle = this.chest.opened ? "#7f8c8d" : bossChest ? "#8E44AD" : "#f1c40f";
-       ctx.fillRect(this.chest.x - 9, this.chest.y - 8, 18, 13);
-       ctx.fillStyle = this.chest.opened ? "#566573" : bossChest ? "#F9E79F" : "#e67e22";
-       ctx.fillRect(this.chest.x - 9, this.chest.y - 8, 18, 4);
-       if (bossChest && !this.chest.opened) {
-         ctx.fillStyle = "#00F2FE";
-         ctx.fillRect(this.chest.x - 2, this.chest.y - 2, 4, 4);
-       }
+       ChestRenderer.drawChest(ctx, this.chest, time, floor.theme || "forest");
     }
 
     if (currentRoom?.type === "shop") {
@@ -3122,8 +3115,8 @@ export class DungeonState extends GameState {
       const timeLeft = this.roomPhase === "intro" ? this.phaseTimer + 0.5 : this.phaseTimer;
       const progress = 1.0 - (timeLeft / totalTime);
       
-      let mainColor = UI_COLORS.cyan;
-      let borderColor = UI_COLORS.cyan;
+      let mainColor: string = UI_COLORS.cyan;
+      let borderColor: string = UI_COLORS.cyan;
       let mainText = currentRoom.type.toUpperCase();
       let subText = "STANDBY";
       

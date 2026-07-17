@@ -229,6 +229,8 @@ assert.match(dungeonState, /desired = 94/, "orbit monsters use tangential moveme
 const roomRenderer = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
 const specialRoomRenderer = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalRenderer = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
+const merchantRenderer = fs.readFileSync("src/game/render/MerchantRenderer.ts", "utf8");
+const chestRenderer = fs.readFileSync("src/game/render/ChestRenderer.ts", "utf8");
 assert.match(roomRenderer, /function drawForestFloorTile/, "forest floor has authored material variants");
 assert.match(roomRenderer, /function drawForestStreamTile/, "forest streams have neighbour-aware banks");
 assert.match(roomRenderer, /function drawForestWallTile/, "forest walls use adjacency-aware tree and hedge edges");
@@ -260,7 +262,8 @@ assert.match(roomRenderer, /function drawSnowStructureTile/, "snow combat rooms 
 assert.match(roomRenderer, /function drawLavaStructureTile/, "lava combat rooms have foundry machinery");
 assert.match(roomRenderer, /function drawBreakableTile/, "combat rooms render chapter-specific breakable props");
 assert.match(roomRenderer, /SpecialRoomRenderer\.drawRoomStage/, "special interactions use authored room stages rather than flat decals");
-assert.match(specialRoomRenderer, /drawMerchant[\s\S]*Chapter-specific stall/, "merchant includes an authored stall and chapter goods");
+assert.match(merchantRenderer, /drawStallBack[\s\S]*drawBackpack[\s\S]*drawMerchantBody[\s\S]*drawCounterFront/, "merchant includes a layered stall, backpack and readable body silhouette");
+assert.match(chestRenderer, /drawClosedTreasureChest[\s\S]*drawClosedBossChest/, "treasure and Boss chests use independent authored models");
 assert.match(specialRoomRenderer, /drawWishFountain/, "wish fountain is an authored object rather than a flat rectangle");
 assert.match(specialRoomRenderer, /drawForestStage[\s\S]*drawDungeonStage[\s\S]*drawSnowStage[\s\S]*drawLavaStage/, "special room backgrounds vary by chapter");
 assert.match(portalRenderer, /drawForestFrame[\s\S]*drawDungeonFrame[\s\S]*drawSnowFrame[\s\S]*drawLavaFrame/, "portal frames vary structurally by chapter");
