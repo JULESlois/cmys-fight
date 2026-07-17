@@ -48,6 +48,15 @@ const { RunResultState } = await import("../src/game/states/RunResultState");
 const { HubState } = await import("../src/game/states/HubState");
 const fs = await import("node:fs");
 
+const rapidTapInput = new Input();
+windowTarget.dispatch("keydown", { key: "z", preventDefault() {} });
+windowTarget.dispatch("keyup", { key: "z", preventDefault() {} });
+assert.equal(rapidTapInput.wasPressed("z"), true, "a key released before the next frame must still be observed");
+assert.equal(rapidTapInput.wasAnyPressed(), true, "generic input detection includes rapid keyboard taps");
+rapidTapInput.update();
+assert.equal(rapidTapInput.wasPressed("z"), false, "frame cleanup consumes the rapid tap exactly once");
+rapidTapInput.cleanup();
+
 function keyboardPulse(input: InstanceType<typeof Input>, key: string) {
   windowTarget.dispatch("keydown", { key, preventDefault() {} });
   assert.equal(input.wasActionPressed("interact"), true);
@@ -533,9 +542,11 @@ windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), true, "K works again after release");
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
+keyboardTransitionInput.update();
 windowTarget.dispatch("keydown", { key: "Enter", preventDefault() {} });
 assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "Enter has no implicit UI meaning");
 windowTarget.dispatch("keyup", { key: "Enter", preventDefault() {} });
+keyboardTransitionInput.update();
 windowTarget.dispatch("keydown", { key: " ", preventDefault() {} });
 assert.equal(keyboardTransitionInput.wasUiPressed("confirm"), false, "Space has no implicit UI meaning");
 windowTarget.dispatch("keyup", { key: " ", preventDefault() {} });

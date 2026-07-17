@@ -6,10 +6,11 @@ import { getUpgradeCost, META_UPGRADES, META_UPGRADE_IDS, type MetaUpgradeId } f
 import { audio } from "../audio/AudioManager";
 import { HubInteractionController } from "../hub/HubInteractionController";
 import { HUB_MAP } from "../hub/HubMap";
-import { HubPlayerController } from "../hub/HubPlayerController";
+import { HUB_MOVE_SPEED, HubPlayerController } from "../hub/HubPlayerController";
 import { HubPlayerRenderer } from "../hub/HubPlayerRenderer";
 import { resolveHubSpawn } from "../hub/HubProgress";
 import { HubWorldRenderer } from "../hub/HubWorldRenderer";
+import { HubDebugOverlay } from "../hub/HubDebugOverlay";
 import { drawBadge, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { Camera2D } from "../world/Camera2D";
@@ -34,7 +35,7 @@ export class HubState extends GameState {
   private readonly collision = new WorldCollision(this.map);
   private readonly worldRenderer = new HubWorldRenderer();
   private readonly playerController = new HubPlayerController();
-  private readonly interactionController = new HubInteractionController();
+  private readonly interactionController = new HubInteractionController(this.collision);
   private readonly player = new Player(0, 0);
   private interactionTarget: ReturnType<HubInteractionController["findNearest"]> = null;
   private mode: HubMode = "world";
@@ -43,8 +44,9 @@ export class HubState extends GameState {
   private messageTimer = 0;
   private refundArmed = false;
   private time = 0;
-  private currentZoneKey = "hub.zone.rebirth";
+  private currentZoneKey = "hub.zone.sanctuary";
   private zoneBannerTimer = 2.5;
+  private debugOverlayVisible = false;
 
   public enter(params?: HubEnterParams): void {
     this.engine.data.loadMeta();
@@ -56,7 +58,7 @@ export class HubState extends GameState {
     const loadout = this.engine.data.getHubLoadout();
     const character = CHARACTERS[loadout.characterId] ?? CHARACTERS.knight;
     this.player.characterId = character.id;
-    this.player.speed = character.speed;
+    this.player.speed = HUB_MOVE_SPEED;
     this.player.maxHp = character.maxHp;
     this.player.hp = character.maxHp;
     this.player.maxArmor = character.maxArmor;
@@ -87,7 +89,7 @@ export class HubState extends GameState {
     this.refundArmed = false;
     this.interactionTarget = null;
     this.time = 0;
-    this.currentZoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.rebirth";
+    this.currentZoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.sanctuary";
     this.zoneBannerTimer = 2.5;
     this.engine.input.suppressUntilReleased();
   }
@@ -106,6 +108,10 @@ export class HubState extends GameState {
     if (this.messageTimer <= 0 && this.mode === "world") this.message = "";
     this.zoneBannerTimer = Math.max(0, this.zoneBannerTimer - dt);
 
+    if (this.engine.input.wasPressed("f7")) {
+      this.debugOverlayVisible = !this.debugOverlayVisible;
+    }
+
     if (this.mode === "upgrades") {
       this.updateUpgrades();
       return;
@@ -121,14 +127,20 @@ export class HubState extends GameState {
     }
 
     this.playerController.update(this.player, this.engine.input, this.collision, dt);
-    this.interactionTarget = this.interactionController.findNearest(this.player.x, this.player.y, this.map.objects);
+    this.interactionTarget = this.interactionController.findNearest(
+      this.player.x,
+      this.player.y,
+      this.map.objects,
+      40,
+      this.player.facing,
+    );
     if (this.interactionTarget && this.engine.input.wasActionPressed("interact")) {
       this.activateInteraction(this.interactionTarget.object);
       return;
     }
 
-    const zoneKey = this.findZoneKey(this.player.x, this.player.y);
-    if (zoneKey && zoneKey !== this.currentZoneKey) {
+    const zoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.sanctuary";
+    if (zoneKey !== this.currentZoneKey) {
       this.currentZoneKey = zoneKey;
       this.zoneBannerTimer = 2.2;
       const zoneId = this.map.objects.find(object => object.type === "region" && object.properties?.labelKey === zoneKey)?.id;
@@ -354,6 +366,48 @@ export class HubState extends GameState {
     this.engine.data.saveMeta();
   }
 
+  public qaFocusAnchor(anchorId: string): boolean {
+    const point = this.map.spawnPoints[anchorId];
+    if (!point) return false;
+    this.player.x = point.x;
+    this.player.y = point.y;
+    const worldSize = getWorldSize(this.map);
+    this.camera.snapTo(point.x, point.y, worldSize.width, worldSize.height);
+    this.currentZoneKey = this.findZoneKey(point.x, point.y) ?? "hub.zone.sanctuary";
+    this.zoneBannerTimer = 0;
+    this.interactionTarget = null;
+    return true;
+  }
+
+  public qaFocusLandmark(landmarkId: string): boolean {
+    const object = this.map.objects.find(candidate =>
+      candidate.id === landmarkId
+      || candidate.properties?.visualGroup === landmarkId
+      || candidate.properties?.kind === landmarkId
+    );
+    const bounds = object?.visualBounds;
+    if (!bounds) return false;
+    const worldSize = getWorldSize(this.map);
+    this.camera.snapTo(
+      bounds.x + bounds.width / 2,
+      bounds.y + bounds.height / 2,
+      worldSize.width,
+      worldSize.height,
+    );
+    this.zoneBannerTimer = 0;
+    return true;
+  }
+
+  public qaSetDebugOverlay(enabled: boolean): boolean {
+    if (!this.engine.debugMode) return false;
+    this.debugOverlayVisible = enabled;
+    return true;
+  }
+
+  public isHubDebugOverlayVisible(): boolean {
+    return this.debugOverlayVisible;
+  }
+
   public draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = "#101A15";
     ctx.fillRect(0, 0, 320, 240);
@@ -374,8 +428,13 @@ export class HubState extends GameState {
     renderables.sort((a, b) => a.sortY - b.sortY);
     for (const renderable of renderables) renderable.draw();
 
+    this.worldRenderer.drawObjects(ctx, this.map, this.camera, "front", this.time);
+    this.worldRenderer.drawRoofTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawUpperTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawObjects(ctx, this.map, this.camera, "upper", this.time);
+    if (this.debugOverlayVisible) {
+      HubDebugOverlay.draw(ctx, this.map, this.collision, this.camera, this.player);
+    }
     this.camera.end(ctx);
 
     this.drawHubHud(ctx);

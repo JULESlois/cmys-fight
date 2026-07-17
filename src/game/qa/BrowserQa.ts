@@ -213,6 +213,9 @@ export interface QaBridge {
   switchState: (state: string) => boolean;
   jumpToStage: (stage: number) => boolean;
   grantLoadout: () => boolean;
+  focusHubAnchor: (anchorId: string) => boolean;
+  focusHubLandmark: (landmarkId: string) => boolean;
+  setHubDebug: (enabled: boolean) => boolean;
   toggleDebugOverlay: () => boolean;
   setMusicScene: (scene: MusicScene) => void;
   setMusicMode: (mode: MusicMode) => void;
@@ -232,6 +235,9 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     },
     jumpToStage: stage => engine.qaJumpToStage(stage),
     grantLoadout: () => engine.qaGrantDebugLoadout(),
+    focusHubAnchor: anchorId => engine.qaFocusHubAnchor(anchorId),
+    focusHubLandmark: landmarkId => engine.qaFocusHubLandmark(landmarkId),
+    setHubDebug: enabled => engine.qaSetHubDebug(enabled),
     toggleDebugOverlay: () => engine.toggleDebugOverlay(),
     setMusicScene: scene => audio.setMusicScene(scene),
     setMusicMode: mode => {

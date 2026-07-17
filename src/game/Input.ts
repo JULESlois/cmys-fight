@@ -119,7 +119,6 @@ export class Input {
   private onKeyUp(e: KeyboardEvent) {
     const nk = this.normalizeKey(e.key);
     this.keys[nk] = false;
-    this.justPressed[nk] = false;
     this.suppressedKeys.delete(nk);
   }
 
@@ -273,6 +272,21 @@ export class Input {
     const normalized = this.normalizeKey(key);
     if (this.suppressedKeys.has(normalized)) return false;
     return !!this.justPressed[normalized];
+  }
+
+  /**
+   * Returns true when any keyboard, touch, gamepad, or navigation input was
+   * pressed during the current frame. States that only need a generic
+   * "continue" gesture should use this instead of reaching into Input's
+   * device-specific implementation details.
+   */
+  public wasAnyPressed(): boolean {
+    return Object.values(this.justPressed).some(Boolean)
+      || Object.values(this.touchJustPressed).some(Boolean)
+      || Object.values(this.gamepadJustPressed).some(Boolean)
+      || Object.values(this.touchUiJustPressed).some(Boolean)
+      || Object.values(this.gamepadUiJustPressed).some(Boolean)
+      || Object.values(this.axisUiJustPressed).some(Boolean);
   }
 
   public isActionDown(action: InputAction): boolean {

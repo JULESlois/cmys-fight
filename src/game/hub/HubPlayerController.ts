@@ -2,6 +2,8 @@ import type { Player } from "../entities/Player";
 import type { Input } from "../Input";
 import type { WorldCollision } from "../world/WorldCollision";
 
+export const HUB_MOVE_SPEED = 100;
+
 export class HubPlayerController {
   public update(player: Player, input: Input, collision: WorldCollision, dt: number): void {
     const axis = input.getAxis();
@@ -14,8 +16,8 @@ export class HubPlayerController {
       player.x,
       player.y,
       player.radius,
-      normalizedX * player.speed * dt,
-      normalizedY * player.speed * dt,
+      normalizedX * HUB_MOVE_SPEED * dt,
+      normalizedY * HUB_MOVE_SPEED * dt,
     );
     player.x = moved.x;
     player.y = moved.y;

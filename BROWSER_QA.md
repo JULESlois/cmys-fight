@@ -5,13 +5,13 @@
 Normal production preview:
 
 ```text
-http://localhost:4300/
+http://localhost:3000/
 ```
 
 Browser QA mode:
 
 ```text
-http://localhost:4300/?qa=1
+http://localhost:3000/?qa=1
 ```
 
 QA mode is intentionally enabled only by the `qa=1` query parameter. The normal URL does not render QA controls.
@@ -73,7 +73,7 @@ Useful commands:
 ```js
 await window.__CMYS_QA__.runChecks()
 window.__CMYS_QA__.snapshot()
-window.__CMYS_QA__.jumpToStage(20)
+window.__CMYS_QA__.jumpToStage(16)
 window.__CMYS_QA__.grantLoadout()
 window.__CMYS_QA__.setMusicScene("boss")
 await window.__CMYS_QA__.probeExternalFallback()

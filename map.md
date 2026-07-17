@@ -1,3 +1,7 @@
+# 历史实现规格：主基地大地图化
+
+> 该规格的大部分内容已经在当前 Hub 系统中实现。本文保留为设计记录；实际行为以 `src/game/hub`、`src/game/world`、`HubState.ts` 和对应 smoke 测试为准。
+
 对 cmys-fight 进行一次“主基地大地图化”重构。
 
 目标：

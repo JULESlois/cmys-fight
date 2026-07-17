@@ -120,7 +120,9 @@ export function GameCanvas() {
       setTouchScale(settings?.touchScale ?? 1);
       
       if (settings) {
-        const nextLabels = buildTouchLabels(touchLabelMode, settings.keyBindings);
+        const nextTouchLabelMode = settings.touchLabelMode;
+        setTouchLabelMode(nextTouchLabelMode);
+        const nextLabels = buildTouchLabels(nextTouchLabelMode, settings.keyBindings);
         setTouchLabels(previous => sameTouchLabels(previous, nextLabels) ? previous : nextLabels);
       }
     }, 300);

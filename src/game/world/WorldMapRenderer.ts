@@ -12,10 +12,10 @@ export class WorldMapRenderer {
   public getVisibleTileBounds(map: WorldMapDefinition, camera: Camera2D, marginTiles = 1): VisibleTileBounds {
     const tileSize = map.tileSize;
     return {
-      startX: Math.max(0, Math.floor(camera.x / tileSize) - marginTiles),
-      endX: Math.min(map.widthTiles - 1, Math.ceil((camera.x + camera.viewportWidth) / tileSize) + marginTiles),
-      startY: Math.max(0, Math.floor(camera.y / tileSize) - marginTiles),
-      endY: Math.min(map.heightTiles - 1, Math.ceil((camera.y + camera.viewportHeight) / tileSize) + marginTiles),
+      startX: Math.max(0, Math.floor(camera.renderX / tileSize) - marginTiles),
+      endX: Math.min(map.widthTiles - 1, Math.ceil((camera.renderX + camera.viewportWidth) / tileSize) + marginTiles),
+      startY: Math.max(0, Math.floor(camera.renderY / tileSize) - marginTiles),
+      endY: Math.min(map.heightTiles - 1, Math.ceil((camera.renderY + camera.viewportHeight) / tileSize) + marginTiles),
     };
   }
 

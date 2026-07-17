@@ -40,6 +40,10 @@ const gameCanvas = fs.readFileSync("src/components/GameCanvas.tsx", "utf8");
 assert.match(gameCanvas, /data-testid="game-canvas"/);
 assert.match(gameCanvas, /installQaBridge/);
 assert.match(gameCanvas, /<QaPanel/);
+const browserQa = fs.readFileSync("src/game/qa/BrowserQa.ts", "utf8");
+assert.match(browserQa, /focusHubAnchor/);
+assert.match(browserQa, /focusHubLandmark/);
+assert.match(browserQa, /setHubDebug/);
 
 const qaPanel = fs.readFileSync("src/components/QaPanel.tsx", "utf8");
 assert.match(qaPanel, /data-testid="qa-run-checks"/);

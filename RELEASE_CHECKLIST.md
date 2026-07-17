@@ -14,7 +14,8 @@
 - [ ] Keyboard: verify WASD movement, J fire, K interact, L skill, I swap, and Esc pause/back.
 - [ ] Gamepad: verify left stick/D-pad movement, X/RT fire, A interact, B skill in combat and back in menus, Y swap, and Start pause.
 - [ ] Touch: repeat the smoke with the virtual D-pad, X/A/B/Y face buttons, and START.
-- [ ] Complete `1-1 → 1-5` and verify Stage persistence, shop inventory, and Boss settlement.
+- [ ] Complete `1-1 → 1-4` and verify Stage persistence, shop inventory, and chapter Boss settlement.
+- [ ] Complete or debug-jump through the full `1-1 → 4-4` run and verify final Victory settlement.
 - [ ] Debug build: use F7/F8/F9/F10 to inspect all chapters and final settlement.
 - [ ] Complete one Normal and one Hard Mode Victory; verify no duplicate Run, challenge, or achievement rewards.
 

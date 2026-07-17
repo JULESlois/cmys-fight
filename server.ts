@@ -1,11 +1,24 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type, Schema, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
 import { APP_VERSION } from "./src/version";
 
 dotenv.config();
+
+const DIALOG_FALLBACK = "The archive signal is unstable. Return when the memory is clearer.";
+
+function boundedText(value: unknown, fallback: string, maxLength: number): string {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return normalized.length > 0 ? normalized.slice(0, maxLength) : fallback;
+}
+
+function boundedNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : fallback;
+}
 
 async function startServer() {
   const app = express();
@@ -20,9 +33,28 @@ async function startServer() {
   // AI Dialog Endpoint
   app.post("/api/generate-dialog", async (req, res) => {
     try {
-      const { npcName, npcRole, playerLevel, playerHealth, recentEvents } = req.body;
+      const body = req.body && typeof req.body === "object" && !Array.isArray(req.body)
+        ? req.body as Record<string, unknown>
+        : {};
+      const npcName = boundedText(body.npcName, "ARCHIVE ECHO", 64);
+      const npcRole = boundedText(body.npcRole, "memory keeper", 96);
+      const playerLevel = boundedNumber(body.playerLevel, 1, 1, 999);
+      const playerHealth = boundedNumber(body.playerHealth, 1, 0, 99999);
+      const recentEvents = Array.isArray(body.recentEvents)
+        ? body.recentEvents
+          .filter((event): event is string => typeof event === "string")
+          .slice(-5)
+          .map(event => boundedText(event, "", 120))
+          .filter(Boolean)
+        : [];
+
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
+      if (!apiKey) {
+        res.json({ text: DIALOG_FALLBACK, fallback: true });
+        return;
+      }
       
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const prompt = `You are playing the role of "${npcName}", who is a ${npcRole} in a retro pixel-art JRPG. 
 Crucially, this world is actually an "Old Memory" or "Tactical Simulation" – a remnant of a bygone era. You are a glitching or echoing voice from the past.
 The player is a modern explorer visiting this simulation. They are level ${playerLevel} with ${playerHealth} health.
@@ -46,10 +78,10 @@ Respond with 1-3 short sentences as this character. Keep it brief, like an old-s
         error?.message?.includes("Quota exceeded");
         
       if (isRateLimit) {
-        res.json({ text: "I'm a bit overwhelmed right now. Please give me a moment to think." });
+        res.json({ text: DIALOG_FALLBACK, fallback: true });
       } else {
         console.error("Error generating dialog:", error);
-        res.status(500).json({ error: "Failed to generate dialog." });
+        res.status(502).json({ error: "Failed to generate dialog.", fallback: DIALOG_FALLBACK });
       }
     }
   });

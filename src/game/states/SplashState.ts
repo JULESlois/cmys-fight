@@ -27,7 +27,7 @@ export class SplashState extends GameState {
   update(dt: number = 1/60) {
     this.elapsed += dt;
     
-    if (this.canSkip && (Object.keys(this.engine.input['keysJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['touchJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['touchUiJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['gamepadJustPressed'] || {}).length > 0 || Object.keys(this.engine.input['gamepadUiJustPressed'] || {}).length > 0 || this.engine.input.wasUiPressed("confirm"))) {
+    if (this.canSkip && this.engine.input.wasAnyPressed()) {
       this.engine.switchState("hub", { spawnAnchor: "rebirth_spring", fromSplash: true });
       return;
     }

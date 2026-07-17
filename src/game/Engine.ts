@@ -220,6 +220,24 @@ export class Engine {
     return true;
   }
 
+  public qaFocusHubAnchor(anchorId: string): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: anchorId });
+    return (this.states.hub as HubState).qaFocusAnchor(anchorId);
+  }
+
+  public qaFocusHubLandmark(landmarkId: string): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: "central_plaza" });
+    return (this.states.hub as HubState).qaFocusLandmark(landmarkId);
+  }
+
+  public qaSetHubDebug(enabled: boolean): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: "central_plaza" });
+    return (this.states.hub as HubState).qaSetDebugOverlay(enabled);
+  }
+
   private syncStateMusic(params?: any) {
     if (this.currentState === "dungeon") return;
     const stateScenes: Record<string, MusicScene> = {

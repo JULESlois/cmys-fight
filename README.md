@@ -1,42 +1,110 @@
-# Top-Down Roguelite Shooter Prototype
+# CMYS Fight: Deep Archive
 
-A minimalist, Web Canvas-based action roguelite engine written in TypeScript.
+A deterministic browser action roguelite built with TypeScript, React, and a custom Canvas engine.
 
-## Current MVP Status
-This project is currently in an MVP (Minimum Viable Product) stage. Core features implemented so far include:
-- **Real-Time Combat**: Free-movement with WASD/Arrows, and fast-paced shooting towards the closest enemy.
-- **Procedural Dungeon**: Room generation with branching paths, varied themes (Forest, Dungeon, Snow, Lava), and doors that unlock upon clearing the room.
-- **Old Memories**: Discover rare "Simulation" rooms where the game shifts into a classic grid-based RPG and tactical turn-based battle system — remnants of an older version of the world!
-- **Enemies & Bosses**: Melee chasers, ranged shooters, and bullet-hell boss encounters.
-- **Weapon System**: Basic interchangeable weapons (Pistol, Shotgun, Laser) with different behaviors and mana costs.
-- **Tile Collisions**: Basic environmental collisions preventing the player and projectiles from passing through walls.
-- **Audio System**: Synthesized WebAudio sound effects for an authentic retro feel.
+The game renders at a fixed 320 × 240 logical resolution and scales to desktop and mobile displays. React hosts the canvas, touch controls, save transfer UI, and browser QA panel; the game loop, state machine, combat, world simulation, and pixel rendering are implemented in `src/game`.
 
-## Known Limitations
-- Enemy movement is simple linear tracking; there is no A* pathfinding.
-- Weapons auto-aim towards the closest enemy instead of using mouse-based twin-stick aiming.
-- Visuals are entirely procedurally drawn primitives (no sprite sheets or textures yet).
-- Enemy collision against walls is incomplete.
+## Current scope
 
-## Controls
-- **WASD / Arrows**: Move
-- **Space**: Shoot / Interact / Enter Next Floor
-- **Enter**: Menu / Restart game
+- Explorable 80 × 60 tile Hub with camera follow, collision, facilities, loadout selection, records, and meta upgrades.
+- Four chapters with four stages each; every chapter ends in a Boss stage.
+- Procedural room graphs with combat, shops, treasure, exits, NPCs, Wish Fountains, and Photo Booths.
+- Eight playable characters, 57 weapons, 36 enemies, talents, challenges, achievements, codex progression, and run settlement.
+- Keyboard, gamepad, and touch input with rebinding and device-aware prompts.
+- Versioned Run, Meta, and Settings saves with backups, migration, export, import, and checksum validation.
+- Adaptive Web Audio music with optional external tracks.
+- Installable PWA with offline navigation support after the first successful online load.
+- Optional Gemini-generated Old Memory NPC dialogue with a built-in fallback when no API key is configured.
+
+## Main flow
+
+```text
+Splash → Hub → Character Select / Expedition → Dungeon → Run Result → Hub
+```
+
+`TitleState` remains available as a compatibility and QA entry, but the normal launch path enters the Hub.
+
+## Default controls
+
+| Action | Keyboard | Gamepad | Touch |
+|---|---|---|---|
+| Move | WASD | Left stick / D-pad | Virtual D-pad |
+| Fire | J | X / RT | X |
+| Interact / Confirm | K | A | A |
+| Skill / Cancel | L / Esc | B | B |
+| Swap weapon | I | Y | Y |
+| Pause / Back | Esc | Start | Start |
+
+Bindings, touch handedness, touch scale, and touch label style can be changed in Settings.
 
 ## Development
-Run development server:
+
+Requirements:
+
+- Node.js 22 or newer
+- npm
+
+Install the exact locked dependency set:
+
+```bash
+npm ci
+```
+
+Start the development server:
+
 ```bash
 npm run dev
 ```
 
-Build for production:
+The default URL is `http://localhost:3000/`. Set `PORT` to use another port.
+
+Run the complete automated verification chain:
+
 ```bash
-npm run build
+npm run verify
 ```
 
-## Structure
-- `src/game/states/DungeonState.ts`: The main gameplay loop and room management.
-- `src/game/FloorGenerator.ts`: Procedural generation logic for rooms and layouts.
-- `src/game/MapData.ts`: Tile definitions and map generation references.
-- `src/game/entities/`: Definitions for Player, Enemies, Projectiles, and Pickups.
-- `src/game/Engine.ts`: The game loop, state management, and canvas scaling.
+This runs TypeScript checking, content and gameplay smoke tests, the production build, Service Worker syntax validation, and HTTP route checks.
+
+Build and run production output:
+
+```bash
+npm run build
+npm start
+```
+
+## Browser QA
+
+Open the application with `?qa=1`:
+
+```text
+http://localhost:3000/?qa=1
+```
+
+QA mode exposes an in-game panel and `window.__CMYS_QA__` for stage navigation, snapshots, audio checks, loadout grants, and PNG capture. See `BROWSER_QA.md` for the manual browser procedure.
+
+## Optional environment
+
+Copy `.env.example` to `.env` when server-side generated dialogue is required:
+
+```env
+GEMINI_API_KEY="..."
+```
+
+Without a key, the dialogue endpoint returns a deterministic fallback and the rest of the game remains functional.
+
+## Architecture
+
+- `src/components/GameCanvas.tsx`: React host, responsive canvas, touch controls, save transfer, and QA panel.
+- `src/game/Engine.ts`: frame loop, state switching, overlays, scaling, audio scene routing, and performance fallback.
+- `src/game/states/HubState.ts`: explorable base world and facility interactions.
+- `src/game/states/DungeonState.ts`: dungeon room flow and the current combat coordinator.
+- `src/game/GameData.ts`: Run, Meta, and Settings persistence, migration, recovery, and settlement.
+- `src/game/FloorGenerator.ts`: deterministic Stage and room graph generation.
+- `src/game/Input.ts`: keyboard, gamepad, touch, semantic UI actions, and prompt routing.
+- `src/game/data/`: characters, enemies, weapons, sprites, palettes, and room templates.
+- `src/game/render/`: Canvas renderers and pixel effects.
+- `scripts/`: automated smoke and release checks.
+- `server.ts`: Express/Vite host, health endpoint, and optional dialogue API.
+
+Historical implementation briefs such as `task.md`, `map.md`, and `reference.md` are design records. Current code, tests, and versioned data contracts are the source of truth.

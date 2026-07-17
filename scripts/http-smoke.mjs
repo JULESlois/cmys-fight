@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 const port = 3197;
 const base = `http://127.0.0.1:${port}`;
 const child = spawn(process.execPath, ["dist/server.cjs"], {
-  env: { ...process.env, NODE_ENV: "production", PORT: String(port) },
+  env: { ...process.env, NODE_ENV: "production", PORT: String(port), GEMINI_API_KEY: "" },
   stdio: ["ignore", "pipe", "pipe"],
 });
 
@@ -44,11 +44,21 @@ try {
   assert.match(sw, /CACHE_NAME/);
   const musicConfig = await (await verify("/music-tracks.json", /json/)).json();
   assert.equal(typeof musicConfig.attribution, "string");
+  const dialogResponse = await fetch(`${base}/api/generate-dialog`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ recentEvents: "invalid-shape" }),
+  });
+  assert.equal(dialogResponse.status, 200);
+  const dialog = await dialogResponse.json();
+  assert.equal(dialog.fallback, true);
+  assert.equal(typeof dialog.text, "string");
+  assert.ok(dialog.text.length > 0);
   const icon192 = await verify("/icon-192.png", /image\/png/);
   const icon512 = await verify("/icon-512.png", /image\/png/);
   assert.ok((await icon192.arrayBuffer()).byteLength > 100);
   assert.ok((await icon512.arrayBuffer()).byteLength > 100);
-  console.log(JSON.stringify({ httpServer: "ok", pwaRoutes: "ok", health: "ok" }));
+  console.log(JSON.stringify({ httpServer: "ok", pwaRoutes: "ok", health: "ok", dialogFallback: "ok" }));
 } finally {
   child.kill("SIGTERM");
   await Promise.race([

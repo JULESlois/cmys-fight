@@ -11,6 +11,9 @@ export class Camera2D {
   private targetX = 0;
   private targetY = 0;
 
+  public get renderX(): number { return Math.round(this.x); }
+  public get renderY(): number { return Math.round(this.y); }
+
   constructor(
     public readonly viewportWidth = 320,
     public readonly viewportHeight = 240,
@@ -49,7 +52,7 @@ export class Camera2D {
 
   public begin(ctx: CanvasRenderingContext2D): void {
     ctx.save();
-    ctx.translate(-Math.round(this.x), -Math.round(this.y));
+    ctx.translate(-this.renderX, -this.renderY);
   }
 
   public end(ctx: CanvasRenderingContext2D): void {
@@ -57,26 +60,35 @@ export class Camera2D {
   }
 
   public worldToScreen(x: number, y: number): WorldPoint {
-    return { x: x - this.x, y: y - this.y };
+    return { x: x - this.renderX, y: y - this.renderY };
   }
 
   public screenToWorld(screenX: number, screenY: number): WorldPoint {
-    return { x: screenX + this.x, y: screenY + this.y };
+    return { x: screenX + this.renderX, y: screenY + this.renderY };
   }
 
   public isVisible(x: number, y: number, width: number, height: number, margin = 16): boolean {
-    return x + width >= this.x - margin
-      && x <= this.x + this.viewportWidth + margin
-      && y + height >= this.y - margin
-      && y <= this.y + this.viewportHeight + margin;
+    return x + width >= this.renderX - margin
+      && x <= this.renderX + this.viewportWidth + margin
+      && y + height >= this.renderY - margin
+      && y <= this.renderY + this.viewportHeight + margin;
   }
 
   public getViewRect(margin = 0): WorldRect {
     return {
-      x: this.x - margin,
-      y: this.y - margin,
+      x: this.renderX - margin,
+      y: this.renderY - margin,
       width: this.viewportWidth + margin * 2,
       height: this.viewportHeight + margin * 2,
+    };
+  }
+
+  public getDeadZoneWorldRect(): WorldRect {
+    return {
+      x: this.renderX + (this.viewportWidth - this.deadZone.width) / 2,
+      y: this.renderY + (this.viewportHeight - this.deadZone.height) / 2,
+      width: this.deadZone.width,
+      height: this.deadZone.height,
     };
   }
 

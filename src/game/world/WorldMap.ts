@@ -18,6 +18,40 @@ export interface WorldRect {
   height: number;
 }
 
+export interface WorldCircle {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+interface WorldColliderBase {
+  id: string;
+  enabled?: boolean;
+  sourceObjectId?: string;
+  properties?: Record<string, unknown>;
+}
+
+export type WorldColliderDefinition =
+  | (WorldColliderBase & { shape: "rect"; x: number; y: number; width: number; height: number })
+  | (WorldColliderBase & { shape: "circle"; x: number; y: number; radius: number })
+  | (WorldColliderBase & { shape: "polygon"; points: WorldPoint[] });
+
+export type WorldInteractionSide = "north" | "east" | "south" | "west";
+export type WorldInteractionFacing = WorldInteractionSide | "left" | "right";
+
+export type WorldInteractionZone =
+  | { shape: "circle"; x: number; y: number; radius: number }
+  | { shape: "rect"; x: number; y: number; width: number; height: number };
+
+export interface WorldInteractionDefinition {
+  zone: WorldInteractionZone;
+  promptPoint?: WorldPoint;
+  lineOfSightTarget?: WorldPoint;
+  requireLineOfSight?: boolean;
+  side?: WorldInteractionSide;
+  facing?: WorldInteractionFacing;
+}
+
 export type WorldObjectType =
   | "interactable"
   | "npc"
@@ -44,6 +78,8 @@ export interface WorldObjectDefinition {
   action?: string;
   promptKey?: string;
   enabled?: boolean;
+  visualBounds?: WorldRect;
+  interaction?: WorldInteractionDefinition;
   properties?: Record<string, unknown>;
 }
 
@@ -54,6 +90,7 @@ export interface WorldMapDefinition {
   heightTiles: number;
   tileSize: number;
   layers: WorldMapLayer[];
+  colliders?: WorldColliderDefinition[];
   objects: WorldObjectDefinition[];
   spawnPoints: Record<string, WorldPoint>;
 }
