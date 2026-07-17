@@ -67,7 +67,7 @@ export const HUB_BUILDING_METRICS: Record<string, HubBuildingMetrics> = {
     foundationDepth: 10,
     landmarkScale: 1,
   },
-  expedition_structure: {
+  expedition_gate: {
     width: 208,
     height: 128,
     floors: 2,

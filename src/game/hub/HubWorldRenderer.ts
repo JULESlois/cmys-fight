@@ -3,6 +3,7 @@ import { getWorldLayer, type WorldMapDefinition, type WorldObjectDefinition } fr
 import { WorldMapRenderer } from "../world/WorldMapRenderer";
 import { HubArchitectureRenderer } from "./HubArchitectureRenderer";
 import { HubGroundRenderer } from "./HubGroundRenderer";
+import { HubGroundDetailTile } from "./HubMap";
 
 const COLORS = {
   void: "#09100F",
@@ -275,7 +276,7 @@ export class HubWorldRenderer {
     if (layer) this.tileRenderer.drawLayer(ctx, map, layer, camera, this.drawRoofTile);
   }
 
-  public drawObjects(ctx: CanvasRenderingContext2D, map: WorldMapDefinition, camera: Camera2D, layer: "back" | "front" | "upper", time: number): void {
+  public drawObjects(ctx: CanvasRenderingContext2D, map: WorldMapDefinition, camera: Camera2D, layer: "back" | "upper", time: number): void {
     for (const object of map.objects) {
       if (object.type !== "decoration" || layerOf(object) !== layer || object.properties?.visible === false) continue;
       if (!camera.isVisible(object.x, object.y, object.width ?? 0, object.height ?? 0, 48)) continue;
@@ -302,25 +303,51 @@ export class HubWorldRenderer {
     x: number,
     y: number,
   ): void => {
-    if (tileId === 1) {
+    if (tileId === HubGroundDetailTile.grassTuft) {
       ctx.fillStyle = COLORS.grassLight;
       ctx.fillRect(x + 4, y + 9, 1, 4); ctx.fillRect(x + 5, y + 7, 1, 6); ctx.fillRect(x + 7, y + 10, 1, 3);
-    } else if (tileId === 2) {
+    } else if (tileId === HubGroundDetailTile.stoneWear) {
       ctx.fillStyle = "rgba(28,31,31,0.52)";
       ctx.fillRect(x + 3, y + 5, 5, 1); ctx.fillRect(x + 7, y + 6, 1, 4); ctx.fillRect(x + 8, y + 9, 4, 1);
-    } else if (tileId === 3) {
+    } else if (tileId === HubGroundDetailTile.plazaRune) {
       ctx.fillStyle = "rgba(177,140,226,0.42)";
       ctx.fillRect(x + 7, y + 4, 2, 8); ctx.fillRect(x + 4, y + 7, 8, 2); ctx.fillRect(x + 5, y + 5, 2, 2);
-    } else if (tileId === 4) {
+    } else if (tileId === HubGroundDetailTile.flower) {
       ctx.fillStyle = "#D9B1C9";
       ctx.fillRect(x + 5, y + 5, 2, 2); ctx.fillRect(x + 8, y + 4, 2, 2); ctx.fillRect(x + 7, y + 7, 2, 2);
       ctx.fillStyle = "#688D51"; ctx.fillRect(x + 7, y + 9, 1, 4);
-    } else if (tileId === 5) {
+    } else if (tileId === HubGroundDetailTile.archiveEmber) {
       ctx.fillStyle = "rgba(232,137,69,0.5)";
       ctx.fillRect(x + 4, y + 10, 2, 2); ctx.fillRect(x + 10, y + 6, 1, 2);
-    } else if (tileId === 6) {
+    } else if (tileId === HubGroundDetailTile.observatoryRune) {
       ctx.fillStyle = "rgba(114,224,232,0.46)";
       ctx.fillRect(x + 7, y + 4, 2, 8); ctx.fillRect(x + 4, y + 7, 8, 2);
+    } else if (tileId === HubGroundDetailTile.workshopSoot) {
+      ctx.fillStyle = "rgba(31,22,18,0.52)";
+      ctx.fillRect(x + 3, y + 9, 7, 2); ctx.fillRect(x + 7, y + 6, 5, 1); ctx.fillRect(x + 11, y + 11, 2, 2);
+      ctx.fillStyle = "rgba(229,137,69,0.34)"; ctx.fillRect(x + 5, y + 8, 2, 1);
+    } else if (tileId === HubGroundDetailTile.trainingScratch) {
+      ctx.fillStyle = "rgba(66,52,35,0.5)";
+      ctx.fillRect(x + 2, y + 5, 6, 1); ctx.fillRect(x + 5, y + 8, 7, 1); ctx.fillRect(x + 9, y + 11, 4, 1);
+    } else if (tileId === HubGroundDetailTile.trainingFootprint) {
+      ctx.fillStyle = "rgba(68,52,35,0.46)";
+      ctx.fillRect(x + 4, y + 7, 4, 6); ctx.fillRect(x + 9, y + 5, 3, 5);
+      ctx.fillRect(x + 3, y + 5, 1, 2); ctx.fillRect(x + 8, y + 3, 1, 2);
+    } else if (tileId === HubGroundDetailTile.armoryMetalWear) {
+      ctx.fillStyle = "rgba(214,186,128,0.34)";
+      ctx.fillRect(x + 3, y + 7, 10, 1); ctx.fillRect(x + 8, y + 5, 1, 5);
+      ctx.fillStyle = "rgba(36,33,31,0.46)"; ctx.fillRect(x + 4, y + 10, 5, 1);
+    } else if (tileId === HubGroundDetailTile.gardenFlowers) {
+      ctx.fillStyle = "#D9B1C9";
+      ctx.fillRect(x + 4, y + 5, 2, 2); ctx.fillRect(x + 7, y + 4, 2, 2); ctx.fillRect(x + 10, y + 6, 2, 2);
+      ctx.fillStyle = "#7AA260"; ctx.fillRect(x + 7, y + 7, 1, 5);
+    } else if (tileId === HubGroundDetailTile.gardenSoil) {
+      ctx.fillStyle = "rgba(63,43,31,0.48)";
+      ctx.fillRect(x + 3, y + 5, 5, 2); ctx.fillRect(x + 9, y + 9, 4, 2); ctx.fillRect(x + 5, y + 12, 2, 1);
+    } else if (tileId === HubGroundDetailTile.expeditionRuneCrack) {
+      ctx.fillStyle = "rgba(155,116,213,0.52)";
+      ctx.fillRect(x + 7, y + 3, 2, 5); ctx.fillRect(x + 5, y + 7, 4, 2); ctx.fillRect(x + 4, y + 9, 2, 4);
+      ctx.fillRect(x + 9, y + 9, 4, 1); ctx.fillRect(x + 12, y + 10, 1, 3);
     }
   };
 

@@ -73,15 +73,10 @@ export class HubDebugOverlay {
       }
     }
 
-    const drawnVisualGroups = new Set<string>();
     for (const object of map.objects) {
       if (object.interaction) drawZone(ctx, object.interaction.zone);
 
-      const visualGroup = typeof object.properties?.visualGroup === "string"
-        ? object.properties.visualGroup
-        : object.id;
-      if (object.visualBounds && !drawnVisualGroups.has(visualGroup)) {
-        drawnVisualGroups.add(visualGroup);
+      if (object.visualBounds && object.properties?.visible !== false) {
         strokeRect(ctx, object.visualBounds, "#FFE45E");
       }
 

@@ -44,6 +44,7 @@ export class HubState extends GameState {
   private messageTimer = 0;
   private refundArmed = false;
   private time = 0;
+  private qaPresentationTime: number | null = null;
   private currentZoneKey = "hub.zone.sanctuary";
   private zoneBannerTimer = 2.5;
   private debugOverlayVisible = false;
@@ -89,6 +90,7 @@ export class HubState extends GameState {
     this.refundArmed = false;
     this.interactionTarget = null;
     this.time = 0;
+    this.qaPresentationTime = null;
     this.currentZoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.sanctuary";
     this.zoneBannerTimer = 2.5;
     this.engine.input.suppressUntilReleased();
@@ -103,7 +105,8 @@ export class HubState extends GameState {
   }
 
   public update(dt = 1 / 60): void {
-    this.time += dt;
+    if (this.qaPresentationTime === null) this.time += dt;
+    else this.time = this.qaPresentationTime;
     this.messageTimer = Math.max(0, this.messageTimer - dt);
     if (this.messageTimer <= 0 && this.mode === "world") this.message = "";
     this.zoneBannerTimer = Math.max(0, this.zoneBannerTimer - dt);
@@ -127,6 +130,11 @@ export class HubState extends GameState {
     }
 
     this.playerController.update(this.player, this.engine.input, this.collision, dt);
+    if (this.qaPresentationTime !== null) {
+      this.player.animState = "idle";
+      this.player.animFrame = 0;
+      this.player.animTimer = 0;
+    }
     this.interactionTarget = this.interactionController.findNearest(
       this.player.x,
       this.player.y,
@@ -383,9 +391,18 @@ export class HubState extends GameState {
     const object = this.map.objects.find(candidate =>
       candidate.id === landmarkId
       || candidate.properties?.visualGroup === landmarkId
+      || candidate.properties?.structureId === landmarkId
       || candidate.properties?.kind === landmarkId
     );
-    const bounds = object?.visualBounds;
+    const structureBounds = object?.properties?.structureBounds;
+    const bounds = structureBounds
+      && typeof structureBounds === "object"
+      && "x" in structureBounds
+      && "y" in structureBounds
+      && "width" in structureBounds
+      && "height" in structureBounds
+      ? structureBounds as { x: number; y: number; width: number; height: number }
+      : object?.visualBounds;
     if (!bounds) return false;
     const worldSize = getWorldSize(this.map);
     this.camera.snapTo(
@@ -395,6 +412,19 @@ export class HubState extends GameState {
       worldSize.height,
     );
     this.zoneBannerTimer = 0;
+    return true;
+  }
+
+  public qaSetPresentation(time: number, characterId: string): boolean {
+    if (!Number.isFinite(time) || !CHARACTERS[characterId]) return false;
+    this.qaPresentationTime = Math.max(0, time);
+    this.time = this.qaPresentationTime;
+    this.player.characterId = characterId;
+    this.player.animState = "idle";
+    this.player.animFrame = 0;
+    this.player.animTimer = 0;
+    this.player.facing = "right";
+    this.player.facingLeft = false;
     return true;
   }
 
@@ -428,7 +458,6 @@ export class HubState extends GameState {
     renderables.sort((a, b) => a.sortY - b.sortY);
     for (const renderable of renderables) renderable.draw();
 
-    this.worldRenderer.drawObjects(ctx, this.map, this.camera, "front", this.time);
     this.worldRenderer.drawRoofTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawUpperTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawObjects(ctx, this.map, this.camera, "upper", this.time);

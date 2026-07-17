@@ -238,6 +238,12 @@ export class Engine {
     return (this.states.hub as HubState).qaSetDebugOverlay(enabled);
   }
 
+  public qaSetHubPresentation(time: number, characterId: string): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: "central_plaza" });
+    return (this.states.hub as HubState).qaSetPresentation(time, characterId);
+  }
+
   private syncStateMusic(params?: any) {
     if (this.currentState === "dungeon") return;
     const stateScenes: Record<string, MusicScene> = {
