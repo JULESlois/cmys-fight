@@ -1,0 +1,275 @@
+import type { RoomType } from "../data/roomTemplates";
+import { RITUAL_SPRING_GEOMETRY } from "../render/RitualSpringRenderer";
+
+export type RoomObjectCollisionChannel = "player" | "enemy" | "projectile";
+
+export interface RoomObjectCollider {
+  id: string;
+  shape: "rect" | "circle";
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  blocksPlayer: boolean;
+  blocksEnemy: boolean;
+  blocksProjectile: boolean;
+}
+
+export interface RoomObjectCollisionScene {
+  roomType?: RoomType;
+  chest?: { kind: "treasure" | "boss"; x: number; y: number; opened?: boolean } | null;
+  portal?: { x: number; y: number } | null;
+  shop?: { x: number; y: number } | null;
+  broadcast?: { x: number; y: number } | null;
+  special?: { x: number; y: number } | null;
+  legacy?: { x: number; y: number } | null;
+}
+
+const BLOCKS_ALL = {
+  blocksPlayer: true,
+  blocksEnemy: true,
+  blocksProjectile: true,
+} as const;
+
+export const DUNGEON_RITUAL_SPRING_SCALE = 0.7;
+
+// Portal energy is intentionally absent from collision. Only the two short
+// supports and fragmented stone base are physical.
+export const PORTAL_FRAME_COLLISION_GEOMETRY = {
+  leftSupport: { x: -25, y: 4, width: 8, height: 17 },
+  rightSupport: { x: 17, y: 4, width: 8, height: 17 },
+  baseLeft: { x: -27, y: 17, width: 18, height: 6 },
+  baseRight: { x: 9, y: 17, width: 18, height: 6 },
+} as const;
+
+function rect(
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  channels: Partial<Pick<RoomObjectCollider, "blocksPlayer" | "blocksEnemy" | "blocksProjectile">> = BLOCKS_ALL,
+): RoomObjectCollider {
+  return {
+    id,
+    shape: "rect",
+    x,
+    y,
+    width,
+    height,
+    blocksPlayer: channels.blocksPlayer ?? true,
+    blocksEnemy: channels.blocksEnemy ?? true,
+    blocksProjectile: channels.blocksProjectile ?? true,
+  };
+}
+
+function circle(
+  id: string,
+  x: number,
+  y: number,
+  radius: number,
+  channels: Partial<Pick<RoomObjectCollider, "blocksPlayer" | "blocksEnemy" | "blocksProjectile">> = BLOCKS_ALL,
+): RoomObjectCollider {
+  return {
+    id,
+    shape: "circle",
+    x,
+    y,
+    radius,
+    blocksPlayer: channels.blocksPlayer ?? true,
+    blocksEnemy: channels.blocksEnemy ?? true,
+    blocksProjectile: channels.blocksProjectile ?? true,
+  };
+}
+
+function scaledRect(
+  id: string,
+  centerX: number,
+  centerY: number,
+  source: { x: number; y: number; width: number; height: number },
+  scale: number,
+): RoomObjectCollider {
+  return rect(
+    id,
+    centerX + source.x * scale,
+    centerY + source.y * scale,
+    source.width * scale,
+    source.height * scale,
+  );
+}
+
+function createWishFountainColliders(centerX: number, centerY: number): RoomObjectCollider[] {
+  const scale = DUNGEON_RITUAL_SPRING_SCALE;
+  const geometry = RITUAL_SPRING_GEOMETRY;
+  const colliders: RoomObjectCollider[] = [
+    scaledRect("wish_fountain:water", centerX, centerY, geometry.water, scale),
+    scaledRect("wish_fountain:rim_north", centerX, centerY, geometry.rimNorth, scale),
+    scaledRect("wish_fountain:rim_west", centerX, centerY, geometry.rimWest, scale),
+    scaledRect("wish_fountain:rim_east", centerX, centerY, geometry.rimEast, scale),
+  ];
+
+  // Keep a true 16px player corridor through the south rim. Scaling the Hub
+  // gap verbatim would make it narrower than the player's 12px diameter.
+  const rimOuter = 50 * scale;
+  const stairHalfWidth = 8;
+  const rimY = centerY + geometry.rimSouthLeft.y * scale;
+  const rimHeight = geometry.rimSouthLeft.height * scale;
+  colliders.push(
+    rect("wish_fountain:rim_south_left", centerX - rimOuter, rimY, rimOuter - stairHalfWidth, rimHeight),
+    rect("wish_fountain:rim_south_right", centerX + stairHalfWidth, rimY, rimOuter - stairHalfWidth, rimHeight),
+  );
+
+  for (const [index, corner] of geometry.corners.entries()) {
+    colliders.push(circle(
+      `wish_fountain:corner_${index}`,
+      centerX + corner.x * scale,
+      centerY + corner.y * scale,
+      corner.radius * scale,
+    ));
+  }
+  for (const [index, lantern] of geometry.lanterns.entries()) {
+    colliders.push(circle(
+      `wish_fountain:lantern_${index}`,
+      centerX + lantern.x * scale,
+      centerY + lantern.y * scale,
+      Math.max(3, lantern.radius * scale),
+    ));
+  }
+  return colliders;
+}
+
+function createPortalColliders(x: number, y: number): RoomObjectCollider[] {
+  return Object.entries(PORTAL_FRAME_COLLISION_GEOMETRY).map(([id, local]) =>
+    rect(`portal:${id}`, x + local.x, y + local.y, local.width, local.height)
+  );
+}
+
+export function createRoomObjectColliders(scene: RoomObjectCollisionScene): RoomObjectCollider[] {
+  const colliders: RoomObjectCollider[] = [];
+  if (scene.chest) {
+    const { x, y, kind } = scene.chest;
+    colliders.push(kind === "boss"
+      ? rect("boss_chest", x - 18, y - 2, 36, 13)
+      : rect("treasure_chest", x - 14, y - 1, 28, 11));
+  }
+  if (scene.portal) colliders.push(...createPortalColliders(scene.portal.x, scene.portal.y));
+  if (scene.roomType === "wish_fountain" && scene.special) {
+    colliders.push(...createWishFountainColliders(scene.special.x, scene.special.y));
+  }
+  if (scene.roomType === "photo_booth" && scene.special) {
+    colliders.push(rect("photo_booth", scene.special.x - 16, scene.special.y + 5, 32, 11));
+  }
+  if (scene.roomType === "npc" && scene.broadcast) {
+    colliders.push(rect("broadcast_terminal", scene.broadcast.x - 13, scene.broadcast.y + 1, 26, 11));
+  }
+  if ((scene.roomType === "legacy_rpg" || scene.roomType === "legacy_tactics") && scene.legacy) {
+    colliders.push(rect("legacy_device", scene.legacy.x - 14, scene.legacy.y + 1, 28, 11));
+  }
+  if (scene.roomType === "shop" && scene.shop) {
+    colliders.push(rect("shop_counter", scene.shop.x - 25, scene.shop.y + 5, 50, 12));
+  }
+  return colliders;
+}
+
+function blocksChannel(collider: RoomObjectCollider, channel: RoomObjectCollisionChannel): boolean {
+  if (channel === "player") return collider.blocksPlayer;
+  if (channel === "enemy") return collider.blocksEnemy;
+  return collider.blocksProjectile;
+}
+
+function circleOverlapsRect(
+  circleX: number,
+  circleY: number,
+  radius: number,
+  rectX: number,
+  rectY: number,
+  width: number,
+  height: number,
+): boolean {
+  const closestX = Math.max(rectX, Math.min(circleX, rectX + width));
+  const closestY = Math.max(rectY, Math.min(circleY, rectY + height));
+  const dx = circleX - closestX;
+  const dy = circleY - closestY;
+  return dx * dx + dy * dy < radius * radius;
+}
+
+function circleOverlapsCircle(
+  x1: number,
+  y1: number,
+  radius1: number,
+  x2: number,
+  y2: number,
+  radius2: number,
+): boolean {
+  const dx = x1 - x2;
+  const dy = y1 - y2;
+  const radius = radius1 + radius2;
+  return dx * dx + dy * dy < radius * radius;
+}
+
+export function circleHitsRoomObject(
+  collider: RoomObjectCollider,
+  x: number,
+  y: number,
+  radius: number,
+  channel: RoomObjectCollisionChannel,
+): boolean {
+  if (!blocksChannel(collider, channel)) return false;
+  if (collider.shape === "circle") {
+    return circleOverlapsCircle(x, y, radius, collider.x, collider.y, collider.radius ?? 0);
+  }
+  return circleOverlapsRect(x, y, radius, collider.x, collider.y, collider.width ?? 0, collider.height ?? 0);
+}
+
+export class RoomObjectCollision {
+  private colliders: RoomObjectCollider[] = [];
+
+  public setColliders(colliders: readonly RoomObjectCollider[]): void {
+    this.colliders = colliders.map(collider => ({ ...collider }));
+  }
+
+  public rebuild(scene: RoomObjectCollisionScene): void {
+    this.setColliders(createRoomObjectColliders(scene));
+  }
+
+  public clear(): void {
+    this.colliders = [];
+  }
+
+  public getColliders(): readonly RoomObjectCollider[] {
+    return this.colliders;
+  }
+
+  public findBlockingCollider(
+    x: number,
+    y: number,
+    radius: number,
+    channel: RoomObjectCollisionChannel,
+  ): RoomObjectCollider | null {
+    return this.colliders.find(collider => circleHitsRoomObject(collider, x, y, radius, channel)) ?? null;
+  }
+
+  public isCircleBlocked(x: number, y: number, radius: number, channel: RoomObjectCollisionChannel): boolean {
+    return this.findBlockingCollider(x, y, radius, channel) !== null;
+  }
+
+  public hasLineOfSight(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    channel: RoomObjectCollisionChannel = "projectile",
+    radius = 2,
+  ): boolean {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const distance = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(distance / 4));
+    for (let step = 1; step < steps; step++) {
+      const t = step / steps;
+      if (this.isCircleBlocked(startX + dx * t, startY + dy * t, radius, channel)) return false;
+    }
+    return true;
+  }
+}

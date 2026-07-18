@@ -11,7 +11,7 @@ import { HubPlayerRenderer } from "../hub/HubPlayerRenderer";
 import { resolveHubSpawn } from "../hub/HubProgress";
 import { HubWorldRenderer } from "../hub/HubWorldRenderer";
 import { HubDebugOverlay } from "../hub/HubDebugOverlay";
-import { drawBadge, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
+import { drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { Camera2D } from "../world/Camera2D";
 import { WorldCollision } from "../world/WorldCollision";
@@ -387,6 +387,20 @@ export class HubState extends GameState {
     return true;
   }
 
+  public qaFocusPoint(cameraX: number, cameraY: number, playerX = cameraX, playerY = cameraY): boolean {
+    if (![cameraX, cameraY, playerX, playerY].every(Number.isFinite)) return false;
+    const worldSize = getWorldSize(this.map);
+    this.camera.snapTo(cameraX, cameraY, worldSize.width, worldSize.height);
+    this.player.x = playerX;
+    this.player.y = playerY;
+    this.player.animState = "idle";
+    this.player.animFrame = 0;
+    this.player.animTimer = 0;
+    this.zoneBannerTimer = 0;
+    this.interactionTarget = null;
+    return true;
+  }
+
   public qaFocusLandmark(landmarkId: string): boolean {
     const object = this.map.objects.find(candidate =>
       candidate.id === landmarkId
@@ -482,7 +496,6 @@ export class HubState extends GameState {
     ctx.fillStyle = UI_COLORS.yellow;
     ctx.font = uiFont(this.language, 6, true);
     ctx.fillText(`${this.engine.data.meta.currency} ${t(this.language, "common.shards")}`, 13, 27);
-    drawBadge(ctx, this.engine.data.hasValidSave() ? t(this.language, "hub.runReady") : t(this.language, "hub.noRun"), 230, 8, 84, this.language, this.engine.data.hasValidSave() ? "green" : "neutral");
   }
 
   private drawWorldOverlay(ctx: CanvasRenderingContext2D): void {

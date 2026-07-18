@@ -117,6 +117,129 @@ export function isBreakable(tileId: number): boolean {
   return tileId === TILE_BREAKABLE;
 }
 
+
+export interface OpenRoomTemplateValidation {
+  templateId: string;
+  largestInternalWallComponent: number;
+  largestSolidRectangle: { width: number; height: number };
+  centralWalkableTiles: number;
+  centerWallFree: boolean;
+  doorsReachCenter: boolean;
+  facilityClearance: boolean;
+  valid: boolean;
+}
+
+function internalWallComponentSize(tiles: readonly number[]): number {
+  const seen = new Set<number>();
+  let largest = 0;
+  for (let y = 1; y < MAP_HEIGHT - 1; y++) {
+    for (let x = 1; x < MAP_WIDTH - 1; x++) {
+      const start = y * MAP_WIDTH + x;
+      if (tiles[start] !== TILE_WALL || seen.has(start)) continue;
+      const queue = [start];
+      seen.add(start);
+      let size = 0;
+      while (queue.length > 0) {
+        const index = queue.shift()!;
+        size++;
+        const cx = index % MAP_WIDTH;
+        const cy = Math.floor(index / MAP_WIDTH);
+        for (const [nx, ny] of [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]] as const) {
+          if (nx <= 0 || nx >= MAP_WIDTH - 1 || ny <= 0 || ny >= MAP_HEIGHT - 1) continue;
+          const next = ny * MAP_WIDTH + nx;
+          if (tiles[next] !== TILE_WALL || seen.has(next)) continue;
+          seen.add(next);
+          queue.push(next);
+        }
+      }
+      largest = Math.max(largest, size);
+    }
+  }
+  return largest;
+}
+
+function largestInternalSolidRectangle(tiles: readonly number[]): { width: number; height: number } {
+  let best = { width: 0, height: 0, area: 0 };
+  for (let top = 1; top < MAP_HEIGHT - 1; top++) {
+    for (let left = 1; left < MAP_WIDTH - 1; left++) {
+      if (tiles[top * MAP_WIDTH + left] !== TILE_WALL) continue;
+      for (let bottom = top; bottom < MAP_HEIGHT - 1; bottom++) {
+        for (let right = left; right < MAP_WIDTH - 1; right++) {
+          let solid = true;
+          for (let y = top; y <= bottom && solid; y++) {
+            for (let x = left; x <= right; x++) {
+              if (tiles[y * MAP_WIDTH + x] !== TILE_WALL) { solid = false; break; }
+            }
+          }
+          if (!solid) continue;
+          const width = right - left + 1;
+          const height = bottom - top + 1;
+          const area = width * height;
+          if (area > best.area) best = { width, height, area };
+        }
+      }
+    }
+  }
+  return { width: best.width, height: best.height };
+}
+
+function passablePathExists(tiles: readonly number[], start: { x: number; y: number }, target: { x: number; y: number }): boolean {
+  const queue = [start];
+  const seen = new Set([`${start.x},${start.y}`]);
+  while (queue.length > 0) {
+    const point = queue.shift()!;
+    if (point.x === target.x && point.y === target.y) return true;
+    for (const [x, y] of [[point.x - 1, point.y], [point.x + 1, point.y], [point.x, point.y - 1], [point.x, point.y + 1]] as const) {
+      if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) continue;
+      if (isSolid(tiles[y * MAP_WIDTH + x])) continue;
+      const key = `${x},${y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      queue.push({ x, y });
+    }
+  }
+  return false;
+}
+
+export function validateOpenRoomTemplate(template: RoomTemplate): OpenRoomTemplateValidation {
+  const centralWalkableTiles = (() => {
+    let count = 0;
+    for (let y = 3; y <= 10; y++) for (let x = 4; x <= 15; x++) if (!isSolid(template.tiles[y * MAP_WIDTH + x])) count++;
+    return count;
+  })();
+  let centerWallFree = true;
+  for (let y = 5; y <= 9; y++) for (let x = 7; x <= 13; x++) if (isSolid(template.tiles[y * MAP_WIDTH + x])) centerWallFree = false;
+  let facilityClearance = true;
+  for (let y = 2; y <= 12; y++) for (let x = 3; x <= 16; x++) if (isSolid(template.tiles[y * MAP_WIDTH + x])) facilityClearance = false;
+  const mask = template.doorMask === "any" ? { up: true, down: true, left: true, right: true } : template.doorMask;
+  const center = { x: 10, y: 7 };
+  const starts = [
+    ...(mask.up ? [{ x: 10, y: 0 }] : []),
+    ...(mask.down ? [{ x: 10, y: 14 }] : []),
+    ...(mask.left ? [{ x: 0, y: 7 }] : []),
+    ...(mask.right ? [{ x: 19, y: 7 }] : []),
+  ];
+  const doorsReachCenter = starts.every(start => passablePathExists(template.tiles, start, center));
+  const largestInternalWallComponent = internalWallComponentSize(template.tiles);
+  const largestSolidRectangle = largestInternalSolidRectangle(template.tiles);
+  const valid = centralWalkableTiles === 96
+    && centerWallFree
+    && facilityClearance
+    && doorsReachCenter
+    && largestInternalWallComponent <= 24
+    && !(largestSolidRectangle.width > 4 && largestSolidRectangle.height > 3);
+  return {
+    templateId: template.id,
+    largestInternalWallComponent,
+    largestSolidRectangle,
+    centralWalkableTiles,
+    centerWallFree,
+    doorsReachCenter,
+    facilityClearance,
+    valid,
+  };
+}
+
 export function validateTemplates() {
   let errors = 0;
   for (const t of ROOM_TEMPLATES) {

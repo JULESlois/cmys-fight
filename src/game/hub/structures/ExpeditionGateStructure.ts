@@ -21,7 +21,7 @@ export const EXPEDITION_GATE_STRUCTURE: HubStructureDefinition = {
   visualParts: [
     { id: "shadow", artPart: "shadow", bounds: { x: 0, y: 112, width: 208, height: 18 }, layer: "back" },
     { id: "ruined_wall", artPart: "ruined_wall", bounds: { x: -18, y: 58, width: 244, height: 70 }, layer: "back" },
-    { id: "portal", artPart: "portal", bounds: { x: 54, y: 24, width: 100, height: 92 }, layer: "back", visiblePropId: "expedition_portal" },
+    { id: "portal", artPart: "portal", bounds: { x: 54, y: 24, width: 100, height: 92 }, layer: "back", visiblePropId: "expedition_portal", collisionPolicy: "none" },
     { id: "steps", artPart: "steps", bounds: { x: 38, y: 94, width: 132, height: 38 }, layer: "back" },
     { id: "left_pier", artPart: "left_pier", bounds: { x: 8, y: 34, width: 42, height: 82 }, layer: "sorted", sortY: 116 },
     { id: "right_pier", artPart: "right_pier", bounds: { x: 158, y: 34, width: 42, height: 82 }, layer: "sorted", sortY: 116 },

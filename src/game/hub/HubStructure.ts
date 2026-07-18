@@ -10,6 +10,7 @@ import type {
 
 export type HubRearAccessRule = "blocked-footprint" | "roof-occluder" | "map-layout";
 export type HubStructureVisualLayer = "back" | "sorted" | "upper";
+export type HubCollisionPolicy = "none" | "footprint" | "custom";
 
 export interface HubLocalVisualPart {
   id: string;
@@ -18,6 +19,7 @@ export interface HubLocalVisualPart {
   layer: HubStructureVisualLayer;
   sortY?: number;
   visiblePropId?: string;
+  collisionPolicy?: HubCollisionPolicy;
   properties?: Record<string, unknown>;
 }
 
@@ -27,14 +29,15 @@ export interface HubLocalOccluderPart {
   bounds: WorldRect;
   sortY: number;
   visiblePropId?: string;
+  collisionPolicy?: HubCollisionPolicy;
   properties?: Record<string, unknown>;
 }
 
 export type HubLocalColliderDefinition =
-  | { id: string; shape: "rect"; x: number; y: number; width: number; height: number; properties?: Record<string, unknown> }
-  | { id: string; shape: "rect"; fromVisualPartId: string; inset?: number; properties?: Record<string, unknown> }
-  | { id: string; shape: "circle"; x: number; y: number; radius: number; properties?: Record<string, unknown> }
-  | { id: string; shape: "polygon"; points: WorldPoint[]; properties?: Record<string, unknown> };
+  | { id: string; shape: "rect"; x: number; y: number; width: number; height: number; visiblePropId?: string; properties?: Record<string, unknown> }
+  | { id: string; shape: "rect"; fromVisualPartId: string; inset?: number; visiblePropId?: string; properties?: Record<string, unknown> }
+  | { id: string; shape: "circle"; x: number; y: number; radius: number; visiblePropId?: string; properties?: Record<string, unknown> }
+  | { id: string; shape: "polygon"; points: WorldPoint[]; visiblePropId?: string; properties?: Record<string, unknown> };
 
 export interface HubLocalInteractionDefinition {
   id: string;
@@ -100,19 +103,22 @@ function worldInteraction(origin: WorldPoint, interaction: WorldInteractionDefin
 
 function worldCollider(structure: HubStructureDefinition, collider: HubLocalColliderDefinition): WorldColliderDefinition {
   const id = `${structure.id}:${collider.id}`;
+  const referencedPart = collider.shape === "rect" && "fromVisualPartId" in collider
+    ? [...structure.visualParts, ...structure.occluders].find(part => part.id === collider.fromVisualPartId)
+    : undefined;
+  const visiblePropId = collider.visiblePropId ?? referencedPart?.visiblePropId;
   const common = {
     id,
     sourceObjectId: structure.id,
     properties: {
       structureId: structure.id,
       localColliderId: collider.id,
+      ...(visiblePropId ? { visiblePropId } : {}),
       ...collider.properties,
     },
   };
   if (collider.shape === "rect") {
-    const sourcePart = "fromVisualPartId" in collider
-      ? [...structure.visualParts, ...structure.occluders].find(part => part.id === collider.fromVisualPartId)
-      : undefined;
+    const sourcePart = referencedPart;
     if ("fromVisualPartId" in collider && !sourcePart) {
       throw new Error(`[HubStructure] ${structure.id} collider ${collider.id} references missing part ${collider.fromVisualPartId}`);
     }
@@ -183,6 +189,7 @@ function visualObject(
       originY: structure.origin.y,
       rearAccessRule: structure.rearAccessRule,
       structureBounds,
+      collisionPolicy: part.collisionPolicy ?? (part.visiblePropId ? "none" : undefined),
       ...part.properties,
       ...(part.visiblePropId
         ? { visiblePropId: part.visiblePropId }

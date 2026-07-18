@@ -187,7 +187,7 @@ export function GameCanvas() {
       setStatus(result.success ? t(language, "status.imported") : t(language, "status.importFailed"));
       if (result.success) {
         engineRef.current.applySettings();
-        engineRef.current.switchState("title");
+        engineRef.current.switchState("hub", { spawnAnchor: "rebirth_spring" });
       }
     } catch {
       const language = engineRef.current?.data.settings.language ?? "en";

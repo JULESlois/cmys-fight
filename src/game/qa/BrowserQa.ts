@@ -2,6 +2,7 @@ import type { Engine } from "../Engine";
 import { audio, type AudioDiagnostics } from "../audio/AudioManager";
 import type { MusicMode, MusicScene } from "../audio/MusicLibrary";
 import { APP_VERSION } from "../../version";
+import type { DungeonQaScene } from "../states/DungeonState";
 
 export type QaCheckStatus = "pass" | "warn" | "fail";
 
@@ -217,6 +218,9 @@ export interface QaBridge {
   focusHubLandmark: (landmarkId: string) => boolean;
   setHubDebug: (enabled: boolean) => boolean;
   setHubPresentation: (time: number, characterId: string) => boolean;
+  focusHubPoint: (cameraX: number, cameraY: number, playerX?: number, playerY?: number) => boolean;
+  setDungeonScene: (scene: DungeonQaScene, theme: "forest" | "dungeon" | "snow" | "lava", time: number) => boolean;
+  setDungeonCollisionDebug: (enabled: boolean) => boolean;
   toggleDebugOverlay: () => boolean;
   setMusicScene: (scene: MusicScene) => void;
   setMusicMode: (mode: MusicMode) => void;
@@ -240,6 +244,9 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     focusHubLandmark: landmarkId => engine.qaFocusHubLandmark(landmarkId),
     setHubDebug: enabled => engine.qaSetHubDebug(enabled),
     setHubPresentation: (time, characterId) => engine.qaSetHubPresentation(time, characterId),
+    focusHubPoint: (cameraX, cameraY, playerX, playerY) => engine.qaFocusHubPoint(cameraX, cameraY, playerX, playerY),
+    setDungeonScene: (scene, theme, time) => engine.qaSetDungeonScene(scene, theme, time),
+    setDungeonCollisionDebug: enabled => engine.qaSetDungeonCollisionDebug(enabled),
     toggleDebugOverlay: () => engine.toggleDebugOverlay(),
     setMusicScene: scene => audio.setMusicScene(scene),
     setMusicMode: mode => {

@@ -34,7 +34,7 @@
 - [ ] Deuteranopia and Tritanopia modes remain readable without relying only on color.
 - [ ] Reduced Flash disables player/enemy hit flashes.
 - [ ] Screen Shake off prevents all damage shake.
-- [ ] Low-performance mode disables CRT, dynamic title motion, and shake after sustained low FPS.
+- [ ] Low-performance mode disables dynamic title motion and shake after sustained low FPS.
 - [ ] Tutorial prompts switch correctly between keyboard, gamepad, and touch.
 
 ## Data and deployment

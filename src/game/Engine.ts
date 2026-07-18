@@ -6,7 +6,7 @@ import { LegacyRpgState } from "./states/LegacyRpgState";
 import { LegacyTacticsState } from "./states/LegacyTacticsState";
 import { LegacyDialogState } from "./states/LegacyDialogState";
 import { MenuState } from "./states/MenuState";
-import { DungeonState } from "./states/DungeonState";
+import { DungeonState, type DungeonQaScene } from "./states/DungeonState";
 import { TitleState } from "./states/TitleState";
 import { SplashState } from "./states/SplashState";
 import { CharacterSelectState } from "./states/CharacterSelectState";
@@ -244,6 +244,28 @@ export class Engine {
     return (this.states.hub as HubState).qaSetPresentation(time, characterId);
   }
 
+  public qaFocusHubPoint(cameraX: number, cameraY: number, playerX?: number, playerY?: number): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: "central_plaza" });
+    return (this.states.hub as HubState).qaFocusPoint(cameraX, cameraY, playerX, playerY);
+  }
+
+  public qaSetDungeonScene(
+    scene: DungeonQaScene,
+    theme: "forest" | "dungeon" | "snow" | "lava",
+    time: number,
+  ): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "dungeon") this.doSwitchState("dungeon");
+    return (this.states.dungeon as DungeonState).qaSetScene(scene, theme, time);
+  }
+
+  public qaSetDungeonCollisionDebug(enabled: boolean): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "dungeon") this.doSwitchState("dungeon");
+    return (this.states.dungeon as DungeonState).qaSetCollisionDebug(enabled);
+  }
+
   private syncStateMusic(params?: any) {
     if (this.currentState === "dungeon") return;
     const stateScenes: Record<string, MusicScene> = {
@@ -281,8 +303,20 @@ export class Engine {
     this.rebuildStateAfterDataChange("dungeon", () => this.data.load());
   }
 
+  public returnToHubFromRun() {
+    this.states[this.currentState].prepareForSave();
+    this.data.save();
+    this.closeOverlayInternal();
+    this.isPaused = false;
+    this.switchState("hub", { spawnAnchor: "rebirth_spring" });
+  }
+
   public resetGameFromMenu() {
-    this.rebuildStateAfterDataChange("title", () => this.data.resetAll());
+    this.rebuildStateAfterDataChange(
+      "hub",
+      () => this.data.resetAll(),
+      { spawnAnchor: "rebirth_spring" },
+    );
   }
 
   private closeOverlayInternal() {
@@ -291,15 +325,15 @@ export class Engine {
     this.overlayState = null;
   }
 
-  private rebuildStateAfterDataChange(newState: string, mutateData: () => void) {
+  private rebuildStateAfterDataChange(newState: string, mutateData: () => void, params?: any) {
     this.closeOverlayInternal();
     this.states[this.currentState].exit();
     mutateData();
     this.input.suppressUntilReleased();
     this.isPaused = false;
     this.currentState = newState;
-    this.states[this.currentState].enter();
-    this.syncStateMusic();
+    this.states[this.currentState].enter(params);
+    this.syncStateMusic(params);
   }
 
   private loop(time: number) {
@@ -446,10 +480,6 @@ export class Engine {
       PauseOverlayRenderer.draw(this.ctx, this.input, dungeonPlayer, settings.language);
     }
 
-    if (settings.crtFilter && !degraded) {
-      this.ctx.fillStyle = settings.reducedFlashing ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.13)";
-      for (let y = 0; y < 240; y += 4) this.ctx.fillRect(0, y, 320, 1);
-    }
 
     if (this.isDebugOverlayVisible()) this.drawDebugOverlay(this.ctx);
     

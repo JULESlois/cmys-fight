@@ -1,6 +1,6 @@
 import { Engine } from "../Engine";
 import { UI_COLORS } from "../render/PixelUi";
-import { generateStage, Room } from "../FloorGenerator";
+import { generateStage, type Room, type ThemeId } from "../FloorGenerator";
 import { isCombatCleared, isCombatRoom, markCombatCleared, normalizeRoomState } from "../RoomState";
 import { Player, MAX_PLAYER_MANA } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
@@ -10,6 +10,8 @@ import { Enemy } from "../entities/Enemy";
 import { updateEnemyAnimation } from "../EnemyAnimation";
 import {
   TILE_BREAKABLE,
+  TILE_STRUCTURE,
+  TILE_WALL,
   TILE_SIZE,
   getRoomTemplate,
   getMapData,
@@ -61,6 +63,10 @@ import type { RunOutcome } from "../RunStats";
 import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
 import { t, uiFont } from "../i18n";
+import {
+  RoomObjectCollision,
+  type RoomObjectCollisionChannel,
+} from "../dungeon/RoomObjectCollision";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
 type WeaponChest = {
@@ -70,6 +76,19 @@ type WeaponChest = {
   weaponId: string;
   opened: boolean;
 };
+
+export type DungeonQaScene =
+  | "treasure_closed"
+  | "treasure_open"
+  | "wish_fountain"
+  | "portal_idle"
+  | "portal_hovered"
+  | "portal_activating"
+  | "special_exit"
+  | "special_wish"
+  | "horizontal_corridor"
+  | "vertical_corridor"
+  | "corner_lt";
 
 import { GameState } from "./GameState";
 export class DungeonState extends GameState {
@@ -90,6 +109,7 @@ export class DungeonState extends GameState {
   private pendingTransition: (() => void) | null = null;
   
   private currentMapData: number[] = [];
+  private readonly roomObjectCollision = new RoomObjectCollision();
   
   private roomPhase: RoomPhase = "entering";
   private phaseTimer: number = 0;
@@ -104,6 +124,9 @@ export class DungeonState extends GameState {
   private environmentHazards: EnvironmentHazard[] = [];
   private environmentTime: number = 0;
   private tutorial = new TutorialSystem();
+  private qaPresentationTime: number | null = null;
+  private qaFrozen = false;
+  private qaCollisionDebug = false;
 
   constructor(engine: Engine) {
     super(engine);
@@ -244,7 +267,7 @@ export class DungeonState extends GameState {
   }
 
   private addEnemy(enemy: Enemy) {
-    this.moveToNearestPassable(enemy, enemy.radius);
+    this.moveToNearestPassable(enemy, enemy.radius, "enemy");
     this.enemies.push(enemy);
     this.engine.data.discoverEnemy(enemy.enemyId);
   }
@@ -390,7 +413,9 @@ export class DungeonState extends GameState {
 
     normalizeRoomState(currentRoom);
     this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
-    this.moveToNearestPassable(this.player, this.player.radius);
+    this.roomObjectCollision.clear();
+    this.rebuildRoomObjectCollision(currentRoom);
+    this.moveToNearestPassable(this.player, this.player.radius, "player");
     this.environmentHazards = EnvironmentSystem.generate(floor, currentRoom, this.currentMapData);
     const template = getRoomTemplate(currentRoom);
 
@@ -407,6 +432,7 @@ export class DungeonState extends GameState {
     currentRoom.visited = true;
 
     if (currentRoom.type === "start" || currentRoom.type === "npc") {
+      this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
     }
@@ -419,14 +445,16 @@ export class DungeonState extends GameState {
         state: "idle",
         timer: 0,
       };
+      this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
     }
 
     if (currentRoom.type === "treasure") {
-      if (!currentRoom.interactionCompleted) {
+      if (!currentRoom.interactionCompleted || currentRoom.weaponChest) {
         this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
       }
+      this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
     }
@@ -437,6 +465,7 @@ export class DungeonState extends GameState {
         if (item.weaponId) this.engine.data.discoverWeapon(item.weaponId);
         if (item.buffId) this.engine.data.discoverBuff(item.buffId);
       }
+      this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
     }
@@ -447,6 +476,7 @@ export class DungeonState extends GameState {
       currentRoom.type === "wish_fountain" ||
       currentRoom.type === "photo_booth"
     ) {
+      this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
     }
@@ -457,6 +487,7 @@ export class DungeonState extends GameState {
         currentRoom.encounterState = undefined;
 
         if (currentRoom.rewardGenerated !== true) {
+          this.finalizeRoomObjects(currentRoom);
           this.setPhase("reward");
           return;
         }
@@ -468,11 +499,12 @@ export class DungeonState extends GameState {
             state: "idle",
             timer: 0
           };
-          if (!currentRoom.interactionCompleted) {
+          if (!currentRoom.interactionCompleted || currentRoom.weaponChest) {
             this.chest = this.createOrRestoreWeaponChest(currentRoom, "boss");
           }
         }
 
+        this.finalizeRoomObjects(currentRoom);
         this.setPhase("exploration");
         return;
       }
@@ -495,6 +527,7 @@ export class DungeonState extends GameState {
       if (currentRoom.encounterState) {
         try {
           this.encounterCtrl.restore(currentRoom.encounterState);
+          this.finalizeRoomObjects(currentRoom);
           this.setPhase("combat", { startEncounter: false });
           return;
         } catch (error) {
@@ -504,6 +537,7 @@ export class DungeonState extends GameState {
         }
       }
 
+      this.finalizeRoomObjects(currentRoom);
       if (this.enemies.length > 0) {
         this.setPhase("combat", { startEncounter: false });
       } else {
@@ -741,6 +775,7 @@ export class DungeonState extends GameState {
       }
     }
     currentRoom.rewardGenerated = true;
+    this.finalizeRoomObjects(currentRoom);
     this.syncPlayerState();
     this.syncRoomState();
     this.engine.data.save();
@@ -762,6 +797,10 @@ export class DungeonState extends GameState {
   }
 
   update(dt: number) {
+    if (this.qaFrozen) {
+      if (this.qaPresentationTime !== null) this.roomRenderer.setPresentationTime(this.qaPresentationTime);
+      return;
+    }
     this.syncMusicScene();
     this.roomRenderer.update(dt);
     this.fx.update(dt);
@@ -1084,8 +1123,8 @@ export class DungeonState extends GameState {
        const nextX = this.player.x + velocityX * dt;
        const nextY = this.player.y + velocityY * dt;
        
-       if (!this.isCollidingWithMap(nextX, this.player.y, this.player.radius)) this.player.x = nextX;
-       if (!this.isCollidingWithMap(this.player.x, nextY, this.player.radius)) this.player.y = nextY;
+       if (!this.isCircleBlocked(nextX, this.player.y, this.player.radius, "player")) this.player.x = nextX;
+       if (!this.isCircleBlocked(this.player.x, nextY, this.player.radius, "player")) this.player.y = nextY;
        
        this.handleDoorTransitions();
     }
@@ -1150,6 +1189,94 @@ export class DungeonState extends GameState {
         hazard.triggerCooldown = 0.72;
       }
     }
+  }
+
+  public qaSetScene(scene: DungeonQaScene, theme: ThemeId = "forest", time = 12.5): boolean {
+    if (!this.engine.debugMode || !Number.isFinite(time)) return false;
+    const floor = this.engine.data.data.floor;
+    const room = floor.rooms.find(candidate =>
+      candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+    );
+    if (!room) return false;
+
+    floor.theme = theme;
+    room.type = "start";
+    room.templateId = "legacy_room";
+    room.cleared = true;
+    room.combatCleared = true;
+    room.rewardGenerated = true;
+    room.interactionCompleted = false;
+    room.weaponChest = undefined;
+    room.enemies = [];
+    room.pickups = [];
+    room.destroyedPropTiles = [];
+    room.encounterState = undefined;
+    room.doors = { up: true, down: true, left: true, right: true };
+
+    if (scene === "treasure_closed" || scene === "treasure_open") {
+      const opened = scene === "treasure_open";
+      room.type = "treasure";
+      room.weaponChest = {
+        kind: "treasure",
+        x: 160,
+        y: 120,
+        weaponId: "pistol",
+        opened,
+      };
+      room.interactionCompleted = opened;
+    } else if (scene === "wish_fountain" || scene === "special_wish") {
+      room.type = "wish_fountain";
+    } else if (
+      scene === "portal_idle"
+      || scene === "portal_hovered"
+      || scene === "portal_activating"
+      || scene === "special_exit"
+    ) {
+      room.type = "exit";
+    } else {
+      room.templateId = scene;
+    }
+
+    this.qaPresentationTime = Math.max(0, time);
+    this.qaFrozen = true;
+    this.qaCollisionDebug = false;
+    this.player.characterId = "knight";
+    this.player.x = 160;
+    this.player.y = 198;
+    this.player.hp = Math.max(1, this.player.maxHp);
+    this.player.animState = "idle";
+    this.player.animFrame = 0;
+    this.player.animTimer = 0;
+    this.player.facing = "right";
+    this.player.facingLeft = false;
+    this.tutorial.reset(true);
+    this.loadRoom();
+
+    if (this.portal) {
+      if (scene === "portal_hovered") this.portal.state = "hovered";
+      else if (scene === "portal_activating") {
+        this.portal.state = "activating";
+        this.portal.timer = 0.12;
+      } else this.portal.state = "idle";
+    }
+    this.transitionState = "none";
+    this.transitionAlpha = 0;
+    this.pendingTransition = null;
+    this.roomPhase = "exploration";
+    this.phaseTimer = 0;
+    this.environmentTime = this.qaPresentationTime;
+    this.roomRenderer.setPresentationTime(this.qaPresentationTime);
+    this.player.x = 160;
+    this.player.y = 198;
+    this.moveToNearestPassable(this.player, this.player.radius, "player");
+    this.rebuildRoomObjectCollision(room);
+    return true;
+  }
+
+  public qaSetCollisionDebug(enabled: boolean): boolean {
+    if (!this.engine.debugMode) return false;
+    this.qaCollisionDebug = enabled;
+    return true;
   }
 
   public getPlayer(): Player {
@@ -1243,6 +1370,45 @@ export class DungeonState extends GameState {
     return { x: 160, y: 120 };
   }
 
+  private getLegacyPosition(room: Room): { x: number; y: number } {
+    const point = getRoomTemplate(room).legacySpawnPoint ?? { x: 10, y: 7 };
+    return { x: point.x * TILE_SIZE + TILE_SIZE / 2, y: point.y * TILE_SIZE + TILE_SIZE / 2 };
+  }
+
+  private rebuildRoomObjectCollision(room: Room): void {
+    this.roomObjectCollision.rebuild({
+      roomType: room.type,
+      chest: this.chest ? { kind: this.chest.kind, x: this.chest.x, y: this.chest.y } : null,
+      portal: this.portal ? { x: this.portal.x, y: this.portal.y } : null,
+      shop: room.type === "shop" ? this.getShopPosition(room) : null,
+      broadcast: room.type === "npc" ? this.getBroadcastPosition(room) : null,
+      special: room.type === "wish_fountain" || room.type === "photo_booth"
+        ? this.getSpecialRoomPosition(room)
+        : null,
+      legacy: room.type === "legacy_rpg" || room.type === "legacy_tactics"
+        ? this.getLegacyPosition(room)
+        : null,
+    });
+  }
+
+  private finalizeRoomObjects(room: Room): void {
+    this.rebuildRoomObjectCollision(room);
+    this.moveToNearestPassable(this.player, this.player.radius, "player");
+    for (const enemy of this.enemies) this.moveToNearestPassable(enemy, enemy.radius, "enemy");
+    for (const pickup of this.pickups) this.moveToNearestPassable(pickup, 4, "player");
+  }
+
+  private canInteractWith(
+    anchorX: number,
+    anchorY: number,
+    range: number,
+    losX = anchorX,
+    losY = anchorY,
+  ): boolean {
+    return Math.hypot(this.player.x - anchorX, this.player.y - anchorY) < range
+      && this.hasLineOfSight(this.player.x, this.player.y, losX, losY);
+  }
+
   private handleInteract(target: any) {
     if (target.type === "portal" && this.portal) {
        this.portal.state = "activating";
@@ -1330,7 +1496,7 @@ export class DungeonState extends GameState {
 
     if (currentRoom?.type === "npc" && !currentRoom.interactionCompleted) {
       const broadcast = this.getBroadcastPosition(currentRoom);
-      if (Math.hypot(this.player.x - broadcast.x, this.player.y - broadcast.y) < 30) {
+      if (this.canInteractWith(broadcast.x, broadcast.y, 32, broadcast.x, broadcast.y + 14)) {
         return { type: "broadcast", x: broadcast.x, y: broadcast.y, roomId: currentRoom.id };
       }
     }
@@ -1341,23 +1507,22 @@ export class DungeonState extends GameState {
       !currentRoom.interactionCompleted
     ) {
       const special = this.getSpecialRoomPosition(currentRoom);
-      if (Math.hypot(this.player.x - special.x, this.player.y - special.y) < 30) {
+      const targetY = currentRoom.type === "wish_fountain" ? special.y + 31 : special.y + 18;
+      if (this.canInteractWith(special.x, special.y, 34, special.x, targetY)) {
         return { type: currentRoom.type, x: special.x, y: special.y, roomId: currentRoom.id };
       }
     }
 
     if (currentRoom && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") && !currentRoom.interactionCompleted) {
-      const template = getRoomTemplate(currentRoom);
-      const lx = template.legacySpawnPoint ? template.legacySpawnPoint.x * 16 + 8 : 160;
-      const ly = template.legacySpawnPoint ? template.legacySpawnPoint.y * 16 + 8 : 120;
-      if (Math.abs(this.player.x - lx) < 20 && Math.abs(this.player.y - ly) < 20) {
-         return { type: currentRoom.type, x: lx, y: ly, roomId: currentRoom.id };
+      const legacy = this.getLegacyPosition(currentRoom);
+      if (this.canInteractWith(legacy.x, legacy.y, 28, legacy.x, legacy.y + 13)) {
+         return { type: currentRoom.type, x: legacy.x, y: legacy.y, roomId: currentRoom.id };
       }
     }
 
     if (currentRoom?.type === "shop") {
       const shop = this.getShopPosition(currentRoom);
-      if (Math.hypot(this.player.x - shop.x, this.player.y - shop.y) < 32) {
+      if (this.canInteractWith(shop.x, shop.y, 36, shop.x, shop.y + 18)) {
         return { type: "shop", x: shop.x, y: shop.y, roomId: currentRoom.id };
       }
     }
@@ -1365,7 +1530,7 @@ export class DungeonState extends GameState {
     if (this.portal && this.portal.state !== "spawning" && this.portal.state !== "activating") {
       const dx = this.player.x - this.portal.x;
       const dy = this.player.y - this.portal.y;
-      if (Math.sqrt(dx*dx + dy*dy) < 30) {
+      if (Math.sqrt(dx*dx + dy*dy) < 34 && this.hasLineOfSight(this.player.x, this.player.y, this.portal.x, this.portal.y)) {
          return { type: "portal", x: this.portal.x, y: this.portal.y };
       }
     }
@@ -1373,7 +1538,7 @@ export class DungeonState extends GameState {
     if (this.chest && !this.chest.opened) {
       const dx = this.player.x - this.chest.x;
       const dy = this.player.y - this.chest.y;
-      if (Math.sqrt(dx*dx + dy*dy) < 30) {
+      if (Math.sqrt(dx*dx + dy*dy) < 34 && this.hasLineOfSight(this.player.x, this.player.y, this.chest.x, this.chest.y + 12)) {
          return { type: "treasure", x: this.chest.x, y: this.chest.y };
       }
     }
@@ -1381,8 +1546,12 @@ export class DungeonState extends GameState {
     return null;
   }
 
-  private moveToNearestPassable(entity: { x: number; y: number }, radius: number): void {
-    if (!this.isCollidingWithMap(entity.x, entity.y, radius)) return;
+  private moveToNearestPassable(
+    entity: { x: number; y: number },
+    radius: number,
+    channel: RoomObjectCollisionChannel = "player",
+  ): void {
+    if (!this.isCircleBlocked(entity.x, entity.y, radius, channel)) return;
     const originX = Math.max(1, Math.min(MAP_WIDTH - 2, Math.floor(entity.x / TILE_SIZE)));
     const originY = Math.max(1, Math.min(MAP_HEIGHT - 2, Math.floor(entity.y / TILE_SIZE)));
     for (let distance = 0; distance <= 9; distance++) {
@@ -1394,7 +1563,7 @@ export class DungeonState extends GameState {
           if (tileX <= 0 || tileX >= MAP_WIDTH - 1 || tileY <= 0 || tileY >= MAP_HEIGHT - 1) continue;
           const x = tileX * TILE_SIZE + TILE_SIZE / 2;
           const y = tileY * TILE_SIZE + TILE_SIZE / 2;
-          if (this.isCollidingWithMap(x, y, radius)) continue;
+          if (this.isCircleBlocked(x, y, radius, channel)) continue;
           entity.x = x;
           entity.y = y;
           return;
@@ -1405,25 +1574,47 @@ export class DungeonState extends GameState {
     entity.y = 120;
   }
 
-  private isCollidingWithMap(x: number, y: number, radius: number): boolean {
-    const points = [
-      {x: x - radius + 2, y: y},
-      {x: x + radius - 2, y: y},
-      {x: x, y: y - radius + 2},
-      {x: x, y: y + radius - 2}
-    ];
-    for (const p of points) {
-      const tx = Math.floor(p.x / TILE_SIZE);
-      const ty = Math.floor(p.y / TILE_SIZE);
-      
-      if (tx >= 0 && tx < MAP_WIDTH && ty >= 0 && ty < MAP_HEIGHT) {
-        const tileId = this.currentMapData[ty * MAP_WIDTH + tx];
-        if (isSolid(tileId)) return true;
-      } else {
-        return true;
+  private circleOverlapsTile(x: number, y: number, radius: number, tileX: number, tileY: number): boolean {
+    const left = tileX * TILE_SIZE;
+    const top = tileY * TILE_SIZE;
+    const closestX = Math.max(left, Math.min(x, left + TILE_SIZE));
+    const closestY = Math.max(top, Math.min(y, top + TILE_SIZE));
+    const dx = x - closestX;
+    const dy = y - closestY;
+    return dx * dx + dy * dy < radius * radius;
+  }
+
+  private isCircleBlocked(
+    x: number,
+    y: number,
+    radius: number,
+    channel: RoomObjectCollisionChannel = "player",
+  ): boolean {
+    if (x - radius < 0 || x + radius > MAP_WIDTH * TILE_SIZE || y - radius < 0 || y + radius > MAP_HEIGHT * TILE_SIZE) {
+      return true;
+    }
+
+    const minTileX = Math.max(0, Math.floor((x - radius) / TILE_SIZE));
+    const maxTileX = Math.min(MAP_WIDTH - 1, Math.floor((x + radius) / TILE_SIZE));
+    const minTileY = Math.max(0, Math.floor((y - radius) / TILE_SIZE));
+    const maxTileY = Math.min(MAP_HEIGHT - 1, Math.floor((y + radius) / TILE_SIZE));
+
+    // Check static tile architecture, then destructible breakables, then the
+    // current room-object scene. Every caller selects a blocking channel.
+    for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+        const tileId = this.currentMapData[tileY * MAP_WIDTH + tileX];
+        if (tileId !== TILE_WALL && tileId !== TILE_STRUCTURE) continue;
+        if (this.circleOverlapsTile(x, y, radius, tileX, tileY)) return true;
       }
     }
-    return false;
+    for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
+      for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
+        if (this.currentMapData[tileY * MAP_WIDTH + tileX] !== TILE_BREAKABLE) continue;
+        if (this.circleOverlapsTile(x, y, radius, tileX, tileY)) return true;
+      }
+    }
+    return this.roomObjectCollision.isCircleBlocked(x, y, radius, channel);
   }
 
   private findBreakableTileAt(x: number, y: number, radius: number): number | null {
@@ -1466,7 +1657,7 @@ export class DungeonState extends GameState {
     const steps = Math.max(1, Math.ceil(distance / 6));
     for (let step = 1; step < steps; step++) {
       const t = step / steps;
-      if (this.isCollidingWithMap(startX + dx * t, startY + dy * t, 2)) return false;
+      if (this.isCircleBlocked(startX + dx * t, startY + dy * t, 2, "projectile")) return false;
     }
     return true;
   }
@@ -1672,7 +1863,7 @@ export class DungeonState extends GameState {
     const nextX = this.player.kanamiBeaconX + this.player.kanamiBeaconVx * dt;
     const nextY = this.player.kanamiBeaconY + this.player.kanamiBeaconVy * dt;
     this.player.kanamiBeaconFlightTimer = Math.max(0, this.player.kanamiBeaconFlightTimer - dt);
-    const collided = this.isCollidingWithMap(nextX, nextY, 5)
+    const collided = this.isCircleBlocked(nextX, nextY, 5, "projectile")
       || nextX < 12 || nextX > 308 || nextY < 12 || nextY > 228;
     if (!collided) {
       this.player.kanamiBeaconX = nextX;
@@ -1789,8 +1980,8 @@ export class DungeonState extends GameState {
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
-        if (!this.isCollidingWithMap(nextX, e.y, e.radius)) e.x = nextX;
-        if (!this.isCollidingWithMap(e.x, nextY, e.radius)) e.y = nextY;
+        if (!this.isCircleBlocked(nextX, e.y, e.radius, "enemy")) e.x = nextX;
+        if (!this.isCircleBlocked(e.x, nextY, e.radius, "enemy")) e.y = nextY;
         e.x = Math.max(16, Math.min(304, e.x));
         e.y = Math.max(16, Math.min(224, e.y));
         updateEnemyAnimation(e, { dt, previousX, previousY, targetX: beaconTarget.x });
@@ -1902,8 +2093,8 @@ export class DungeonState extends GameState {
         }
       }
       
-      if (!this.isCollidingWithMap(nextX, e.y, e.radius)) e.x = nextX;
-      if (!this.isCollidingWithMap(e.x, nextY, e.radius)) e.y = nextY;
+      if (!this.isCircleBlocked(nextX, e.y, e.radius, "enemy")) e.x = nextX;
+      if (!this.isCircleBlocked(e.x, nextY, e.radius, "enemy")) e.y = nextY;
       
       e.x = Math.max(16, Math.min(320 - 16, e.x));
       e.y = Math.max(16, Math.min(240 - 16, e.y));
@@ -1953,8 +2144,8 @@ export class DungeonState extends GameState {
   private moveEnemyBy(enemy: Enemy, dx: number, dy: number) {
     const nextX = Math.max(16, Math.min(320 - 16, enemy.x + dx));
     const nextY = Math.max(16, Math.min(240 - 16, enemy.y + dy));
-    if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
-    if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
+    if (!this.isCircleBlocked(nextX, enemy.y, enemy.radius, "enemy")) enemy.x = nextX;
+    if (!this.isCircleBlocked(enemy.x, nextY, enemy.radius, "enemy")) enemy.y = nextY;
   }
 
   private updateBossPhase(enemy: Enemy) {
@@ -2166,7 +2357,7 @@ export class DungeonState extends GameState {
       const distance = enemy.chargeDistance * (step / steps);
       const nextX = startX + Math.cos(enemy.attackAngle) * distance;
       const nextY = startY + Math.sin(enemy.attackAngle) * distance;
-      if (this.isCollidingWithMap(nextX, nextY, enemy.radius)) break;
+      if (this.isCircleBlocked(nextX, nextY, enemy.radius, "enemy")) break;
       enemy.x = Math.max(16, Math.min(304, nextX));
       enemy.y = Math.max(16, Math.min(224, nextY));
     }
@@ -2215,7 +2406,7 @@ export class DungeonState extends GameState {
     const distance = enemy.radius + 18;
     const x = enemy.x + Math.cos(angle) * distance;
     const y = enemy.y + Math.sin(angle) * distance;
-    if (this.isCollidingWithMap(x, y, 8)) return;
+    if (this.isCircleBlocked(x, y, 8, "enemy")) return;
     const summoned = EncounterFactory.createEnemy(this.engine.data.data.floor, {
       x,
       y,
@@ -2552,8 +2743,8 @@ export class DungeonState extends GameState {
         }
 
         if (!destroyedBreakable && p.wallBouncesRemaining > 0) {
-          const blockedX = proposedX < 0 || proposedX > 320 || this.isCollidingWithMap(proposedX, p.previousY, p.radius);
-          const blockedY = proposedY < 0 || proposedY > 240 || this.isCollidingWithMap(p.previousX, proposedY, p.radius);
+          const blockedX = proposedX < 0 || proposedX > 320 || this.isCircleBlocked(proposedX, p.previousY, p.radius, "projectile");
+          const blockedY = proposedY < 0 || proposedY > 240 || this.isCircleBlocked(p.previousX, proposedY, p.radius, "projectile");
           if (blockedX || (!blockedX && !blockedY)) p.vx *= -1;
           if (blockedY || (!blockedX && !blockedY)) p.vy *= -1;
           p.x = p.previousX;
@@ -2794,8 +2985,8 @@ export class DungeonState extends GameState {
           const push = projectile.knockback * falloff;
           const nextX = enemy.x + dx / centerDistance * push;
           const nextY = enemy.y + dy / centerDistance * push;
-          if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) enemy.x = nextX;
-          if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) enemy.y = nextY;
+          if (!this.isCircleBlocked(nextX, enemy.y, enemy.radius, "enemy")) enemy.x = nextX;
+          if (!this.isCircleBlocked(enemy.x, nextY, enemy.radius, "enemy")) enemy.y = nextY;
         }
       }
       if (result.killed) {
@@ -2817,10 +3008,10 @@ export class DungeonState extends GameState {
     const nextX = enemy.x + pushX;
     const nextY = enemy.y + pushY;
 
-    if (!this.isCollidingWithMap(nextX, enemy.y, enemy.radius)) {
+    if (!this.isCircleBlocked(nextX, enemy.y, enemy.radius, "enemy")) {
       enemy.x = Math.max(16, Math.min(304, nextX));
     }
-    if (!this.isCollidingWithMap(enemy.x, nextY, enemy.radius)) {
+    if (!this.isCircleBlocked(enemy.x, nextY, enemy.radius, "enemy")) {
       enemy.y = Math.max(16, Math.min(224, nextY));
     }
   }
@@ -2835,7 +3026,7 @@ export class DungeonState extends GameState {
       const t = step / steps;
       const x = projectile.previousX + dx * t;
       const y = projectile.previousY + dy * t;
-      if (x < 0 || x > 320 || y < 0 || y > 240 || this.isCollidingWithMap(x, y, projectile.radius)) {
+      if (x < 0 || x > 320 || y < 0 || y > 240 || this.isCircleBlocked(x, y, projectile.radius, "projectile")) {
         return t;
       }
     }
@@ -2943,12 +3134,39 @@ export class DungeonState extends GameState {
     ctx.restore();
   }
 
+  private drawRoomObjectCollisionDebug(ctx: CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.font = "5px monospace";
+    ctx.textAlign = "left";
+    for (const collider of this.roomObjectCollision.getColliders()) {
+      ctx.fillStyle = "rgba(255,70,70,0.2)";
+      ctx.strokeStyle = "#FF4646";
+      if (collider.shape === "circle") {
+        ctx.beginPath();
+        ctx.arc(Math.round(collider.x), Math.round(collider.y), collider.radius ?? 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillRect(collider.x, collider.y, collider.width ?? 0, collider.height ?? 0);
+        ctx.strokeRect(collider.x, collider.y, collider.width ?? 0, collider.height ?? 0);
+      }
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText(collider.id, Math.round(collider.x) + 2, Math.round(collider.y) - 2);
+    }
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(Math.round(this.player.x), Math.round(this.player.y), this.player.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   draw(ctx: CanvasRenderingContext2D) {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
     
     this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
-    const time = Date.now() / 1000;
+    const time = this.qaPresentationTime ?? Date.now() / 1000;
     EnvironmentSystem.draw(ctx, this.environmentHazards, this.environmentTime);
     const doorLocked = this.roomPhase !== "exploration";
     this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", doorLocked);
@@ -3055,6 +3273,16 @@ export class DungeonState extends GameState {
         floor.theme || "forest",
         currentRoom.interactionCompleted === true,
       );
+    } else if (currentRoom?.type === "legacy_rpg" || currentRoom?.type === "legacy_tactics") {
+      const legacy = this.getLegacyPosition(currentRoom);
+      SpecialRoomRenderer.drawLegacyDevice(
+        ctx,
+        legacy.x,
+        legacy.y,
+        time,
+        currentRoom.type,
+        currentRoom.interactionCompleted === true,
+      );
     } else if (currentRoom?.type === "photo_booth") {
       const special = this.getSpecialRoomPosition(currentRoom);
       SpecialRoomRenderer.drawPhotoBooth(
@@ -3096,6 +3324,7 @@ export class DungeonState extends GameState {
       this.engine.isPerformanceDegraded(),
       this.engine.data.settings.reducedFlashing,
     );
+    if (this.qaCollisionDebug) this.drawRoomObjectCollisionDebug(ctx);
     
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
     this.tutorial.draw(ctx, this.engine.input, this.engine.data.settings.language);

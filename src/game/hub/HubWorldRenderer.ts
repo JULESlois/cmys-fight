@@ -1,6 +1,7 @@
 import type { Camera2D } from "../world/Camera2D";
 import { getWorldLayer, type WorldMapDefinition, type WorldObjectDefinition } from "../world/WorldMap";
 import { WorldMapRenderer } from "../world/WorldMapRenderer";
+import { drawRitualSpring } from "../render/RitualSpringRenderer";
 import { HubArchitectureRenderer } from "./HubArchitectureRenderer";
 import { HubGroundRenderer } from "./HubGroundRenderer";
 import { HubGroundDetailTile } from "./HubMap";
@@ -596,12 +597,12 @@ export class HubWorldRenderer {
   }
 
   private drawGardenWish(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
-    const cx = object.x + (object.width ?? 96) / 2;
-    const cy = object.y + (object.height ?? 80) / 2 + 12;
-    ctx.fillStyle = COLORS.stoneDark; ctx.fillRect(cx - 44, cy - 15, 88, 33); ctx.fillRect(cx - 36, cy - 25, 72, 52);
-    ctx.fillStyle = COLORS.waterDark; ctx.fillRect(cx - 30, cy - 18, 60, 32);
-    ctx.fillStyle = COLORS.water; ctx.fillRect(cx - 26, cy - 15, 52, 3);
-    ctx.fillStyle = COLORS.stone; ctx.fillRect(cx - 6, cy - 48, 12, 36);
-    ctx.fillStyle = Math.floor(time * 5) % 2 === 0 ? COLORS.cyan : COLORS.cyanSoft; ctx.fillRect(cx - 2, cy - 55, 4, 12);
+    drawRitualSpring(ctx, {
+      x: object.x + (object.width ?? 96) / 2,
+      y: 798,
+      scale: 0.7,
+      time,
+      theme: "hub",
+    });
   }
 }

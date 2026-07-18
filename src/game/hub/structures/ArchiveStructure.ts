@@ -26,9 +26,9 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
   visualParts: [
     { id: "shadow", artPart: "shadow", bounds: { x: -4, y: 126, width: 248, height: 18 }, layer: "back" },
     { id: "facade", artPart: "facade", bounds: { x: 0, y: 24, width: 240, height: 120 }, layer: "sorted", sortY: 140 },
-    { id: "archive_monument_prop", artPart: "archive_monument", bounds: { x: 92, y: 128, width: 56, height: 60 }, layer: "sorted", sortY: 188, visiblePropId: "archive_monument" },
-    { id: "codex_lectern_prop", artPart: "codex_lectern", bounds: { x: 56, y: 136, width: 40, height: 52 }, layer: "sorted", sortY: 188, visiblePropId: "codex_lectern" },
-    { id: "honor_wall_prop", artPart: "honor_wall", bounds: { x: 148, y: 132, width: 48, height: 56 }, layer: "sorted", sortY: 188, visiblePropId: "honor_wall" },
+    { id: "archive_monument_prop", artPart: "archive_monument", bounds: { x: 92, y: 128, width: 56, height: 60 }, layer: "sorted", sortY: 188, visiblePropId: "archive_monument", collisionPolicy: "custom" },
+    { id: "codex_lectern_prop", artPart: "codex_lectern", bounds: { x: 56, y: 136, width: 40, height: 52 }, layer: "sorted", sortY: 188, visiblePropId: "codex_lectern", collisionPolicy: "custom" },
+    { id: "honor_wall_prop", artPart: "honor_wall", bounds: { x: 148, y: 132, width: 48, height: 56 }, layer: "sorted", sortY: 188, visiblePropId: "honor_wall", collisionPolicy: "custom" },
   ],
   occluders: [
     { id: "roof", artPart: "roof", bounds: { x: -8, y: -10, width: 256, height: 112 }, sortY: 100 },
@@ -41,6 +41,9 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
     { id: "foot_east", shape: "rect", x: 146, y: 114, width: 88, height: 30 },
     { id: "buttress_west", shape: "rect", x: 0, y: 112, width: 10, height: 30 },
     { id: "buttress_east", shape: "rect", x: 230, y: 112, width: 10, height: 30 },
+    { id: "archive_monument_foot", shape: "rect", x: 92, y: 175, width: 56, height: 13, visiblePropId: "archive_monument" },
+    { id: "codex_lectern_foot", shape: "rect", x: 64, y: 176, width: 24, height: 12, visiblePropId: "codex_lectern" },
+    { id: "honor_wall_foot", shape: "rect", x: 148, y: 176, width: 48, height: 12, visiblePropId: "honor_wall" },
   ],
   interactions: [
     {
@@ -52,7 +55,7 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
       interaction: {
         zone: { shape: "rect", x: 88, y: 132, width: 64, height: 58 },
         promptPoint: { x: 120, y: 140 },
-        lineOfSightTarget: { x: 120, y: 154 },
+        lineOfSightTarget: { x: 120, y: 190 },
         requireLineOfSight: true,
         side: "south",
       },
@@ -67,7 +70,7 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
       interaction: {
         zone: { shape: "rect", x: 48, y: 142, width: 48, height: 48 },
         promptPoint: { x: 76, y: 146 },
-        lineOfSightTarget: { x: 76, y: 158 },
+        lineOfSightTarget: { x: 76, y: 190 },
         requireLineOfSight: true,
         side: "south",
       },
@@ -82,7 +85,7 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
       interaction: {
         zone: { shape: "rect", x: 144, y: 140, width: 52, height: 50 },
         promptPoint: { x: 172, y: 146 },
-        lineOfSightTarget: { x: 172, y: 158 },
+        lineOfSightTarget: { x: 172, y: 190 },
         requireLineOfSight: true,
         side: "south",
       },

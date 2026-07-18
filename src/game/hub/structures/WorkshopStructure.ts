@@ -23,12 +23,12 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
   visualParts: [
     { id: "shadow", artPart: "shadow", bounds: { x: 0, y: 140, width: 256, height: 18 }, layer: "back" },
     { id: "facade", artPart: "facade", bounds: { x: 0, y: 36, width: 256, height: 124 }, layer: "sorted", sortY: 154 },
-    { id: "smoke", artPart: "smoke", bounds: { x: 8, y: -18, width: 74, height: 58 }, layer: "upper" },
-    { id: "enchanting_table_prop", artPart: "enchanting_table", bounds: { x: 164, y: 130, width: 58, height: 54 }, layer: "sorted", sortY: 184, visiblePropId: "enchanting_table" },
+    { id: "smoke", artPart: "smoke", bounds: { x: 8, y: -18, width: 74, height: 58 }, layer: "upper", collisionPolicy: "none" },
+    { id: "enchanting_table_prop", artPart: "enchanting_table", bounds: { x: 164, y: 130, width: 58, height: 54 }, layer: "sorted", sortY: 184, visiblePropId: "enchanting_table", collisionPolicy: "custom" },
   ],
   occluders: [
     { id: "roof", artPart: "roof", bounds: { x: -8, y: 10, width: 272, height: 86 }, sortY: 100 },
-    { id: "front_workbench", artPart: "blacksmith_workstation", bounds: { x: 72, y: 126, width: 72, height: 58 }, sortY: 184, visiblePropId: "blacksmith_workstation" },
+    { id: "front_workbench", artPart: "blacksmith_workstation", bounds: { x: 72, y: 126, width: 72, height: 58 }, sortY: 184, visiblePropId: "blacksmith_workstation", collisionPolicy: "custom" },
     { id: "gantry", artPart: "gantry", bounds: { x: 176, y: 34, width: 78, height: 126 }, sortY: 152 },
   ],
   colliders: [
@@ -37,8 +37,8 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
     { id: "furnace", shape: "rect", x: 4, y: 118, width: 66, height: 42 },
     { id: "front_center", shape: "rect", x: 104, y: 118, width: 72, height: 36 },
     { id: "annex", shape: "rect", x: 208, y: 118, width: 44, height: 42 },
-    { id: "workbench", shape: "rect", x: 80, y: 160, width: 56, height: 12 },
-    { id: "enchanting_table", shape: "rect", x: 172, y: 160, width: 42, height: 12 },
+    { id: "workbench", shape: "rect", x: 80, y: 160, width: 56, height: 12, visiblePropId: "blacksmith_workstation" },
+    { id: "enchanting_table", shape: "rect", x: 172, y: 160, width: 42, height: 12, visiblePropId: "enchanting_table" },
   ],
   interactions: [
     {

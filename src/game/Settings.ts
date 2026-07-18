@@ -1,5 +1,5 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 7;
+export const SETTINGS_VERSION = 8;
 
 export type InputAction =
   | "moveUp"
@@ -85,7 +85,6 @@ export interface GameSettings {
   musicVolume: number;
   musicMode: MusicMode;
   screenShake: boolean;
-  crtFilter: boolean;
   uiScale: number;
   colorblindMode: ColorblindMode;
   reducedFlashing: boolean;
@@ -106,7 +105,6 @@ export function createDefaultSettings(): GameSettings {
     musicVolume: 55,
     musicMode: "adaptive",
     screenShake: true,
-    crtFilter: true,
     uiScale: 1,
     colorblindMode: "off",
     reducedFlashing: false,
@@ -166,7 +164,6 @@ export function normalizeSettings(value: unknown): GameSettings {
     musicVolume: Number.isFinite(musicVolume) ? Math.max(0, Math.min(100, Math.round(musicVolume))) : fallback.musicVolume,
     musicMode,
     screenShake: raw.screenShake !== false,
-    crtFilter: raw.crtFilter !== false,
     uiScale: Number.isFinite(uiScale) ? Math.max(0.85, Math.min(1.25, Math.round(uiScale * 20) / 20)) : 1,
     colorblindMode,
     reducedFlashing: raw.reducedFlashing === true,

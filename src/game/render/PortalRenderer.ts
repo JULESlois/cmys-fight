@@ -1,176 +1,198 @@
 import { PALETTES } from "../data/palettes";
+import { PORTAL_FRAME_COLLISION_GEOMETRY } from "../dungeon/RoomObjectCollision";
 
 export type PortalState = "spawning" | "idle" | "hovered" | "activating";
 
-const OUTER_STEPS = [
-  [0, -16], [6, -14], [11, -11], [14, -6], [16, 0], [14, 6], [11, 11], [6, 14],
-  [0, 16], [-6, 14], [-11, 11], [-14, 6], [-16, 0], [-14, -6], [-11, -11], [-6, -14],
-] as const;
-const INNER_STEPS = [
-  [0, -10], [5, -8], [8, -5], [10, 0], [8, 5], [5, 8], [0, 10],
-  [-5, 8], [-8, 5], [-10, 0], [-8, -5], [-5, -8],
+export const PORTAL_OUTER_RING_POINTS = [
+  [0, -20], [8, -18], [14, -14], [18, -8], [20, 0], [18, 8], [14, 14], [8, 18],
+  [0, 20], [-8, 18], [-14, 14], [-18, 8], [-20, 0], [-18, -8], [-14, -14], [-8, -18],
 ] as const;
 
-function rect(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, w: number, h: number): void {
+export const PORTAL_INNER_RING_POINTS = [
+  [0, -13], [7, -11], [11, -7], [13, 0], [11, 7], [7, 11],
+  [0, 13], [-7, 11], [-11, 7], [-13, 0], [-11, -7], [-7, -11],
+] as const;
+
+const PORTAL_PULSE_RING_POINTS = [
+  [0, -23], [9, -21], [16, -16], [21, -9], [23, 0], [21, 9], [16, 16], [9, 21],
+  [0, 23], [-9, 21], [-16, 16], [-21, 9], [-23, 0], [-21, -9], [-16, -16], [-9, -21],
+] as const;
+
+function rect(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, width: number, height: number): void {
   ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
 
-function drawForestFrame(ctx: CanvasRenderingContext2D, color: string): void {
-  rect(ctx, "#231B16", -22, -17, 7, 32);
-  rect(ctx, "#5C3D29", -20, -18, 5, 31);
-  rect(ctx, "#8B6340", -18, -16, 2, 25);
-  rect(ctx, "#231B16", 15, -17, 7, 32);
-  rect(ctx, "#5C3D29", 15, -18, 5, 31);
-  rect(ctx, "#8B6340", 16, -16, 2, 25);
-  rect(ctx, "#231B16", -20, -24, 40, 8);
-  rect(ctx, "#5C3D29", -18, -23, 36, 6);
-  rect(ctx, "#76A15A", -22, -25, 13, 5);
-  rect(ctx, "#8DBA67", 9, -25, 13, 5);
-  rect(ctx, "#E98EAC", -18, -27, 3, 3);
-  rect(ctx, "#F4D86C", 16, -26, 3, 3);
-  rect(ctx, "#231B16", -27, 12, 15, 5);
-  rect(ctx, "#5C3D29", -26, 13, 13, 3);
-  rect(ctx, "#231B16", 12, 12, 15, 5);
-  rect(ctx, "#5C3D29", 13, 13, 13, 3);
-  rect(ctx, color, -1, -28, 3, 4);
+function drawPixelCore(ctx: CanvasRenderingContext2D, radius: number, color: string): void {
+  const r = Math.max(2, Math.round(radius));
+  rect(ctx, color, -r, -Math.max(1, r - 2), r * 2, Math.max(2, (r - 2) * 2));
+  rect(ctx, color, -Math.max(1, r - 2), -r, Math.max(2, (r - 2) * 2), r * 2);
 }
 
-function drawDungeonFrame(ctx: CanvasRenderingContext2D, color: string): void {
-  rect(ctx, "#121722", -24, -20, 8, 37);
-  rect(ctx, "#464F5D", -22, -19, 6, 35);
-  rect(ctx, "#8994A0", -20, -18, 2, 27);
-  rect(ctx, "#121722", 16, -20, 8, 37);
-  rect(ctx, "#464F5D", 16, -19, 6, 35);
-  rect(ctx, "#8994A0", 18, -18, 2, 27);
-  rect(ctx, "#121722", -22, -28, 44, 9);
-  rect(ctx, "#464F5D", -20, -27, 40, 7);
-  rect(ctx, "#8994A0", -17, -26, 34, 2);
-  for (const x of [-14, -7, 0, 7, 14]) {
-    rect(ctx, "#252C39", x - 1, -23, 3, 5);
-    rect(ctx, color, x, -22, 1, 3);
-  }
-  for (const side of [-1, 1] as const) {
-    const x = side * 26;
-    rect(ctx, "#171D28", x - 3, -13, 6, 25);
-    for (let y = -10; y <= 8; y += 6) {
-      rect(ctx, "#8D98A4", x - 2, y, 4, 3);
-      rect(ctx, "#303946", x - 1, y + 1, 2, 1);
-    }
-  }
-  rect(ctx, color, -2, -33, 5, 4);
+export function getPortalPointIndex(index: number, phase: number, direction: 1 | -1, length: number): number {
+  if (!Number.isFinite(length) || length <= 0) return 0;
+  const raw = index + direction * phase;
+  return ((raw % length) + length) % length;
 }
 
-function drawSnowFrame(ctx: CanvasRenderingContext2D, color: string): void {
-  for (const side of [-1, 1] as const) {
-    const x = side * 21;
-    rect(ctx, "#173543", x - 7, -22, 14, 41);
-    rect(ctx, "#597984", x - 5, -21, 10, 39);
-    rect(ctx, "#D4E9EC", x - 3, -19, 6, 4);
-    rect(ctx, "#203F4D", x - 3, -12, 6, 18);
-    rect(ctx, color, x - 2, -9, 4, 9);
-    rect(ctx, "#E9FFFF", x - 1, -8, 2, 4);
-    rect(ctx, "#D65760", x - 3, 10, 3, 3);
-    rect(ctx, "#E7B64B", x + 1, 10, 3, 3);
-  }
-  rect(ctx, "#173543", -22, -29, 44, 9);
-  rect(ctx, "#597984", -20, -28, 40, 7);
-  rect(ctx, "#D4E9EC", -17, -27, 34, 2);
-  rect(ctx, "#173543", -12, 16, 24, 5);
-  rect(ctx, "#9DBCC3", -10, 17, 20, 2);
-  rect(ctx, color, -2, -33, 5, 4);
-}
-
-function drawLavaFrame(ctx: CanvasRenderingContext2D, color: string): void {
-  const plates = [
-    [-20, -26, 14, 8], [6, -26, 14, 8], [-28, -16, 9, 13], [19, -16, 9, 13],
-    [-28, 4, 9, 13], [19, 4, 9, 13], [-20, 16, 14, 7], [6, 16, 14, 7],
-  ] as const;
-  for (const [x, y, w, h] of plates) {
-    rect(ctx, "#171217", x - 1, y - 1, w + 2, h + 2);
-    rect(ctx, "#555154", x, y, w, h);
-    rect(ctx, "#9B9F9C", x + 2, y + 1, Math.max(2, w - 4), 2);
-    rect(ctx, "#9B3B29", x + Math.floor(w / 2) - 1, y + Math.floor(h / 2), 3, 3);
-  }
-  for (const side of [-1, 1] as const) {
-    const x = side * 31;
-    rect(ctx, "#171217", x - 5, -16, 10, 34);
-    rect(ctx, "#514B4F", x - 3, -14, 6, 30);
-    rect(ctx, "#9B9F9C", x - 2, -12, 2, 22);
-    rect(ctx, color, x - 2, 12, 4, 6);
-  }
-  rect(ctx, "#3C1F20", -8, -31, 16, 6);
-  rect(ctx, color, -3, -30, 6, 4);
-}
-
-function drawThemeFrame(ctx: CanvasRenderingContext2D, theme: string, color: string): void {
-  if (theme === "dungeon") drawDungeonFrame(ctx, color);
-  else if (theme === "snow") drawSnowFrame(ctx, color);
-  else if (theme === "lava") drawLavaFrame(ctx, color);
-  else drawForestFrame(ctx, color);
-}
-
-function drawPortalBody(
+function drawRingPoints(
   ctx: CanvasRenderingContext2D,
+  points: readonly (readonly [number, number])[],
+  phase: number,
+  direction: 1 | -1,
+  scale: number,
   color: string,
+  highlight: string,
+  pointCount: number,
+): void {
+  const count = Math.max(1, Math.min(points.length, pointCount));
+  for (let index = 0; index < count; index++) {
+    const pointIndex = getPortalPointIndex(index, phase, direction, points.length);
+    const [sourceX, sourceY] = points[pointIndex];
+    const x = Math.round(sourceX * scale);
+    const y = Math.round(sourceY * scale);
+    const bright = index % 4 === 0;
+    rect(ctx, bright ? highlight : color, x - 1, y - 1, bright ? 3 : 2, 2);
+  }
+}
+
+function drawPulseRing(
+  ctx: CanvasRenderingContext2D,
   time: number,
   state: PortalState,
+  color: string,
+  highlight: string,
+  ringOffset: number,
 ): void {
-  const speed = state === "activating" ? 18 : state === "spawning" ? 14 : 10;
-  const phase = Math.floor(time * speed);
-  const drift = [-1, 0, 1, 0][phase % 4];
-
-  // The aperture and all motion remain behind the chapter-specific frame.
-  rect(ctx, "#050910", -14, -18, 28, 36);
-  rect(ctx, "rgba(9,16,26,0.72)", -12, -16, 24, 32);
-
-  // Discrete scan bands flow vertically and laterally without scaling or
-  // rotating the frame, preserving crisp pixel edges.
-  for (let row = 0; row < 7; row++) {
-    const y = -14 + row * 5;
-    const inset = Math.abs(3 - row) * 2;
-    const width = 22 - inset;
-    const offset = ((phase + row * 2) % 5) - 2;
-    rect(ctx, row % 2 === 0 ? color : "#FFFFFF", -Math.floor(width / 2) + offset, y, width, 2);
-    if ((phase + row) % 3 === 0) rect(ctx, "#FFFFFF", drift + offset - 1, y, 3, 2);
+  const pulseSpeed = state === "activating" ? 14 : state === "hovered" ? 8 : 4;
+  const phase = Math.floor(time * pulseSpeed + ringOffset * 5);
+  const visibleModulo = state === "activating" ? 2 : 3;
+  for (let index = 0; index < PORTAL_PULSE_RING_POINTS.length; index++) {
+    if ((index + phase) % visibleModulo !== 0) continue;
+    const [x, y] = PORTAL_PULSE_RING_POINTS[index];
+    const offset = ringOffset === 0 ? 0 : ((phase + index) % 2 === 0 ? 2 : -2);
+    rect(ctx, index % 4 === 0 ? highlight : color, x - 1 + Math.sign(x) * offset, y - 1 + Math.sign(y) * offset, 2, 2);
   }
+}
 
-  // Energy motes advance through fixed pixel paths, creating rotation in the
-  // portal body while the structural frame remains completely static.
-  for (let index = 0; index < 8; index++) {
-    const [x, y] = OUTER_STEPS[(index * 2 + phase) % OUTER_STEPS.length];
-    rect(ctx, index % 3 === 0 ? "#FFFFFF" : color, x - 1, y - 1, 2, 2);
-  }
-  for (let index = 0; index < 6; index++) {
-    const [x, y] = INNER_STEPS[(index * 2 + phase * 2) % INNER_STEPS.length];
-    rect(ctx, index % 2 === 0 ? "#FFFFFF" : color, x - 1, y - 1, 2, 2);
-  }
+function drawMinimalFrame(ctx: CanvasRenderingContext2D, energyColor: string, state: PortalState): void {
+  rect(ctx, "rgba(0,0,0,0.34)", -27, 19, 18, 4);
+  rect(ctx, "rgba(0,0,0,0.34)", 9, 19, 18, 4);
 
-  const coreWidth = state === "hovered" || state === "activating" ? 8 : 6;
-  rect(ctx, color, -Math.floor(coreWidth / 2) + drift, -8, coreWidth, 16);
-  rect(ctx, "rgba(9,16,26,0.6)", -2 + drift, -6, 4, 12);
-  rect(ctx, "#FFFFFF", drift, -4 + (phase % 3), 2, 8);
+  const drawSupport = (local: { x: number; y: number; width: number; height: number }) => {
+    rect(ctx, "#252B35", local.x, local.y, local.width, local.height);
+    rect(ctx, "#5A626B", local.x + 2, local.y + 2, local.width - 4, local.height - 4);
+    rect(ctx, "#89949C", local.x + 3, local.y + 3, 2, Math.max(2, local.height - 8));
+    rect(ctx, state === "activating" ? "#FFFFFF" : energyColor, local.x + 2, local.y - 4, local.width - 4, 5);
+  };
+  drawSupport(PORTAL_FRAME_COLLISION_GEOMETRY.leftSupport);
+  drawSupport(PORTAL_FRAME_COLLISION_GEOMETRY.rightSupport);
+
+  for (const base of [PORTAL_FRAME_COLLISION_GEOMETRY.baseLeft, PORTAL_FRAME_COLLISION_GEOMETRY.baseRight]) {
+    rect(ctx, "#252B35", base.x, base.y, base.width, base.height);
+    rect(ctx, "#5A626B", base.x + 2, base.y + 1, base.width - 4, 3);
+  }
+}
+
+function stateParameters(portal: { state: PortalState; timer: number }, time: number): {
+  speed: number;
+  scale: number;
+  outerCount: number;
+  innerCount: number;
+  coreRadius: number;
+  flash: boolean;
+} {
+  if (portal.state === "spawning") {
+    const progress = Math.max(0, Math.min(1, 1 - portal.timer / 0.6));
+    const discreteScale = Math.max(0.2, Math.round(progress * 5) / 5);
+    return {
+      speed: 10,
+      scale: discreteScale,
+      outerCount: Math.max(2, Math.floor(PORTAL_OUTER_RING_POINTS.length * progress)),
+      innerCount: Math.max(1, Math.floor(PORTAL_INNER_RING_POINTS.length * progress)),
+      coreRadius: Math.max(2, Math.round(7 * progress)),
+      flash: false,
+    };
+  }
+  if (portal.state === "activating") {
+    const remaining = Math.max(0, Math.min(0.4, portal.timer));
+    const progress = 1 - remaining / 0.4;
+    return {
+      speed: 22,
+      scale: 1,
+      outerCount: PORTAL_OUTER_RING_POINTS.length,
+      innerCount: PORTAL_INNER_RING_POINTS.length,
+      coreRadius: Math.max(1, Math.round(7 * (1 - progress))),
+      flash: progress > 0.78 || Math.floor(time * 30) % 3 === 0,
+    };
+  }
+  if (portal.state === "hovered") {
+    return {
+      speed: 10,
+      scale: 1,
+      outerCount: PORTAL_OUTER_RING_POINTS.length,
+      innerCount: PORTAL_INNER_RING_POINTS.length,
+      coreRadius: 8,
+      flash: false,
+    };
+  }
+  return {
+    speed: 4,
+    scale: 1,
+    outerCount: PORTAL_OUTER_RING_POINTS.length,
+    innerCount: PORTAL_INNER_RING_POINTS.length,
+    coreRadius: 7,
+    flash: false,
+  };
 }
 
 export class PortalRenderer {
-  static drawPortal(ctx: CanvasRenderingContext2D, portal: {x: number, y: number, state: PortalState, timer: number}, time: number, theme: string) {
-    const portalColor = PALETTES[theme] ? PALETTES[theme].portal : "#00FFFF";
+  static drawPortal(
+    ctx: CanvasRenderingContext2D,
+    portal: { x: number; y: number; state: PortalState; timer: number },
+    time: number,
+    theme: string,
+  ): void {
+    const energyColor = PALETTES[theme]?.portal ?? "#00FFFF";
+    const highlight = portal.state === "hovered" || portal.state === "activating" ? "#FFFFFF" : "#D8FFFF";
+    const params = stateParameters(portal, time);
+    const phase = Math.floor(time * params.speed);
+
     ctx.save();
     ctx.translate(Math.round(portal.x), Math.round(portal.y));
 
-    // Fragmented contact shadows ground the frame without reading as a
-    // rectangular portal platform.
-    rect(ctx, "rgba(0,0,0,0.35)", -25, 18, 16, 3);
-    rect(ctx, "rgba(0,0,0,0.35)", -7, 20, 14, 3);
-    rect(ctx, "rgba(0,0,0,0.35)", 9, 18, 16, 3);
-    drawPortalBody(ctx, portalColor, time, portal.state);
-    drawThemeFrame(ctx, theme, portalColor);
+    drawPulseRing(ctx, time, portal.state, energyColor, highlight, 0);
+    drawPulseRing(ctx, time, portal.state, energyColor, highlight, 1);
+    drawRingPoints(
+      ctx,
+      PORTAL_OUTER_RING_POINTS,
+      phase,
+      1,
+      params.scale,
+      energyColor,
+      highlight,
+      params.outerCount,
+    );
+    drawRingPoints(
+      ctx,
+      PORTAL_INNER_RING_POINTS,
+      phase,
+      -1,
+      params.scale,
+      energyColor,
+      highlight,
+      params.innerCount,
+    );
 
-    if (portal.state === "hovered" || portal.state === "activating") {
-      rect(ctx, "#FFFFFF", -1, -22, 3, 3);
-      rect(ctx, "#FFFFFF", 20, -1, 3, 3);
-      rect(ctx, "#FFFFFF", -1, 20, 3, 3);
-      rect(ctx, "#FFFFFF", -22, -1, 3, 3);
+    drawPixelCore(ctx, Math.max(3, 10 * params.scale), "#050910");
+    drawPixelCore(ctx, params.coreRadius, params.flash ? "#FFFFFF" : energyColor);
+    if (!params.flash) drawPixelCore(ctx, Math.max(1, params.coreRadius - 3), "#101827");
+
+    drawMinimalFrame(ctx, energyColor, portal.state);
+
+    if (params.flash) {
+      rect(ctx, "#FFFFFF", -2, -25, 4, 50);
+      rect(ctx, "#FFFFFF", -25, -2, 50, 4);
     }
     ctx.restore();
   }

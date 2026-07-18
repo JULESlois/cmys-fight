@@ -23,7 +23,7 @@ export const ARMORY_STRUCTURE: HubStructureDefinition = {
   visualParts: [
     { id: "shadow", artPart: "shadow", bounds: { x: 0, y: 142, width: 240, height: 18 }, layer: "back" },
     { id: "facade", artPart: "facade", bounds: { x: 0, y: 24, width: 240, height: 136 }, layer: "sorted", sortY: 154 },
-    { id: "armory_rack_prop", artPart: "armory_rack", bounds: { x: 18, y: 126, width: 80, height: 62 }, layer: "sorted", sortY: 188, visiblePropId: "armory_rack" },
+    { id: "armory_rack_prop", artPart: "armory_rack", bounds: { x: 18, y: 126, width: 80, height: 62 }, layer: "sorted", sortY: 188, visiblePropId: "armory_rack", collisionPolicy: "custom" },
   ],
   occluders: [
     { id: "roof", artPart: "roof", bounds: { x: -6, y: -4, width: 252, height: 82 }, sortY: 98 },
@@ -36,7 +36,7 @@ export const ARMORY_STRUCTURE: HubStructureDefinition = {
     { id: "foot_east", shape: "rect", x: 150, y: 118, width: 84, height: 42 },
     { id: "bastion_west", shape: "rect", x: 0, y: 106, width: 26, height: 50 },
     { id: "bastion_east", shape: "rect", x: 214, y: 106, width: 26, height: 50 },
-    { id: "rack", shape: "rect", x: 24, y: 164, width: 68, height: 12 },
+    { id: "rack", shape: "rect", x: 24, y: 164, width: 68, height: 12, visiblePropId: "armory_rack" },
   ],
   interactions: [
     {

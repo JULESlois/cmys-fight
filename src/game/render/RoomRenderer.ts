@@ -956,6 +956,16 @@ export class RoomRenderer {
     }
   }
 
+  public setPresentationTime(time: number): void {
+    this.windTime = Math.max(0, time);
+    this.particles.forEach((particle, index) => {
+      particle.x = 18 + (index * 47) % 286;
+      particle.y = 14 + (index * 31) % 208;
+      particle.angle = (index % 8) * Math.PI / 4;
+      particle.size = 2 + index % 3;
+    });
+  }
+
   public update(dt: number) {
     this.windTime += dt;
     for (const p of this.particles) {

@@ -6,6 +6,7 @@ import type {
   WorldPoint,
   WorldRect,
 } from "../world/WorldMap";
+import type { HubCollisionPolicy } from "./HubStructure";
 import { HUB_MATERIALIZED_STRUCTURE_BY_ID, HUB_STRUCTURES } from "./structures/HubStructures";
 
 export const HUB_MAP_WIDTH = 80;
@@ -113,9 +114,69 @@ for (const [x, y] of treeTiles) fillRect(upperObjects, 1, x, y, 2, 2);
 
 const colliders: WorldColliderDefinition[] = HUB_STRUCTURES.flatMap(structure => structure.colliders);
 const circleCollider = (id: string, x: number, y: number, radius: number, sourceObjectId?: string): void => {
-  colliders.push({ id, shape: "circle", x, y, radius, sourceObjectId });
+  colliders.push({ id, shape: "circle", x, y, radius, sourceObjectId, properties: sourceObjectId ? { visiblePropId: sourceObjectId } : undefined });
 };
-circleCollider("garden_pool", 192, 800, 42, "garden_wish");
+const rectCollider = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  sourceObjectId?: string,
+): void => {
+  colliders.push({
+    id,
+    shape: "rect",
+    x,
+    y,
+    width,
+    height,
+    sourceObjectId,
+    properties: sourceObjectId ? { visiblePropId: sourceObjectId } : undefined,
+  });
+};
+
+function addDistrictGateColliders(id: string, x: number, y: number, width: number, height: number): void {
+  rectCollider(`${id}_pillar_left`, x, y + height - 12, 26, 12, id);
+  rectCollider(`${id}_pillar_right`, x + width - 26, y + height - 12, 26, 12, id);
+}
+
+for (const [id, x, y, width, height] of [
+  ["archive_district_gate", px(25), px(12), px(5), px(5)],
+  ["observatory_district_gate", px(52), px(12), px(5), px(5)],
+  ["workshop_district_gate", px(23), px(28), px(5), px(5)],
+  ["armory_district_gate", px(52), px(28), px(5), px(5)],
+  ["garden_district_gate", px(23), px(48), px(5), px(4)],
+  ["training_district_gate", px(52), px(48), px(5), px(4)],
+] as const) addDistrictGateColliders(id, x, y, width, height);
+
+for (const [index, pillarX] of [px(28) + 28, px(28) + 112, px(53) - 116, px(53) - 32].entries()) {
+  rectCollider(`plaza_colonnade_pillar_${index}`, pillarX - 11, px(18) + 61, 22, 8, "plaza_banners");
+}
+
+rectCollider("trial_altar_base", px(65) + 4, px(46) + px(6) - 18, 88, 18, "trial_altar_visual");
+rectCollider("training_marker_base", px(60) + 34, px(47) + px(5) - 14, 12, 14, "training_marker");
+
+// Garden wish spring: segmented rim and a smaller true water footprint leave
+// the southern stair gap and four outer corners open.
+rectCollider("garden_wish_water", 157, 788, 70, 18, "garden_wish");
+rectCollider("garden_wish_rim_north", 157, 783, 70, 6, "garden_wish");
+rectCollider("garden_wish_rim_west", 150, 788, 7, 25, "garden_wish");
+rectCollider("garden_wish_rim_east", 227, 788, 7, 25, "garden_wish");
+rectCollider("garden_wish_rim_south_left", 157, 812, 27, 6, "garden_wish");
+rectCollider("garden_wish_rim_south_right", 200, 812, 27, 6, "garden_wish");
+for (const [id, x, y] of [
+  ["garden_wish_corner_nw", 157, 788],
+  ["garden_wish_corner_ne", 227, 788],
+  ["garden_wish_corner_sw", 157, 812],
+  ["garden_wish_corner_se", 227, 812],
+] as const) circleCollider(id, x, y, 5.6, "garden_wish");
+for (const [id, x, y] of [
+  ["garden_wish_lantern_nw", 142, 780],
+  ["garden_wish_lantern_ne", 242, 780],
+  ["garden_wish_lantern_sw", 139, 815],
+  ["garden_wish_lantern_se", 245, 815],
+] as const) circleCollider(id, x, y, 4.2, "garden_wish");
 for (const [index, [tileX, tileY]] of treeTiles.entries()) circleCollider(`tree_${index}`, px(tileX + 1), px(tileY + 1.55), 8);
 circleCollider("reforge_stone", px(14), px(36), 12, "reforge_stone");
 circleCollider("north_waystone", px(40.5), px(18), 8, "north_waystone");
@@ -134,6 +195,7 @@ function decoration(
   kind: string,
   layer: "back" | "sorted" | "upper" = "back",
   properties: Record<string, unknown> = {},
+  collisionPolicy: HubCollisionPolicy = "none",
   sortY = px(tileY + heightTiles),
 ): WorldObjectDefinition {
   return {
@@ -145,7 +207,7 @@ function decoration(
     height: px(heightTiles),
     sortY,
     visualBounds: visualBounds(tileX, tileY, widthTiles, heightTiles),
-    properties: { kind, layer, ...properties },
+    properties: { kind, layer, visiblePropId: id, collisionPolicy, ...properties },
   };
 }
 
@@ -191,19 +253,19 @@ function region(id: string, labelKey: string, x: number, y: number, width: numbe
 const objects: WorldObjectDefinition[] = [
   ...HUB_STRUCTURES.flatMap(structure => structure.objects),
 
-  decoration("plaza_banners", 28, 18, 25, 4, "plaza_banners", "upper"),
-  decoration("archive_district_gate", 25, 12, 5, 5, "district_gate", "sorted", { accent: "#9B74D5", emblem: "archive" }),
-  decoration("observatory_district_gate", 52, 12, 5, 5, "district_gate", "sorted", { accent: "#72E0E8", emblem: "observatory" }),
-  decoration("workshop_district_gate", 23, 28, 5, 5, "district_gate", "sorted", { accent: "#E58945", emblem: "workshop" }),
-  decoration("armory_district_gate", 52, 28, 5, 5, "district_gate", "sorted", { accent: "#D8B45C", emblem: "armory" }),
-  decoration("garden_district_gate", 23, 48, 5, 4, "district_gate", "sorted", { accent: "#7ECF8A", emblem: "garden" }),
-  decoration("training_district_gate", 52, 48, 5, 4, "district_gate", "sorted", { accent: "#D7A35D", emblem: "training" }),
-  decoration("north_waystone", 39, 15, 3, 4, "waystone", "sorted", { accent: "#9B74D5" }),
-  decoration("south_waystone", 39, 44, 3, 4, "waystone", "sorted", { accent: "#9B74D5" }),
-  decoration("reforge_stone", 12, 34, 4, 4, "reforge_stone", "sorted"),
-  decoration("trial_altar_visual", 65, 46, 6, 6, "trial_altar", "sorted"),
-  decoration("training_marker", 60, 47, 5, 5, "training_marker", "sorted"),
-  decoration("garden_wish", 9, 47, 6, 5, "garden_wish", "sorted"),
+  decoration("plaza_banners", 28, 18, 25, 4, "plaza_banners", "upper", {}, "custom"),
+  decoration("archive_district_gate", 25, 12, 5, 5, "district_gate", "sorted", { accent: "#9B74D5", emblem: "archive" }, "custom"),
+  decoration("observatory_district_gate", 52, 12, 5, 5, "district_gate", "sorted", { accent: "#72E0E8", emblem: "observatory" }, "custom"),
+  decoration("workshop_district_gate", 23, 28, 5, 5, "district_gate", "sorted", { accent: "#E58945", emblem: "workshop" }, "custom"),
+  decoration("armory_district_gate", 52, 28, 5, 5, "district_gate", "sorted", { accent: "#D8B45C", emblem: "armory" }, "custom"),
+  decoration("garden_district_gate", 23, 48, 5, 4, "district_gate", "sorted", { accent: "#7ECF8A", emblem: "garden" }, "custom"),
+  decoration("training_district_gate", 52, 48, 5, 4, "district_gate", "sorted", { accent: "#D7A35D", emblem: "training" }, "custom"),
+  decoration("north_waystone", 39, 15, 3, 4, "waystone", "sorted", { accent: "#9B74D5" }, "footprint"),
+  decoration("south_waystone", 39, 44, 3, 4, "waystone", "sorted", { accent: "#9B74D5" }, "footprint"),
+  decoration("reforge_stone", 12, 34, 4, 4, "reforge_stone", "sorted", {}, "footprint"),
+  decoration("trial_altar_visual", 65, 46, 6, 6, "trial_altar", "sorted", {}, "custom"),
+  decoration("training_marker", 60, 47, 5, 5, "training_marker", "sorted", {}, "custom"),
+  decoration("garden_wish", 9, 47, 6, 5, "garden_wish", "sorted", {}, "custom"),
 
   hotspot("reforge_hotspot", "interactable", "open_meta_refund", "hub.reforge", {
     zone: { shape: "circle", x: px(14), y: px(37), radius: 38 },

@@ -56,10 +56,6 @@ export class ArtDirectionRenderer {
       ctx.strokeRect(8, 8, 304, 224);
     }
 
-    if (combat) {
-      ctx.fillStyle = `rgba(255,255,255,${reducedFlashing ? 0.018 : 0.03})`;
-      for (let y = 7; y < 240; y += 23) ctx.fillRect(0, y, 320, 1);
-    }
 
     ctx.restore();
   }

@@ -229,6 +229,7 @@ assert.match(dungeonState, /desired = 94/, "orbit monsters use tangential moveme
 const roomRenderer = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
 const specialRoomRenderer = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalRenderer = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
+const ritualSpringRenderer = fs.readFileSync("src/game/render/RitualSpringRenderer.ts", "utf8");
 const merchantRenderer = fs.readFileSync("src/game/render/MerchantRenderer.ts", "utf8");
 const chestRenderer = fs.readFileSync("src/game/render/ChestRenderer.ts", "utf8");
 assert.match(roomRenderer, /function drawForestFloorTile/, "forest floor has authored material variants");
@@ -264,9 +265,11 @@ assert.match(roomRenderer, /function drawBreakableTile/, "combat rooms render ch
 assert.match(roomRenderer, /SpecialRoomRenderer\.drawRoomStage/, "special interactions use authored room stages rather than flat decals");
 assert.match(merchantRenderer, /drawStallBack[\s\S]*drawBackpack[\s\S]*drawMerchantBody[\s\S]*drawCounterFront/, "merchant includes a layered stall, backpack and readable body silhouette");
 assert.match(chestRenderer, /drawClosedTreasureChest[\s\S]*drawClosedBossChest/, "treasure and Boss chests use independent authored models");
-assert.match(specialRoomRenderer, /drawWishFountain/, "wish fountain is an authored object rather than a flat rectangle");
-assert.match(specialRoomRenderer, /drawForestStage[\s\S]*drawDungeonStage[\s\S]*drawSnowStage[\s\S]*drawLavaStage/, "special room backgrounds vary by chapter");
-assert.match(portalRenderer, /drawForestFrame[\s\S]*drawDungeonFrame[\s\S]*drawSnowFrame[\s\S]*drawLavaFrame/, "portal frames vary structurally by chapter");
+assert.match(specialRoomRenderer, /drawRitualSpring/, "wish fountain delegates to shared authored spring geometry");
+assert.doesNotMatch(specialRoomRenderer, /drawForestStage|drawDungeonStage|drawSnowStage|drawLavaStage|drawChapterStage/, "special rooms omit unrelated chapter side scenery");
+assert.match(ritualSpringRenderer, /ritual_court|front_rim|lantern_pylons|soul_motes/, "shared spring contains court, rim, lantern and mote layers");
+assert.match(portalRenderer, /PORTAL_OUTER_RING_POINTS[\s\S]*PORTAL_INNER_RING_POINTS/, "portal uses counter-rotating discrete circular rings");
+assert.doesNotMatch(portalRenderer, /drawThemeFrame|drawForestFrame|drawDungeonFrame|drawSnowFrame|drawLavaFrame/, "portal uses only compact supports rather than chapter side machinery");
 
 const roomVariants = fs.readFileSync("src/game/RoomVariantSystem.ts", "utf8");
 assert.match(roomVariants, /const wallClusterCount = room\.type === "boss" \? 2 : 3 \+/, "combat rooms should receive denser wall clusters");

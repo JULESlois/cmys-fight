@@ -92,11 +92,6 @@ export class TitleState extends GameState {
       ctx.beginPath(); ctx.moveTo(0, i + driftY); ctx.lineTo(320, i + driftY); ctx.stroke();
     }
 
-    // Scanlines
-    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-    for(let i=0; i<240; i+=4) {
-      ctx.fillRect(0, i, 320, 1);
-    }
     ctx.globalAlpha = 1.0;
 
     // Title intro

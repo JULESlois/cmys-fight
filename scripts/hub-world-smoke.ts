@@ -176,6 +176,38 @@ for (const hotspot of HUB_MAP.objects.filter(object => object.action)) {
   assert.equal(hotspot.interaction?.requireLineOfSight, true, `${hotspot.id} must require LOS`);
 }
 
+const physicalVisibleProps = HUB_MAP.objects.filter(object =>
+  object.type === "decoration" && typeof object.properties?.visiblePropId === "string"
+);
+const linkedColliders = HUB_MAP.colliders ?? [];
+for (const prop of physicalVisibleProps) {
+  const visiblePropId = prop.properties?.visiblePropId as string;
+  const policy = prop.properties?.collisionPolicy;
+  assert.ok(policy === "none" || policy === "footprint" || policy === "custom", `${visiblePropId} needs collisionPolicy`);
+  const propColliders = linkedColliders.filter(collider => collider.properties?.visiblePropId === visiblePropId);
+  if (policy === "none") continue;
+  assert.ok(propColliders.length > 0, `${visiblePropId} must link at least one collider`);
+  const bounds = prop.visualBounds;
+  if (bounds) {
+    assert.ok(propColliders.some(collider => {
+      if (collider.shape === "rect") {
+        return collider.width < bounds.width || collider.height < bounds.height;
+      }
+      if (collider.shape === "circle") return collider.radius * 2 < Math.max(bounds.width, bounds.height);
+      return true;
+    }), `${visiblePropId} collision must use a ground footprint, not full visualBounds`);
+  }
+}
+
+assert.equal(collision.isCircleBlocked(413, 266, 6), true, "district gate left pillar blocks");
+assert.equal(collision.isCircleBlocked(467, 266, 6), true, "district gate right pillar blocks");
+assert.equal(collision.isCircleBlocked(440, 266, 6), false, "district gate center remains passable");
+assert.equal(collision.isCircleBlocked(476, 353, 4), true, "plaza colonnade pillar blocks");
+assert.equal(collision.isCircleBlocked(1088, 823, 6), true, "trial altar base blocks");
+assert.equal(collision.isCircleBlocked(1000, 825, 6), true, "training marker base blocks");
+assert.equal(collision.isCircleBlocked(502, 330, 4), false, "plaza banner cloth does not block");
+assert.equal(collision.isCircleBlocked(132, 310, 4), false, "workshop smoke does not block");
+
 interface CollisionSample {
   label: "visual-base" | "door-corridor" | "stairs" | "side-wall" | "rear-wall" | "exterior";
   point: WorldPoint;
@@ -196,7 +228,7 @@ const collisionSamples: Record<(typeof expectedStructureIds)[number], CollisionS
     { label: "stairs", point: { x: 264, y: 212 }, blocked: false },
     { label: "side-wall", point: { x: 170, y: 190 }, blocked: true },
     { label: "rear-wall", point: { x: 264, y: 146 }, blocked: true },
-    { label: "exterior", point: { x: 264, y: 236 }, blocked: false },
+    { label: "exterior", point: { x: 264, y: 264 }, blocked: false },
   ],
   observatory_keep: [
     { label: "visual-base", point: { x: 980, y: 190 }, blocked: true },
@@ -204,7 +236,7 @@ const collisionSamples: Record<(typeof expectedStructureIds)[number], CollisionS
     { label: "stairs", point: { x: 1056, y: 212 }, blocked: false },
     { label: "side-wall", point: { x: 966, y: 190 }, blocked: true },
     { label: "rear-wall", point: { x: 1056, y: 146 }, blocked: true },
-    { label: "exterior", point: { x: 1056, y: 236 }, blocked: false },
+    { label: "exterior", point: { x: 1056, y: 264 }, blocked: false },
   ],
   workshop_keep: [
     { label: "visual-base", point: { x: 146, y: 450 }, blocked: true },
@@ -425,6 +457,7 @@ console.log(JSON.stringify({
   structures: HUB_STRUCTURE_DEFINITIONS.length,
   structureParts: structureObjects.length,
   mapColliders: HUB_MAP.colliders?.length ?? 0,
+  physicalVisibleProps: physicalVisibleProps.length,
   collisionSamples: Object.values(collisionSamples).reduce((sum, samples) => sum + samples.length, 0),
   reachableEntrances: Object.keys(HUB_ENTRY_POINTS).length,
   visibleInteractionProps: visiblePropObjects.size,

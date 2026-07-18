@@ -22,7 +22,6 @@ const SETTING_OPTIONS = [
   "musicSource",
   "uiScale",
   "screenShake",
-  "crtFilter",
   "reducedFlash",
   "dynamicBg",
   "colorMode",
@@ -52,7 +51,6 @@ const AUDIO_VISUAL_OPTIONS: readonly SettingsMenuOption[] = [
   "uiScale",
   "fullscreen",
   "screenShake",
-  "crtFilter",
   "reducedFlash",
   "dynamicBg",
   "colorMode",
@@ -79,7 +77,6 @@ const OPTION_KEYS: Record<SettingOption, Parameters<typeof t>[1]> = {
   musicSource: "settings.musicSource",
   uiScale: "settings.uiScale",
   screenShake: "settings.screenShake",
-  crtFilter: "settings.crtFilter",
   reducedFlash: "settings.reducedFlash",
   dynamicBg: "settings.dynamicBg",
   colorMode: "settings.colorMode",
@@ -110,7 +107,7 @@ export class SettingsState extends GameState {
   private captureAction: InputAction | null = null;
   private message = "";
   private overlayMode = false;
-  private backState: "title" | "hub" = "title";
+  private backState: "title" | "hub" = "hub";
   private resetConfirmation = false;
 
   constructor(engine: Engine) {
@@ -121,7 +118,7 @@ export class SettingsState extends GameState {
     this.engine.data.loadSettings();
     this.engine.applySettings();
     this.overlayMode = params?.overlay === true;
-    this.backState = params?.backState === "hub" ? "hub" : "title";
+    this.backState = params?.backState === "title" ? "title" : "hub";
     this.view = "root";
     this.selectedIndex = 0;
     this.controlIndex = 0;
@@ -339,8 +336,6 @@ export class SettingsState extends GameState {
       settings.uiScale = Math.max(0.85, Math.min(1.25, Math.round((settings.uiScale + direction * 0.1) * 20) / 20));
     } else if (option === "screenShake") {
       settings.screenShake = !settings.screenShake;
-    } else if (option === "crtFilter") {
-      settings.crtFilter = !settings.crtFilter;
     } else if (option === "reducedFlash") {
       settings.reducedFlashing = !settings.reducedFlashing;
     } else if (option === "dynamicBg") {
@@ -388,7 +383,6 @@ export class SettingsState extends GameState {
     if (option === "musicSource") return t(language, settings.musicMode === "adaptive" ? "value.adaptive" : settings.musicMode === "external" ? "value.external" : "common.off");
     if (option === "uiScale") return `${Math.round(settings.uiScale * 100)}%`;
     if (option === "screenShake") return bool(settings.screenShake);
-    if (option === "crtFilter") return bool(settings.crtFilter);
     if (option === "reducedFlash") return bool(settings.reducedFlashing);
     if (option === "dynamicBg") return bool(settings.dynamicBackground);
     if (option === "colorMode") {

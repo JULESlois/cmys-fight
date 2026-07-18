@@ -23,7 +23,7 @@ export const OBSERVATORY_STRUCTURE: HubStructureDefinition = {
   visualParts: [
     { id: "shadow", artPart: "shadow", bounds: { x: 4, y: 130, width: 216, height: 18 }, layer: "back" },
     { id: "facade", artPart: "facade", bounds: { x: 4, y: 40, width: 216, height: 108 }, layer: "sorted", sortY: 140 },
-    { id: "astral_console_prop", artPart: "astral_console", bounds: { x: 76, y: 126, width: 72, height: 62 }, layer: "sorted", sortY: 188, visiblePropId: "astral_console" },
+    { id: "astral_console_prop", artPart: "astral_console", bounds: { x: 76, y: 126, width: 72, height: 62 }, layer: "sorted", sortY: 188, visiblePropId: "astral_console", collisionPolicy: "custom" },
   ],
   occluders: [
     { id: "dome", artPart: "dome", bounds: { x: 30, y: 0, width: 164, height: 82 }, sortY: 92 },
@@ -36,6 +36,7 @@ export const OBSERVATORY_STRUCTURE: HubStructureDefinition = {
     { id: "foot_east", shape: "rect", x: 138, y: 114, width: 76, height: 30 },
     { id: "pylon_west", shape: "rect", x: 4, y: 92, width: 24, height: 46 },
     { id: "pylon_east", shape: "rect", x: 196, y: 92, width: 24, height: 46 },
+    { id: "astral_console_foot", shape: "rect", x: 77, y: 172, width: 70, height: 16, visiblePropId: "astral_console" },
   ],
   interactions: [
     {
@@ -47,7 +48,7 @@ export const OBSERVATORY_STRUCTURE: HubStructureDefinition = {
       interaction: {
         zone: { shape: "rect", x: 72, y: 136, width: 80, height: 54 },
         promptPoint: { x: 112, y: 144 },
-        lineOfSightTarget: { x: 112, y: 158 },
+        lineOfSightTarget: { x: 112, y: 190 },
         requireLineOfSight: true,
         side: "south",
       },

@@ -49,8 +49,7 @@ export class MenuState extends GameState {
       return;
     }
     if (option === "quit") {
-      this.engine.closeMenu();
-      this.engine.switchState("title");
+      this.engine.returnToHubFromRun();
       return;
     }
   }

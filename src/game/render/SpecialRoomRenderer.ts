@@ -1,237 +1,67 @@
 import type { RoomType } from "../data/roomTemplates";
 import type { EnemyTheme } from "../data/enemies";
+import { DUNGEON_RITUAL_SPRING_SCALE } from "../dungeon/RoomObjectCollision";
+import { drawRitualSpring } from "./RitualSpringRenderer";
 
-interface SpecialPalette {
-  floor: string;
-  floorLight: string;
-  floorDark: string;
-  frame: string;
-  frameLight: string;
-  frameDark: string;
-  energy: string;
-  energyLight: string;
-  warning: string;
-}
-
+interface SpecialPalette { energy: string; energyLight: string; warning: string; }
 const SPECIAL_PALETTES: Record<EnemyTheme, SpecialPalette> = {
-  forest: {
-    floor: "#314735", floorLight: "#607A55", floorDark: "#1D2A21",
-    frame: "#69482F", frameLight: "#A77A4C", frameDark: "#2F2119",
-    energy: "#65D99B", energyLight: "#D7FFD8", warning: "#F0C75E",
-  },
-  dungeon: {
-    floor: "#252B39", floorLight: "#596273", floorDark: "#111722",
-    frame: "#4C5260", frameLight: "#929CA8", frameDark: "#181E29",
-    energy: "#B76DE2", energyLight: "#F2D8FF", warning: "#D3B54A",
-  },
-  snow: {
-    floor: "#315466", floorLight: "#9FC1C8", floorDark: "#172F3B",
-    frame: "#5D7B86", frameLight: "#D7ECEF", frameDark: "#1B3947",
-    energy: "#55D7E8", energyLight: "#E8FFFF", warning: "#D75A62",
-  },
-  lava: {
-    floor: "#3C2527", floorLight: "#7D4A42", floorDark: "#171116",
-    frame: "#5B5557", frameLight: "#A5AAA7", frameDark: "#211A20",
-    energy: "#F06A27", energyLight: "#FFE47A", warning: "#D64D2A",
-  },
+  forest: { energy: "#65D99B", energyLight: "#D7FFD8", warning: "#F0C75E" },
+  dungeon: { energy: "#B76DE2", energyLight: "#F2D8FF", warning: "#D3B54A" },
+  snow: { energy: "#55D7E8", energyLight: "#E8FFFF", warning: "#D75A62" },
+  lava: { energy: "#F06A27", energyLight: "#FFE47A", warning: "#D64D2A" },
 };
-
-// The broadcast network uses one recognizable archive-terminal design in
-// every chapter. It should not inherit biome colors or chapter machinery.
-const BROADCAST_PALETTE: SpecialPalette = {
-  floor: "#29333F", floorLight: "#647486", floorDark: "#111821",
-  frame: "#485563", frameLight: "#A7B4BF", frameDark: "#171F29",
-  energy: "#62D8E8", energyLight: "#E8FFFF", warning: "#F0B84A",
-};
+const FRAME = { dark: "#171F29", body: "#485563", light: "#A7B4BF", screen: "#111821", gold: "#D8B45C" } as const;
 
 function palette(theme: string): SpecialPalette {
   return SPECIAL_PALETTES[theme as EnemyTheme] ?? SPECIAL_PALETTES.forest;
 }
-
-function rect(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, w: number, h: number): void {
+function rect(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, width: number, height: number): void {
   ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
-
-function drawForestStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
-  for (const [x, y, w, h] of [
-    [cx - 54, cy + 25, 24, 4], [cx - 38, cy + 19, 6, 12], [cx + 31, cy + 23, 26, 4],
-    [cx + 34, cy + 16, 6, 12], [cx - 30, cy - 32, 5, 18], [cx + 25, cy - 31, 5, 17],
-  ] as const) rect(ctx, p.frameDark, x, y, w, h);
-  for (const [x, y, w, h] of [
-    [cx - 52, cy + 24, 22, 2], [cx + 31, cy + 22, 24, 2], [cx - 35, cy + 17, 3, 12],
-    [cx + 35, cy + 15, 3, 11], [cx - 28, cy - 30, 3, 16], [cx + 27, cy - 29, 3, 15],
-  ] as const) rect(ctx, p.frameLight, x, y, w, h);
-  rect(ctx, "#78A45A", cx - 48, cy + 20, 10, 4);
-  rect(ctx, "#8FB866", cx + 39, cy + 18, 9, 4);
-  rect(ctx, "#E88AA7", cx - 31, cy - 34, 3, 3);
-  rect(ctx, "#F5D46A", cx + 29, cy - 33, 3, 3);
-}
-
-function drawDungeonStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
-  for (const side of [-1, 1] as const) {
-    const x = cx + side * 47;
-    rect(ctx, p.frameDark, x - 8, cy - 31, 16, 58);
-    rect(ctx, p.frame, x - 6, cy - 29, 12, 54);
-    rect(ctx, p.frameLight, x - 4, cy - 27, 8, 4);
-    rect(ctx, p.frameDark, x - 4, cy - 17, 8, 18);
-    rect(ctx, p.energy, x - 2, cy - 14, 4, 12);
-    rect(ctx, p.energyLight, x - 1, cy - 12, 2, 5);
-    rect(ctx, p.floorDark, x - 9, cy + 22, 18, 8);
-  }
-}
-
-function drawSnowStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
-  for (const side of [-1, 1] as const) {
-    const x = cx + side * 51;
-    rect(ctx, p.frameDark, x - 9, cy - 28, 18, 54);
-    rect(ctx, p.frame, x - 7, cy - 26, 14, 50);
-    rect(ctx, p.frameLight, x - 5, cy - 24, 10, 3);
-    rect(ctx, "#203F4D", x - 5, cy - 14, 10, 14);
-    rect(ctx, p.energy, x - 3, cy - 12, 6, 7);
-    rect(ctx, p.energyLight, x - 2, cy - 11, 2, 2);
-    rect(ctx, p.warning, x - 4, cy + 7, 3, 3);
-    rect(ctx, "#E8B64E", x + 1, cy + 7, 3, 3);
-    rect(ctx, p.frameDark, x - 10, cy + 22, 20, 7);
-  }
-}
-
-function drawLavaStage(ctx: CanvasRenderingContext2D, p: SpecialPalette, cx: number, cy: number): void {
-  for (const side of [-1, 1] as const) {
-    const x = cx + side * 51;
-    rect(ctx, p.frameDark, x - 10, cy - 26, 20, 54);
-    rect(ctx, p.frame, x - 8, cy - 24, 16, 50);
-    rect(ctx, p.frameLight, x - 6, cy - 22, 12, 3);
-    rect(ctx, "#2C2025", x - 6, cy - 12, 12, 17);
-    rect(ctx, p.energy, x - 4, cy - 10, 8, 12);
-    rect(ctx, p.energyLight, x - 2, cy - 8, 4, 5);
-    rect(ctx, p.frameDark, x - 13, cy + 2, 6, 17);
-    rect(ctx, p.frameLight, x - 11, cy + 4, 2, 12);
-    rect(ctx, p.frameDark, x + 7, cy - 16, 7, 24);
-    rect(ctx, p.frameLight, x + 9, cy - 14, 2, 18);
-  }
-}
-
-function drawChapterStage(ctx: CanvasRenderingContext2D, theme: string, cx: number, cy: number): void {
+function drawSparseRunes(ctx: CanvasRenderingContext2D, roomType: RoomType, theme: string, time: number, completed: boolean): void {
   const p = palette(theme);
-  if (theme === "dungeon") drawDungeonStage(ctx, p, cx, cy);
-  else if (theme === "snow") drawSnowStage(ctx, p, cx, cy);
-  else if (theme === "lava") drawLavaStage(ctx, p, cx, cy);
-  else drawForestStage(ctx, p, cx, cy);
-}
-
-function drawBroadcastStage(ctx: CanvasRenderingContext2D, cx: number, cy: number): void {
-  const p = BROADCAST_PALETTE;
-  for (const side of [-1, 1] as const) {
-    const x = cx + side * 39;
-    rect(ctx, p.frameDark, x - 7, cy - 23, 14, 44);
-    rect(ctx, p.frame, x - 5, cy - 21, 10, 40);
-    rect(ctx, p.frameLight, x - 3, cy - 19, 6, 3);
-    rect(ctx, p.floorDark, x - 3, cy - 11, 6, 17);
-    rect(ctx, p.energy, x - 2, cy - 9, 4, 8);
-    rect(ctx, p.warning, x - 3, cy + 10, 2, 2);
-    rect(ctx, "#E65B52", x + 1, cy + 10, 2, 2);
+  const color = completed ? "rgba(112,122,126,0.22)" : `${p.energy}66`;
+  const phase = Math.floor(time * 4) % 2;
+  const radius = roomType === "shop" ? 35 : roomType === "exit" ? 31 : 40;
+  const diagonal = Math.round(radius * 0.7);
+  const points = [[0,-radius],[radius,0],[0,radius],[-radius,0],[diagonal,diagonal],[-diagonal,diagonal],[diagonal,-diagonal],[-diagonal,-diagonal]] as const;
+  for (let index = 0; index < points.length; index++) {
+    if ((index + phase) % 2 !== 0 && roomType !== "exit") continue;
+    const [x, y] = points[index];
+    rect(ctx, color, 158 + x, 119 + y, 5, 2);
+    rect(ctx, color, 160 + x, 117 + y, 1, 6);
   }
 }
 
 export class SpecialRoomRenderer {
   static drawRoomStage(ctx: CanvasRenderingContext2D, roomType: RoomType, theme: string, time: number, completed = false): void {
-    const p = roomType === "npc" ? BROADCAST_PALETTE : palette(theme);
-    const pulse = Math.floor(time * 5) % 3;
-    const cx = 160;
-    const cy = 120;
-
-    if (roomType === "exit") {
-      // Four independent anchor seals frame the portal without placing it on
-      // a large rectangular platform.
-      for (const [x, y] of [[138, 105], [182, 105], [138, 137], [182, 137]] as const) {
-        rect(ctx, p.frameDark, x - 3, y - 3, 6, 6);
-        rect(ctx, p.energy, x - 1, y - 1, 3, 3);
-        rect(ctx, p.energyLight, x - 1, y - 1, 2, 2);
-      }
-    } else if (roomType === "shop") {
-      // Small supply bundles sit at the sides; the merchant stall itself is
-      // the focal object and no longer shares a full-room plinth.
-      rect(ctx, p.frameDark, 124, 137, 18, 5);
-      rect(ctx, p.frame, 126, 135, 14, 5);
-      rect(ctx, p.warning, 129, 134, 4, 3);
-      rect(ctx, p.frameDark, 178, 137, 18, 5);
-      rect(ctx, p.frame, 180, 135, 14, 5);
-      rect(ctx, p.energy, 187, 133, 4, 4);
-    } else if (roomType === "npc") {
-      for (let x = 136; x <= 184; x += 12) {
-        rect(ctx, p.frameDark, x, 137, 6, 3);
-        rect(ctx, p.energy, x + 2, 135 + ((x / 12 + pulse) % 2), 2, 4);
-      }
-    } else if (roomType === "wish_fountain") {
-      for (const [x, y] of [[132, 105], [188, 105], [132, 137], [188, 137]] as const) {
-        rect(ctx, p.frameDark, x - 3, y - 3, 6, 6);
-        rect(ctx, completed ? p.floorLight : p.energy, x - 1, y - 1, 3, 3);
-      }
-    } else if (roomType === "photo_booth") {
-      for (let x = 136; x <= 180; x += 11) {
-        rect(ctx, p.frameDark, x, 137, 6, 3);
-        rect(ctx, (x / 11 + pulse) % 2 === 0 ? p.energy : p.warning, x + 1, 136, 4, 2);
-      }
-    }
-    if (roomType === "npc") {
-      drawBroadcastStage(ctx, cx, cy);
-    } else {
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(0.82, 0.82);
-      ctx.translate(-cx, -cy);
-      drawChapterStage(ctx, theme, cx, cy);
-      ctx.restore();
-    }
+    // Special rooms retain the normal floor and only add sparse central runes.
+    // No corner seals, chapter side machinery, or generic stage frame remains.
+    drawSparseRunes(ctx, roomType, theme, time, completed);
   }
 
   static drawWishFountain(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string, completed: boolean): void {
-    const p = palette(theme);
-    const pulse = Math.floor(time * 6) % 3;
-    ctx.save();
-    ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(1.06, 1.06);
-    rect(ctx, "rgba(0,0,0,0.35)", -22, 11, 44, 6);
-    rect(ctx, p.frameDark, -20, 2, 40, 12);
-    rect(ctx, p.frame, -18, 1, 36, 11);
-    rect(ctx, p.frameLight, -15, 2, 30, 3);
-    rect(ctx, p.frameDark, -14, -8, 28, 12);
-    rect(ctx, p.frame, -12, -9, 24, 11);
-    rect(ctx, p.floorDark, -9, -6, 18, 7);
-    rect(ctx, completed ? p.floorLight : p.energy, -8, -5, 16, 5);
-    rect(ctx, completed ? p.frame : p.energyLight, -5 + pulse, -5, 6, 2);
-    rect(ctx, p.frameDark, -3, -17, 6, 10);
-    rect(ctx, p.frame, -2, -18, 4, 10);
-    if (!completed) {
-      rect(ctx, p.energyLight, -1, -24 - pulse, 3, 4);
-      rect(ctx, p.energy, -10, -13 + pulse, 3, 3);
-      rect(ctx, p.warning, 8, -15 + (2 - pulse), 3, 3);
-    }
-    ctx.restore();
+    drawRitualSpring(ctx, { x, y, scale: DUNGEON_RITUAL_SPRING_SCALE, time, theme: theme as EnemyTheme, completed });
   }
 
   static drawBroadcastTerminal(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, _theme: string, completed: boolean): void {
-    const p = BROADCAST_PALETTE;
     const signal = Math.floor(time * 7) % 4;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(1.02, 1.02);
     rect(ctx, "rgba(0,0,0,0.35)", -15, 10, 30, 5);
-    rect(ctx, p.frameDark, -13, -17, 26, 29);
-    rect(ctx, p.frame, -11, -15, 22, 25);
-    rect(ctx, p.frameLight, -9, -13, 18, 3);
-    rect(ctx, p.floorDark, -8, -8, 16, 10);
-    const bars = [p.warning, p.energyLight, p.energy, "#FF7043"];
-    bars.forEach((color, index) => rect(ctx, completed ? p.floorLight : color, -7 + index * 4, -6 + ((index + signal) % 2), 3, 6));
-    rect(ctx, p.frameDark, -9, 5, 5, 6);
-    rect(ctx, p.frameDark, 4, 5, 5, 6);
-    rect(ctx, p.frameLight, -8, 5, 3, 3);
-    rect(ctx, p.frameLight, 5, 5, 3, 3);
-    rect(ctx, p.frameDark, -9, -24, 3, 8);
-    rect(ctx, p.energy, -8, -25 - (signal % 2), 2, 3);
-    rect(ctx, p.frameDark, 6, -22, 3, 6);
-    rect(ctx, p.warning, 7, -23 + (signal % 2), 2, 3);
+    rect(ctx, FRAME.dark, -13, -17, 26, 29);
+    rect(ctx, FRAME.body, -11, -15, 22, 25);
+    rect(ctx, FRAME.light, -9, -13, 18, 3);
+    rect(ctx, FRAME.screen, -8, -8, 16, 10);
+    const bars = ["#F0B84A", "#E8FFFF", "#62D8E8", "#FF7043"];
+    bars.forEach((color, index) => rect(ctx, completed ? "#65717A" : color, -7 + index * 4, -6 + ((index + signal) % 2), 3, 6));
+    rect(ctx, FRAME.dark, -9, 5, 5, 6);
+    rect(ctx, FRAME.dark, 4, 5, 5, 6);
+    rect(ctx, FRAME.light, -8, 5, 3, 3);
+    rect(ctx, FRAME.light, 5, 5, 3, 3);
+    rect(ctx, FRAME.dark, -9, -24, 3, 8);
+    rect(ctx, completed ? "#65717A" : "#62D8E8", -8, -25 - (signal % 2), 2, 3);
     ctx.restore();
   }
 
@@ -240,18 +70,44 @@ export class SpecialRoomRenderer {
     const flash = !completed && Math.floor(time * 2.5) % 4 === 0;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(1.06, 1.06);
     rect(ctx, "rgba(0,0,0,0.35)", -18, 13, 36, 5);
-    rect(ctx, p.frameDark, -16, -21, 32, 35);
-    rect(ctx, p.frame, -14, -19, 28, 31);
-    rect(ctx, p.frameLight, -12, -17, 24, 3);
-    rect(ctx, p.floorDark, -10, -12, 20, 15);
-    rect(ctx, flash ? "#FFFFFF" : completed ? p.floorLight : p.energy, -7, -9, 14, 9);
-    rect(ctx, p.energyLight, -4, -7, 5, 3);
-    rect(ctx, p.warning, -10, 5, 20, 5);
-    rect(ctx, p.frameDark, -12, 13, 6, 5);
-    rect(ctx, p.frameDark, 6, 13, 6, 5);
+    rect(ctx, FRAME.dark, -16, -21, 32, 35);
+    rect(ctx, FRAME.body, -14, -19, 28, 31);
+    rect(ctx, FRAME.light, -12, -17, 24, 3);
+    rect(ctx, FRAME.screen, -10, -12, 20, 15);
+    rect(ctx, flash ? "#FFFFFF" : completed ? "#65717A" : p.energy, -7, -9, 14, 9);
+    rect(ctx, completed ? "#65717A" : p.energyLight, -4, -7, 5, 3);
+    rect(ctx, FRAME.gold, -10, 5, 20, 5);
+    rect(ctx, FRAME.dark, -12, 13, 6, 5);
+    rect(ctx, FRAME.dark, 6, 13, 6, 5);
     ctx.restore();
   }
 
+  static drawLegacyDevice(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, kind: "legacy_rpg" | "legacy_tactics", completed: boolean): void {
+    const pulse = Math.floor(time * 5) % 3;
+    const accent = kind === "legacy_rpg" ? "#70D7FF" : "#E6A85A";
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    rect(ctx, "rgba(0,0,0,0.35)", -16, 10, 32, 5);
+    rect(ctx, FRAME.dark, -14, -18, 28, 30);
+    rect(ctx, FRAME.body, -12, -16, 24, 26);
+    rect(ctx, FRAME.light, -10, -14, 20, 3);
+    rect(ctx, FRAME.screen, -9, -9, 18, 12);
+    if (kind === "legacy_rpg") {
+      rect(ctx, completed ? "#65717A" : accent, -6, -6, 12, 2);
+      rect(ctx, completed ? "#65717A" : accent, -6, -2, 8 + pulse, 2);
+      rect(ctx, completed ? "#65717A" : "#D8FFFF", -6, 2, 4, 2);
+    } else {
+      for (let row = 0; row < 3; row++) {
+        for (let column = 0; column < 4; column++) {
+          if ((row + column + pulse) % 2 === 0) {
+            rect(ctx, completed ? "#65717A" : accent, -7 + column * 4, -7 + row * 4, 3, 3);
+          }
+        }
+      }
+    }
+    rect(ctx, FRAME.dark, -10, 7, 7, 5);
+    rect(ctx, FRAME.dark, 3, 7, 7, 5);
+    ctx.restore();
+  }
 }
