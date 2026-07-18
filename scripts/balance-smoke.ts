@@ -429,7 +429,7 @@ for (const id of ["pistol", "shotgun", "service_revolver", "nail_driver", "liber
 const inputSource = fs.readFileSync("src/game/Input.ts", "utf8");
 const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const pauseSource = fs.readFileSync("src/game/render/PauseOverlayRenderer.ts", "utf8");
-const hudSource = fs.readFileSync("src/game/render/UIRenderer.ts", "utf8");
+const hudSource = fs.readFileSync("src/game/render/WeaponHudRenderer.ts", "utf8");
 assert.match(inputSource, /skill: \[1\]/);
 assert.match(inputSource, /skill: "B"/);
 assert.match(inputSource, /getCancelPrompt[\s\S]*getUiPrompt\("cancel"\)/);

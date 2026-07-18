@@ -1,5 +1,6 @@
 import { CHALLENGES, getDailyChallengeId } from "../ChallengeSystem";
 import { CHARACTERS } from "../data/characters";
+import { WEAPONS } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { getChallengeText, getMetaUpgradeText, t, uiFont, type Language } from "../i18n";
 import { getUpgradeCost, META_UPGRADES, META_UPGRADE_IDS, type MetaUpgradeId } from "../MetaUpgrades";
@@ -19,14 +20,16 @@ import { getWorldSize, type WorldObjectDefinition } from "../world/WorldMap";
 import { OcclusionController } from "../world/OcclusionController";
 import { GameState } from "./GameState";
 
-type HubMode = "world" | "upgrades" | "expedition";
-type ExpeditionAction = "continue" | "newRun" | "hard" | "challenge" | "close";
-const EXPEDITION_ACTIONS: ExpeditionAction[] = ["continue", "newRun", "hard", "challenge", "close"];
+type HubMode = "world" | "upgrades" | "expedition" | "trial";
+type ExpeditionAction = "continue" | "start" | "abandon" | "close";
+type TrialAction = "hard" | "challenge" | "close";
+const EXPEDITION_ACTIONS: ExpeditionAction[] = ["continue", "start", "abandon", "close"];
+const TRIAL_ACTIONS: TrialAction[] = ["hard", "challenge", "close"];
 const UPGRADE_ENTRY_COUNT = META_UPGRADE_IDS.length + 1;
 
 interface HubEnterParams {
   spawnAnchor?: string;
-  panel?: "upgrades" | "expedition";
+  panel?: "upgrades" | "expedition" | "trial";
   focusAction?: ExpeditionAction;
 }
 
@@ -43,6 +46,7 @@ export class HubState extends GameState {
   private mode: HubMode = "world";
   private selectedIndex = 0;
   private refundArmed = false;
+  private confirmationAction: "start" | "abandon" | null = null;
   private time = 0;
   private qaPresentationTime: number | null = null;
   private currentZoneKey = "hub.zone.sanctuary";
@@ -82,9 +86,10 @@ export class HubState extends GameState {
 
     this.mode = params?.panel ?? "world";
     this.selectedIndex = this.mode === "expedition"
-      ? Math.max(0, EXPEDITION_ACTIONS.indexOf(params?.focusAction ?? (this.engine.data.hasValidSave() ? "continue" : "newRun")))
+      ? Math.max(0, EXPEDITION_ACTIONS.indexOf(params?.focusAction ?? (this.engine.data.hasValidSave() ? "continue" : "start")))
       : 0;
     this.refundArmed = false;
+    this.confirmationAction = null;
     this.interactionTarget = null;
     this.time = 0;
     this.qaPresentationTime = null;
@@ -115,6 +120,10 @@ export class HubState extends GameState {
     }
     if (this.mode === "expedition") {
       this.updateExpedition();
+      return;
+    }
+    if (this.mode === "trial") {
+      this.updateTrial();
       return;
     }
 
@@ -209,30 +218,68 @@ export class HubState extends GameState {
       this.engine.switchState("dungeon");
       return;
     }
-    if (action === "newRun") {
-      this.engine.switchState("character_select", { backState: "hub", hubMode: false });
+    if (action === "start") {
+      if (this.engine.data.hasValidSave() && this.confirmationAction !== "start") {
+        this.confirmationAction = "start";
+        this.showMessage(t(this.language, "hub.expedition.confirmReplace"), true);
+        return;
+      }
+      if (this.engine.data.hasValidSave()) this.engine.data.abandonRun();
+      const loadout = this.engine.data.getHubLoadout();
+      this.engine.data.startNewRun(loadout.characterId, loadout.starterWeaponId);
+      this.engine.switchState("dungeon");
       return;
     }
-    if (action === "hard") {
-      this.toggleHardMode();
-      return;
-    }
-    if (action === "challenge") {
-      this.toggleChallenge();
+    if (action === "abandon") {
+      if (!this.engine.data.hasValidSave()) {
+        this.showMessage(t(this.language, "hub.noActiveRun"), true);
+        return;
+      }
+      if (this.confirmationAction !== "abandon") {
+        this.confirmationAction = "abandon";
+        this.showMessage(t(this.language, "hub.expedition.confirmAbandon"), true);
+        return;
+      }
+      this.engine.data.abandonRun();
+      this.confirmationAction = null;
+      this.showMessage(t(this.language, "hub.expedition.abandoned"));
       return;
     }
     this.closePanel();
   }
 
+  private updateTrial(): void {
+    if (this.engine.input.wasUiPressed("cancel")) {
+      this.closePanel();
+      return;
+    }
+    if (this.engine.input.wasUiPressed("up")) {
+      this.selectedIndex = (this.selectedIndex - 1 + TRIAL_ACTIONS.length) % TRIAL_ACTIONS.length;
+      audio.playShoot();
+      return;
+    }
+    if (this.engine.input.wasUiPressed("down")) {
+      this.selectedIndex = (this.selectedIndex + 1) % TRIAL_ACTIONS.length;
+      audio.playShoot();
+      return;
+    }
+    if (!this.engine.input.wasUiPressed("confirm")) return;
+    const action = TRIAL_ACTIONS[this.selectedIndex];
+    if (action === "hard") this.toggleHardMode();
+    else if (action === "challenge") this.toggleChallenge();
+    else this.closePanel();
+  }
+
   private moveExpeditionSelection(direction: number): void {
     this.selectedIndex = (this.selectedIndex + direction + EXPEDITION_ACTIONS.length) % EXPEDITION_ACTIONS.length;
+    this.confirmationAction = null;
     audio.playShoot();
   }
 
   private activateInteraction(object: WorldObjectDefinition): void {
     switch (object.action) {
       case "open_rebirth_spring":
-        this.engine.switchState("character_select", { backState: "hub", hubMode: true });
+        this.engine.switchState("rebirth_loadout");
         break;
       case "open_expedition":
         this.openPanel("expedition", this.engine.data.hasValidSave() ? 0 : 1);
@@ -253,7 +300,7 @@ export class HubState extends GameState {
         this.engine.switchState("records", { backState: "hub", initialPage: "weapons" });
         break;
       case "open_challenge":
-        this.openPanel("expedition", EXPEDITION_ACTIONS.indexOf("challenge"));
+        this.openPanel("trial", 0);
         break;
       case "open_training":
         this.showMessage(t(this.language, "hub.trainingReserved"));
@@ -273,6 +320,7 @@ export class HubState extends GameState {
     this.mode = mode;
     this.selectedIndex = Math.max(0, selectedIndex);
     this.refundArmed = false;
+    this.confirmationAction = null;
     this.engine.input.clearJustPressed();
     audio.playPickup();
   }
@@ -280,6 +328,7 @@ export class HubState extends GameState {
   private closePanel(): void {
     this.mode = "world";
     this.refundArmed = false;
+    this.confirmationAction = null;
     this.engine.input.clearJustPressed();
     audio.playShoot();
   }
@@ -477,7 +526,8 @@ export class HubState extends GameState {
     this.drawHubHud(ctx);
     if (this.mode === "world") this.drawWorldOverlay(ctx);
     else if (this.mode === "upgrades") this.drawUpgradePanel(ctx);
-    else this.drawExpeditionPanel(ctx);
+    else if (this.mode === "expedition") this.drawExpeditionPanel(ctx);
+    else this.drawTrialPanel(ctx);
   }
 
   private drawHubHud(ctx: CanvasRenderingContext2D): void {
@@ -552,24 +602,44 @@ export class HubState extends GameState {
   private drawExpeditionPanel(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = "rgba(3,5,9,0.8)";
     ctx.fillRect(0, 0, 320, 240);
-    drawPixelPanel(ctx, 48, 35, 224, 170, "purple", true);
-    drawSectionLabel(ctx, t(this.language, "hub.expeditionTitle"), 61, 55, 198, this.language, "purple");
+    drawPixelPanel(ctx, 38, 24, 244, 194, "purple", true);
+    drawSectionLabel(ctx, t(this.language, "hub.expeditionTitle"), 51, 43, 218, this.language, "purple");
+
+    const loadout = this.engine.data.getHubLoadout();
+    const character = CHARACTERS[loadout.characterId] ?? CHARACTERS.knight;
+    const weapon = WEAPONS[loadout.starterWeaponId];
+    const daily = getDailyChallengeId();
+    const challenge = this.engine.data.meta.preferredChallengeId === daily
+      ? getChallengeText(daily, CHALLENGES[daily], this.language).name
+      : t(this.language, "common.off");
+    const difficulty = this.engine.data.meta.preferredHardMode
+      ? t(this.language, "common.hard")
+      : t(this.language, "common.normal");
+
+    ctx.textAlign = "left";
+    ctx.font = uiFont(this.language, 6, true);
+    ctx.fillStyle = UI_COLORS.text;
+    ctx.fillText(t(this.language, "hub.expedition.loadoutSummary", {
+      character: character.name,
+      weapon: weapon?.name ?? loadout.starterWeaponId,
+    }), 52, 62);
+    ctx.fillText(t(this.language, "hub.expedition.rulesSummary", { difficulty, challenge }), 52, 74);
 
     EXPEDITION_ACTIONS.forEach((action, index) => {
-      const y = 75 + index * 23;
+      const y = 99 + index * 25;
       const selected = this.selectedIndex === index;
-      const disabled = action === "continue" && !this.engine.data.hasValidSave();
-      const tone = action === "close" ? "neutral" : action === "newRun" ? "green" : "purple";
-      drawPixelButton(ctx, 61, y - 12, 198, 18, selected, tone);
+      const disabled = (action === "continue" || action === "abandon") && !this.engine.data.hasValidSave();
+      const tone = action === "close" ? "neutral" : action === "start" ? "green" : action === "abandon" ? "red" : "purple";
+      drawPixelButton(ctx, 51, y - 12, 218, 19, selected, tone);
       ctx.textAlign = "left";
       ctx.fillStyle = disabled ? UI_COLORS.edge : selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(this.language, 7, selected);
-      ctx.fillText(`${selected ? ">" : " "} ${t(this.language, `hub.expedition.${action}` as Parameters<typeof t>[1])}`, 69, y);
+      ctx.fillText(`${selected ? ">" : " "} ${t(this.language, `hub.expedition.${action}` as Parameters<typeof t>[1])}`, 59, y);
       const value = this.getExpeditionValue(action);
       if (value) {
         ctx.textAlign = "right";
-        ctx.fillStyle = action === "hard" && !this.engine.data.meta.hardModeUnlocked ? UI_COLORS.red : UI_COLORS.yellow;
-        ctx.fillText(value, 251, y);
+        ctx.fillStyle = UI_COLORS.yellow;
+        ctx.fillText(value, 261, y);
       }
     });
 
@@ -580,11 +650,50 @@ export class HubState extends GameState {
       vertical: this.engine.input.getNavigationPrompt("vertical"),
       confirm: this.engine.input.getConfirmPrompt(),
       cancel: this.engine.input.getCancelPrompt(),
-    }), 160, 198);
+    }), 160, 210);
+  }
+
+  private drawTrialPanel(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = "rgba(3,5,9,0.8)";
+    ctx.fillRect(0, 0, 320, 240);
+    drawPixelPanel(ctx, 34, 27, 252, 188, "yellow", true);
+    drawSectionLabel(ctx, t(this.language, "hub.trialTitle"), 47, 47, 226, this.language, "yellow");
+
+    const dailyId = getDailyChallengeId();
+    const daily = getChallengeText(dailyId, CHALLENGES[dailyId], this.language);
+    ctx.textAlign = "left";
+    ctx.fillStyle = UI_COLORS.white;
+    ctx.font = uiFont(this.language, 7, true);
+    ctx.fillText(daily.name, 49, 65);
+    ctx.fillStyle = UI_COLORS.text;
+    ctx.font = uiFont(this.language, 6);
+    ctx.fillText(daily.description, 49, 77);
+    ctx.fillStyle = UI_COLORS.yellow;
+    ctx.fillText(t(this.language, "hub.trialReward", { reward: CHALLENGES[dailyId].reward }), 49, 89);
+
+    TRIAL_ACTIONS.forEach((action, index) => {
+      const y = 116 + index * 27;
+      const selected = this.selectedIndex === index;
+      const tone = action === "close" ? "neutral" : action === "hard" ? "red" : "purple";
+      drawPixelButton(ctx, 49, y - 12, 222, 20, selected, tone);
+      ctx.textAlign = "left";
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
+      ctx.font = uiFont(this.language, 7, selected);
+      ctx.fillText(`${selected ? ">" : " "} ${t(this.language, `hub.trial.${action}` as Parameters<typeof t>[1])}`, 58, y);
+      ctx.textAlign = "right";
+      ctx.fillStyle = UI_COLORS.yellow;
+      ctx.fillText(this.getTrialValue(action), 263, y);
+    });
   }
 
   private getExpeditionValue(action: ExpeditionAction): string {
     if (action === "continue") return this.engine.data.hasValidSave() ? t(this.language, "common.ready") : t(this.language, "common.disabled");
+    if (action === "abandon") return this.engine.data.hasValidSave() ? t(this.language, "common.ready") : t(this.language, "common.disabled");
+    if (action === "start" && this.confirmationAction === "start") return t(this.language, "common.confirm");
+    return "";
+  }
+
+  private getTrialValue(action: TrialAction): string {
     if (action === "hard") {
       return this.engine.data.meta.hardModeUnlocked
         ? t(this.language, this.engine.data.meta.preferredHardMode ? "common.on" : "common.off")

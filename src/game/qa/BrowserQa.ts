@@ -189,7 +189,7 @@ export async function runBrowserQaChecks(engine: Engine, canvas: HTMLCanvasEleme
 
   const stateSceneMap: Partial<Record<string, MusicScene[]>> = {
     title: ["title"],
-    character_select: ["hub"],
+    rebirth_loadout: ["hub"],
     hub: ["hub"],
     records: ["hub"],
     settings: ["settings"],
@@ -258,7 +258,25 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     capturePng: () => canvas.toDataURL("image/png"),
   };
   (window as any).__CMYS_QA__ = bridge;
+  if (isQaMode()) {
+    const params = new URLSearchParams(window.location.search);
+    const scene = params.get("qaScene") as DungeonQaScene | null;
+    const theme = params.get("qaTheme") as "forest" | "dungeon" | "snow" | "lava" | null;
+    const time = Number(params.get("qaTime") ?? 12.5);
+    if (params.get("qaCapture") === "1") {
+      const style = document.createElement("style");
+      style.dataset.qaCaptureStyle = "true";
+      style.textContent = '.touch-controls, [data-testid="browser-qa-panel"] { display: none !important; }';
+      document.head.appendChild(style);
+    }
+    if (scene) {
+      requestAnimationFrame(() => {
+        bridge.setDungeonScene(scene, theme ?? "dungeon", Number.isFinite(time) ? time : 12.5);
+      });
+    }
+  }
   return () => {
+    document.querySelector('style[data-qa-capture-style="true"]')?.remove();
     if ((window as any).__CMYS_QA__ === bridge) delete (window as any).__CMYS_QA__;
   };
 }

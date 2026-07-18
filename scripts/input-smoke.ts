@@ -40,7 +40,7 @@ Object.defineProperty(globalThis, "navigator", {
 });
 
 const { Input } = await import("../src/game/Input");
-const { CharacterSelectState } = await import("../src/game/states/CharacterSelectState");
+const { RebirthLoadoutState } = await import("../src/game/states/RebirthLoadoutState");
 const { DungeonState } = await import("../src/game/states/DungeonState");
 const { MenuState } = await import("../src/game/states/MenuState");
 const { SettingsState } = await import("../src/game/states/SettingsState");
@@ -210,92 +210,73 @@ const characterEngine = {
 } as any;
 gamepads = [createPad(false, true)];
 characterInput.beginFrame();
-new CharacterSelectState(characterEngine).update(0);
-assert.equal(switchedState, "hub", "gamepad B returns from character select");
+new RebirthLoadoutState(characterEngine).update(0);
+assert.equal(switchedState, "hub", "gamepad B returns from rebirth loadout");
 characterInput.cleanup();
 
 const hierarchyInput = new Input();
 let hierarchySwitch = "";
-let hierarchyStart: { characterId: string; weaponId?: string } | null = null;
+let hierarchyLoadout: { characterId: string; weaponId?: string } | null = null;
 const hierarchyEngine = {
   input: hierarchyInput,
   data: {
     settings: { language: "en" },
     meta: { preferredHardMode: false },
+    getHubLoadout: () => ({ characterId: "knight", starterWeaponId: "pistol" }),
     isStarterWeaponUnlocked: () => true,
     isCharacterUnlocked: () => true,
     getStarterWeaponForCharacter(characterId: string) {
       return characterId === "michele" ? "inspector" : characterId === "kanami" ? "finale" : characterId === "celestia" ? "polaris" : characterId === "mage" ? "laser" : characterId === "rogue" ? "shotgun" : "pistol";
     },
-    startNewRun(characterId: string, weaponId?: string) {
-      hierarchyStart = { characterId, weaponId };
+    setHubLoadout(characterId: string, weaponId?: string) {
+      hierarchyLoadout = { characterId, weaponId };
     },
   },
   switchState(state: string) { hierarchySwitch = state; },
 } as any;
-const hierarchyState = new CharacterSelectState(hierarchyEngine) as any;
-hierarchyState.enter({ backState: "hub" });
-assert.equal(hierarchyState.mode, "collection");
-windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-hierarchyState.update(0);
-assert.equal(hierarchyState.mode, "form", "selecting CMYS must open form selection");
-assert.equal(hierarchyStart, null, "selecting CMYS must not immediately start a run");
-hierarchyInput.update();
-windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
-hierarchyInput.update();
+const hierarchyState = new RebirthLoadoutState(hierarchyEngine) as any;
+hierarchyState.enter();
+assert.equal(hierarchyState.mode, "form", "rebirth restores the saved CMYS form directly");
+assert.equal(hierarchyState.selectedForm.id, "knight");
 windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
 hierarchyState.update(0);
-assert.equal(hierarchyState.selectedForm.id, "mage", "CMYS form selection must cycle Guard, Arcane, and Swift forms");
+assert.equal(hierarchyState.selectedForm.id, "mage", "CMYS form selection cycles Guard, Arcane, and Swift forms");
 hierarchyInput.update();
 windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
 hierarchyInput.update();
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 hierarchyState.update(0);
-assert.deepEqual(hierarchyStart, { characterId: "mage", weaponId: "laser" });
-assert.equal(hierarchySwitch, "dungeon");
+assert.deepEqual(hierarchyLoadout, { characterId: "mage", weaponId: "laser" });
+assert.equal(hierarchySwitch, "hub", "rebirth confirmation returns to Hub without starting a run");
 hierarchyInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 hierarchyInput.cleanup();
 
 const kanamiInput = new Input();
 let kanamiSwitch = "";
-let kanamiStart: { characterId: string; weaponId?: string } | null = null;
+let kanamiLoadout: { characterId: string; weaponId?: string } | null = null;
 const kanamiEngine = {
   input: kanamiInput,
   data: {
     settings: { language: "en" },
     meta: { preferredHardMode: false },
+    getHubLoadout: () => ({ characterId: "kanami", starterWeaponId: "finale" }),
     isStarterWeaponUnlocked: () => true,
     isCharacterUnlocked: () => true,
     getStarterWeaponForCharacter: (characterId: string) => characterId === "kanami" ? "finale" : "pistol",
-    startNewRun(characterId: string, weaponId?: string) { kanamiStart = { characterId, weaponId }; },
+    setHubLoadout(characterId: string, weaponId?: string) { kanamiLoadout = { characterId, weaponId }; },
   },
   switchState(state: string) { kanamiSwitch = state; },
 } as any;
-const kanamiState = new CharacterSelectState(kanamiEngine) as any;
-kanamiState.enter({ backState: "hub" });
-windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
-kanamiState.update(0);
-kanamiInput.update();
-windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
-kanamiInput.update();
+const kanamiState = new RebirthLoadoutState(kanamiEngine) as any;
+kanamiState.enter();
 assert.equal(kanamiState.selectedCollectionId, "strinova");
-windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
-kanamiState.update(0);
 assert.equal(kanamiState.mode, "character");
-kanamiInput.update();
-windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
-kanamiInput.update();
-windowTarget.dispatch("keydown", { key: "d", preventDefault() {} });
-kanamiState.update(0);
 assert.equal(kanamiState.selectedCharacter.id, "kanami");
-kanamiInput.update();
-windowTarget.dispatch("keyup", { key: "d", preventDefault() {} });
-kanamiInput.update();
 windowTarget.dispatch("keydown", { key: "k", preventDefault() {} });
 kanamiState.update(0);
-assert.deepEqual(kanamiStart, { characterId: "kanami", weaponId: "finale" });
-assert.equal(kanamiSwitch, "dungeon");
+assert.deepEqual(kanamiLoadout, { characterId: "kanami", weaponId: "finale" });
+assert.equal(kanamiSwitch, "hub");
 kanamiInput.update();
 windowTarget.dispatch("keyup", { key: "k", preventDefault() {} });
 kanamiInput.cleanup();
@@ -421,6 +402,7 @@ assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S
 const createHubEngine = (input: InstanceType<typeof Input>) => {
   let purchases = 0;
   let switchedState = "";
+  let startedRun: { characterId: string; weaponId?: string } | null = null;
   const engine = {
     input,
     worldNotices: {
@@ -438,6 +420,12 @@ const createHubEngine = (input: InstanceType<typeof Input>) => {
         purchases++;
         return { success: true, cost: 30 };
       },
+      hasValidSave: () => false,
+      getHubLoadout: () => ({ characterId: "kanami", starterWeaponId: "finale" }),
+      startNewRun(characterId: string, weaponId?: string) {
+        startedRun = { characterId, weaponId };
+      },
+      abandonRun() {},
     },
     switchState(state: string) { switchedState = state; },
   } as any;
@@ -445,6 +433,7 @@ const createHubEngine = (input: InstanceType<typeof Input>) => {
     engine,
     getPurchases: () => purchases,
     getSwitchedState: () => switchedState,
+    getStartedRun: () => startedRun,
   };
 };
 
@@ -480,7 +469,8 @@ gamepads = [createPad(true)];
 hubGamepadInput.beginFrame();
 hubGamepadState.update();
 assert.equal(hubGamepad.getPurchases(), 0);
-assert.equal(hubGamepad.getSwitchedState(), "character_select", "gamepad A activates New Run in the expedition panel");
+assert.deepEqual(hubGamepad.getStartedRun(), { characterId: "kanami", weaponId: "finale" });
+assert.equal(hubGamepad.getSwitchedState(), "dungeon", "gamepad A starts with the saved Hub loadout");
 hubGamepadInput.cleanup();
 
 const hubTouchInput = new Input();
@@ -491,7 +481,8 @@ hubTouchState.selectedIndex = 1;
 hubTouchInput.setTouchAction("interact", true);
 hubTouchState.update();
 assert.equal(hubTouch.getPurchases(), 0);
-assert.equal(hubTouch.getSwitchedState(), "character_select", "touch A activates New Run in the expedition panel");
+assert.deepEqual(hubTouch.getStartedRun(), { characterId: "kanami", weaponId: "finale" });
+assert.equal(hubTouch.getSwitchedState(), "dungeon", "touch A starts with the saved Hub loadout");
 hubTouchInput.cleanup();
 
 const touchMenuInput = new Input();

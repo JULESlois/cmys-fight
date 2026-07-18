@@ -11,7 +11,7 @@
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
-    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:hub && npm run test:dungeon-objects && npm run test:rooms && npm run test:flow-settings && npm run test:notice && npm run test:i18n && npm run test:content && npm run test:weapons && npm run test:michele && npm run test:kanami && npm run test:celestia && npm run test:nte && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
+    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:hub && npm run test:dungeon-objects && npm run test:doors && npm run test:rooms && npm run test:flow-settings && npm run test:hub-responsibilities && npm run test:notice && npm run test:weapon-hud && npm run test:i18n && npm run test:content && npm run test:weapons && npm run test:michele && npm run test:kanami && npm run test:celestia && npm run test:nte && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
     "test:http": "node scripts/http-smoke.mjs",
     "test:input": "node --import tsx scripts/input-smoke.ts",
     "test:art": "node --import tsx scripts/art-audio-smoke.ts",
@@ -33,9 +33,12 @@
     "test:celestia": "node --import tsx scripts/celestia-smoke.ts",
     "test:nte": "node --import tsx scripts/nte-smoke.ts",
     "test:dungeon-objects": "node --import tsx scripts/dungeon-object-smoke.ts",
+    "test:doors": "node --import tsx scripts/door-geometry-smoke.ts",
     "test:rooms": "node --import tsx scripts/room-template-smoke.ts",
     "test:flow-settings": "node --import tsx scripts/flow-settings-smoke.ts",
-    "test:notice": "node --import tsx scripts/notice-smoke.ts"
+    "test:hub-responsibilities": "node --import tsx scripts/hub-responsibility-smoke.ts",
+    "test:notice": "node --import tsx scripts/notice-smoke.ts",
+    "test:weapon-hud": "node --import tsx scripts/weapon-hud-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

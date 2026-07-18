@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { GameData } from "../src/game/GameData";
 import { jumpToStage } from "../src/game/DebugTools";
 import { WorldNoticeController } from "../src/game/notice/WorldNoticeController";
+import { DungeonState } from "../src/game/states/DungeonState";
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -52,11 +53,32 @@ const controller = read("src/game/notice/WorldNoticeController.ts");
 const renderer = read("src/game/notice/WorldNoticeRenderer.ts");
 const i18n = read("src/game/i18n.ts");
 
+const lifecycleEvents: Array<{ text: string; tone: string }> = [];
+const dungeonHarness = new DungeonState({
+  data: { settings: { language: "en" } },
+  worldNotices: {
+    showBottom(text: string, tone: string) { lifecycleEvents.push({ text, tone }); },
+  },
+} as any) as any;
+dungeonHarness.emitCombatLifecycleNotice("combat_started", false);
+dungeonHarness.emitCombatLifecycleNotice("combat_cleared");
+assert.deepEqual(lifecycleEvents, [
+  { text: "COMBAT START", tone: "yellow" },
+  { text: "ROOM CLEAR", tone: "yellow" },
+]);
+lifecycleEvents.length = 0;
+dungeonHarness.emitCombatLifecycleNotice("combat_started", true);
+dungeonHarness.emitCombatLifecycleNotice("combat_cleared");
+assert.deepEqual(lifecycleEvents, [
+  { text: "BOSS ENGAGED", tone: "red" },
+  { text: "ROOM CLEAR", tone: "yellow" },
+]);
+
 assert.match(engine, /readonly worldNotices = new WorldNoticeController/);
 assert.match(engine, /WorldNoticeRenderer\.draw/);
 assert.match(controller, /showBottom/);
 assert.match(controller, /showRegion/);
-assert.match(renderer, /drawPixelPanel\(ctx, 43, 207, 234, 23/);
+assert.match(renderer, /getBottomNoticeBounds\(scene\)/);
 assert.match(renderer, /drawRegion/);
 assert.doesNotMatch(hub, /zoneBannerTimer|private message =|messageTimer/);
 assert.match(hub, /worldNotices\.showBottom/);
@@ -66,15 +88,30 @@ assert.doesNotMatch(dungeon, /centerY - bgHeight|y \+= 4/);
 assert.match(dungeon, /worldNotices\.showBottom/);
 assert.match(dungeon, /worldNotices\.showRegion/);
 assert.match(gameData, /chapterChanged: previous\.chapterIndex !== current\.chapterIndex/);
-assert.match(i18n, /"notice\.combatStart"/);
+assert.match(i18n, /"notice\.combatStarted"/);
+assert.match(i18n, /"notice\.bossCombatStarted"/);
+assert.match(i18n, /"notice\.combatCleared"/);
+assert.doesNotMatch(i18n, /"notice\.rewardGenerated"/);
+assert.doesNotMatch(dungeon, /notice\.rewardGenerated/);
+assert.match(dungeon, /emitCombatLifecycleNotice\("combat_started"/);
+assert.match(dungeon, /emitCombatLifecycleNotice\("combat_cleared"/);
+assert.match(dungeon, /this\.phaseTimer = room\?\.type === "boss" \? 0\.5 : 0\.25/);
+assert.match(dungeon, /this\.setPhase\(room\?\.type === "boss" \? "intro" : "locking"\)/);
+assert.match(dungeon, /const bossSlowPacing = currentRoom\?\.type === "boss"/);
+assert.match(dungeon, /if \(bossSlowPacing\) speedMult = 0\.2/);
+assert.match(dungeon, /private areRoomDoorsLocked\(\)/);
 assert.match(i18n, /"notice\.chapter\.2\.name": "FORGOTTEN DUNGEON"/);
 assert.match(i18n, /"notice\.chapter\.2\.name": "遗忘地牢"/);
 
 console.log(JSON.stringify({
   bottomNotice: "engine-owned-cross-room",
   regionNotice: "engine-owned-cross-state",
-  combatStart: "BottomNotice",
-  roomClear: "BottomNotice",
+  normalCombat: ["combat_started", "combat_cleared"],
+  bossCombat: ["boss_combat_started", "combat_cleared"],
+  rewardNotice: "none",
+  normalEntry: "fade-to-0.25s-locking-at-full-speed",
+  bossEntry: "0.8s-intro-0.5s-locking-at-20-percent-speed",
+  doorLockAndSpeed: "separate-controls",
   chapterChange: chapterTransition,
   sameChapterChange: stageTransition.chapterChanged,
   legacyBanner: "removed",

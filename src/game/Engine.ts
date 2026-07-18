@@ -9,7 +9,7 @@ import { MenuState } from "./states/MenuState";
 import { DungeonState, type DungeonQaScene } from "./states/DungeonState";
 import { TitleState } from "./states/TitleState";
 import { SplashState } from "./states/SplashState";
-import { CharacterSelectState } from "./states/CharacterSelectState";
+import { RebirthLoadoutState } from "./states/RebirthLoadoutState";
 import { SettingsState } from "./states/SettingsState";
 import { RunResultState } from "./states/RunResultState";
 import { HubState } from "./states/HubState";
@@ -64,7 +64,7 @@ export class Engine {
     this.states = {
       splash: new SplashState(this),
       title: new TitleState(this),
-      character_select: new CharacterSelectState(this),
+      rebirth_loadout: new RebirthLoadoutState(this),
       settings: new SettingsState(this),
       run_result: new RunResultState(this),
       hub: new HubState(this),
@@ -150,7 +150,7 @@ export class Engine {
     this.states[this.currentState].exit();
     this.input.suppressUntilReleased();
     this.currentState = newState;
-    if (["splash", "title", "character_select", "settings", "run_result", "hub", "records"].includes(newState)) {
+    if (["splash", "title", "rebirth_loadout", "settings", "run_result", "hub", "records"].includes(newState)) {
        this.isPaused = false;
     }
     this.states[this.currentState].enter(params);
@@ -274,7 +274,7 @@ export class Engine {
     const stateScenes: Record<string, MusicScene> = {
       splash: "title",
       title: "title",
-      character_select: "hub",
+      rebirth_loadout: "hub",
       hub: "hub",
       records: "hub",
       settings: "settings",
@@ -487,7 +487,7 @@ export class Engine {
     WorldNoticeRenderer.draw(this.ctx, {
       bottom: this.worldNotices.getBottom(),
       region: this.worldNotices.getRegion(),
-    }, settings.language);
+    }, settings.language, this.currentState === "dungeon" ? "dungeon" : "hub");
 
 
     if (this.isDebugOverlayVisible()) this.drawDebugOverlay(this.ctx);

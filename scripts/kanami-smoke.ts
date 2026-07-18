@@ -224,7 +224,7 @@ kanamiArtPlayer.animFrame = 3;
 assert.equal(kanamiArtPlayer.weaponAnimationOffsetY, -1);
 assert.equal(kanamiArtPlayer.effectiveWeaponHandOffsetY, -6);
 
-const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
+const selectSource = fs.readFileSync("src/game/states/RebirthLoadoutState.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");

@@ -1,5 +1,6 @@
 import type { Language } from "../i18n";
 import { uiFont } from "../i18n";
+import { getBottomNoticeBounds, type HudScene } from "../render/HudLayout";
 import { drawPixelPanel, UI_COLORS } from "../render/PixelUi";
 import type { BottomNotice, RegionNotice, WorldNoticeTone } from "./WorldNoticeController";
 
@@ -15,14 +16,20 @@ function panelTone(tone: WorldNoticeTone): "neutral" | "yellow" | "red" | "cyan"
 }
 
 export class WorldNoticeRenderer {
-  public static drawBottom(ctx: CanvasRenderingContext2D, notice: BottomNotice, language: Language): void {
+  public static drawBottom(
+    ctx: CanvasRenderingContext2D,
+    notice: BottomNotice,
+    language: Language,
+    scene: HudScene = "hub",
+  ): void {
+    const bounds = getBottomNoticeBounds(scene);
     ctx.save();
     ctx.globalAlpha = fadeAlpha(notice.remaining, notice.duration);
-    drawPixelPanel(ctx, 43, 207, 234, 23, panelTone(notice.tone), true);
+    drawPixelPanel(ctx, bounds.x, bounds.y, bounds.width, bounds.height, panelTone(notice.tone), true);
     ctx.fillStyle = UI_COLORS.white;
     ctx.font = uiFont(language, 7, true);
     ctx.textAlign = "center";
-    ctx.fillText(notice.text, 160, 222);
+    ctx.fillText(notice.text, bounds.x + bounds.width / 2, bounds.y + 15);
     ctx.restore();
   }
 
@@ -47,8 +54,9 @@ export class WorldNoticeRenderer {
     ctx: CanvasRenderingContext2D,
     notices: { bottom: BottomNotice | null; region: RegionNotice | null },
     language: Language,
+    scene: HudScene = "hub",
   ): void {
     if (notices.region) this.drawRegion(ctx, notices.region, language);
-    if (notices.bottom) this.drawBottom(ctx, notices.bottom, language);
+    if (notices.bottom) this.drawBottom(ctx, notices.bottom, language, scene);
   }
 }

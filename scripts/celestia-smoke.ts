@@ -142,7 +142,7 @@ const migrated = normalizeMetaProgress({ unlockedCharacters: ["knight"], unlocke
 assert.ok(migrated.unlockedCharacters.includes("celestia"));
 assert.ok(migrated.unlockedStarterWeapons.includes("polaris"));
 
-const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
+const selectSource = fs.readFileSync("src/game/states/RebirthLoadoutState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 assert.match(selectSource, /CHARACTER_COLLECTION_IDS/);

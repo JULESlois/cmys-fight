@@ -27,27 +27,39 @@ import { drawBadge, drawMeter, drawPixelButton, drawPixelPanel, drawSectionLabel
 type SelectionMode = "collection" | "character" | "form";
 const CMYS_FORM_IDS = ["knight", "mage", "rogue"] as const;
 
-export class CharacterSelectState extends GameState {
+export class RebirthLoadoutState extends GameState {
   protected selectedIndex = 0;
   protected selectedWeaponIndex = 0;
   private selectedCharacterIndex = 0;
   private selectedFormIndex = 0;
   private mode: SelectionMode = "collection";
-  private backState: "title" | "hub" = "hub";
-  private hubMode = false;
 
   constructor(engine: Engine) {
     super(engine);
   }
 
-  enter(params?: { backState?: "title" | "hub"; hubMode?: boolean }) {
-    this.backState = params?.backState === "title" ? "title" : "hub";
-    this.hubMode = params?.hubMode === true;
-    this.mode = "collection";
-    this.selectedIndex = 0;
-    this.selectedCharacterIndex = 0;
-    this.selectedFormIndex = 0;
-    this.syncWeaponSelection("knight");
+  enter() {
+    const loadout = this.engine.data.getHubLoadout();
+    const character = CHARACTERS[loadout.characterId] ?? CHARACTERS.knight;
+    const formIndex = CMYS_FORM_IDS.findIndex(id => id === character.id);
+    if (formIndex >= 0) {
+      this.selectedIndex = CHARACTER_COLLECTION_IDS.indexOf("cmys");
+      this.selectedFormIndex = formIndex;
+      this.mode = "form";
+    } else {
+      const collectionIndex = CHARACTER_COLLECTION_IDS.findIndex(collectionId =>
+        CHARACTER_COLLECTIONS[collectionId].characterIds.includes(character.id)
+      );
+      this.selectedIndex = Math.max(0, collectionIndex);
+      this.selectedCharacterIndex = Math.max(
+        0,
+        this.selectedCollectionCharacters.findIndex(candidate => candidate.id === character.id),
+      );
+      this.mode = "character";
+    }
+    const weapons = this.getUnlockedWeapons(character.id);
+    const weaponIndex = weapons.findIndex(weapon => weapon.id === loadout.starterWeaponId);
+    this.selectedWeaponIndex = weaponIndex >= 0 ? weaponIndex : 0;
   }
 
   exit() {}
@@ -93,25 +105,20 @@ export class CharacterSelectState extends GameState {
     audio.playShoot();
   }
 
-  private startCharacter(character: CharacterConfig): void {
+  private confirmLoadout(character: CharacterConfig): void {
     if (!this.engine.data.isCharacterUnlocked(character.id)) {
       audio.playHurt();
       return;
     }
     const weapons = this.getUnlockedWeapons(character.id);
     const starterWeaponId = weapons[this.selectedWeaponIndex]?.id;
-    if (this.hubMode) {
-      this.engine.data.setHubLoadout(character.id, starterWeaponId);
-      this.engine.switchState("hub");
-      return;
-    }
-    this.engine.data.startNewRun(character.id, starterWeaponId);
-    this.engine.switchState("dungeon");
+    this.engine.data.setHubLoadout(character.id, starterWeaponId);
+    this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
   }
 
   update(_dt: number) {
     if (this.engine.input.wasUiPressed("cancel")) {
-      if (this.mode === "collection") this.engine.switchState(this.backState);
+      if (this.mode === "collection") this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
       else {
         this.mode = "collection";
         audio.playShoot();
@@ -156,7 +163,7 @@ export class CharacterSelectState extends GameState {
       }
       if (up) this.cycleWeapon(this.selectedCharacter.id, -1);
       if (down) this.cycleWeapon(this.selectedCharacter.id, 1);
-      if (confirm) this.startCharacter(this.selectedCharacter);
+      if (confirm) this.confirmLoadout(this.selectedCharacter);
       return;
     }
 
@@ -168,7 +175,7 @@ export class CharacterSelectState extends GameState {
     }
     if (up) this.cycleWeapon(this.selectedForm.id, -1);
     if (down) this.cycleWeapon(this.selectedForm.id, 1);
-    if (confirm) this.startCharacter(this.selectedForm);
+    if (confirm) this.confirmLoadout(this.selectedForm);
   }
 
   private getArt(characterId: string, color: string): { sprite: string; palette: Record<string, string>; scale: number } {
@@ -416,12 +423,10 @@ export class CharacterSelectState extends GameState {
         ? t(language, "character.chooseForm")
         : CHARACTER_COLLECTIONS[this.selectedCollectionId].name;
     this.drawScreenTitle(ctx, title, language);
-    ctx.fillStyle = this.engine.data.meta.preferredHardMode ? "#E74C3C" : "#7F8C8D";
+    ctx.fillStyle = "#7F8C8D";
     ctx.textAlign = "center";
     ctx.font = uiFont(language, 6, true);
-    ctx.fillText(t(language, "character.runMode", {
-      mode: t(language, this.engine.data.meta.preferredHardMode ? "common.hard" : "common.normal"),
-    }), 160, 39);
+    ctx.fillText(t(language, "rebirth.loadoutOnly"), 160, 39);
 
     if (this.mode === "collection") this.drawCollectionScreen(ctx);
     else if (this.mode === "form") this.drawFormScreen(ctx);

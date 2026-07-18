@@ -250,7 +250,7 @@ assert.equal(getCharacterText("nanally", CHARACTERS.nanally, "zh-CN").title, "�
 assert.match(getWeaponMechanic("zeroth_sense", WEAPONS.zeroth_sense.mechanic, "zh-CN"), /刻印鉴定/);
 assert.match(getWeaponMechanic("colucci_claws", WEAPONS.colucci_claws.mechanic, "zh-CN"), /灵相追击/);
 
-const selectSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
+const selectSource = fs.readFileSync("src/game/states/RebirthLoadoutState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 assert.match(selectSource, /SelectionMode = "collection" \| "character" \| "form"/);
 assert.match(selectSource, /CHARACTER_COLLECTION_IDS/);

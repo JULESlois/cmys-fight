@@ -445,6 +445,15 @@ export class GameData {
     this.restartCurrentRun();
   }
 
+  abandonRun(): void {
+    localStorage.removeItem(RUN_SAVE_KEY);
+    localStorage.removeItem(RUN_BACKUP_KEY);
+    this.data = JSON.parse(JSON.stringify(defaultSave));
+    this.data.run = createInitialRunProgress();
+    this.data.runStats = createRunStats(this.data.run);
+    this.data.floor = generateStage(this.data.run);
+  }
+
   resetAll() {
     localStorage.removeItem(RUN_SAVE_KEY);
     localStorage.removeItem(META_SAVE_KEY);

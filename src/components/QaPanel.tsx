@@ -131,7 +131,7 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
       <section className="mt-3">
         <div className="mb-1 text-fuchsia-200">STATE / STAGE</div>
         <div className="flex flex-wrap gap-1">
-          {["title", "hub", "settings", "character_select", "dungeon"].map(state => (
+          {["title", "hub", "settings", "rebirth_loadout", "dungeon"].map(state => (
             <button key={state} className={buttonClass} onClick={() => engine.switchState(state)}>{state.toUpperCase()}</button>
           ))}
         </div>

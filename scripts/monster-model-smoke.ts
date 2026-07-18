@@ -227,6 +227,7 @@ assert.match(dungeonState, /resolveSupportAttack/, "support monsters heal allies
 assert.match(dungeonState, /desired = 94/, "orbit monsters use tangential movement rather than standard kiting");
 
 const roomRenderer = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
+const doorRenderer = fs.readFileSync("src/game/render/DoorRenderer.ts", "utf8");
 const specialRoomRenderer = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalRenderer = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
 const ritualSpringRenderer = fs.readFileSync("src/game/render/RitualSpringRenderer.ts", "utf8");
@@ -235,27 +236,28 @@ const chestRenderer = fs.readFileSync("src/game/render/ChestRenderer.ts", "utf8"
 assert.match(roomRenderer, /function drawForestFloorTile/, "forest floor has authored material variants");
 assert.match(roomRenderer, /function drawForestStreamTile/, "forest streams have neighbour-aware banks");
 assert.match(roomRenderer, /function drawForestWallTile/, "forest walls use adjacency-aware tree and hedge edges");
-assert.match(roomRenderer, /living root gate/, "forest start room has a chapter-specific gate");
 assert.match(roomRenderer, /Root veins curve around the hollow center/, "forest boss altar avoids a generic square or cross decal");
-assert.match(roomRenderer, /if \(theme === "forest"\)[\s\S]*return;/, "forest doors use their own root-and-vine construction");
 assert.match(roomRenderer, /function drawDungeonFloorTile/, "dungeon floor has authored crypt slabs");
 assert.match(roomRenderer, /function drawDungeonAbyssTile/, "dungeon void cells have neighbour-aware stone lips");
 assert.match(roomRenderer, /function drawDungeonWallTile/, "dungeon walls use adjacency-aware masonry edges");
-assert.match(roomRenderer, /Dungeon alone keeps the prison vocabulary/, "dungeon start room uniquely keeps the portcullis language");
 assert.match(roomRenderer, /broken ossuary seal/, "dungeon boss room uses an ossuary altar");
-assert.match(roomRenderer, /real portcullis replaces the universal red energy barrier/, "dungeon doors use iron portcullises and chains");
 assert.match(roomRenderer, /function drawSnowFloorTile/, "snow floor has authored wind-packed material variants");
 assert.match(roomRenderer, /function drawSnowCrevasseTile/, "snow crevasses have neighbour-aware shelves");
 assert.match(roomRenderer, /function drawSnowWallTile/, "snow walls use adjacency-aware glacier edges");
-assert.match(roomRenderer, /sealed hexagonal research airlock/, "snow start room uses a solid research airlock rather than bars");
 assert.match(roomRenderer, /ruptured glacier containment seal/, "snow boss room uses a containment arena");
-assert.match(roomRenderer, /solid two-piece quarantine airlock replaces the old repeated/, "snow doors use solid ice-and-steel pressure slabs");
 assert.match(roomRenderer, /function drawLavaFloorTile/, "lava floor has authored basalt plate variants");
 assert.match(roomRenderer, /function drawLavaFlowTile/, "lava channels have neighbour-aware slag lips");
 assert.match(roomRenderer, /function drawLavaWallTile/, "lava walls use adjacency-aware foundry edges");
-assert.match(roomRenderer, /octagonal furnace iris and side pistons/, "lava start room uses a radial furnace mechanism rather than bars");
 assert.match(roomRenderer, /ruptured foundry crucible/, "lava boss room uses a foundry crucible arena");
-assert.match(roomRenderer, /compact furnace iris replaces the old row of shutters/, "lava doors use a compact radial furnace iris");
+assert.match(roomRenderer, /DoorRenderer\.draw/, "all room doors delegate to the shared renderer");
+for (const theme of ["forest", "dungeon", "snow", "lava"]) {
+  assert.match(doorRenderer, new RegExp(`${theme}: \\{`), `${theme} door palette is defined centrally`);
+}
+assert.doesNotMatch(
+  roomRenderer,
+  /currentRoom\?\.type === "start"[\s\S]{0,500}DoorRenderer\.draw/,
+  "start rooms do not draw a duplicate chapter gate",
+);
 assert.match(roomRenderer, /Riveted iron grating spans molten channels/, "lava crossings use iron grating");
 assert.match(roomRenderer, /function drawForestStructureTile/, "forest combat rooms have root-ruin structures");
 assert.match(roomRenderer, /function drawDungeonStructureTile/, "dungeon combat rooms have crypt structures");

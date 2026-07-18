@@ -1,6 +1,11 @@
 import { Room } from "./FloorGenerator";
 import { ROOM_TEMPLATES, RoomTemplate } from "./data/roomTemplates";
 import { applyRoomVariant } from "./RoomVariantSystem";
+import {
+  DOOR_ORIENTATIONS,
+  getDoorApertureTileBounds,
+  getDoorCarveTileBounds,
+} from "./dungeon/DoorGeometry";
 
 export const TILE_SIZE = 16;
 export const MAP_WIDTH = 20;
@@ -12,32 +17,6 @@ export const TILE_HAZARD = 3;
 export const TILE_PROP = 4;
 export const TILE_BREAKABLE = 5;
 export const TILE_STRUCTURE = 6;
-
-export const DOOR_ZONES = {
-  left: { xMin: 0, xMax: 1, yMin: 6, yMax: 8 },
-  right: { xMin: 18, xMax: 19, yMin: 6, yMax: 8 },
-  up: { xMin: 8, xMax: 11, yMin: 0, yMax: 1 },
-  down: { xMin: 8, xMax: 11, yMin: 13, yMax: 14 }
-};
-
-// Door openings from different templates used to stop after two edge tiles.
-// These corridors meet at the room center, so a minimap connection always has a
-// collision-free route even when the selected template contains interior walls.
-export const DOOR_CORRIDORS = {
-  left: { xMin: 0, xMax: 10, yMin: 6, yMax: 8 },
-  right: { xMin: 9, xMax: 19, yMin: 6, yMax: 8 },
-  up: { xMin: 8, xMax: 11, yMin: 0, yMax: 7 },
-  down: { xMin: 8, xMax: 11, yMin: 7, yMax: 14 },
-};
-
-export const DOOR_ENTRY_POINTS = {
-  fromLeft: { x: 17, y: 120 },
-  fromRight: { x: 303, y: 120 },
-  fromUp: { x: 160, y: 17 },
-  fromDown: { x: 160, y: 223 },
-};
-
-
 
 export function getRoomTemplate(currentRoom: Room | undefined): RoomTemplate {
   if (!currentRoom) return ROOM_TEMPLATES.find(t => t.id === "cross_room")!;
@@ -87,10 +66,9 @@ export function getMapData(currentRoom: Room | undefined, theme: string): number
       }
     };
     
-    if (currentRoom.doors.up) applyDoor(DOOR_CORRIDORS.up);
-    if (currentRoom.doors.down) applyDoor(DOOR_CORRIDORS.down);
-    if (currentRoom.doors.left) applyDoor(DOOR_CORRIDORS.left);
-    if (currentRoom.doors.right) applyDoor(DOOR_CORRIDORS.right);
+    for (const orientation of DOOR_ORIENTATIONS) {
+      if (currentRoom.doors[orientation]) applyDoor(getDoorCarveTileBounds(orientation));
+    }
 
     // Destroyed combat props persist when the player revisits the room. The
     // generated layout remains deterministic, while only the authored crate,
@@ -326,10 +304,9 @@ export function validateTemplates() {
     };
 
     if (t.doorMask !== "any") {
-       if (t.doorMask.up) checkDoor(DOOR_ZONES.up, 'up');
-       if (t.doorMask.down) checkDoor(DOOR_ZONES.down, 'down');
-       if (t.doorMask.left) checkDoor(DOOR_ZONES.left, 'left');
-       if (t.doorMask.right) checkDoor(DOOR_ZONES.right, 'right');
+      for (const orientation of DOOR_ORIENTATIONS) {
+        if (t.doorMask[orientation]) checkDoor(getDoorApertureTileBounds(orientation), orientation);
+      }
     }
   }
   if (errors > 0) {

@@ -59,7 +59,7 @@ export class TitleState extends GameState {
   private handleSelect() {
     const opt = this.options[this.selectedIndex];
     if (opt === "newRun") {
-      this.engine.switchState("character_select", { backState: "title" });
+      this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
     } else if (opt === "hub") {
       this.engine.switchState("hub");
     } else if (opt === "records") {

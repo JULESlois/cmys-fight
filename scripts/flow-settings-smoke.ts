@@ -84,7 +84,7 @@ assert.equal("crtFilter" in migrated, false, "legacy crtFilter is ignored during
 const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const menuSource = fs.readFileSync("src/game/states/MenuState.ts", "utf8");
 const settingsSource = fs.readFileSync("src/game/states/SettingsState.ts", "utf8");
-const characterSource = fs.readFileSync("src/game/states/CharacterSelectState.ts", "utf8");
+const characterSource = fs.readFileSync("src/game/states/RebirthLoadoutState.ts", "utf8");
 const recordsSource = fs.readFileSync("src/game/states/RecordsState.ts", "utf8");
 const hubSource = fs.readFileSync("src/game/states/HubState.ts", "utf8");
 const artSource = fs.readFileSync("src/game/render/ArtDirectionRenderer.ts", "utf8");
@@ -100,9 +100,12 @@ for (const [name, source] of [
   assert.doesNotMatch(source, /switchState\("title"\)/, `${name} normal flow must not enter TitleState`);
 }
 assert.match(settingsSource, /private backState: "title" \| "hub" = "hub"/);
-assert.match(characterSource, /private backState: "title" \| "hub" = "hub"/);
+assert.match(characterSource, /getHubLoadout\(\)/);
+assert.doesNotMatch(characterSource, /backState|hubMode|startNewRun/);
 assert.match(recordsSource, /private backState: "title" \| "hub" = "hub"/);
 assert.match(hubSource, /action === "continue"[\s\S]*switchState\("dungeon"\)/, "expedition gate can continue active Run");
+assert.match(hubSource, /action === "start"[\s\S]*getHubLoadout\(\)[\s\S]*startNewRun\(loadout\.characterId, loadout\.starterWeaponId\)/);
+assert.doesNotMatch(hubSource, /switchState\("character_select"/);
 assert.doesNotMatch(hubSource, /hub\.runReady|hub\.noRun/);
 for (const [name, source] of [
   ["Engine", engineSource],

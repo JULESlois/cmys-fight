@@ -18,9 +18,18 @@ import {
   isSolid,
   MAP_WIDTH,
   MAP_HEIGHT,
-  DOOR_ENTRY_POINTS,
 } from "../MapData";
+import {
+  circleIntersectsRect,
+  DOOR_ORIENTATIONS,
+  getDoorBarrierBounds,
+  getDoorGeometry,
+  getOppositeDoor,
+  isDoorTransitionTriggered,
+  type DoorOrientation,
+} from "../dungeon/DoorGeometry";
 import { UIRenderer } from "../render/UIRenderer";
+import type { WeaponHudDrawOptions } from "../render/WeaponHudRenderer";
 import { PixelFxSystem } from "../render/PixelFxSystem";
 import { ArtDirectionRenderer } from "../render/ArtDirectionRenderer";
 import { audio } from "../audio/AudioManager";
@@ -98,7 +107,16 @@ export type DungeonQaScene =
   | "special_wish"
   | "horizontal_corridor"
   | "vertical_corridor"
-  | "corner_lt";
+  | "corner_lt"
+  | "hud_energy_0"
+  | "hud_energy_33"
+  | "hud_single_cost"
+  | "hud_sustain"
+  | "hud_heat"
+  | "hud_dual"
+  | "hud_long_en"
+  | "hud_long_zh"
+  | "hud_notice";
 
 import { GameState } from "./GameState";
 export class DungeonState extends GameState {
@@ -138,6 +156,7 @@ export class DungeonState extends GameState {
   private qaPresentationTime: number | null = null;
   private qaFrozen = false;
   private qaCollisionDebug = false;
+  private qaWeaponHudOptions: WeaponHudDrawOptions = {};
 
   constructor(engine: Engine) {
     super(engine);
@@ -566,7 +585,11 @@ export class DungeonState extends GameState {
     } else if (phase === "intro") {
       this.phaseTimer = 0.8;
     } else if (phase === "locking") {
-      this.phaseTimer = 0.5;
+      const floor = this.engine.data.data.floor;
+      const room = floor.rooms.find(candidate =>
+        candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+      );
+      this.phaseTimer = room?.type === "boss" ? 0.5 : 0.25;
     } else if (phase === "combat") {
       const activeFloor = this.engine.data.data.floor;
       const activeRoom = activeFloor.rooms.find(
@@ -576,12 +599,7 @@ export class DungeonState extends GameState {
       if (options?.startEncounter === false) {
          return;
       }
-      this.engine.worldNotices.showBottom(
-        t(this.engine.data.settings.language, activeRoom?.type === "boss"
-          ? "notice.bossStart"
-          : "notice.combatStart"),
-        activeRoom?.type === "boss" ? "red" : "yellow",
-      );
+      this.emitCombatLifecycleNotice("combat_started", activeRoom?.type === "boss");
       
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -596,10 +614,7 @@ export class DungeonState extends GameState {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
       this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
-      this.engine.worldNotices.showBottom(
-        t(this.engine.data.settings.language, "dungeon.roomClear"),
-        "yellow",
-      );
+      this.emitCombatLifecycleNotice("combat_cleared");
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       if (currentRoom) {
@@ -612,13 +627,24 @@ export class DungeonState extends GameState {
       // Spawn rewards
       this.spawnRoomRewards();
       this.phaseTimer = 0.5;
-      this.engine.worldNotices.showBottom(
-        t(this.engine.data.settings.language, "notice.rewardGenerated"),
-        "cyan",
-      );
     } else if (phase === "exiting") {
       // Free to move
     }
+  }
+
+  private emitCombatLifecycleNotice(
+    event: "combat_started" | "combat_cleared",
+    boss = false,
+  ): void {
+    const language = this.engine.data.settings.language;
+    if (event === "combat_started") {
+      this.engine.worldNotices.showBottom(
+        t(language, boss ? "notice.bossCombatStarted" : "notice.combatStarted"),
+        boss ? "red" : "yellow",
+      );
+      return;
+    }
+    this.engine.worldNotices.showBottom(t(language, "notice.combatCleared"), "yellow");
   }
   
   private prepareBuffChoice(floor: typeof this.engine.data.data.floor, currentRoom: Room) {
@@ -850,7 +876,11 @@ export class DungeonState extends GameState {
         this.transitionAlpha = 0;
         this.transitionState = "none";
         if (this.roomPhase === "entering") {
-           this.setPhase("intro");
+          const floor = this.engine.data.data.floor;
+          const room = floor.rooms.find(candidate =>
+            candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+          );
+          this.setPhase(room?.type === "boss" ? "intro" : "locking");
         }
       }
     } else if (this.transitionState === "fade_out") {
@@ -1133,12 +1163,15 @@ export class DungeonState extends GameState {
   }
 
   private updateRoomPhase(dt: number) {
-    // Player movement
-    const isLocked = this.roomPhase === "entering" || this.roomPhase === "intro" || this.roomPhase === "locking" || this.portal?.state === "activating";
-    
-    // In combat or cleared, player moves freely. During intro, move slowly.
+    const floor = this.engine.data.data.floor;
+    const currentRoom = floor.rooms.find(room =>
+      room.x === floor.currentRoomX && room.y === floor.currentRoomY
+    );
+    const bossSlowPacing = currentRoom?.type === "boss"
+      && (this.roomPhase === "intro" || this.roomPhase === "locking");
+
     let speedMult = 1.0;
-    if (isLocked) speedMult = 0.2;
+    if (bossSlowPacing) speedMult = 0.2;
     if (this.portal?.state === "activating") speedMult = 0;
     
     if (this.player.hp > 0 && this.transitionState === "none") {
@@ -1148,7 +1181,7 @@ export class DungeonState extends GameState {
        const inputX = isDashing ? this.player.skillDirectionX : axis.x;
        const inputY = isDashing ? this.player.skillDirectionY : axis.y;
        const moveSpeed = (isDashing
-         ? SkillController.ROGUE_DASH_SPEED * (this.portal?.state === "activating" ? 0 : 1)
+         ? SkillController.ROGUE_DASH_SPEED * speedMult
          : this.player.speed * speedMult) * statusMovement;
 
        const onIce = !isDashing && this.environmentHazards.some(hazard =>
@@ -1282,13 +1315,14 @@ export class DungeonState extends GameState {
       || scene === "special_exit"
     ) {
       room.type = "exit";
-    } else {
+    } else if (!scene.startsWith("hud_")) {
       room.templateId = scene;
     }
 
     this.qaPresentationTime = Math.max(0, time);
     this.qaFrozen = true;
     this.qaCollisionDebug = false;
+    this.qaWeaponHudOptions = {};
     this.player.characterId = "knight";
     this.player.x = 160;
     this.player.y = 198;
@@ -1313,6 +1347,35 @@ export class DungeonState extends GameState {
     this.pendingTransition = null;
     this.roomPhase = "exploration";
     this.phaseTimer = 0;
+
+    if (scene.startsWith("hud_")) {
+      this.engine.data.settings.language = scene === "hud_long_zh" ? "zh-CN" : "en";
+      this.player.maxMana = 50;
+      this.player.mana = scene === "hud_energy_0" ? 0 : 33;
+      this.player.weaponHeat = 0;
+      this.player.weaponHeatWeaponId = undefined;
+      this.player.weaponOverheatTimer = 0;
+      if (scene === "hud_sustain") {
+        this.player.setWeaponLoadout(["terrarian"], 0);
+      } else if (scene === "hud_heat") {
+        this.player.setWeaponLoadout(["mg42"], 0);
+        this.player.weaponHeatWeaponId = "mg42";
+        this.player.weaponHeat = 72;
+      } else if (scene === "hud_dual") {
+        this.player.setWeaponLoadout(["na_45", "shotgun"], 0);
+      } else if (scene === "hud_long_en") {
+        this.player.setWeaponLoadout(["butterfly_emerald", "pistol"], 0);
+        this.qaWeaponHudOptions.activeNameOverride = "BUTTERFLY KNIFE GAMMA DOPPLER EMERALD PROTOTYPE";
+      } else if (scene === "hud_long_zh") {
+        this.player.setWeaponLoadout(["butterfly_emerald", "pistol"], 0);
+        this.qaWeaponHudOptions.activeNameOverride = "蝴蝶刀伽马多普勒翡翠实验型超长名称";
+      } else {
+        this.player.setWeaponLoadout(["na_45"], 0);
+      }
+      if (scene === "hud_notice") {
+        this.engine.worldNotices.showBottom(t(this.engine.data.settings.language, "notice.combatCleared"), "yellow", 10);
+      }
+    }
     this.environmentTime = this.qaPresentationTime;
     this.roomRenderer.setPresentationTime(this.qaPresentationTime);
     this.player.x = 160;
@@ -1332,76 +1395,48 @@ export class DungeonState extends GameState {
     return this.player;
   }
 
+  private areRoomDoorsLocked(): boolean {
+    return !["exploration", "exiting"].includes(this.roomPhase) || this.portal?.state === "activating";
+  }
+
+  private beginDoorTransition(orientation: DoorOrientation): void {
+    const floor = this.engine.data.data.floor;
+    const destinationDoor = getDoorGeometry(getOppositeDoor(orientation), this.player.radius);
+    const roomDelta: Record<DoorOrientation, { x: number; y: number }> = {
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 },
+      left: { x: -1, y: 0 },
+      right: { x: 1, y: 0 },
+    };
+    const delta = roomDelta[orientation];
+    this.transitionState = "fade_out";
+    this.pendingTransition = () => {
+      this.syncRoomState();
+      floor.currentRoomX += delta.x;
+      floor.currentRoomY += delta.y;
+      this.player.x = destinationDoor.entryPoint.x;
+      this.player.y = destinationDoor.entryPoint.y;
+      this.loadRoom();
+    };
+  }
+
   private handleDoorTransitions() {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-    
-    // Bounds check
-    const minX = 16, maxX = 320 - 16;
-    const minY = 16, maxY = 240 - 16;
-    
-    const upDoorXMin = 140, upDoorXMax = 180;
-    const downDoorXMin = 140, downDoorXMax = 180;
-    const leftDoorYMin = 100, leftDoorYMax = 140;
-    const rightDoorYMin = 100, rightDoorYMax = 140;
-    
-    const isLocked = this.roomPhase !== "exploration";
+    const doorsLocked = this.areRoomDoorsLocked();
 
-    if (this.player.x < minX) {
-      if (!isLocked && currentRoom?.doors.left && this.player.y > leftDoorYMin && this.player.y < leftDoorYMax) {
-         this.transitionState = "fade_out";
-         this.pendingTransition = () => {
-           this.syncRoomState();
-           floor.currentRoomX -= 1;
-           this.player.x = DOOR_ENTRY_POINTS.fromRight.x;
-           this.player.y = DOOR_ENTRY_POINTS.fromRight.y;
-           this.loadRoom();
-         };
-      } else {
-         this.player.x = minX;
-      }
-    } else if (this.player.x > maxX) {
-      if (!isLocked && currentRoom?.doors.right && this.player.y > rightDoorYMin && this.player.y < rightDoorYMax) {
-         this.transitionState = "fade_out";
-         this.pendingTransition = () => {
-           this.syncRoomState();
-           floor.currentRoomX += 1;
-           this.player.x = DOOR_ENTRY_POINTS.fromLeft.x;
-           this.player.y = DOOR_ENTRY_POINTS.fromLeft.y;
-           this.loadRoom();
-         };
-      } else {
-         this.player.x = maxX;
+    if (currentRoom && !doorsLocked && this.transitionState === "none") {
+      for (const orientation of DOOR_ORIENTATIONS) {
+        if (!currentRoom.doors[orientation]) continue;
+        const geometry = getDoorGeometry(orientation, this.player.radius);
+        if (!isDoorTransitionTriggered(geometry, this.player.x, this.player.y)) continue;
+        this.beginDoorTransition(orientation);
+        return;
       }
     }
 
-    if (this.player.y < minY) {
-      if (!isLocked && currentRoom?.doors.up && this.player.x > upDoorXMin && this.player.x < upDoorXMax) {
-         this.transitionState = "fade_out";
-         this.pendingTransition = () => {
-           this.syncRoomState();
-           floor.currentRoomY -= 1;
-           this.player.x = DOOR_ENTRY_POINTS.fromDown.x;
-           this.player.y = DOOR_ENTRY_POINTS.fromDown.y;
-           this.loadRoom();
-         };
-      } else {
-         this.player.y = minY;
-      }
-    } else if (this.player.y > maxY) {
-      if (!isLocked && currentRoom?.doors.down && this.player.x > downDoorXMin && this.player.x < downDoorXMax) {
-         this.transitionState = "fade_out";
-         this.pendingTransition = () => {
-           this.syncRoomState();
-           floor.currentRoomY += 1;
-           this.player.x = DOOR_ENTRY_POINTS.fromUp.x;
-           this.player.y = DOOR_ENTRY_POINTS.fromUp.y;
-           this.loadRoom();
-         };
-      } else {
-         this.player.y = maxY;
-      }
-    }
+    this.player.x = Math.max(TILE_SIZE, Math.min(MAP_WIDTH * TILE_SIZE - TILE_SIZE, this.player.x));
+    this.player.y = Math.max(TILE_SIZE, Math.min(MAP_HEIGHT * TILE_SIZE - TILE_SIZE, this.player.y));
   }
 
   private getShopPosition(room: Room): { x: number; y: number } {
@@ -1691,6 +1726,19 @@ export class DungeonState extends GameState {
       for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
         if (this.currentMapData[tileY * MAP_WIDTH + tileX] !== TILE_BREAKABLE) continue;
         if (this.circleOverlapsTile(x, y, radius, tileX, tileY)) return true;
+      }
+    }
+    if (this.areRoomDoorsLocked()) {
+      const floor = this.engine.data?.data?.floor;
+      const room = floor?.rooms.find(candidate =>
+        candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+      );
+      if (room) {
+        for (const orientation of DOOR_ORIENTATIONS) {
+          if (!room.doors[orientation]) continue;
+          const barrier = getDoorBarrierBounds(getDoorGeometry(orientation, radius));
+          if (circleIntersectsRect(x, y, radius, barrier)) return true;
+        }
       }
     }
     return this.roomObjectCollision.isCircleBlocked(x, y, radius, channel);
@@ -3285,6 +3333,32 @@ export class DungeonState extends GameState {
       ctx.fillStyle = "#FFFFFF";
       ctx.fillText(collider.id, Math.round(collider.x) + 2, Math.round(collider.y) - 2);
     }
+    const floor = this.engine.data.data.floor;
+    const currentRoom = floor.rooms.find(room =>
+      room.x === floor.currentRoomX && room.y === floor.currentRoomY
+    );
+    if (currentRoom) {
+      for (const orientation of DOOR_ORIENTATIONS) {
+        if (!currentRoom.doors[orientation]) continue;
+        const geometry = getDoorGeometry(orientation, this.player.radius);
+        ctx.strokeStyle = "#30F2F2";
+        ctx.strokeRect(
+          geometry.aperture.x,
+          geometry.aperture.y,
+          geometry.aperture.width,
+          geometry.aperture.height,
+        );
+        ctx.strokeStyle = "#FFE45E";
+        ctx.strokeRect(
+          geometry.triggerBounds.x,
+          geometry.triggerBounds.y,
+          geometry.triggerBounds.width,
+          geometry.triggerBounds.height,
+        );
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(`door:${orientation}`, geometry.entryPoint.x + 2, geometry.entryPoint.y - 2);
+      }
+    }
     ctx.strokeStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(Math.round(this.player.x), Math.round(this.player.y), this.player.radius, 0, Math.PI * 2);
@@ -3299,7 +3373,7 @@ export class DungeonState extends GameState {
     this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
     const time = this.qaPresentationTime ?? Date.now() / 1000;
     EnvironmentSystem.draw(ctx, this.environmentHazards, this.environmentTime);
-    const doorLocked = this.roomPhase !== "exploration";
+    const doorLocked = this.areRoomDoorsLocked();
     this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", doorLocked);
     
     // Pixel-grid enemy arrival telegraphs.
@@ -3556,7 +3630,7 @@ export class DungeonState extends GameState {
     );
     if (this.qaCollisionDebug) this.drawRoomObjectCollisionDebug(ctx);
     
-    UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase);
+    UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase, this.qaWeaponHudOptions);
     this.tutorial.draw(ctx, this.engine.input, this.engine.data.settings.language);
     
 
