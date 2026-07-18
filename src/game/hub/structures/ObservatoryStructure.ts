@@ -36,7 +36,7 @@ export const OBSERVATORY_STRUCTURE: HubStructureDefinition = {
     { id: "foot_east", shape: "rect", x: 138, y: 114, width: 76, height: 30 },
     { id: "pylon_west", shape: "rect", x: 4, y: 92, width: 24, height: 46 },
     { id: "pylon_east", shape: "rect", x: 196, y: 92, width: 24, height: 46 },
-    { id: "astral_console_foot", shape: "rect", x: 77, y: 172, width: 70, height: 16, visiblePropId: "astral_console" },
+    { id: "astral_console_foot", shape: "rect", x: 77, y: 164, width: 70, height: 24, visiblePropId: "astral_console" },
   ],
   interactions: [
     {
@@ -50,12 +50,11 @@ export const OBSERVATORY_STRUCTURE: HubStructureDefinition = {
         promptPoint: { x: 112, y: 144 },
         lineOfSightTarget: { x: 112, y: 190 },
         requireLineOfSight: true,
-        side: "south",
       },
     },
   ],
   anchors: {
-    observatory_entry: { x: 112, y: 160 },
+    observatory_entry: { x: 112, y: 198 },
     observatory_rear_test: { x: 112, y: 58 },
   },
 };

@@ -29,6 +29,9 @@ import {
   type WorldPoint,
 } from "../src/game/world/WorldMap";
 import { WorldMapRenderer } from "../src/game/world/WorldMapRenderer";
+import { moveSweptCircle } from "../src/game/physics/SweptCircleMovement";
+import { OcclusionController } from "../src/game/world/OcclusionController";
+import { closestPointOnFootprints, colliderToSpatialShape } from "../src/game/world/SpatialSemantics";
 
 assert.equal(HUB_MAP_WIDTH, 80);
 assert.equal(HUB_MAP_HEIGHT, 60);
@@ -199,6 +202,75 @@ for (const prop of physicalVisibleProps) {
   }
 }
 
+for (const object of HUB_MAP.objects.filter(candidate => candidate.interactionShell)) {
+  assert.ok(object.physicalFootprint?.length, `${object.id} interactionShell requires physicalFootprint`);
+  assert.equal(object.interaction?.side, undefined, `${object.id} proximity shell must not keep a side restriction`);
+}
+
+const movementDirections = [
+  [0, -1], [0, 1], [-1, 0], [1, 0],
+  [-Math.SQRT1_2, -Math.SQRT1_2], [Math.SQRT1_2, -Math.SQRT1_2],
+  [-Math.SQRT1_2, Math.SQRT1_2], [Math.SQRT1_2, Math.SQRT1_2],
+] as const;
+const movementDts = [1 / 60, 1 / 30, 0.1] as const;
+let directionalTrajectoryChecks = 0;
+for (const collider of linkedColliders.filter(candidate => candidate.properties?.visiblePropId)) {
+  const shape = colliderToSpatialShape(collider);
+  const isolatedMap: WorldMapDefinition = {
+    id: `isolated:${collider.id}`,
+    version: 1,
+    widthTiles: 200,
+    heightTiles: 200,
+    tileSize: 16,
+    layers: [
+      { id: "ground", tiles: Array(200 * 200).fill(1) },
+      { id: "collision", tiles: Array(200 * 200).fill(0) },
+    ],
+    colliders: [collider],
+    objects: [],
+    spawnPoints: {},
+  };
+  const isolated = new WorldCollision(isolatedMap);
+  const bounds = collider.shape === "rect"
+    ? { x: collider.x, y: collider.y, width: collider.width, height: collider.height }
+    : collider.shape === "circle"
+      ? { x: collider.x - collider.radius, y: collider.y - collider.radius, width: collider.radius * 2, height: collider.radius * 2 }
+      : {
+          x: Math.min(...collider.points.map(point => point.x)),
+          y: Math.min(...collider.points.map(point => point.y)),
+          width: Math.max(...collider.points.map(point => point.x)) - Math.min(...collider.points.map(point => point.x)),
+          height: Math.max(...collider.points.map(point => point.y)) - Math.min(...collider.points.map(point => point.y)),
+        };
+  const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  for (const dt of movementDts) {
+    for (const [directionX, directionY] of movementDirections) {
+      const startDistance = Math.max(bounds.width, bounds.height) + 42;
+      let actor = {
+        x: center.x + directionX * startDistance,
+        y: center.y + directionY * startDistance,
+      };
+      for (let step = 0; step < 180; step++) {
+        const dx = center.x - actor.x;
+        const dy = center.y - actor.y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const moved = moveSweptCircle({
+          ...actor,
+          radius: 6,
+          deltaX: dx / distance * HUB_MOVE_SPEED * dt,
+          deltaY: dy / distance * HUB_MOVE_SPEED * dt,
+          isBlocked: (x, y, radius) => isolated.isCircleBlocked(x, y, radius),
+        });
+        actor = { x: moved.x, y: moved.y };
+      }
+      assert.equal(isolated.isCircleBlocked(actor.x, actor.y, 6), false, `${collider.id} trajectory entered footprint`);
+      const closest = closestPointOnFootprints([shape], actor.x, actor.y);
+      assert.ok(closest, `${collider.id} closest footprint point`);
+      assert.ok(Math.abs(closest.distance - 6) <= 1.01, `${collider.id} stop error ${closest.distance} at dt=${dt}`);
+      directionalTrajectoryChecks++;
+    }
+  }
+}
+
 assert.equal(collision.isCircleBlocked(413, 266, 6), true, "district gate left pillar blocks");
 assert.equal(collision.isCircleBlocked(467, 266, 6), true, "district gate right pillar blocks");
 assert.equal(collision.isCircleBlocked(440, 266, 6), false, "district gate center remains passable");
@@ -241,7 +313,7 @@ const collisionSamples: Record<(typeof expectedStructureIds)[number], CollisionS
   workshop_keep: [
     { label: "visual-base", point: { x: 146, y: 450 }, blocked: true },
     { label: "door-corridor", point: { x: 200, y: 458 }, blocked: false },
-    { label: "stairs", point: { x: 200, y: 470 }, blocked: false },
+    { label: "stairs", point: { x: 220, y: 502 }, blocked: false },
     { label: "side-wall", point: { x: 146, y: 458 }, blocked: true },
     { label: "rear-wall", point: { x: 240, y: 404 }, blocked: true },
     { label: "exterior", point: { x: 240, y: 510 }, blocked: false },
@@ -292,7 +364,7 @@ assert.equal(collision.isCircleBlocked(573, 930, 6), true, "expedition pier/wall
 assert.equal(collision.isCircleBlocked(648, 916, 6), false, "expedition upper steps must be walkable");
 assert.equal(collision.isCircleBlocked(648, 938, 6), false, "expedition lower steps must be walkable");
 
-const interactionProbes: Record<string, { entry: WorldPoint; behind: WorldPoint }> = {
+const interactionProbes: Record<string, { entry: WorldPoint; behind?: WorldPoint }> = {
   rebirth_spring: { entry: { x: 648, y: 548 }, behind: { x: 648, y: 520 } },
   archive_monument: { entry: { x: 264, y: 252 }, behind: { x: 264, y: 208 } },
   codex_lectern: { entry: { x: 220, y: 252 }, behind: { x: 220, y: 208 } },
@@ -308,7 +380,32 @@ for (const [id, probe] of Object.entries(interactionProbes)) {
   assert.ok(object?.interaction, `missing interaction ${id}`);
   const fromEntry = worldInteraction.findNearest(probe.entry.x, probe.entry.y, [object], 80);
   assert.equal(fromEntry?.object.id, id, `${id} must trigger from its correct entrance; its own collider must not block LOS`);
-  assert.equal(worldInteraction.findNearest(probe.behind.x, probe.behind.y, [object], 80), null, `${id} must not trigger from behind`);
+  if (object.interaction?.side && probe.behind) {
+    assert.equal(worldInteraction.findNearest(probe.behind.x, probe.behind.y, [object], 80), null, `${id} directional restriction`);
+  }
+}
+
+for (const object of HUB_MAP.objects.filter(candidate => candidate.interactionShell && candidate.physicalFootprint?.length)) {
+  const footprint = object.physicalFootprint!;
+  const first = footprint[0];
+  const center = first.shape === "rect"
+    ? { x: first.x + first.width / 2, y: first.y + first.height / 2 }
+    : first.shape === "circle"
+      ? { x: first.x, y: first.y }
+      : {
+          x: first.points.reduce((sum, point) => sum + point.x, 0) / first.points.length,
+          y: first.points.reduce((sum, point) => sum + point.y, 0) / first.points.length,
+        };
+  for (const [dx, dy] of movementDirections) {
+    const edge = closestPointOnFootprints(footprint, center.x + dx * 200, center.y + dy * 200)!;
+    const probe = { x: edge.x + dx * 18, y: edge.y + dy * 18 };
+    const isolatedObject = { ...object, interaction: { ...object.interaction!, requireLineOfSight: false } };
+    assert.equal(
+      new WorldInteraction().findNearest(probe.x, probe.y, [isolatedObject], 80)?.object.id,
+      object.id,
+      `${object.id} proximity shell direction ${dx},${dy}`,
+    );
+  }
 }
 
 function expandedZone(a: WorldPoint, b: WorldPoint, padding = 4): WorldInteractionZone {
@@ -321,7 +418,6 @@ function expandedZone(a: WorldPoint, b: WorldPoint, padding = 4): WorldInteracti
   };
 }
 const actualLosWallProbes: Record<string, WorldPoint> = {
-  rebirth_spring: { x: 648, y: 466 },
   archive_monument: { x: 264, y: 146 },
   astral_console: { x: 1056, y: 146 },
   blacksmith_forge: { x: 240, y: 404 },
@@ -393,6 +489,44 @@ const speedMap: WorldMapDefinition = {
 const highSpeedMove = new WorldCollision(speedMap).moveCircle(32, 56, 6, 120, 0);
 assert.ok(highSpeedMove.x <= 58.01, `substeps must stop before a one-tile wall, got ${highSpeedMove.x}`);
 
+const thinColliderMap: WorldMapDefinition = {
+  id: "thin-collider",
+  version: 1,
+  widthTiles: 20,
+  heightTiles: 10,
+  tileSize: 16,
+  layers: [{ id: "ground", tiles: Array(200).fill(1) }, { id: "collision", tiles: Array(200).fill(0) }],
+  colliders: [{ id: "thin", shape: "rect", x: 80, y: 20, width: 5, height: 100 }],
+  objects: [],
+  spawnPoints: {},
+};
+const thinMove = new WorldCollision(thinColliderMap).moveCircle(50, 70, 6, 20, 0);
+assert.ok(thinMove.x <= 74.01, `dt=0.1 movement cannot cross a 5px collider: ${thinMove.x}`);
+
+const occlusion = new OcclusionController();
+const occluder: WorldObjectDefinition = {
+  id: "occlusion-test",
+  type: "decoration",
+  x: 100,
+  y: 80,
+  width: 80,
+  height: 80,
+  sortY: 150,
+  occlusionGroupId: "test-group",
+  occlusionProjection: { x: 100, y: 80, width: 80, height: 80 },
+  fadeWhenOccluding: true,
+  minimumAlpha: 0.42,
+  properties: { rearAccessRule: "roof-occluder" },
+};
+occlusion.update(1 / 60, { x: 120, y: 100, width: 32, height: 35 }, 180, [occluder]);
+assert.equal(occlusion.getAlpha("test-group"), 1, "player in front keeps building opaque");
+occlusion.update(1 / 60, { x: 120, y: 100, width: 32, height: 35 }, 130, [occluder]);
+assert.ok(occlusion.getAlpha("test-group") < 1 && occlusion.getAlpha("test-group") > 0.42, "fade begins smoothly");
+for (let frame = 0; frame < 90; frame++) occlusion.update(1 / 60, { x: 120, y: 100, width: 32, height: 35 }, 130, [occluder]);
+assert.ok(occlusion.getAlpha("test-group") >= 0.35 && occlusion.getAlpha("test-group") <= 0.5, "occluder reaches minimum alpha band");
+for (let frame = 0; frame < 120; frame++) occlusion.update(1 / 60, { x: 220, y: 100, width: 32, height: 35 }, 130, [occluder]);
+assert.equal(occlusion.getAlpha("test-group"), 1, "occluder restores after player leaves");
+
 const camera = new Camera2D(320, 240, { width: 96, height: 64 }, 7.5);
 camera.snapTo(spawn.x, spawn.y, 1280, 960);
 camera.x = 10.4;
@@ -445,7 +579,9 @@ assert.match(debugOverlay, /#FF3B3B/);
 assert.match(debugOverlay, /#30F2F2/);
 assert.match(debugOverlay, /#FFE45E/);
 assert.match(debugOverlay, /#D65CFF/);
-assert.match(collisionSource, /Math\.min\(this\.map\.tileSize \/ 4, radius \* 0\.5\)/);
+assert.match(collisionSource, /moveSweptCircle/);
+assert.match(hubState, /OcclusionController/);
+assert.doesNotMatch(hubState, /zoneBannerTimer|private message =|drawPixelPanel\(ctx, 43, 207/);
 assert.match(qaSource, /setHubPresentation/);
 assert.match(mapData, /MAP_WIDTH = 20/);
 assert.match(mapData, /MAP_HEIGHT = 15/);
@@ -468,6 +604,9 @@ console.log(JSON.stringify({
   rearAccessRules: Object.fromEntries(HUB_STRUCTURE_DEFINITIONS.map(definition => [definition.id, definition.rearAccessRule])),
   groundDetails: [...detailIds].sort((a, b) => a - b),
   highSpeedCollision: "one-tile-wall-blocked",
+  thinCollider: "5px-dt0.1-blocked",
+  directionalTrajectoryChecks,
+  occlusion: "smooth-1-to-0.42-to-1",
   fixedHubSpeed: HUB_MOVE_SPEED,
   camera: "dead-zone-smoothed-pixel-snapped",
   visibleTileCount,

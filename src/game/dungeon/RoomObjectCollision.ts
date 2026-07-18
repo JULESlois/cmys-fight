@@ -1,5 +1,7 @@
 import type { RoomType } from "../data/roomTemplates";
 import { RITUAL_SPRING_GEOMETRY } from "../render/RitualSpringRenderer";
+import { closestPointOnFootprints } from "../world/SpatialSemantics";
+import type { WorldSpatialShape } from "../world/WorldMap";
 
 export type RoomObjectCollisionChannel = "player" | "enemy" | "projectile";
 
@@ -24,6 +26,12 @@ export interface RoomObjectCollisionScene {
   broadcast?: { x: number; y: number } | null;
   special?: { x: number; y: number } | null;
   legacy?: { x: number; y: number } | null;
+}
+
+export interface RoomObjectInteractionPoint {
+  x: number;
+  y: number;
+  colliderIds: string[];
 }
 
 const BLOCKS_ALL = {
@@ -254,6 +262,45 @@ export class RoomObjectCollision {
     return this.findBlockingCollider(x, y, radius, channel) !== null;
   }
 
+  public closestPoint(
+    x: number,
+    y: number,
+    colliderIds: readonly string[],
+  ): { x: number; y: number; distance: number } | null {
+    const allowed = new Set(colliderIds);
+    const shapes: WorldSpatialShape[] = this.colliders
+      .filter(collider => allowed.has(collider.id))
+      .map(collider => collider.shape === "circle"
+        ? { shape: "circle", x: collider.x, y: collider.y, radius: collider.radius ?? 0 }
+        : { shape: "rect", x: collider.x, y: collider.y, width: collider.width ?? 0, height: collider.height ?? 0 });
+    return closestPointOnFootprints(shapes, x, y);
+  }
+
+  public idsMatching(prefix: string): string[] {
+    return this.colliders.filter(collider => collider.id === prefix || collider.id.startsWith(prefix)).map(collider => collider.id);
+  }
+
+  public resolveInteractionShell(
+    x: number,
+    y: number,
+    colliderPrefix: string,
+    range: number,
+    requireSouth = false,
+  ): RoomObjectInteractionPoint | null {
+    const colliderIds = this.idsMatching(colliderPrefix);
+    const closest = this.closestPoint(x, y, colliderIds);
+    if (!closest || closest.distance > range) return null;
+    const linked = this.colliders.filter(collider => colliderIds.includes(collider.id));
+    if (requireSouth) {
+      const southEdge = Math.max(...linked.map(collider => collider.shape === "circle"
+        ? collider.y + (collider.radius ?? 0)
+        : collider.y + (collider.height ?? 0)));
+      if (y < southEdge) return null;
+    }
+    if (!this.hasLineOfSight(x, y, closest.x, closest.y, "projectile", 2, colliderIds)) return null;
+    return { x: closest.x, y: closest.y, colliderIds };
+  }
+
   public hasLineOfSight(
     startX: number,
     startY: number,
@@ -261,6 +308,7 @@ export class RoomObjectCollision {
     endY: number,
     channel: RoomObjectCollisionChannel = "projectile",
     radius = 2,
+    ignoredColliderIds: readonly string[] = [],
   ): boolean {
     const dx = endX - startX;
     const dy = endY - startY;
@@ -268,7 +316,12 @@ export class RoomObjectCollision {
     const steps = Math.max(1, Math.ceil(distance / 4));
     for (let step = 1; step < steps; step++) {
       const t = step / steps;
-      if (this.isCircleBlocked(startX + dx * t, startY + dy * t, radius, channel)) return false;
+      const sampleX = startX + dx * t;
+      const sampleY = startY + dy * t;
+      if (this.colliders.some(collider =>
+        !ignoredColliderIds.includes(collider.id)
+        && circleHitsRoomObject(collider, sampleX, sampleY, radius, channel)
+      )) return false;
     }
     return true;
   }

@@ -375,7 +375,7 @@ for (const template of ROOM_TEMPLATES.filter(candidate => candidate.allowedRoomT
     }
   }
 }
-assert.ok(crampedTemplateCount >= 4);
+assert.equal(crampedTemplateCount, 0, "rewritten templates must not retain cramped solid-wall layouts");
 assert.ok(constrainedWaves > 100);
 
 const dungeonHarness = new DungeonState({} as any) as any;

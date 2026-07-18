@@ -70,9 +70,13 @@ const BREAKABLE_SHAPES: Cell[][] = [
   [[0, 0], [0, 1]],
 ];
 
-function isReserved(x: number, y: number, template: RoomTemplate): boolean {
+function isReserved(x: number, y: number, template: RoomTemplate, room: Room): boolean {
   // Preserve the permanent cross-shaped navigation spine used by every door.
   if ((x >= 8 && x <= 11) || (y >= 6 && y <= 8)) return true;
+  // Every normal combat room keeps a wall-free 7x5 central maneuvering field.
+  if (x >= 7 && x <= 13 && y >= 5 && y <= 9) return true;
+  // Boss/special arena facilities require the wider 14x9 central field.
+  if (room.type === "boss" && x >= 3 && x <= 16 && y >= 3 && y <= 11) return true;
   const points = [
     ...template.enemySpawnPoints,
     ...template.pickupSpawnPoints,
@@ -114,7 +118,7 @@ export function applyRoomVariant(
       const x = anchorX + (flipX ? -rawX : rawX);
       const y = anchorY + (flipY ? -rawY : rawY);
       if (x <= 1 || x >= width - 2 || y <= 1 || y >= height - 2) continue;
-      if (isReserved(x, y, template)) continue;
+      if (isReserved(x, y, template, room)) continue;
       const index = y * width + x;
       if (data[index] === TILE_FLOOR || data[index] === TILE_BRIDGE) data[index] = tileId;
     }

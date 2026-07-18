@@ -423,6 +423,10 @@ const createHubEngine = (input: InstanceType<typeof Input>) => {
   let switchedState = "";
   const engine = {
     input,
+    worldNotices: {
+      showBottom() {},
+      showRegion() {},
+    },
     data: {
       settings: { language: "en" },
       meta: {

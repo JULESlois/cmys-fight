@@ -6,6 +6,7 @@ import type {
   WorldObjectDefinition,
   WorldPoint,
 } from "./WorldMap";
+import { closestPointOnFootprints } from "./SpatialSemantics";
 
 export interface WorldInteractionTarget {
   object: WorldObjectDefinition;
@@ -83,17 +84,25 @@ export class WorldInteraction {
       if (object.enabled === false) continue;
       if (object.type !== "interactable" && object.type !== "portal" && object.type !== "npc") continue;
       const interaction = object.interaction ?? legacyInteraction(object, defaultDistance);
-      const distance = distanceToZone(playerX, playerY, interaction.zone);
+      const shellPoint = object.interactionShell && object.physicalFootprint?.length
+        ? closestPointOnFootprints(object.physicalFootprint, playerX, playerY)
+        : null;
+      const distance = shellPoint
+        ? shellPoint.distance <= object.interactionShell!.distance ? shellPoint.distance : null
+        : distanceToZone(playerX, playerY, interaction.zone);
       if (distance === null) continue;
       if (!isOnRequiredSide(playerX, playerY, interaction)) continue;
       if (!matchesFacing(facing, interaction.facing)) continue;
 
-      const prompt = interaction.promptPoint ?? zoneCenter(interaction.zone);
-      const losTarget = interaction.lineOfSightTarget ?? prompt;
+      const prompt = shellPoint ?? interaction.promptPoint ?? zoneCenter(interaction.zone);
+      const losTarget = shellPoint ?? interaction.lineOfSightTarget ?? prompt;
+      const ignoredColliderIds = Array.isArray(object.properties?.physicalColliderIds)
+        ? object.properties.physicalColliderIds.filter((id): id is string => typeof id === "string")
+        : [];
       if (
         interaction.requireLineOfSight === true
         && this.collision
-        && !this.collision.hasLineOfSight(playerX, playerY, losTarget.x, losTarget.y)
+        && !this.collision.hasLineOfSight(playerX, playerY, losTarget.x, losTarget.y, ignoredColliderIds)
       ) continue;
 
       if (!nearest || distance < nearest.distance) {

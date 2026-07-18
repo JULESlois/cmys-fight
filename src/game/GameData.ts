@@ -417,7 +417,8 @@ export class GameData {
     this.save();
   }
 
-  advanceStage() {
+  advanceStage(): { previous: RunProgress; current: RunProgress; chapterChanged: boolean } {
+    const previous = { ...this.data.run };
     this.data.run = advanceRunProgress(this.data.run);
     this.data.runStats.stagesCleared = Math.max(
       this.data.runStats.stagesCleared,
@@ -432,6 +433,12 @@ export class GameData {
     this.data.floor = generateStage(this.data.run);
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.save();
+    const current = { ...this.data.run };
+    return {
+      previous,
+      current,
+      chapterChanged: previous.chapterIndex !== current.chapterIndex,
+    };
   }
 
   resetRun() {

@@ -2,6 +2,7 @@ import { PALETTES } from "../data/palettes";
 import { PORTAL_FRAME_COLLISION_GEOMETRY } from "../dungeon/RoomObjectCollision";
 
 export type PortalState = "spawning" | "idle" | "hovered" | "activating";
+export type PortalRenderPart = "energy" | "supports";
 
 export const PORTAL_OUTER_RING_POINTS = [
   [0, -20], [8, -18], [14, -14], [18, -8], [20, 0], [18, 8], [14, 14], [8, 18],
@@ -147,11 +148,12 @@ function stateParameters(portal: { state: PortalState; timer: number }, time: nu
 }
 
 export class PortalRenderer {
-  static drawPortal(
+  static drawPortalPart(
     ctx: CanvasRenderingContext2D,
     portal: { x: number; y: number; state: PortalState; timer: number },
     time: number,
     theme: string,
+    part: PortalRenderPart,
   ): void {
     const energyColor = PALETTES[theme]?.portal ?? "#00FFFF";
     const highlight = portal.state === "hovered" || portal.state === "activating" ? "#FFFFFF" : "#D8FFFF";
@@ -161,39 +163,31 @@ export class PortalRenderer {
     ctx.save();
     ctx.translate(Math.round(portal.x), Math.round(portal.y));
 
-    drawPulseRing(ctx, time, portal.state, energyColor, highlight, 0);
-    drawPulseRing(ctx, time, portal.state, energyColor, highlight, 1);
-    drawRingPoints(
-      ctx,
-      PORTAL_OUTER_RING_POINTS,
-      phase,
-      1,
-      params.scale,
-      energyColor,
-      highlight,
-      params.outerCount,
-    );
-    drawRingPoints(
-      ctx,
-      PORTAL_INNER_RING_POINTS,
-      phase,
-      -1,
-      params.scale,
-      energyColor,
-      highlight,
-      params.innerCount,
-    );
-
-    drawPixelCore(ctx, Math.max(3, 10 * params.scale), "#050910");
-    drawPixelCore(ctx, params.coreRadius, params.flash ? "#FFFFFF" : energyColor);
-    if (!params.flash) drawPixelCore(ctx, Math.max(1, params.coreRadius - 3), "#101827");
-
-    drawMinimalFrame(ctx, energyColor, portal.state);
-
-    if (params.flash) {
-      rect(ctx, "#FFFFFF", -2, -25, 4, 50);
-      rect(ctx, "#FFFFFF", -25, -2, 50, 4);
+    if (part === "energy") {
+      drawPulseRing(ctx, time, portal.state, energyColor, highlight, 0);
+      drawPulseRing(ctx, time, portal.state, energyColor, highlight, 1);
+      drawRingPoints(ctx, PORTAL_OUTER_RING_POINTS, phase, 1, params.scale, energyColor, highlight, params.outerCount);
+      drawRingPoints(ctx, PORTAL_INNER_RING_POINTS, phase, -1, params.scale, energyColor, highlight, params.innerCount);
+      drawPixelCore(ctx, Math.max(3, 10 * params.scale), "#050910");
+      drawPixelCore(ctx, params.coreRadius, params.flash ? "#FFFFFF" : energyColor);
+      if (!params.flash) drawPixelCore(ctx, Math.max(1, params.coreRadius - 3), "#101827");
+      if (params.flash) {
+        rect(ctx, "#FFFFFF", -2, -25, 4, 50);
+        rect(ctx, "#FFFFFF", -25, -2, 50, 4);
+      }
+    } else {
+      drawMinimalFrame(ctx, energyColor, portal.state);
     }
     ctx.restore();
+  }
+
+  static drawPortal(
+    ctx: CanvasRenderingContext2D,
+    portal: { x: number; y: number; state: PortalState; timer: number },
+    time: number,
+    theme: string,
+  ): void {
+    this.drawPortalPart(ctx, portal, time, theme, "energy");
+    this.drawPortalPart(ctx, portal, time, theme, "supports");
   }
 }

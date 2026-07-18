@@ -4,6 +4,7 @@ import {
   type WorldMapDefinition,
   type WorldPoint,
 } from "./WorldMap";
+import { moveSweptCircle } from "../physics/SweptCircleMovement";
 
 function circleIntersectsRect(
   circleX: number,
@@ -89,22 +90,24 @@ export class WorldCollision {
   }
 
   public moveCircle(x: number, y: number, radius: number, moveX: number, moveY: number): { x: number; y: number } {
-    const distance = Math.hypot(moveX, moveY);
-    const maxStep = Math.max(0.5, Math.min(this.map.tileSize / 4, radius * 0.5));
-    const steps = Math.max(1, Math.ceil(distance / maxStep));
-    const stepX = moveX / steps;
-    const stepY = moveY / steps;
-    let nextX = x;
-    let nextY = y;
-
-    for (let step = 0; step < steps; step++) {
-      if (!this.isCircleBlocked(nextX + stepX, nextY, radius)) nextX += stepX;
-      if (!this.isCircleBlocked(nextX, nextY + stepY, radius)) nextY += stepY;
-    }
-    return { x: nextX, y: nextY };
+    return moveSweptCircle({
+      x,
+      y,
+      radius,
+      deltaX: moveX,
+      deltaY: moveY,
+      isBlocked: (candidateX, candidateY, candidateRadius) =>
+        this.isCircleBlocked(candidateX, candidateY, candidateRadius),
+    });
   }
 
-  public hasLineOfSight(fromX: number, fromY: number, toX: number, toY: number): boolean {
+  public hasLineOfSight(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    ignoredColliderIds: readonly string[] = [],
+  ): boolean {
     const distance = Math.hypot(toX - fromX, toY - fromY);
     const stepLength = Math.max(2, this.map.tileSize / 4);
     const steps = Math.max(1, Math.ceil(distance / stepLength));
@@ -113,6 +116,7 @@ export class WorldCollision {
       if (this.isPointBlocked(
         fromX + (toX - fromX) * ratio,
         fromY + (toY - fromY) * ratio,
+        ignoredColliderIds,
       )) return false;
     }
     return true;
@@ -123,12 +127,13 @@ export class WorldCollision {
     return (this.collisionTiles[tileY * this.map.widthTiles + tileX] ?? 0) !== 0;
   }
 
-  public isPointBlocked(x: number, y: number): boolean {
+  public isPointBlocked(x: number, y: number, ignoredColliderIds: readonly string[] = []): boolean {
     const worldWidth = this.map.widthTiles * this.map.tileSize;
     const worldHeight = this.map.heightTiles * this.map.tileSize;
     if (x < 0 || y < 0 || x >= worldWidth || y >= worldHeight) return true;
     if (this.isTileBlocked(Math.floor(x / this.map.tileSize), Math.floor(y / this.map.tileSize))) return true;
-    return this.colliders.some(collider => this.pointInsideCollider(x, y, collider));
+    const ignored = new Set(ignoredColliderIds);
+    return this.colliders.some(collider => !ignored.has(collider.id) && this.pointInsideCollider(x, y, collider));
   }
 
   private circleIntersectsCollider(x: number, y: number, radius: number, collider: WorldColliderDefinition): boolean {

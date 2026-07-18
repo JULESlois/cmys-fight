@@ -129,6 +129,11 @@ export interface OpenRoomTemplateValidation {
   valid: boolean;
 }
 
+export interface RoomLayoutValidation extends OpenRoomTemplateValidation {
+  roomType?: Room["type"];
+  specialCentralOpen: boolean;
+}
+
 function internalWallComponentSize(tiles: readonly number[]): number {
   const seen = new Set<number>();
   let largest = 0;
@@ -202,15 +207,49 @@ function passablePathExists(tiles: readonly number[], start: { x: number; y: num
 }
 
 export function validateOpenRoomTemplate(template: RoomTemplate): OpenRoomTemplateValidation {
+  return validateRoomLayout(template, template.tiles);
+}
+
+export function validateRoomLayout(
+  template: RoomTemplate,
+  tiles: readonly number[],
+  roomType?: Room["type"],
+): RoomLayoutValidation {
   const centralWalkableTiles = (() => {
     let count = 0;
-    for (let y = 3; y <= 10; y++) for (let x = 4; x <= 15; x++) if (!isSolid(template.tiles[y * MAP_WIDTH + x])) count++;
+    for (let y = 3; y <= 10; y++) for (let x = 4; x <= 15; x++) if (!isSolid(tiles[y * MAP_WIDTH + x])) count++;
     return count;
   })();
   let centerWallFree = true;
-  for (let y = 5; y <= 9; y++) for (let x = 7; x <= 13; x++) if (isSolid(template.tiles[y * MAP_WIDTH + x])) centerWallFree = false;
-  let facilityClearance = true;
-  for (let y = 2; y <= 12; y++) for (let x = 3; x <= 16; x++) if (isSolid(template.tiles[y * MAP_WIDTH + x])) facilityClearance = false;
+  for (let y = 5; y <= 9; y++) for (let x = 7; x <= 13; x++) if (isSolid(tiles[y * MAP_WIDTH + x])) centerWallFree = false;
+  const specialTypes: Room["type"][] = [
+    "treasure", "shop", "boss", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics",
+  ];
+  const isSpecial = roomType ? specialTypes.includes(roomType) : template.allowedRoomTypes.some(type => specialTypes.includes(type));
+  let specialCentralOpen = true;
+  if (isSpecial) {
+    for (let y = 3; y <= 11; y++) {
+      for (let x = 3; x <= 16; x++) {
+        if (isSolid(tiles[y * MAP_WIDTH + x])) specialCentralOpen = false;
+      }
+    }
+  }
+  const facilityPoints = [
+    template.portalSpawnPoint,
+    template.legacySpawnPoint,
+    ...(isSpecial ? [{ x: 10, y: 7.5 }] : []),
+  ].filter((point): point is { x: number; y: number } => Boolean(point));
+  const facilityClearance = facilityPoints.every(point => {
+    const centerX = Math.floor(point.x);
+    const centerY = Math.floor(point.y);
+    for (let y = centerY - 2; y <= centerY + 2; y++) {
+      for (let x = centerX - 2; x <= centerX + 2; x++) {
+        if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT) return false;
+        if (isSolid(tiles[y * MAP_WIDTH + x])) return false;
+      }
+    }
+    return true;
+  });
   const mask = template.doorMask === "any" ? { up: true, down: true, left: true, right: true } : template.doorMask;
   const center = { x: 10, y: 7 };
   const starts = [
@@ -219,21 +258,29 @@ export function validateOpenRoomTemplate(template: RoomTemplate): OpenRoomTempla
     ...(mask.left ? [{ x: 0, y: 7 }] : []),
     ...(mask.right ? [{ x: 19, y: 7 }] : []),
   ];
-  const doorsReachCenter = starts.every(start => passablePathExists(template.tiles, start, center));
-  const largestInternalWallComponent = internalWallComponentSize(template.tiles);
-  const largestSolidRectangle = largestInternalSolidRectangle(template.tiles);
-  const valid = centralWalkableTiles === 96
+  const doorsReachCenter = starts.every(start => passablePathExists(tiles, start, center));
+  const largestInternalWallComponent = internalWallComponentSize(tiles);
+  const largestSolidRectangle = largestInternalSolidRectangle(tiles);
+  const centralLayoutValid = roomType === undefined
+    ? centralWalkableTiles === 96
+    : isSpecial
+      ? specialCentralOpen
+      : centralWalkableTiles >= 72;
+  const valid = centralLayoutValid
     && centerWallFree
+    && specialCentralOpen
     && facilityClearance
     && doorsReachCenter
-    && largestInternalWallComponent <= 24
-    && !(largestSolidRectangle.width > 4 && largestSolidRectangle.height > 3);
+    && largestInternalWallComponent <= 16
+    && !(largestSolidRectangle.width > 3 && largestSolidRectangle.height > 3);
   return {
     templateId: template.id,
+    roomType,
     largestInternalWallComponent,
     largestSolidRectangle,
     centralWalkableTiles,
     centerWallFree,
+    specialCentralOpen,
     doorsReachCenter,
     facilityClearance,
     valid,

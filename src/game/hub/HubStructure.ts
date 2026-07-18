@@ -7,6 +7,7 @@ import type {
   WorldPoint,
   WorldRect,
 } from "../world/WorldMap";
+import { colliderToSpatialShape } from "../world/SpatialSemantics";
 
 export type HubRearAccessRule = "blocked-footprint" | "roof-occluder" | "map-layout";
 export type HubStructureVisualLayer = "back" | "sorted" | "upper";
@@ -162,11 +163,17 @@ function visualObject(
   structure: HubStructureDefinition,
   part: HubLocalVisualPart | HubLocalOccluderPart,
   role: "visual" | "occluder",
+  colliders: readonly WorldColliderDefinition[],
 ): WorldObjectDefinition {
   const bounds = worldRect(structure.origin, part.bounds);
   const structureBounds = worldRect(structure.origin, structure.visualBounds);
   const layer = role === "occluder" ? "sorted" : (part as HubLocalVisualPart).layer;
   const sortY = part.sortY === undefined ? undefined : structure.origin.y + part.sortY;
+  const physicalColliders = part.visiblePropId
+    ? colliders.filter(collider => collider.properties?.visiblePropId === part.visiblePropId)
+    : [];
+  const fadeWhenOccluding = role === "occluder"
+    || Boolean(part.visiblePropId && bounds.height >= 40 && layer === "sorted");
   return {
     id: `${structure.id}:${part.id}`,
     type: "decoration",
@@ -176,6 +183,11 @@ function visualObject(
     height: bounds.height,
     sortY,
     visualBounds: bounds,
+    physicalFootprint: physicalColliders.map(colliderToSpatialShape),
+    occlusionProjection: fadeWhenOccluding ? bounds : undefined,
+    occlusionGroupId: role === "occluder" ? structure.id : part.visiblePropId,
+    fadeWhenOccluding,
+    minimumAlpha: 0.42,
     properties: {
       kind: "hub_structure_part",
       structureId: structure.id,
@@ -190,6 +202,7 @@ function visualObject(
       rearAccessRule: structure.rearAccessRule,
       structureBounds,
       collisionPolicy: part.collisionPolicy ?? (part.visiblePropId ? "none" : undefined),
+      physicalColliderIds: physicalColliders.map(collider => collider.id),
       ...part.properties,
       ...(part.visiblePropId
         ? { visiblePropId: part.visiblePropId }
@@ -201,12 +214,14 @@ function visualObject(
 function interactionObject(
   structure: HubStructureDefinition,
   local: HubLocalInteractionDefinition,
+  colliders: readonly WorldColliderDefinition[],
 ): WorldObjectDefinition {
   const interaction = worldInteraction(structure.origin, local.interaction);
   const zone = interaction.zone;
   const bounds = zone.shape === "rect"
     ? { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
     : { x: zone.x - zone.radius, y: zone.y - zone.radius, width: zone.radius * 2, height: zone.radius * 2 };
+  const physicalColliders = colliders.filter(collider => collider.properties?.visiblePropId === local.visiblePropId);
   return {
     id: local.id,
     type: local.type,
@@ -217,6 +232,10 @@ function interactionObject(
     sortY: bounds.y + bounds.height,
     action: local.action,
     promptKey: local.promptKey,
+    physicalFootprint: physicalColliders.map(colliderToSpatialShape),
+    interactionShell: local.interaction.side || physicalColliders.length === 0
+      ? undefined
+      : { distance: 40 },
     interaction,
     properties: {
       kind: "hotspot",
@@ -224,6 +243,7 @@ function interactionObject(
       visible: false,
       structureId: structure.id,
       visiblePropId: local.visiblePropId,
+      physicalColliderIds: physicalColliders.map(collider => collider.id),
       ...local.properties,
     },
   };
@@ -233,14 +253,15 @@ export function materializeHubStructure(definition: HubStructureDefinition): Mat
   const anchors = Object.fromEntries(
     Object.entries(definition.anchors).map(([id, point]) => [id, worldPoint(definition.origin, point)]),
   );
+  const colliders = definition.colliders.map(collider => worldCollider(definition, collider));
   return {
     definition,
     visualBounds: worldRect(definition.origin, definition.visualBounds),
-    colliders: definition.colliders.map(collider => worldCollider(definition, collider)),
+    colliders,
     objects: [
-      ...definition.visualParts.map(part => visualObject(definition, part, "visual")),
-      ...definition.occluders.map(part => visualObject(definition, part, "occluder")),
-      ...definition.interactions.map(interaction => interactionObject(definition, interaction)),
+      ...definition.visualParts.map(part => visualObject(definition, part, "visual", colliders)),
+      ...definition.occluders.map(part => visualObject(definition, part, "occluder", colliders)),
+      ...definition.interactions.map(interaction => interactionObject(definition, interaction, colliders)),
     ],
     anchors,
   };

@@ -21,6 +21,8 @@ import { PerformanceMonitor } from "./PerformanceMonitor";
 import { grantDebugLoadout, isDebugMode, jumpToStage } from "./DebugTools";
 import { FINAL_GLOBAL_STAGE } from "./RunProgress";
 import { getEntityPoolStats } from "./EntityPools";
+import { WorldNoticeController } from "./notice/WorldNoticeController";
+import { WorldNoticeRenderer } from "./notice/WorldNoticeRenderer";
 
 export class Engine {
   public input: Input;
@@ -30,6 +32,7 @@ export class Engine {
   public isPaused: boolean = false;
   public readonly performanceMonitor = new PerformanceMonitor();
   public readonly debugMode = isDebugMode();
+  public readonly worldNotices = new WorldNoticeController();
   
   private lastTime = 0;
   private canvas: HTMLCanvasElement | null = null;
@@ -357,6 +360,7 @@ export class Engine {
     this.performanceMonitor.update(dt);
     this.input.beginFrame();
     this.shakeTimer = Math.max(0, this.shakeTimer - cappedDt);
+    this.worldNotices.update(cappedDt);
 
     if (this.transitionTimer > 0) {
       this.transitionTimer -= cappedDt;
@@ -479,6 +483,11 @@ export class Engine {
         : undefined;
       PauseOverlayRenderer.draw(this.ctx, this.input, dungeonPlayer, settings.language);
     }
+
+    WorldNoticeRenderer.draw(this.ctx, {
+      bottom: this.worldNotices.getBottom(),
+      region: this.worldNotices.getRegion(),
+    }, settings.language);
 
 
     if (this.isDebugOverlayVisible()) this.drawDebugOverlay(this.ctx);

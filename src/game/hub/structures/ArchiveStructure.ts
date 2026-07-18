@@ -41,9 +41,9 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
     { id: "foot_east", shape: "rect", x: 146, y: 114, width: 88, height: 30 },
     { id: "buttress_west", shape: "rect", x: 0, y: 112, width: 10, height: 30 },
     { id: "buttress_east", shape: "rect", x: 230, y: 112, width: 10, height: 30 },
-    { id: "archive_monument_foot", shape: "rect", x: 92, y: 175, width: 56, height: 13, visiblePropId: "archive_monument" },
-    { id: "codex_lectern_foot", shape: "rect", x: 64, y: 176, width: 24, height: 12, visiblePropId: "codex_lectern" },
-    { id: "honor_wall_foot", shape: "rect", x: 148, y: 176, width: 48, height: 12, visiblePropId: "honor_wall" },
+    { id: "archive_monument_foot", shape: "rect", x: 92, y: 166, width: 56, height: 22, visiblePropId: "archive_monument" },
+    { id: "codex_lectern_foot", shape: "rect", x: 62, y: 168, width: 28, height: 20, visiblePropId: "codex_lectern" },
+    { id: "honor_wall_foot", shape: "rect", x: 148, y: 166, width: 48, height: 22, visiblePropId: "honor_wall" },
   ],
   interactions: [
     {
@@ -57,7 +57,6 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
         promptPoint: { x: 120, y: 140 },
         lineOfSightTarget: { x: 120, y: 190 },
         requireLineOfSight: true,
-        side: "south",
       },
       properties: { tab: "overview" },
     },
@@ -72,7 +71,6 @@ export const ARCHIVE_STRUCTURE: HubStructureDefinition = {
         promptPoint: { x: 76, y: 146 },
         lineOfSightTarget: { x: 76, y: 190 },
         requireLineOfSight: true,
-        side: "south",
       },
       properties: { tab: "enemies" },
     },

@@ -1,4 +1,5 @@
 type MerchantTheme = "forest" | "dungeon" | "snow" | "lava";
+export type MerchantRenderPart = "back" | "body" | "front" | "upper";
 
 interface MerchantThemePalette {
   accent: string;
@@ -188,14 +189,31 @@ function drawCounterFront(ctx: CanvasRenderingContext2D, p: MerchantThemePalette
 }
 
 export class MerchantRenderer {
-  static drawMerchant(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme = "forest"): void {
+  static drawMerchantPart(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    time: number,
+    theme: string,
+    part: MerchantRenderPart,
+  ): void {
     const p = palette(theme);
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    drawSeparatedShadow(ctx);
-    drawStallBack(ctx, p, time);
-    drawMerchantBody(ctx, p, time);
-    drawCounterFront(ctx, p, time);
+    if (part === "back") {
+      drawSeparatedShadow(ctx);
+      drawStallBack(ctx, p, time);
+    } else if (part === "body") {
+      drawMerchantBody(ctx, p, time);
+    } else if (part === "front") {
+      drawCounterFront(ctx, p, time);
+    }
     ctx.restore();
+  }
+
+  static drawMerchant(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme = "forest"): void {
+    for (const part of ["back", "body", "front", "upper"] as const) {
+      this.drawMerchantPart(ctx, x, y, time, theme, part);
+    }
   }
 }

@@ -285,8 +285,16 @@ export class HubWorldRenderer {
     }
   }
 
-  public drawSortedObject(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  public drawSortedObject(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    alpha = 1,
+  ): void {
+    ctx.save();
+    ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
     this.drawObject(ctx, object, time);
+    ctx.restore();
   }
 
   public getVisibleSortedObjects(map: WorldMapDefinition, camera: Camera2D): WorldObjectDefinition[] {

@@ -16,6 +16,7 @@ import { PromptRenderer } from "../render/PromptRenderer";
 import { Camera2D } from "../world/Camera2D";
 import { WorldCollision } from "../world/WorldCollision";
 import { getWorldSize, type WorldObjectDefinition } from "../world/WorldMap";
+import { OcclusionController } from "../world/OcclusionController";
 import { GameState } from "./GameState";
 
 type HubMode = "world" | "upgrades" | "expedition";
@@ -36,17 +37,15 @@ export class HubState extends GameState {
   private readonly worldRenderer = new HubWorldRenderer();
   private readonly playerController = new HubPlayerController();
   private readonly interactionController = new HubInteractionController(this.collision);
+  private readonly occlusionController = new OcclusionController();
   private readonly player = new Player(0, 0);
   private interactionTarget: ReturnType<HubInteractionController["findNearest"]> = null;
   private mode: HubMode = "world";
   private selectedIndex = 0;
-  private message = "";
-  private messageTimer = 0;
   private refundArmed = false;
   private time = 0;
   private qaPresentationTime: number | null = null;
   private currentZoneKey = "hub.zone.sanctuary";
-  private zoneBannerTimer = 2.5;
   private debugOverlayVisible = false;
 
   public enter(params?: HubEnterParams): void {
@@ -85,14 +84,13 @@ export class HubState extends GameState {
     this.selectedIndex = this.mode === "expedition"
       ? Math.max(0, EXPEDITION_ACTIONS.indexOf(params?.focusAction ?? (this.engine.data.hasValidSave() ? "continue" : "newRun")))
       : 0;
-    this.message = "";
-    this.messageTimer = 0;
     this.refundArmed = false;
     this.interactionTarget = null;
     this.time = 0;
     this.qaPresentationTime = null;
     this.currentZoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.sanctuary";
-    this.zoneBannerTimer = 2.5;
+    this.engine.worldNotices.showRegion(t(this.language, this.currentZoneKey as Parameters<typeof t>[1]));
+    this.occlusionController.reset();
     this.engine.input.suppressUntilReleased();
   }
 
@@ -107,10 +105,6 @@ export class HubState extends GameState {
   public update(dt = 1 / 60): void {
     if (this.qaPresentationTime === null) this.time += dt;
     else this.time = this.qaPresentationTime;
-    this.messageTimer = Math.max(0, this.messageTimer - dt);
-    if (this.messageTimer <= 0 && this.mode === "world") this.message = "";
-    this.zoneBannerTimer = Math.max(0, this.zoneBannerTimer - dt);
-
     if (this.engine.input.wasPressed("f7")) {
       this.debugOverlayVisible = !this.debugOverlayVisible;
     }
@@ -135,6 +129,12 @@ export class HubState extends GameState {
       this.player.animFrame = 0;
       this.player.animTimer = 0;
     }
+    this.occlusionController.update(
+      dt,
+      { x: this.player.x - 16, y: this.player.y - 31, width: 32, height: 35 },
+      this.player.y,
+      this.map.objects,
+    );
     this.interactionTarget = this.interactionController.findNearest(
       this.player.x,
       this.player.y,
@@ -150,7 +150,7 @@ export class HubState extends GameState {
     const zoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.sanctuary";
     if (zoneKey !== this.currentZoneKey) {
       this.currentZoneKey = zoneKey;
-      this.zoneBannerTimer = 2.2;
+      this.engine.worldNotices.showRegion(t(this.language, zoneKey as Parameters<typeof t>[1]));
       const zoneId = this.map.objects.find(object => object.type === "region" && object.properties?.labelKey === zoneKey)?.id;
       if (zoneId && !this.engine.data.meta.hubProgress.visitedZones.includes(zoneId)) {
         this.engine.data.meta.hubProgress.visitedZones.push(zoneId);
@@ -165,7 +165,6 @@ export class HubState extends GameState {
     if (this.engine.input.wasUiPressed("cancel")) {
       if (this.refundArmed) {
         this.refundArmed = false;
-        this.message = "";
       } else {
         this.closePanel();
       }
@@ -174,13 +173,11 @@ export class HubState extends GameState {
     if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + UPGRADE_ENTRY_COUNT) % UPGRADE_ENTRY_COUNT;
       this.refundArmed = false;
-      this.message = "";
       audio.playShoot();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % UPGRADE_ENTRY_COUNT;
       this.refundArmed = false;
-      this.message = "";
       audio.playShoot();
     }
     if (!this.engine.input.wasUiPressed("confirm")) return;
@@ -229,7 +226,6 @@ export class HubState extends GameState {
 
   private moveExpeditionSelection(direction: number): void {
     this.selectedIndex = (this.selectedIndex + direction + EXPEDITION_ACTIONS.length) % EXPEDITION_ACTIONS.length;
-    this.message = "";
     audio.playShoot();
   }
 
@@ -265,6 +261,9 @@ export class HubState extends GameState {
       case "open_wish_fountain":
         this.showMessage(t(this.language, "hub.wishReserved"));
         break;
+      case "inspect_waystone":
+        this.showMessage(t(this.language, "hub.waystoneMessage"));
+        break;
       default:
         console.warn("[HubState] Unknown interaction action:", object.action, object.id);
     }
@@ -273,7 +272,6 @@ export class HubState extends GameState {
   private openPanel(mode: Exclude<HubMode, "world">, selectedIndex: number): void {
     this.mode = mode;
     this.selectedIndex = Math.max(0, selectedIndex);
-    this.message = "";
     this.refundArmed = false;
     this.engine.input.clearJustPressed();
     audio.playPickup();
@@ -281,7 +279,6 @@ export class HubState extends GameState {
 
   private closePanel(): void {
     this.mode = "world";
-    this.message = "";
     this.refundArmed = false;
     this.engine.input.clearJustPressed();
     audio.playShoot();
@@ -292,30 +289,28 @@ export class HubState extends GameState {
     const result = this.engine.data.purchaseMetaUpgrade(id);
     if (result.success) {
       const localized = getMetaUpgradeText(id, META_UPGRADES[id], this.language);
-      this.message = t(this.language, "hub.upgraded", { name: localized.name });
-      audio.playPickup();
+      this.showMessage(t(this.language, "hub.upgraded", { name: localized.name }));
     } else if (result.reason === "max") {
-      this.message = t(this.language, "hub.maxed");
-      audio.playHurt();
+      this.showMessage(t(this.language, "hub.maxed"), true);
     } else {
-      this.message = t(this.language, "hub.needShards", { amount: result.cost });
-      audio.playHurt();
+      this.showMessage(t(this.language, "hub.needShards", { amount: result.cost }), true);
     }
   }
 
   private refundUpgrades(): void {
     if (!this.refundArmed) {
       this.refundArmed = true;
-      this.message = t(this.language, "hub.refundConfirm", { confirm: this.engine.input.getConfirmPrompt() });
-      audio.playHurt();
+      this.showMessage(t(this.language, "hub.refundConfirm", { confirm: this.engine.input.getConfirmPrompt() }), true);
       return;
     }
     const refunded = this.engine.data.refundMetaUpgrades();
-    this.message = refunded > 0
-      ? t(this.language, "hub.refunded", { amount: refunded })
-      : t(this.language, "hub.noRefund");
+    this.showMessage(
+      refunded > 0
+        ? t(this.language, "hub.refunded", { amount: refunded })
+        : t(this.language, "hub.noRefund"),
+      refunded <= 0,
+    );
     this.refundArmed = false;
-    refunded > 0 ? audio.playPickup() : audio.playHurt();
   }
 
   private toggleHardMode(): void {
@@ -326,10 +321,9 @@ export class HubState extends GameState {
     const enabled = !this.engine.data.meta.preferredHardMode;
     this.engine.data.setPreferredHardMode(enabled);
     if (!enabled) this.engine.data.setPreferredChallenge(undefined);
-    this.message = t(this.language, "hub.hardState", {
+    this.showMessage(t(this.language, "hub.hardState", {
       state: t(this.language, enabled ? "common.enabled" : "common.disabled"),
-    });
-    audio.playPickup();
+    }));
   }
 
   private toggleChallenge(): void {
@@ -341,15 +335,13 @@ export class HubState extends GameState {
     const next = this.engine.data.meta.preferredChallengeId === daily ? undefined : daily;
     this.engine.data.setPreferredChallenge(next);
     const challengeName = next ? getChallengeText(next, CHALLENGES[next], this.language).name : "";
-    this.message = next
+    this.showMessage(next
       ? t(this.language, "hub.challengeSelected", { name: challengeName })
-      : t(this.language, "hub.challengeDisabled");
-    audio.playPickup();
+      : t(this.language, "hub.challengeDisabled"));
   }
 
   private showMessage(message: string, error = false): void {
-    this.message = message;
-    this.messageTimer = 2.8;
+    this.engine.worldNotices.showBottom(message, error ? "red" : "yellow");
     error ? audio.playHurt() : audio.playPickup();
   }
 
@@ -382,7 +374,6 @@ export class HubState extends GameState {
     const worldSize = getWorldSize(this.map);
     this.camera.snapTo(point.x, point.y, worldSize.width, worldSize.height);
     this.currentZoneKey = this.findZoneKey(point.x, point.y) ?? "hub.zone.sanctuary";
-    this.zoneBannerTimer = 0;
     this.interactionTarget = null;
     return true;
   }
@@ -396,7 +387,6 @@ export class HubState extends GameState {
     this.player.animState = "idle";
     this.player.animFrame = 0;
     this.player.animTimer = 0;
-    this.zoneBannerTimer = 0;
     this.interactionTarget = null;
     return true;
   }
@@ -425,7 +415,6 @@ export class HubState extends GameState {
       worldSize.width,
       worldSize.height,
     );
-    this.zoneBannerTimer = 0;
     return true;
   }
 
@@ -463,7 +452,12 @@ export class HubState extends GameState {
 
     const renderables = this.worldRenderer.getVisibleSortedObjects(this.map, this.camera).map(object => ({
       sortY: object.sortY ?? object.y + (object.height ?? 0),
-      draw: () => this.worldRenderer.drawSortedObject(ctx, object, this.time),
+      draw: () => this.worldRenderer.drawSortedObject(
+        ctx,
+        object,
+        this.time,
+        this.occlusionController.getAlpha(object.occlusionGroupId),
+      ),
     }));
     renderables.push({
       sortY: this.player.y + 8,
@@ -499,31 +493,11 @@ export class HubState extends GameState {
   }
 
   private drawWorldOverlay(ctx: CanvasRenderingContext2D): void {
-    if (this.zoneBannerTimer > 0) {
-      const alpha = Math.min(1, this.zoneBannerTimer * 2);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      drawPixelPanel(ctx, 92, 39, 136, 21, "neutral", true);
-      ctx.fillStyle = UI_COLORS.white;
-      ctx.font = uiFont(this.language, 8, true);
-      ctx.textAlign = "center";
-      ctx.fillText(t(this.language, this.currentZoneKey as Parameters<typeof t>[1]), 160, 53);
-      ctx.restore();
-    }
-
     if (this.interactionTarget) {
       const screen = this.camera.worldToScreen(this.interactionTarget.x, this.interactionTarget.y);
       const promptKey = this.interactionTarget.object.promptKey;
       const label = promptKey ? t(this.language, promptKey as Parameters<typeof t>[1]) : t(this.language, "hub.interact");
       PromptRenderer.drawAt(ctx, screen.x, screen.y - 13, label, this.engine.input.getPrompt("interact"), this.language, this.time);
-    }
-
-    if (this.message) {
-      drawPixelPanel(ctx, 43, 207, 234, 23, "yellow", true);
-      ctx.fillStyle = UI_COLORS.white;
-      ctx.font = uiFont(this.language, 7, true);
-      ctx.textAlign = "center";
-      ctx.fillText(this.message, 160, 222);
     }
   }
 
@@ -566,7 +540,6 @@ export class HubState extends GameState {
     ctx.textAlign = "center";
     ctx.fillStyle = this.refundArmed ? UI_COLORS.red : UI_COLORS.yellow;
     ctx.font = uiFont(this.language, 6, true);
-    if (this.message) ctx.fillText(this.message, 160, 205);
     ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(this.language, 6);
     ctx.fillText(t(this.language, "hub.panelFooter", {
@@ -601,11 +574,6 @@ export class HubState extends GameState {
     });
 
     ctx.textAlign = "center";
-    if (this.message) {
-      ctx.fillStyle = UI_COLORS.yellow;
-      ctx.font = uiFont(this.language, 6, true);
-      ctx.fillText(this.message, 160, 194);
-    }
     ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(this.language, 6);
     ctx.fillText(t(this.language, "hub.panelFooter", {

@@ -64,11 +64,21 @@ import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
 import { t, uiFont } from "../i18n";
 import {
+  DUNGEON_RITUAL_SPRING_SCALE,
   RoomObjectCollision,
   type RoomObjectCollisionChannel,
 } from "../dungeon/RoomObjectCollision";
+import { moveSweptCircle, type SweptCircleMoveResult } from "../physics/SweptCircleMovement";
+import { drawRitualSpringPart, RITUAL_SPRING_GEOMETRY } from "../render/RitualSpringRenderer";
+import { OcclusionController } from "../world/OcclusionController";
+import type { WorldObjectDefinition, WorldRect } from "../world/WorldMap";
 
 type RoomPhase = "entering" | "intro" | "locking" | "combat" | "cleared" | "reward" | "exiting" | "exploration";
+interface DepthRenderable {
+  id: string;
+  sortY: number;
+  draw: () => void;
+}
 type WeaponChest = {
   kind: "treasure" | "boss";
   x: number;
@@ -110,6 +120,7 @@ export class DungeonState extends GameState {
   
   private currentMapData: number[] = [];
   private readonly roomObjectCollision = new RoomObjectCollision();
+  private readonly occlusionController = new OcclusionController();
   
   private roomPhase: RoomPhase = "entering";
   private phaseTimer: number = 0;
@@ -565,6 +576,12 @@ export class DungeonState extends GameState {
       if (options?.startEncounter === false) {
          return;
       }
+      this.engine.worldNotices.showBottom(
+        t(this.engine.data.settings.language, activeRoom?.type === "boss"
+          ? "notice.bossStart"
+          : "notice.combatStart"),
+        activeRoom?.type === "boss" ? "red" : "yellow",
+      );
       
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -579,6 +596,10 @@ export class DungeonState extends GameState {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
       this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
+      this.engine.worldNotices.showBottom(
+        t(this.engine.data.settings.language, "dungeon.roomClear"),
+        "yellow",
+      );
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       if (currentRoom) {
@@ -591,6 +612,10 @@ export class DungeonState extends GameState {
       // Spawn rewards
       this.spawnRoomRewards();
       this.phaseTimer = 0.5;
+      this.engine.worldNotices.showBottom(
+        t(this.engine.data.settings.language, "notice.rewardGenerated"),
+        "cyan",
+      );
     } else if (phase === "exiting") {
       // Free to move
     }
@@ -720,6 +745,10 @@ export class DungeonState extends GameState {
     if (!result.success) {
       this.shopFailure = result.reason;
       this.shopFailureTimer = 1.4;
+      this.engine.worldNotices.showBottom(
+        t(this.engine.data.settings.language, "notice.purchaseFailed"),
+        "red",
+      );
       audio.playHurt();
       return;
     }
@@ -737,6 +766,10 @@ export class DungeonState extends GameState {
     this.syncPlayerState();
     this.syncRoomState();
     this.engine.data.save();
+    this.engine.worldNotices.showBottom(
+      t(this.engine.data.settings.language, "notice.interactionComplete"),
+      "cyan",
+    );
     audio.playPickup();
     this.engine.input.clearJustPressed();
   }
@@ -804,6 +837,12 @@ export class DungeonState extends GameState {
     this.syncMusicScene();
     this.roomRenderer.update(dt);
     this.fx.update(dt);
+    this.occlusionController.update(
+      dt,
+      { x: this.player.x - 16, y: this.player.y - 31, width: 32, height: 35 },
+      this.player.y,
+      this.getDungeonOcclusionObjects(),
+    );
 
     if (this.transitionState === "fade_in") {
       this.transitionAlpha -= dt * 2;
@@ -992,7 +1031,15 @@ export class DungeonState extends GameState {
                this.finishRun("victory");
                return;
              }
-             this.engine.data.advanceStage();
+             const transition = this.engine.data.advanceStage();
+             if (transition.chapterChanged) {
+               const chapter = Math.max(1, Math.min(4, transition.current.chapterIndex));
+               this.engine.worldNotices.showRegion(
+                 t(this.engine.data.settings.language, `notice.chapter.${chapter}.title` as Parameters<typeof t>[1]),
+                 t(this.engine.data.settings.language, `notice.chapter.${chapter}.name` as Parameters<typeof t>[1]),
+                 3.6,
+               );
+             }
              this.player.x = 160;
              this.player.y = 120;
              this.engine.input.suppressUntilReleased();
@@ -1120,11 +1167,13 @@ export class DungeonState extends GameState {
          this.player.vy = velocityY;
        }
 
-       const nextX = this.player.x + velocityX * dt;
-       const nextY = this.player.y + velocityY * dt;
-       
-       if (!this.isCircleBlocked(nextX, this.player.y, this.player.radius, "player")) this.player.x = nextX;
-       if (!this.isCircleBlocked(this.player.x, nextY, this.player.radius, "player")) this.player.y = nextY;
+       this.moveCircleEntity(
+         this.player,
+         velocityX * dt,
+         velocityY * dt,
+         this.player.radius,
+         "player",
+       );
        
        this.handleDoorTransitions();
     }
@@ -1409,6 +1458,37 @@ export class DungeonState extends GameState {
       && this.hasLineOfSight(this.player.x, this.player.y, losX, losY);
   }
 
+  private canInteractWithFootprint(
+    colliderPrefix: string,
+    range: number,
+    requireSouth = false,
+  ): { x: number; y: number } | null {
+    const resolved = this.roomObjectCollision.resolveInteractionShell(
+      this.player.x,
+      this.player.y,
+      colliderPrefix,
+      range,
+      requireSouth,
+    );
+    if (!resolved) return null;
+    return this.hasLineOfSight(
+      this.player.x,
+      this.player.y,
+      resolved.x,
+      resolved.y,
+      resolved.colliderIds,
+    )
+      ? { x: resolved.x, y: resolved.y }
+      : null;
+  }
+
+  private notifyInteractionComplete(): void {
+    this.engine.worldNotices.showBottom(
+      t(this.engine.data.settings.language, "notice.interactionComplete"),
+      "cyan",
+    );
+  }
+
   private handleInteract(target: any) {
     if (target.type === "portal" && this.portal) {
        this.portal.state = "activating";
@@ -1439,6 +1519,7 @@ export class DungeonState extends GameState {
        this.syncRoomState();
        this.syncPlayerState();
        this.engine.data.save();
+       this.notifyInteractionComplete();
     } else if (target.type === "broadcast") {
        const floor = this.engine.data.data.floor;
        const room = floor.rooms.find((candidate: Room) => candidate.id === target.roomId);
@@ -1464,6 +1545,7 @@ export class DungeonState extends GameState {
          this.syncRoomState();
          this.syncPlayerState();
          this.engine.data.save();
+         this.notifyInteractionComplete();
        }
     } else if (target.type === "treasure" && this.chest && !this.chest.opened) {
        this.chest.opened = true;
@@ -1480,6 +1562,7 @@ export class DungeonState extends GameState {
        this.syncPlayerState();
        this.syncRoomState();
        this.engine.data.save();
+       this.notifyInteractionComplete();
     } else if (target.type === "shop") {
        this.shopOpen = true;
        this.shopSelectionIndex = 0;
@@ -1496,7 +1579,7 @@ export class DungeonState extends GameState {
 
     if (currentRoom?.type === "npc" && !currentRoom.interactionCompleted) {
       const broadcast = this.getBroadcastPosition(currentRoom);
-      if (this.canInteractWith(broadcast.x, broadcast.y, 32, broadcast.x, broadcast.y + 14)) {
+      if (this.canInteractWithFootprint("broadcast_terminal", 28)) {
         return { type: "broadcast", x: broadcast.x, y: broadcast.y, roomId: currentRoom.id };
       }
     }
@@ -1507,38 +1590,34 @@ export class DungeonState extends GameState {
       !currentRoom.interactionCompleted
     ) {
       const special = this.getSpecialRoomPosition(currentRoom);
-      const targetY = currentRoom.type === "wish_fountain" ? special.y + 31 : special.y + 18;
-      if (this.canInteractWith(special.x, special.y, 34, special.x, targetY)) {
+      const prefix = currentRoom.type === "wish_fountain" ? "wish_fountain:" : "photo_booth";
+      if (this.canInteractWithFootprint(prefix, 30)) {
         return { type: currentRoom.type, x: special.x, y: special.y, roomId: currentRoom.id };
       }
     }
 
     if (currentRoom && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") && !currentRoom.interactionCompleted) {
       const legacy = this.getLegacyPosition(currentRoom);
-      if (this.canInteractWith(legacy.x, legacy.y, 28, legacy.x, legacy.y + 13)) {
+      if (this.canInteractWithFootprint("legacy_device", 28)) {
          return { type: currentRoom.type, x: legacy.x, y: legacy.y, roomId: currentRoom.id };
       }
     }
 
     if (currentRoom?.type === "shop") {
       const shop = this.getShopPosition(currentRoom);
-      if (this.canInteractWith(shop.x, shop.y, 36, shop.x, shop.y + 18)) {
+      if (this.canInteractWithFootprint("shop_counter", 30, true)) {
         return { type: "shop", x: shop.x, y: shop.y, roomId: currentRoom.id };
       }
     }
 
     if (this.portal && this.portal.state !== "spawning" && this.portal.state !== "activating") {
-      const dx = this.player.x - this.portal.x;
-      const dy = this.player.y - this.portal.y;
-      if (Math.sqrt(dx*dx + dy*dy) < 34 && this.hasLineOfSight(this.player.x, this.player.y, this.portal.x, this.portal.y)) {
+      if (this.canInteractWithFootprint("portal:", 30)) {
          return { type: "portal", x: this.portal.x, y: this.portal.y };
       }
     }
     
     if (this.chest && !this.chest.opened) {
-      const dx = this.player.x - this.chest.x;
-      const dy = this.player.y - this.chest.y;
-      if (Math.sqrt(dx*dx + dy*dy) < 34 && this.hasLineOfSight(this.player.x, this.player.y, this.chest.x, this.chest.y + 12)) {
+      if (this.canInteractWithFootprint(this.chest.kind === "boss" ? "boss_chest" : "treasure_chest", 28)) {
          return { type: "treasure", x: this.chest.x, y: this.chest.y };
       }
     }
@@ -1617,6 +1696,27 @@ export class DungeonState extends GameState {
     return this.roomObjectCollision.isCircleBlocked(x, y, radius, channel);
   }
 
+  private moveCircleEntity(
+    entity: { x: number; y: number },
+    deltaX: number,
+    deltaY: number,
+    radius: number,
+    channel: RoomObjectCollisionChannel,
+  ): SweptCircleMoveResult {
+    const moved = moveSweptCircle({
+      x: entity.x,
+      y: entity.y,
+      radius,
+      deltaX,
+      deltaY,
+      isBlocked: (candidateX, candidateY, candidateRadius) =>
+        this.isCircleBlocked(candidateX, candidateY, candidateRadius, channel),
+    });
+    entity.x = moved.x;
+    entity.y = moved.y;
+    return moved;
+  }
+
   private findBreakableTileAt(x: number, y: number, radius: number): number | null {
     const minTileX = Math.max(0, Math.floor((x - radius) / TILE_SIZE));
     const maxTileX = Math.min(MAP_WIDTH - 1, Math.floor((x + radius) / TILE_SIZE));
@@ -1650,16 +1750,35 @@ export class DungeonState extends GameState {
     return true;
   }
 
-  private hasLineOfSight(startX: number, startY: number, endX: number, endY: number): boolean {
+  private hasLineOfSight(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    ignoredColliderIds: readonly string[] = [],
+  ): boolean {
     const dx = endX - startX;
     const dy = endY - startY;
     const distance = Math.hypot(dx, dy);
     const steps = Math.max(1, Math.ceil(distance / 6));
     for (let step = 1; step < steps; step++) {
       const t = step / steps;
-      if (this.isCircleBlocked(startX + dx * t, startY + dy * t, 2, "projectile")) return false;
+      const x = startX + dx * t;
+      const y = startY + dy * t;
+      const tileX = Math.floor(x / TILE_SIZE);
+      const tileY = Math.floor(y / TILE_SIZE);
+      const tileId = this.currentMapData[tileY * MAP_WIDTH + tileX];
+      if (tileId === TILE_WALL || tileId === TILE_STRUCTURE || tileId === TILE_BREAKABLE) return false;
     }
-    return true;
+    return this.roomObjectCollision.hasLineOfSight(
+      startX,
+      startY,
+      endX,
+      endY,
+      "projectile",
+      2,
+      ignoredColliderIds,
+    );
   }
 
   // TODO: Move to PlayerController
@@ -1980,8 +2099,7 @@ export class DungeonState extends GameState {
           nextX += Math.cos(angle) * currentSpeed * dt;
           nextY += Math.sin(angle) * currentSpeed * dt;
         }
-        if (!this.isCircleBlocked(nextX, e.y, e.radius, "enemy")) e.x = nextX;
-        if (!this.isCircleBlocked(e.x, nextY, e.radius, "enemy")) e.y = nextY;
+        this.moveCircleEntity(e, nextX - e.x, nextY - e.y, e.radius, "enemy");
         e.x = Math.max(16, Math.min(304, e.x));
         e.y = Math.max(16, Math.min(224, e.y));
         updateEnemyAnimation(e, { dt, previousX, previousY, targetX: beaconTarget.x });
@@ -2093,8 +2211,7 @@ export class DungeonState extends GameState {
         }
       }
       
-      if (!this.isCircleBlocked(nextX, e.y, e.radius, "enemy")) e.x = nextX;
-      if (!this.isCircleBlocked(e.x, nextY, e.radius, "enemy")) e.y = nextY;
+      this.moveCircleEntity(e, nextX - e.x, nextY - e.y, e.radius, "enemy");
       
       e.x = Math.max(16, Math.min(320 - 16, e.x));
       e.y = Math.max(16, Math.min(240 - 16, e.y));
@@ -2142,10 +2259,9 @@ export class DungeonState extends GameState {
   }
 
   private moveEnemyBy(enemy: Enemy, dx: number, dy: number) {
-    const nextX = Math.max(16, Math.min(320 - 16, enemy.x + dx));
-    const nextY = Math.max(16, Math.min(240 - 16, enemy.y + dy));
-    if (!this.isCircleBlocked(nextX, enemy.y, enemy.radius, "enemy")) enemy.x = nextX;
-    if (!this.isCircleBlocked(enemy.x, nextY, enemy.radius, "enemy")) enemy.y = nextY;
+    this.moveCircleEntity(enemy, dx, dy, enemy.radius, "enemy");
+    enemy.x = Math.max(16, Math.min(320 - 16, enemy.x));
+    enemy.y = Math.max(16, Math.min(240 - 16, enemy.y));
   }
 
   private updateBossPhase(enemy: Enemy) {
@@ -2352,15 +2468,13 @@ export class DungeonState extends GameState {
   private resolveChargeAttack(enemy: Enemy) {
     const startX = enemy.x;
     const startY = enemy.y;
-    const steps = Math.max(1, Math.ceil(enemy.chargeDistance / 4));
-    for (let step = 1; step <= steps; step++) {
-      const distance = enemy.chargeDistance * (step / steps);
-      const nextX = startX + Math.cos(enemy.attackAngle) * distance;
-      const nextY = startY + Math.sin(enemy.attackAngle) * distance;
-      if (this.isCircleBlocked(nextX, nextY, enemy.radius, "enemy")) break;
-      enemy.x = Math.max(16, Math.min(304, nextX));
-      enemy.y = Math.max(16, Math.min(224, nextY));
-    }
+    this.moveCircleEntity(
+      enemy,
+      Math.cos(enemy.attackAngle) * enemy.chargeDistance,
+      Math.sin(enemy.attackAngle) * enemy.chargeDistance,
+      enemy.radius,
+      "enemy",
+    );
 
     const attackingTurret = enemy.attackTargetKind === "michele_turret" && this.isMicheleTurretAvailable();
     const targetX = attackingTurret ? this.player.micheleTurretX : this.player.x;
@@ -2983,10 +3097,13 @@ export class DungeonState extends GameState {
         }
         if (enemy.type !== "boss" && centerDistance > 0) {
           const push = projectile.knockback * falloff;
-          const nextX = enemy.x + dx / centerDistance * push;
-          const nextY = enemy.y + dy / centerDistance * push;
-          if (!this.isCircleBlocked(nextX, enemy.y, enemy.radius, "enemy")) enemy.x = nextX;
-          if (!this.isCircleBlocked(enemy.x, nextY, enemy.radius, "enemy")) enemy.y = nextY;
+          this.moveCircleEntity(
+            enemy,
+            dx / centerDistance * push,
+            dy / centerDistance * push,
+            enemy.radius,
+            "enemy",
+          );
         }
       }
       if (result.killed) {
@@ -3005,15 +3122,9 @@ export class DungeonState extends GameState {
 
     const pushX = (projectile.vx / velocityLength) * projectile.knockback;
     const pushY = (projectile.vy / velocityLength) * projectile.knockback;
-    const nextX = enemy.x + pushX;
-    const nextY = enemy.y + pushY;
-
-    if (!this.isCircleBlocked(nextX, enemy.y, enemy.radius, "enemy")) {
-      enemy.x = Math.max(16, Math.min(304, nextX));
-    }
-    if (!this.isCircleBlocked(enemy.x, nextY, enemy.radius, "enemy")) {
-      enemy.y = Math.max(16, Math.min(224, nextY));
-    }
+    this.moveCircleEntity(enemy, pushX, pushY, enemy.radius, "enemy");
+    enemy.x = Math.max(16, Math.min(304, enemy.x));
+    enemy.y = Math.max(16, Math.min(224, enemy.y));
   }
 
   private getProjectileEnvironmentHitT(projectile: Projectile): number | null {
@@ -3080,57 +3191,77 @@ export class DungeonState extends GameState {
      }
   }
 
-  private drawAlertBanner(ctx: CanvasRenderingContext2D, mainText: string, subText: string, mainColor: string, borderColor: string, progress: number, language: any) {
+  private dungeonOccluder(id: string, projection: WorldRect, sortY: number): WorldObjectDefinition {
+    return {
+      id,
+      type: "decoration",
+      x: projection.x,
+      y: projection.y,
+      width: projection.width,
+      height: projection.height,
+      sortY,
+      occlusionProjection: projection,
+      occlusionGroupId: id,
+      fadeWhenOccluding: true,
+      minimumAlpha: 0.42,
+      properties: { rearAccessRule: "roof-occluder" },
+    };
+  }
+
+  private getDungeonOcclusionObjects(): WorldObjectDefinition[] {
+    const floor = this.engine.data.data.floor;
+    const room = floor.rooms.find(candidate => candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY);
+    const objects: WorldObjectDefinition[] = [];
+    if (this.chest) {
+      const width = this.chest.kind === "boss" ? 40 : 32;
+      objects.push(this.dungeonOccluder(
+        "depth:chest",
+        { x: this.chest.x - width / 2, y: this.chest.y - 27, width, height: 40 },
+        this.chest.y + 10,
+      ));
+    }
+    if (this.portal) {
+      objects.push(this.dungeonOccluder(
+        "depth:portal-supports",
+        { x: this.portal.x - 29, y: this.portal.y - 5, width: 58, height: 31 },
+        this.portal.y + 23,
+      ));
+    }
+    if (!room) return objects;
+    const addFacility = (id: string, point: { x: number; y: number }, width: number, height: number, sortOffset: number) => {
+      objects.push(this.dungeonOccluder(
+        id,
+        { x: point.x - width / 2, y: point.y - height + sortOffset, width, height },
+        point.y + sortOffset,
+      ));
+    };
+    if (room.type === "shop") addFacility("depth:shop", this.getShopPosition(room), 58, 58, 17);
+    if (room.type === "npc") addFacility("depth:broadcast", this.getBroadcastPosition(room), 34, 42, 12);
+    if (room.type === "photo_booth") addFacility("depth:photo", this.getSpecialRoomPosition(room), 40, 48, 16);
+    if (room.type === "legacy_rpg" || room.type === "legacy_tactics") {
+      addFacility("depth:legacy", this.getLegacyPosition(room), 36, 44, 13);
+    }
+    if (room.type === "wish_fountain") {
+      const spring = this.getSpecialRoomPosition(room);
+      const scale = DUNGEON_RITUAL_SPRING_SCALE;
+      objects.push(this.dungeonOccluder(
+        "depth:wish-crystal",
+        { x: spring.x - 15 * scale, y: spring.y - 58 * scale, width: 30 * scale, height: 64 * scale },
+        spring.y + 6 * scale,
+      ));
+      objects.push(this.dungeonOccluder(
+        "depth:wish-front",
+        { x: spring.x - 62 * scale, y: spring.y + 8 * scale, width: 124 * scale, height: 24 * scale },
+        spring.y + 29 * scale,
+      ));
+    }
+    return objects;
+  }
+
+  private drawWithOcclusion(ctx: CanvasRenderingContext2D, groupId: string, draw: () => void): void {
     ctx.save();
-    
-    let scaleY = 1.0;
-    let alpha = 1.0;
-    
-    if (progress < 0.15) {
-      const p = progress / 0.15;
-      scaleY = 1 - Math.pow(1 - p, 3);
-      alpha = p;
-    } else if (progress > 0.85) {
-      const p = (progress - 0.85) / 0.15;
-      scaleY = 1 - Math.pow(p, 3);
-      alpha = 1.0 - p;
-    }
-    
-    ctx.globalAlpha = alpha;
-    
-    const centerY = 120;
-    const bgHeight = 44 * scaleY;
-    
-    ctx.fillStyle = "rgba(10, 16, 27, 0.85)";
-    ctx.fillRect(0, centerY - bgHeight/2, 320, bgHeight);
-    
-    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    for (let y = centerY - bgHeight/2; y < centerY + bgHeight/2; y += 4) {
-      ctx.fillRect(0, y, 320, 1);
-    }
-    
-    ctx.fillStyle = borderColor;
-    ctx.fillRect(0, centerY - bgHeight/2, 320, 2);
-    ctx.fillRect(0, centerY + bgHeight/2 - 2, 320, 2);
-    
-    if (scaleY > 0.5) {
-      const textAlpha = Math.min(1.0, (scaleY - 0.5) / 0.5);
-      ctx.globalAlpha = alpha * textAlpha;
-      ctx.textAlign = "center";
-      
-      ctx.font = uiFont(language, 20, true);
-      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-      ctx.fillText(mainText, 160, centerY + 4 + 2);
-      ctx.fillStyle = mainColor;
-      ctx.fillText(mainText, 160, centerY + 4);
-      
-      if (subText) {
-        ctx.font = uiFont(language, 8);
-        ctx.fillStyle = "#C4D0DA";
-        ctx.fillText(subText, 160, centerY + 16);
-      }
-    }
-    
+    ctx.globalAlpha *= this.occlusionController.getAlpha(groupId);
+    draw();
     ctx.restore();
   }
 
@@ -3242,73 +3373,172 @@ export class DungeonState extends GameState {
       );
     }
 
-    if (this.chest) {
-       ChestRenderer.drawChest(ctx, this.chest, time, floor.theme || "forest");
-    }
-
-    if (currentRoom?.type === "shop") {
-      const shop = this.getShopPosition(currentRoom);
-      ShopRenderer.drawMerchant(ctx, shop.x, shop.y, time, floor.theme || "forest");
-    }
-
-    if (currentRoom?.type === "npc") {
-      const broadcast = this.getBroadcastPosition(currentRoom);
-      SpecialRoomRenderer.drawBroadcastTerminal(
-        ctx,
-        broadcast.x,
-        broadcast.y,
-        time,
-        floor.theme || "forest",
-        currentRoom.interactionCompleted === true,
-      );
-    }
+    const depthRenderables: DepthRenderable[] = [];
+    const upperFacilityDraws: Array<() => void> = [];
+    const theme = floor.theme || "forest";
 
     if (currentRoom?.type === "wish_fountain") {
-      const special = this.getSpecialRoomPosition(currentRoom);
-      SpecialRoomRenderer.drawWishFountain(
-        ctx,
-        special.x,
-        special.y,
+      const spring = this.getSpecialRoomPosition(currentRoom);
+      const options = {
+        x: spring.x,
+        y: spring.y,
+        scale: DUNGEON_RITUAL_SPRING_SCALE,
         time,
-        floor.theme || "forest",
-        currentRoom.interactionCompleted === true,
-      );
-    } else if (currentRoom?.type === "legacy_rpg" || currentRoom?.type === "legacy_tactics") {
-      const legacy = this.getLegacyPosition(currentRoom);
-      SpecialRoomRenderer.drawLegacyDevice(
-        ctx,
-        legacy.x,
-        legacy.y,
-        time,
-        currentRoom.type,
-        currentRoom.interactionCompleted === true,
-      );
-    } else if (currentRoom?.type === "photo_booth") {
-      const special = this.getSpecialRoomPosition(currentRoom);
-      SpecialRoomRenderer.drawPhotoBooth(
-        ctx,
-        special.x,
-        special.y,
-        time,
-        floor.theme || "forest",
-        currentRoom.interactionCompleted === true,
-      );
+        theme,
+        completed: currentRoom.interactionCompleted === true,
+      } as const;
+      drawRitualSpringPart(ctx, "court", options);
+      depthRenderables.push({
+        id: "wish:basin",
+        sortY: spring.y + 14 * DUNGEON_RITUAL_SPRING_SCALE,
+        draw: () => drawRitualSpringPart(ctx, "basin", options),
+      });
+      depthRenderables.push({
+        id: "wish:crystal",
+        sortY: spring.y + 6 * DUNGEON_RITUAL_SPRING_SCALE,
+        draw: () => this.drawWithOcclusion(ctx, "depth:wish-crystal", () =>
+          drawRitualSpringPart(ctx, "crystal", options)),
+      });
+      RITUAL_SPRING_GEOMETRY.lanterns.forEach((lantern, index) => {
+        const lanternPart = (["lantern_0", "lantern_1", "lantern_2", "lantern_3"] as const)[index];
+        depthRenderables.push({
+          id: `wish:lantern:${index}`,
+          sortY: spring.y + (lantern.y + 20) * DUNGEON_RITUAL_SPRING_SCALE,
+          draw: () => drawRitualSpringPart(ctx, lanternPart, options),
+        });
+      });
+      depthRenderables.push({
+        id: "wish:front-rim",
+        sortY: spring.y + 29 * DUNGEON_RITUAL_SPRING_SCALE,
+        draw: () => this.drawWithOcclusion(ctx, "depth:wish-front", () =>
+          drawRitualSpringPart(ctx, "front_rim", options)),
+      });
     }
 
-    for (const p of this.pickups) {
-       EntityRenderer.drawPickup(ctx, p, time);
+    if (this.chest) {
+      depthRenderables.push({
+        id: "chest",
+        sortY: this.chest.y + (this.chest.kind === "boss" ? 13 : 11),
+        draw: () => this.drawWithOcclusion(ctx, "depth:chest", () =>
+          ChestRenderer.drawChest(ctx, this.chest!, time, theme)),
+      });
     }
-    
-    for (const e of this.enemies) {
-       EntityRenderer.drawEnemy(ctx, e, time, floor.theme || 'forest', this.engine.data.settings.reducedFlashing);
+    if (currentRoom?.type === "shop") {
+      const shop = this.getShopPosition(currentRoom);
+      ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "back");
+      depthRenderables.push({
+        id: "shop:body",
+        sortY: shop.y + 8,
+        draw: () => this.drawWithOcclusion(ctx, "depth:shop", () =>
+          ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "body")),
+      });
+      depthRenderables.push({
+        id: "shop:front",
+        sortY: shop.y + 17,
+        draw: () => this.drawWithOcclusion(ctx, "depth:shop", () =>
+          ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "front")),
+      });
+      upperFacilityDraws.push(() => ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "upper"));
     }
-    
+    if (currentRoom?.type === "npc") {
+      const broadcast = this.getBroadcastPosition(currentRoom);
+      const completed = currentRoom.interactionCompleted === true;
+      SpecialRoomRenderer.drawBroadcastTerminalPart(ctx, broadcast.x, broadcast.y, time, theme, completed, "back");
+      depthRenderables.push({
+        id: "broadcast:body",
+        sortY: broadcast.y + 6,
+        draw: () => this.drawWithOcclusion(ctx, "depth:broadcast", () =>
+          SpecialRoomRenderer.drawBroadcastTerminalPart(ctx, broadcast.x, broadcast.y, time, theme, completed, "body")),
+      });
+      depthRenderables.push({
+        id: "broadcast:front",
+        sortY: broadcast.y + 12,
+        draw: () => this.drawWithOcclusion(ctx, "depth:broadcast", () =>
+          SpecialRoomRenderer.drawBroadcastTerminalPart(ctx, broadcast.x, broadcast.y, time, theme, completed, "front")),
+      });
+      upperFacilityDraws.push(() => SpecialRoomRenderer.drawBroadcastTerminalPart(ctx, broadcast.x, broadcast.y, time, theme, completed, "upper"));
+    }
+    if (currentRoom?.type === "photo_booth") {
+      const special = this.getSpecialRoomPosition(currentRoom);
+      const completed = currentRoom.interactionCompleted === true;
+      SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "back");
+      depthRenderables.push({
+        id: "photo:body",
+        sortY: special.y + 8,
+        draw: () => this.drawWithOcclusion(ctx, "depth:photo", () =>
+          SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "body")),
+      });
+      depthRenderables.push({
+        id: "photo:front",
+        sortY: special.y + 16,
+        draw: () => this.drawWithOcclusion(ctx, "depth:photo", () =>
+          SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "front")),
+      });
+      upperFacilityDraws.push(() => SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "upper"));
+    }
+    if (currentRoom?.type === "legacy_rpg" || currentRoom?.type === "legacy_tactics") {
+      const legacy = this.getLegacyPosition(currentRoom);
+      const legacyType = currentRoom.type;
+      const completed = currentRoom.interactionCompleted === true;
+      SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "back");
+      depthRenderables.push({
+        id: "legacy:body",
+        sortY: legacy.y + 7,
+        draw: () => this.drawWithOcclusion(ctx, "depth:legacy", () =>
+          SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "body")),
+      });
+      depthRenderables.push({
+        id: "legacy:front",
+        sortY: legacy.y + 13,
+        draw: () => this.drawWithOcclusion(ctx, "depth:legacy", () =>
+          SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "front")),
+      });
+      upperFacilityDraws.push(() => SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "upper"));
+    }
+    for (const pickup of this.pickups) {
+      depthRenderables.push({ id: `pickup:${pickup.id}`, sortY: pickup.y, draw: () => EntityRenderer.drawPickup(ctx, pickup, time) });
+    }
+    for (const enemy of this.enemies) {
+      depthRenderables.push({
+        id: `enemy:${enemy.id}`,
+        sortY: enemy.y + enemy.radius,
+        draw: () => EntityRenderer.drawEnemy(ctx, enemy, time, theme, this.engine.data.settings.reducedFlashing),
+      });
+    }
     if (this.portal) {
-      PortalRenderer.drawPortal(ctx, this.portal, time, floor.theme || 'forest');
+      depthRenderables.push({
+        id: "portal:energy",
+        sortY: this.portal.y + 8,
+        draw: () => PortalRenderer.drawPortalPart(ctx, this.portal!, time, theme, "energy"),
+      });
+      depthRenderables.push({
+        id: "portal:supports",
+        sortY: this.portal.y + 23,
+        draw: () => this.drawWithOcclusion(ctx, "depth:portal-supports", () =>
+          PortalRenderer.drawPortalPart(ctx, this.portal!, time, theme, "supports")),
+      });
     }
-    
     if (this.player.hp > 0) {
-       EntityRenderer.drawPlayer(ctx, this.player, this.engine, floor.theme || 'forest');
+      depthRenderables.push({
+        id: "player",
+        sortY: this.player.y + this.player.radius,
+        draw: () => EntityRenderer.drawPlayer(ctx, this.player, this.engine, theme),
+      });
+    }
+    depthRenderables.sort((a, b) => a.sortY - b.sortY || a.id.localeCompare(b.id));
+    for (const renderable of depthRenderables) renderable.draw();
+    for (const drawUpper of upperFacilityDraws) drawUpper();
+
+    if (currentRoom?.type === "wish_fountain") {
+      const spring = this.getSpecialRoomPosition(currentRoom);
+      drawRitualSpringPart(ctx, "soul_motes", {
+        x: spring.x,
+        y: spring.y,
+        scale: DUNGEON_RITUAL_SPRING_SCALE,
+        time,
+        theme,
+        completed: currentRoom.interactionCompleted === true,
+      });
     }
     
     for (const p of this.projectiles) {
@@ -3332,37 +3562,6 @@ export class DungeonState extends GameState {
 
 
 
-    if (this.roomPhase === "cleared" && this.phaseTimer > 0) {
-      const totalTime = 1.0;
-      const progress = 1.0 - (this.phaseTimer / totalTime);
-      const mainText = t(this.engine.data.settings.language, "dungeon.roomClear");
-      this.drawAlertBanner(ctx, mainText, "THREAT ELIMINATED", UI_COLORS.yellow, UI_COLORS.yellow, progress, this.engine.data.settings.language);
-    }
-
-    if ((this.roomPhase === "intro" || this.roomPhase === "locking") && currentRoom) {
-      const totalTime = 1.5;
-      const timeLeft = this.roomPhase === "intro" ? this.phaseTimer + 0.5 : this.phaseTimer;
-      const progress = 1.0 - (timeLeft / totalTime);
-      
-      let mainColor: string = UI_COLORS.cyan;
-      let borderColor: string = UI_COLORS.cyan;
-      let mainText = currentRoom.type.toUpperCase();
-      let subText = "STANDBY";
-      
-      if (currentRoom.type === "combat" || currentRoom.type === "boss") {
-        mainColor = UI_COLORS.red;
-        borderColor = UI_COLORS.red;
-        subText = currentRoom.type === "boss" ? "EXTREME DANGER" : "ENGAGEMENT PROTOCOL";
-      } else if (["treasure", "shop", "start", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"].includes(currentRoom.type)) {
-        mainColor = UI_COLORS.cyan;
-        borderColor = UI_COLORS.cyan;
-        subText = "SAFE ZONE";
-      }
-      
-      this.drawAlertBanner(ctx, mainText, subText, mainColor, borderColor, progress, this.engine.data.settings.language);
-    }
-
-    
     MinimapRenderer.draw(ctx, floor);
     PromptRenderer.draw(ctx, this.getInteractTarget(), time, this.engine.input.getPrompt("interact"), this.engine.data.settings.language);
 

@@ -37,8 +37,8 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
     { id: "furnace", shape: "rect", x: 4, y: 118, width: 66, height: 42 },
     { id: "front_center", shape: "rect", x: 104, y: 118, width: 72, height: 36 },
     { id: "annex", shape: "rect", x: 208, y: 118, width: 44, height: 42 },
-    { id: "workbench", shape: "rect", x: 80, y: 160, width: 56, height: 12, visiblePropId: "blacksmith_workstation" },
-    { id: "enchanting_table", shape: "rect", x: 172, y: 160, width: 42, height: 12, visiblePropId: "enchanting_table" },
+    { id: "workbench", shape: "rect", x: 80, y: 152, width: 56, height: 20, visiblePropId: "blacksmith_workstation" },
+    { id: "enchanting_table", shape: "rect", x: 172, y: 152, width: 42, height: 20, visiblePropId: "enchanting_table" },
   ],
   interactions: [
     {
@@ -55,7 +55,6 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
         // longer invalidates a legitimate south-side interaction.
         lineOfSightTarget: { x: 108, y: 174 },
         requireLineOfSight: true,
-        side: "south",
       },
       properties: { tab: "body" },
     },
@@ -70,7 +69,6 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
         promptPoint: { x: 194, y: 156 },
         lineOfSightTarget: { x: 194, y: 174 },
         requireLineOfSight: true,
-        side: "south",
       },
       properties: { tab: "arcane" },
     },

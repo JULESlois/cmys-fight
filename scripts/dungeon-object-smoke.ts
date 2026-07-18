@@ -9,6 +9,7 @@ import {
 } from "../src/game/dungeon/RoomObjectCollision";
 import { RITUAL_SPRING_GEOMETRY, RITUAL_SPRING_WATER } from "../src/game/render/RitualSpringRenderer";
 import { getPortalPointIndex, PORTAL_INNER_RING_POINTS, PORTAL_OUTER_RING_POINTS } from "../src/game/render/PortalRenderer";
+import { moveSweptCircle } from "../src/game/physics/SweptCircleMovement";
 
 function sceneCollision(scene: Parameters<typeof createRoomObjectColliders>[0]): RoomObjectCollision {
   const collision = new RoomObjectCollision();
@@ -16,6 +17,59 @@ function sceneCollision(scene: Parameters<typeof createRoomObjectColliders>[0]):
   return collision;
 }
 
+const directions = [
+  [0, -1], [0, 1], [-1, 0], [1, 0],
+  [-Math.SQRT1_2, -Math.SQRT1_2], [Math.SQRT1_2, -Math.SQRT1_2],
+  [-Math.SQRT1_2, Math.SQRT1_2], [Math.SQRT1_2, Math.SQRT1_2],
+] as const;
+const dts = [1 / 60, 1 / 30, 0.1] as const;
+let directionalTrajectoryChecks = 0;
+
+function testColliderTrajectories(collider: RoomObjectCollider): void {
+  const isolated = new RoomObjectCollision();
+  isolated.setColliders([collider]);
+  const center = collider.shape === "circle"
+    ? { x: collider.x, y: collider.y }
+    : { x: collider.x + (collider.width ?? 0) / 2, y: collider.y + (collider.height ?? 0) / 2 };
+  const extent = collider.shape === "circle"
+    ? (collider.radius ?? 0) * 2
+    : Math.max(collider.width ?? 0, collider.height ?? 0);
+  for (const dt of dts) {
+    for (const [directionX, directionY] of directions) {
+      let actor = { x: center.x + directionX * (extent + 42), y: center.y + directionY * (extent + 42) };
+      for (let step = 0; step < 200; step++) {
+        const dx = center.x - actor.x;
+        const dy = center.y - actor.y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const moved = moveSweptCircle({
+          ...actor,
+          radius: 6,
+          deltaX: dx / distance * 100 * dt,
+          deltaY: dy / distance * 100 * dt,
+          isBlocked: (x, y, radius) => isolated.isCircleBlocked(x, y, radius, "player"),
+        });
+        actor = { x: moved.x, y: moved.y };
+      }
+      assert.equal(isolated.isCircleBlocked(actor.x, actor.y, 6, "player"), false, `${collider.id} entered footprint`);
+      const closest = isolated.closestPoint(actor.x, actor.y, [collider.id]);
+      assert.ok(closest && Math.abs(closest.distance - 6) <= 1.01, `${collider.id} stop distance at dt=${dt}`);
+      directionalTrajectoryChecks++;
+    }
+  }
+
+  const dashStart = { x: center.x - extent - 48, y: center.y };
+  const dash = moveSweptCircle({
+    ...dashStart,
+    radius: 6,
+    deltaX: extent * 2 + 96,
+    deltaY: 0,
+    isBlocked: (x, y, radius) => isolated.isCircleBlocked(x, y, radius, "player"),
+  });
+  assert.equal(isolated.isCircleBlocked(dash.x, dash.y, 6, "player"), false, `${collider.id} dash cannot tunnel`);
+  assert.ok(dash.x < center.x, `${collider.id} dash stops before footprint`);
+}
+
+const closedChest = sceneCollision({ chest: { kind: "treasure", x: 160, y: 120, opened: false } });
 for (const opened of [false, true]) {
   const treasure = sceneCollision({ chest: { kind: "treasure", x: 160, y: 120, opened } });
   for (const channel of ["player", "enemy", "projectile"] as const) {
@@ -59,6 +113,72 @@ assert.equal(portal.isCircleBlocked(160 + PORTAL_FRAME_COLLISION_GEOMETRY.leftSu
 assert.equal(portal.isCircleBlocked(160 + PORTAL_FRAME_COLLISION_GEOMETRY.rightSupport.x + 4, 132, 4, "player"), true);
 assert.equal(portal.hasLineOfSight(160, 151, 160, 120, "projectile"), true, "portal center can be approached and targeted");
 
+const trajectoryScenes = [
+  sceneCollision({ chest: { kind: "treasure", x: 160, y: 120, opened: false } }),
+  sceneCollision({ chest: { kind: "treasure", x: 160, y: 120, opened: true } }),
+  sceneCollision({ chest: { kind: "boss", x: 160, y: 120, opened: true } }),
+  wish,
+  broadcast,
+  photo,
+  legacy,
+  shop,
+  portal,
+];
+for (const scene of trajectoryScenes) {
+  for (const collider of scene.getColliders()) testColliderTrajectories(collider);
+}
+
+function assertInteractionFromAllDirections(
+  collision: RoomObjectCollision,
+  prefix: string,
+  center: { x: number; y: number },
+  range = 30,
+): void {
+  const ids = collision.idsMatching(prefix);
+  assert.ok(ids.length > 0, `${prefix} interaction colliders`);
+  for (const [dx, dy] of directions) {
+    const edge = collision.closestPoint(center.x + dx * 200, center.y + dy * 200, ids);
+    assert.ok(edge, `${prefix} closest edge`);
+    const playerX = edge.x + dx * 18;
+    const playerY = edge.y + dy * 18;
+    assert.ok(
+      collision.resolveInteractionShell(playerX, playerY, prefix, range),
+      `${prefix} interaction from direction ${dx},${dy}`,
+    );
+  }
+}
+
+assertInteractionFromAllDirections(closedChest, "treasure_chest", { x: 160, y: 120 }, 28);
+assertInteractionFromAllDirections(wish, "wish_fountain:", { x: 160, y: 120 });
+assertInteractionFromAllDirections(broadcast, "broadcast_terminal", { x: 160, y: 120 }, 28);
+assertInteractionFromAllDirections(photo, "photo_booth", { x: 160, y: 120 }, 28);
+assertInteractionFromAllDirections(legacy, "legacy_device", { x: 160, y: 120 }, 28);
+assertInteractionFromAllDirections(portal, "portal:", { x: 160, y: 120 });
+
+assert.equal(shop.resolveInteractionShell(160, 90, "shop_counter", 30, true), null, "shop remains south-facing");
+assert.ok(shop.resolveInteractionShell(160, 165, "shop_counter", 30, true), "shop interacts from the customer side");
+
+const wallSeparated = new RoomObjectCollision();
+wallSeparated.setColliders([
+  ...broadcast.getColliders(),
+  {
+    id: "external_wall",
+    shape: "rect",
+    x: 130,
+    y: 150,
+    width: 60,
+    height: 5,
+    blocksPlayer: true,
+    blocksEnemy: true,
+    blocksProjectile: true,
+  },
+]);
+assert.equal(
+  wallSeparated.resolveInteractionShell(160, 170, "broadcast_terminal", 40),
+  null,
+  "external wall prevents facility interaction",
+);
+
 const channelCollision = new RoomObjectCollision();
 const playerOnly: RoomObjectCollider = {
   id: "player-only",
@@ -89,8 +209,22 @@ losCollision.setColliders([{
   blocksProjectile: true,
 }]);
 assert.equal(losCollision.hasLineOfSight(160, 160, 160, 134), false, "wall behind facility blocks interaction LOS");
-losCollision.clear();
-assert.equal(losCollision.hasLineOfSight(160, 160, 160, 134), true, "facility-facing target does not self-block LOS");
+losCollision.setColliders([{
+  id: "facility-self",
+  shape: "rect",
+  x: 146,
+  y: 130,
+  width: 28,
+  height: 11,
+  blocksPlayer: true,
+  blocksEnemy: true,
+  blocksProjectile: true,
+}]);
+assert.equal(
+  losCollision.hasLineOfSight(160, 160, 160, 134, "projectile", 2, ["facility-self"]),
+  true,
+  "facility own collider is ignored by proximity interaction LOS",
+);
 
 assert.equal(PORTAL_OUTER_RING_POINTS.length, 16);
 assert.equal(PORTAL_INNER_RING_POINTS.length, 12);
@@ -108,6 +242,11 @@ assert.match(dungeonState, /"player"/);
 assert.match(dungeonState, /"enemy"/);
 assert.match(dungeonState, /"projectile"/);
 assert.match(dungeonState, /canInteractWith[\s\S]*hasLineOfSight/);
+assert.match(dungeonState, /canInteractWithFootprint/);
+assert.match(dungeonState, /interface DepthRenderable/);
+assert.match(dungeonState, /depthRenderables\.sort/);
+assert.match(dungeonState, /drawRitualSpringPart/);
+assert.match(dungeonState, /drawPortalPart/);
 assert.doesNotMatch(portalRenderer, /drawThemeFrame|scan bands|aperture/);
 assert.match(portalRenderer, /PORTAL_OUTER_RING_POINTS/);
 assert.match(portalRenderer, /PORTAL_INNER_RING_POINTS/);
@@ -125,6 +264,10 @@ console.log(JSON.stringify({
   facilities: "broadcast-photo-legacy-shop-solid",
   portal: "16-cw-12-ccw-center-open-supports-solid",
   lineOfSight: "wall-blocked-self-collider-clear",
+  directionalTrajectoryChecks,
+  movement: "normal-and-dash-swept-eight-direction",
+  interactionShells: "all-direction-self-ignore-external-wall-blocked-shop-south",
+  depthSorting: "player-enemy-pickup-facility-contact-y",
   waterThemes: {
     forest: RITUAL_SPRING_WATER.forest.body,
     dungeon: RITUAL_SPRING_WATER.dungeon.body,

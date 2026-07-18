@@ -36,6 +36,16 @@ export type WorldColliderDefinition =
   | (WorldColliderBase & { shape: "circle"; x: number; y: number; radius: number })
   | (WorldColliderBase & { shape: "polygon"; points: WorldPoint[] });
 
+export type WorldSpatialShape =
+  | { shape: "rect"; x: number; y: number; width: number; height: number }
+  | { shape: "circle"; x: number; y: number; radius: number }
+  | { shape: "polygon"; points: WorldPoint[] };
+
+export interface WorldInteractionShell {
+  distance: number;
+  footprintIds?: string[];
+}
+
 export type WorldInteractionSide = "north" | "east" | "south" | "west";
 export type WorldInteractionFacing = WorldInteractionSide | "left" | "right";
 
@@ -79,6 +89,12 @@ export interface WorldObjectDefinition {
   promptKey?: string;
   enabled?: boolean;
   visualBounds?: WorldRect;
+  physicalFootprint?: WorldSpatialShape[];
+  occlusionProjection?: WorldRect;
+  interactionShell?: WorldInteractionShell;
+  occlusionGroupId?: string;
+  fadeWhenOccluding?: boolean;
+  minimumAlpha?: number;
   interaction?: WorldInteractionDefinition;
   properties?: Record<string, unknown>;
 }

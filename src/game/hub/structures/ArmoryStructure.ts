@@ -36,7 +36,7 @@ export const ARMORY_STRUCTURE: HubStructureDefinition = {
     { id: "foot_east", shape: "rect", x: 150, y: 118, width: 84, height: 42 },
     { id: "bastion_west", shape: "rect", x: 0, y: 106, width: 26, height: 50 },
     { id: "bastion_east", shape: "rect", x: 214, y: 106, width: 26, height: 50 },
-    { id: "rack", shape: "rect", x: 24, y: 164, width: 68, height: 12, visiblePropId: "armory_rack" },
+    { id: "rack", shape: "rect", x: 24, y: 156, width: 68, height: 20, visiblePropId: "armory_rack" },
   ],
   interactions: [
     {
@@ -50,7 +50,6 @@ export const ARMORY_STRUCTURE: HubStructureDefinition = {
         promptPoint: { x: 58, y: 156 },
         lineOfSightTarget: { x: 58, y: 178 },
         requireLineOfSight: true,
-        side: "south",
       },
     },
   ],

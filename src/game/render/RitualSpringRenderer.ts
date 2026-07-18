@@ -1,5 +1,15 @@
 export type RitualSpringTheme = "forest" | "dungeon" | "snow" | "lava" | "hub";
-export type RitualSpringPart = "court" | "basin" | "crystal" | "front_rim" | "lantern_pylons" | "soul_motes";
+export type RitualSpringPart =
+  | "court"
+  | "basin"
+  | "crystal"
+  | "front_rim"
+  | "lantern_pylons"
+  | "lantern_0"
+  | "lantern_1"
+  | "lantern_2"
+  | "lantern_3"
+  | "soul_motes";
 
 export interface RitualSpringWaterPalette {
   dark: string;
@@ -150,6 +160,10 @@ export function drawRitualSpringPart(
     for (const lantern of RITUAL_SPRING_GEOMETRY.lanterns) {
       drawLantern(ctx, lantern.x, lantern.y, options.time, completed);
     }
+  } else if (part.startsWith("lantern_")) {
+    const index = Number(part.slice("lantern_".length));
+    const lantern = RITUAL_SPRING_GEOMETRY.lanterns[index];
+    if (lantern) drawLantern(ctx, lantern.x, lantern.y, options.time, completed);
   } else if (!completed) {
     for (let index = 0; index < 7; index++) {
       const phase = Math.floor(options.time * 5 + index * 7) % 32;

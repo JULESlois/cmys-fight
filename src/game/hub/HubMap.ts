@@ -6,6 +6,7 @@ import type {
   WorldPoint,
   WorldRect,
 } from "../world/WorldMap";
+import { colliderToSpatialShape } from "../world/SpatialSemantics";
 import type { HubCollisionPolicy } from "./HubStructure";
 import { HUB_MATERIALIZED_STRUCTURE_BY_ID, HUB_STRUCTURES } from "./structures/HubStructures";
 
@@ -137,8 +138,8 @@ const rectCollider = (
 };
 
 function addDistrictGateColliders(id: string, x: number, y: number, width: number, height: number): void {
-  rectCollider(`${id}_pillar_left`, x, y + height - 12, 26, 12, id);
-  rectCollider(`${id}_pillar_right`, x + width - 26, y + height - 12, 26, 12, id);
+  rectCollider(`${id}_pillar_left`, x, y + height - 26, 24, 26, id);
+  rectCollider(`${id}_pillar_right`, x + width - 24, y + height - 26, 24, 26, id);
 }
 
 for (const [id, x, y, width, height] of [
@@ -151,11 +152,11 @@ for (const [id, x, y, width, height] of [
 ] as const) addDistrictGateColliders(id, x, y, width, height);
 
 for (const [index, pillarX] of [px(28) + 28, px(28) + 112, px(53) - 116, px(53) - 32].entries()) {
-  rectCollider(`plaza_colonnade_pillar_${index}`, pillarX - 11, px(18) + 61, 22, 8, "plaza_banners");
+  rectCollider(`plaza_colonnade_pillar_${index}`, pillarX - 10, px(18) + 51, 20, 18, "plaza_banners");
 }
 
-rectCollider("trial_altar_base", px(65) + 4, px(46) + px(6) - 18, 88, 18, "trial_altar_visual");
-rectCollider("training_marker_base", px(60) + 34, px(47) + px(5) - 14, 12, 14, "training_marker");
+rectCollider("trial_altar_base", px(65) + 4, px(46) + px(6) - 24, 88, 24, "trial_altar_visual");
+rectCollider("training_marker_base", px(60) + 31, px(47) + px(5) - 20, 18, 20, "training_marker");
 
 // Garden wish spring: segmented rim and a smaller true water footprint leave
 // the southern stair gap and four outer corners open.
@@ -178,9 +179,9 @@ for (const [id, x, y] of [
   ["garden_wish_lantern_se", 245, 815],
 ] as const) circleCollider(id, x, y, 4.2, "garden_wish");
 for (const [index, [tileX, tileY]] of treeTiles.entries()) circleCollider(`tree_${index}`, px(tileX + 1), px(tileY + 1.55), 8);
-circleCollider("reforge_stone", px(14), px(36), 12, "reforge_stone");
-circleCollider("north_waystone", px(40.5), px(18), 8, "north_waystone");
-circleCollider("south_waystone", px(40.5), px(47), 8, "south_waystone");
+circleCollider("reforge_stone", px(14), px(36), 14, "reforge_stone");
+circleCollider("north_waystone", px(40.5), px(18), 10, "north_waystone");
+circleCollider("south_waystone", px(40.5), px(47), 10, "south_waystone");
 
 function visualBounds(tileX: number, tileY: number, widthTiles: number, heightTiles: number): WorldRect {
   return { x: px(tileX), y: px(tileY), width: px(widthTiles), height: px(heightTiles) };
@@ -198,6 +199,9 @@ function decoration(
   collisionPolicy: HubCollisionPolicy = "none",
   sortY = px(tileY + heightTiles),
 ): WorldObjectDefinition {
+  const physicalColliders = colliders.filter(collider => collider.properties?.visiblePropId === id);
+  const bounds = visualBounds(tileX, tileY, widthTiles, heightTiles);
+  const fadeWhenOccluding = layer === "sorted" && heightTiles >= 4;
   return {
     id,
     type: "decoration",
@@ -206,8 +210,20 @@ function decoration(
     width: px(widthTiles),
     height: px(heightTiles),
     sortY,
-    visualBounds: visualBounds(tileX, tileY, widthTiles, heightTiles),
-    properties: { kind, layer, visiblePropId: id, collisionPolicy, ...properties },
+    visualBounds: bounds,
+    physicalFootprint: physicalColliders.map(colliderToSpatialShape),
+    occlusionProjection: fadeWhenOccluding ? bounds : undefined,
+    occlusionGroupId: id,
+    fadeWhenOccluding,
+    minimumAlpha: 0.42,
+    properties: {
+      kind,
+      layer,
+      visiblePropId: id,
+      collisionPolicy,
+      physicalColliderIds: physicalColliders.map(collider => collider.id),
+      ...properties,
+    },
   };
 }
 
@@ -223,6 +239,10 @@ function hotspot(
   const bounds = zone.shape === "rect"
     ? { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
     : { x: zone.x - zone.radius, y: zone.y - zone.radius, width: zone.radius * 2, height: zone.radius * 2 };
+  const visiblePropId = typeof properties.visiblePropId === "string" ? properties.visiblePropId : undefined;
+  const physicalColliders = visiblePropId
+    ? colliders.filter(collider => collider.properties?.visiblePropId === visiblePropId)
+    : [];
   return {
     id,
     type,
@@ -233,8 +253,18 @@ function hotspot(
     sortY: bounds.y + bounds.height,
     action,
     promptKey,
+    physicalFootprint: physicalColliders.map(colliderToSpatialShape),
+    interactionShell: interaction.side || physicalColliders.length === 0
+      ? undefined
+      : { distance: 40 },
     interaction,
-    properties: { kind: "hotspot", layer: "sorted", visible: false, ...properties },
+    properties: {
+      kind: "hotspot",
+      layer: "sorted",
+      visible: false,
+      physicalColliderIds: physicalColliders.map(collider => collider.id),
+      ...properties,
+    },
   };
 }
 
@@ -267,6 +297,14 @@ const objects: WorldObjectDefinition[] = [
   decoration("training_marker", 60, 47, 5, 5, "training_marker", "sorted", {}, "custom"),
   decoration("garden_wish", 9, 47, 6, 5, "garden_wish", "sorted", {}, "custom"),
 
+  hotspot("north_waystone_hotspot", "interactable", "inspect_waystone", "hub.waystone", {
+    zone: { shape: "circle", x: px(40.5), y: px(18), radius: 34 },
+    requireLineOfSight: true,
+  }, { visiblePropId: "north_waystone" }),
+  hotspot("south_waystone_hotspot", "interactable", "inspect_waystone", "hub.waystone", {
+    zone: { shape: "circle", x: px(40.5), y: px(47), radius: 34 },
+    requireLineOfSight: true,
+  }, { visiblePropId: "south_waystone" }),
   hotspot("reforge_hotspot", "interactable", "open_meta_refund", "hub.reforge", {
     zone: { shape: "circle", x: px(14), y: px(37), radius: 38 },
     promptPoint: { x: px(14), y: px(35.5) },
@@ -285,7 +323,6 @@ const objects: WorldObjectDefinition[] = [
     promptPoint: { x: 192, y: 816 },
     lineOfSightTarget: { x: 192, y: 816 },
     requireLineOfSight: true,
-    side: "south",
   }, { visiblePropId: "garden_wish" }),
 
   region("zone_rebirth", "hub.zone.rebirth", 34, 25, 13, 12),

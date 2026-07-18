@@ -13,7 +13,7 @@ import {
 } from "../i18n";
 import type { ShopItem, ShopPurchaseFailure } from "../shop/ShopSystem";
 import { drawBadge, drawPixelPanel, drawUiIcon, UI_COLORS, type UiTone } from "./PixelUi";
-import { MerchantRenderer } from "./MerchantRenderer";
+import { MerchantRenderer, type MerchantRenderPart } from "./MerchantRenderer";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 const RARITY_COLORS: Record<string, string> = {
@@ -69,6 +69,10 @@ function drawTalentSigil(ctx: CanvasRenderingContext2D, x: number, y: number, co
 export class ShopRenderer {
   static drawMerchant(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme = "forest") {
     MerchantRenderer.drawMerchant(ctx, x, y, time, theme);
+  }
+
+  static drawMerchantPart(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string, part: MerchantRenderPart) {
+    MerchantRenderer.drawMerchantPart(ctx, x, y, time, theme, part);
   }
 
   static drawOverlay(
