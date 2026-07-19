@@ -1,34 +1,205 @@
-import type { DoorGeometry } from "../dungeon/DoorGeometry";
+import type { DoorGeometry, DoorRect } from "../dungeon/DoorGeometry";
 
 export type DoorTheme = "forest" | "dungeon" | "snow" | "lava" | string;
 
 interface DoorPalette {
   void: string;
+  voidDeep: string;
   frameDark: string;
   frame: string;
   frameLight: string;
+  accent: string;
+  accentLight: string;
   lock: string;
   lockLight: string;
 }
 
+export interface DoorRenderLayout {
+  aperture: DoorRect;
+  jambA: DoorRect;
+  jambB: DoorRect;
+  outerLintel: DoorRect;
+  innerLip: DoorRect;
+  groundShadow: DoorRect;
+  lockBounds: DoorRect;
+}
+
 const PALETTES: Record<string, DoorPalette> = {
   forest: {
-    void: "rgba(28,55,38,0.34)", frameDark: "#302219", frame: "#65482F", frameLight: "#7FA45A", lock: "#29472F", lockLight: "#E783A5",
+    void: "rgba(18,38,27,0.62)", voidDeep: "#142219", frameDark: "#2A1C14", frame: "#65482F",
+    frameLight: "#A0764A", accent: "#557B45", accentLight: "#91C96E", lock: "#20382A", lockLight: "#86E49D",
   },
   dungeon: {
-    void: "rgba(10,15,24,0.58)", frameDark: "#111925", frame: "#3B485C", frameLight: "#718095", lock: "#151C25", lockLight: "#9E59C8",
+    void: "rgba(7,11,18,0.72)", voidDeep: "#080D15", frameDark: "#111925", frame: "#3D4858",
+    frameLight: "#7A8798", accent: "#69517A", accentLight: "#B57CE0", lock: "#171C27", lockLight: "#B16BE1",
   },
   snow: {
-    void: "rgba(31,73,91,0.45)", frameDark: "#294A5B", frame: "#6F929E", frameLight: "#D9E8EB", lock: "#284E5E", lockLight: "#55BBC9",
+    void: "rgba(19,52,66,0.64)", voidDeep: "#173440", frameDark: "#294A5B", frame: "#6F929E",
+    frameLight: "#D9E8EB", accent: "#5CB7C8", accentLight: "#BDF7FF", lock: "#244956", lockLight: "#70E5F2",
   },
   lava: {
-    void: "rgba(42,29,35,0.5)", frameDark: "#171219", frame: "#493943", frameLight: "#8B8583", lock: "#5A211C", lockLight: "#E34F1E",
+    void: "rgba(30,18,21,0.72)", voidDeep: "#150F13", frameDark: "#171219", frame: "#493943",
+    frameLight: "#8B8583", accent: "#9C3D24", accentLight: "#FF9A43", lock: "#481A17", lockLight: "#FF6A2B",
   },
 };
 
-function fill(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, width: number, height: number): void {
+function fill(ctx: CanvasRenderingContext2D, color: string, rect: DoorRect): void {
   ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+  ctx.fillRect(Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height));
+}
+
+function inset(rect: DoorRect, amount: number): DoorRect {
+  return {
+    x: rect.x + amount,
+    y: rect.y + amount,
+    width: Math.max(1, rect.width - amount * 2),
+    height: Math.max(1, rect.height - amount * 2),
+  };
+}
+
+export function getDoorRenderLayout(geometry: DoorGeometry): DoorRenderLayout {
+  const { aperture, frameBounds, direction } = geometry;
+  const horizontal = direction === "up" || direction === "down";
+  if (horizontal) {
+    const leftWidth = aperture.x - frameBounds.x;
+    const rightX = aperture.x + aperture.width;
+    const rightWidth = frameBounds.x + frameBounds.width - rightX;
+    const outerY = direction === "up" ? frameBounds.y : frameBounds.y + frameBounds.height - 6;
+    const innerY = direction === "up" ? aperture.y + aperture.height - 4 : aperture.y;
+    const shadowY = direction === "up" ? innerY - 4 : innerY + 4;
+    return {
+      aperture: { ...aperture },
+      jambA: { x: frameBounds.x, y: frameBounds.y, width: leftWidth, height: frameBounds.height },
+      jambB: { x: rightX, y: frameBounds.y, width: rightWidth, height: frameBounds.height },
+      outerLintel: { x: frameBounds.x, y: outerY, width: frameBounds.width, height: 6 },
+      innerLip: { x: aperture.x, y: innerY, width: aperture.width, height: 4 },
+      groundShadow: { x: aperture.x + 4, y: shadowY, width: aperture.width - 8, height: 4 },
+      lockBounds: inset(aperture, 3),
+    };
+  }
+
+  const topHeight = aperture.y - frameBounds.y;
+  const bottomY = aperture.y + aperture.height;
+  const bottomHeight = frameBounds.y + frameBounds.height - bottomY;
+  const outerX = direction === "left" ? frameBounds.x : frameBounds.x + frameBounds.width - 6;
+  const innerX = direction === "left" ? aperture.x + aperture.width - 4 : aperture.x;
+  const shadowX = direction === "left" ? innerX - 4 : innerX + 4;
+  return {
+    aperture: { ...aperture },
+    jambA: { x: frameBounds.x, y: frameBounds.y, width: frameBounds.width, height: topHeight },
+    jambB: { x: frameBounds.x, y: bottomY, width: frameBounds.width, height: bottomHeight },
+    outerLintel: { x: outerX, y: frameBounds.y, width: 6, height: frameBounds.height },
+    innerLip: { x: innerX, y: aperture.y, width: 4, height: aperture.height },
+    groundShadow: { x: shadowX, y: aperture.y + 4, width: 4, height: aperture.height - 8 },
+    lockBounds: inset(aperture, 3),
+  };
+}
+
+function drawBeveledFrame(ctx: CanvasRenderingContext2D, rect: DoorRect, palette: DoorPalette): void {
+  fill(ctx, palette.frameDark, rect);
+  const inner = inset(rect, 2);
+  fill(ctx, palette.frame, inner);
+  if (inner.width >= inner.height) {
+    fill(ctx, palette.frameLight, { x: inner.x + 1, y: inner.y + 1, width: inner.width - 2, height: 2 });
+    fill(ctx, palette.frameDark, { x: inner.x + 1, y: inner.y + inner.height - 2, width: inner.width - 2, height: 1 });
+  } else {
+    fill(ctx, palette.frameLight, { x: inner.x + 1, y: inner.y + 1, width: 2, height: inner.height - 2 });
+    fill(ctx, palette.frameDark, { x: inner.x + inner.width - 2, y: inner.y + 1, width: 1, height: inner.height - 2 });
+  }
+}
+
+function drawForestDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
+  const horizontal = geometry.direction === "up" || geometry.direction === "down";
+  if (horizontal) {
+    for (const jamb of [layout.jambA, layout.jambB]) {
+      fill(ctx, palette.accent, { x: jamb.x + 2, y: jamb.y + 7, width: Math.max(2, jamb.width - 4), height: 3 });
+      fill(ctx, palette.accentLight, { x: jamb.x + jamb.width / 2 - 1, y: jamb.y + 10, width: 2, height: 7 });
+    }
+  } else {
+    for (const jamb of [layout.jambA, layout.jambB]) {
+      fill(ctx, palette.accent, { x: jamb.x + 7, y: jamb.y + 2, width: 3, height: Math.max(2, jamb.height - 4) });
+      fill(ctx, palette.accentLight, { x: jamb.x + 10, y: jamb.y + jamb.height / 2 - 1, width: 7, height: 2 });
+    }
+  }
+}
+
+function drawDungeonDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
+  const horizontal = geometry.direction === "up" || geometry.direction === "down";
+  const boltRects = horizontal
+    ? [
+        { x: layout.jambA.x + 2, y: layout.jambA.y + 7, width: 2, height: 2 },
+        { x: layout.jambB.x + layout.jambB.width - 4, y: layout.jambB.y + 19, width: 2, height: 2 },
+      ]
+    : [
+        { x: layout.jambA.x + 7, y: layout.jambA.y + 2, width: 2, height: 2 },
+        { x: layout.jambB.x + 19, y: layout.jambB.y + layout.jambB.height - 4, width: 2, height: 2 },
+      ];
+  for (const bolt of boltRects) fill(ctx, palette.frameLight, bolt);
+  const centerX = layout.innerLip.x + layout.innerLip.width / 2;
+  const centerY = layout.innerLip.y + layout.innerLip.height / 2;
+  const runeX = Math.max(geometry.frameBounds.x + 3, Math.min(geometry.frameBounds.x + geometry.frameBounds.width - 3, centerX));
+  const runeY = Math.max(geometry.frameBounds.y + 3, Math.min(geometry.frameBounds.y + geometry.frameBounds.height - 3, centerY));
+  fill(ctx, palette.accent, { x: runeX - 3, y: runeY - 3, width: 6, height: 6 });
+  fill(ctx, palette.accentLight, { x: runeX - 1, y: runeY - 1, width: 2, height: 2 });
+}
+
+function drawSnowDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
+  const horizontal = geometry.direction === "up" || geometry.direction === "down";
+  fill(ctx, palette.accentLight, horizontal
+    ? { x: layout.outerLintel.x + 5, y: layout.outerLintel.y, width: layout.outerLintel.width - 10, height: 2 }
+    : { x: layout.outerLintel.x, y: layout.outerLintel.y + 5, width: 2, height: layout.outerLintel.height - 10 });
+  const shards = horizontal
+    ? [
+        { x: layout.jambA.x + 2, y: layout.jambA.y + 10, width: 3, height: 7 },
+        { x: layout.jambB.x + layout.jambB.width - 5, y: layout.jambB.y + 14, width: 3, height: 9 },
+      ]
+    : [
+        { x: layout.jambA.x + 10, y: layout.jambA.y + 2, width: 7, height: 3 },
+        { x: layout.jambB.x + 14, y: layout.jambB.y + layout.jambB.height - 5, width: 9, height: 3 },
+      ];
+  for (const shard of shards) fill(ctx, palette.accent, shard);
+}
+
+function drawLavaDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
+  const horizontal = geometry.direction === "up" || geometry.direction === "down";
+  const cracks = horizontal
+    ? [
+        { x: layout.jambA.x + 3, y: layout.jambA.y + 8, width: 2, height: 10 },
+        { x: layout.jambB.x + layout.jambB.width - 5, y: layout.jambB.y + 13, width: 2, height: 11 },
+      ]
+    : [
+        { x: layout.jambA.x + 8, y: layout.jambA.y + 3, width: 10, height: 2 },
+        { x: layout.jambB.x + 13, y: layout.jambB.y + layout.jambB.height - 5, width: 11, height: 2 },
+      ];
+  for (const crack of cracks) {
+    fill(ctx, palette.accent, crack);
+    const core = horizontal
+      ? { x: crack.x, y: crack.y + 2, width: 1, height: Math.max(2, crack.height - 4) }
+      : { x: crack.x + 2, y: crack.y, width: Math.max(2, crack.width - 4), height: 1 };
+    fill(ctx, palette.accentLight, core);
+  }
+}
+
+function drawLockedLayer(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
+  const lock = layout.lockBounds;
+  fill(ctx, palette.lock, lock);
+  const horizontal = geometry.direction === "up" || geometry.direction === "down";
+  if (horizontal) {
+    for (let x = lock.x + 4; x <= lock.x + lock.width - 5; x += 8) {
+      fill(ctx, palette.accent, { x, y: lock.y + 2, width: 2, height: lock.height - 4 });
+      fill(ctx, palette.lockLight, { x: x + 1, y: lock.y + 5, width: 1, height: lock.height - 10 });
+    }
+  } else {
+    for (let y = lock.y + 4; y <= lock.y + lock.height - 5; y += 8) {
+      fill(ctx, palette.accent, { x: lock.x + 2, y, width: lock.width - 4, height: 2 });
+      fill(ctx, palette.lockLight, { x: lock.x + 5, y: y + 1, width: lock.width - 10, height: 1 });
+    }
+  }
+  const centerX = lock.x + lock.width / 2;
+  const centerY = lock.y + lock.height / 2;
+  fill(ctx, palette.frameDark, { x: centerX - 5, y: centerY - 5, width: 10, height: 10 });
+  fill(ctx, palette.lockLight, { x: centerX - 3, y: centerY - 3, width: 6, height: 6 });
+  fill(ctx, "#FFFFFF", { x: centerX - 1, y: centerY - 2, width: 2, height: 4 });
 }
 
 export class DoorRenderer {
@@ -39,47 +210,31 @@ export class DoorRenderer {
     locked: boolean,
   ): void {
     const palette = PALETTES[theme] ?? PALETTES.dungeon;
-    const { aperture, frameBounds, orientation } = geometry;
-    const horizontal = orientation === "up" || orientation === "down";
+    const layout = getDoorRenderLayout(geometry);
 
     ctx.save();
-    fill(ctx, palette.void, aperture.x, aperture.y, aperture.width, aperture.height);
+    fill(ctx, palette.voidDeep, layout.aperture);
+    fill(ctx, palette.void, inset(layout.aperture, 2));
+    fill(ctx, "rgba(0,0,0,0.28)", layout.groundShadow);
 
-    if (horizontal) {
-      const leftJamb = Math.max(4, aperture.x - frameBounds.x);
-      const rightJamb = Math.max(4, frameBounds.x + frameBounds.width - aperture.x - aperture.width);
-      fill(ctx, palette.frameDark, frameBounds.x, frameBounds.y, leftJamb, frameBounds.height);
-      fill(ctx, palette.frameDark, aperture.x + aperture.width, frameBounds.y, rightJamb, frameBounds.height);
-      fill(ctx, palette.frame, frameBounds.x + 2, frameBounds.y + 2, Math.max(2, leftJamb - 3), frameBounds.height - 4);
-      fill(ctx, palette.frame, aperture.x + aperture.width + 1, frameBounds.y + 2, Math.max(2, rightJamb - 3), frameBounds.height - 4);
-      fill(ctx, palette.frameLight, aperture.x, orientation === "up" ? aperture.y + aperture.height - 3 : aperture.y, aperture.width, 3);
-    } else {
-      const topJamb = Math.max(4, aperture.y - frameBounds.y);
-      const bottomJamb = Math.max(4, frameBounds.y + frameBounds.height - aperture.y - aperture.height);
-      fill(ctx, palette.frameDark, frameBounds.x, frameBounds.y, frameBounds.width, topJamb);
-      fill(ctx, palette.frameDark, frameBounds.x, aperture.y + aperture.height, frameBounds.width, bottomJamb);
-      fill(ctx, palette.frame, frameBounds.x + 2, frameBounds.y + 2, frameBounds.width - 4, Math.max(2, topJamb - 3));
-      fill(ctx, palette.frame, frameBounds.x + 2, aperture.y + aperture.height + 1, frameBounds.width - 4, Math.max(2, bottomJamb - 3));
-      fill(ctx, palette.frameLight, orientation === "left" ? aperture.x + aperture.width - 3 : aperture.x, aperture.y, 3, aperture.height);
-    }
+    drawBeveledFrame(ctx, layout.jambA, palette);
+    drawBeveledFrame(ctx, layout.jambB, palette);
+    drawBeveledFrame(ctx, layout.outerLintel, palette);
+    fill(ctx, palette.frameDark, layout.innerLip);
+    fill(ctx, palette.frameLight, inset(layout.innerLip, 1));
 
-    if (locked) {
-      fill(ctx, palette.lock, aperture.x + 3, aperture.y + 3, aperture.width - 6, aperture.height - 6);
-      if (horizontal) {
-        for (let x = aperture.x + 7; x < aperture.x + aperture.width - 4; x += 8) {
-          fill(ctx, palette.frameLight, x, aperture.y + 4, 2, aperture.height - 8);
-        }
-      } else {
-        for (let y = aperture.y + 7; y < aperture.y + aperture.height - 4; y += 8) {
-          fill(ctx, palette.frameLight, aperture.x + 4, y, aperture.width - 8, 2);
-        }
-      }
-      const centerX = aperture.x + aperture.width / 2;
-      const centerY = aperture.y + aperture.height / 2;
-      fill(ctx, palette.lockLight, centerX - 3, centerY - 3, 7, 7);
-      fill(ctx, "#FFFFFF", centerX, centerY - 1, 1, 3);
+    if (theme === "forest") drawForestDetails(ctx, geometry, layout, palette);
+    else if (theme === "snow") drawSnowDetails(ctx, geometry, layout, palette);
+    else if (theme === "lava") drawLavaDetails(ctx, geometry, layout, palette);
+    else drawDungeonDetails(ctx, geometry, layout, palette);
+
+    if (locked) drawLockedLayer(ctx, geometry, layout, palette);
+    else {
+      const edge = geometry.direction === "up" || geometry.direction === "down"
+        ? { x: layout.aperture.x + 5, y: layout.innerLip.y + 1, width: layout.aperture.width - 10, height: 1 }
+        : { x: layout.innerLip.x + 1, y: layout.aperture.y + 5, width: 1, height: layout.aperture.height - 10 };
+      fill(ctx, palette.accent, edge);
     }
     ctx.restore();
   }
 }
-

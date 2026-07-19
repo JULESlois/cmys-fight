@@ -36,7 +36,7 @@ import { audio } from "../audio/AudioManager";
 import { PortalRenderer, PortalState } from "../render/PortalRenderer";
 import { MinimapRenderer } from "../render/MinimapRenderer";
 
-import { Pickup } from "../entities/Pickup";
+import { Pickup, type PickupType } from "../entities/Pickup";
 import { acquirePickup, acquireProjectile, releaseEnemy, releasePickup, releaseProjectile } from "../EntityPools";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController } from "../EncounterController";
@@ -77,6 +77,12 @@ import {
   RoomObjectCollision,
   type RoomObjectCollisionChannel,
 } from "../dungeon/RoomObjectCollision";
+import {
+  chestWorldPoint,
+  getChestGeometry,
+  resolveChestLootPositions,
+  type ChestKind,
+} from "../dungeon/ChestGeometry";
 import { moveSweptCircle, type SweptCircleMoveResult } from "../physics/SweptCircleMovement";
 import { drawRitualSpringPart, RITUAL_SPRING_GEOMETRY } from "../render/RitualSpringRenderer";
 import { OcclusionController } from "../world/OcclusionController";
@@ -89,16 +95,27 @@ interface DepthRenderable {
   draw: () => void;
 }
 type WeaponChest = {
-  kind: "treasure" | "boss";
+  kind: ChestKind;
   x: number;
   y: number;
   weaponId: string;
   opened: boolean;
 };
+type ChestLootSpec = {
+  type: PickupType;
+  value: number;
+  weaponId?: string;
+};
 
 export type DungeonQaScene =
   | "treasure_closed"
   | "treasure_open"
+  | "boss_chest_closed"
+  | "boss_chest_open"
+  | "treasure_open_with_weapon"
+  | "treasure_open_with_multiple_loot"
+  | "treasure_reenter_uncollected"
+  | "chest_collision_debug"
   | "wish_fountain"
   | "portal_idle"
   | "portal_hovered"
@@ -108,6 +125,23 @@ export type DungeonQaScene =
   | "horizontal_corridor"
   | "vertical_corridor"
   | "corner_lt"
+  | "forest_up_open"
+  | "forest_up_locked"
+  | "dungeon_left_open"
+  | "dungeon_left_locked"
+  | "snow_down_open"
+  | "snow_down_locked"
+  | "lava_right_open"
+  | "lava_right_locked"
+  | "start_room_no_duplicate_gate"
+  | "door_geometry_debug"
+  | "combat_entry_notice"
+  | "combat_clear_notice"
+  | "boss_entry_notice"
+  | "boss_clear_notice"
+  | "treasure_complete_no_notice"
+  | "wish_complete_no_notice"
+  | "reward_spawn_no_notice"
   | "hud_energy_0"
   | "hud_energy_33"
   | "hud_single_cost"
@@ -309,7 +343,7 @@ export class DungeonState extends GameState {
       normalizeRoomState(r);
       r.pickups = this.pickups.map(p => ({
         x: p.x,
-        y: p.y,
+        y: typeof (p as any).baseY === "number" ? (p as any).baseY : p.y,
         type: p.type,
         value: p.value,
         weaponId: p.weaponId,
@@ -590,6 +624,7 @@ export class DungeonState extends GameState {
         candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
       );
       this.phaseTimer = room?.type === "boss" ? 0.5 : 0.25;
+      this.emitCombatLifecycleNotice("combat_started", room);
     } else if (phase === "combat") {
       const activeFloor = this.engine.data.data.floor;
       const activeRoom = activeFloor.rooms.find(
@@ -599,7 +634,6 @@ export class DungeonState extends GameState {
       if (options?.startEncounter === false) {
          return;
       }
-      this.emitCombatLifecycleNotice("combat_started", activeRoom?.type === "boss");
       
       const floor = this.engine.data.data.floor;
       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
@@ -614,11 +648,11 @@ export class DungeonState extends GameState {
       this.phaseTimer = 1.0;
       audio.playClearRoom();
       this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
-      this.emitCombatLifecycleNotice("combat_cleared");
       const floor = this.engine.data.data.floor;
-      const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+      const currentRoom = floor.rooms.find((r: Room) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
       if (currentRoom) {
          markCombatCleared(currentRoom);
+         this.emitCombatLifecycleNotice("combat_cleared", currentRoom);
          currentRoom.enemies = [];
          currentRoom.encounterState = undefined;
          this.prepareBuffChoice(floor, currentRoom);
@@ -634,17 +668,34 @@ export class DungeonState extends GameState {
 
   private emitCombatLifecycleNotice(
     event: "combat_started" | "combat_cleared",
-    boss = false,
+    room?: Room,
   ): void {
+    if (!room) return;
     const language = this.engine.data.settings.language;
     if (event === "combat_started") {
-      this.engine.worldNotices.showBottom(
-        t(language, boss ? "notice.bossCombatStarted" : "notice.combatStarted"),
-        boss ? "red" : "yellow",
-      );
+      if (room.combatStartNotified) return;
+      room.combatStartNotified = true;
+      const boss = room.type === "boss";
+      this.engine.worldNotices.showBottom({
+        id: `combat-start:${room.id}`,
+        text: t(language, boss ? "notice.bossCombatStarted" : "notice.combatStarted"),
+        tone: boss ? "red" : "yellow",
+        duration: 2.8,
+        dedupe: true,
+        dedupeWindow: 30,
+      });
       return;
     }
-    this.engine.worldNotices.showBottom(t(language, "notice.combatCleared"), "yellow");
+    if (room.combatClearNotified) return;
+    room.combatClearNotified = true;
+    this.engine.worldNotices.showBottom({
+      id: `combat-clear:${room.id}`,
+      text: t(language, "notice.combatCleared"),
+      tone: "yellow",
+      duration: 2.8,
+      dedupe: true,
+      dedupeWindow: 30,
+    });
   }
   
   private prepareBuffChoice(floor: typeof this.engine.data.data.floor, currentRoom: Room) {
@@ -792,10 +843,6 @@ export class DungeonState extends GameState {
     this.syncPlayerState();
     this.syncRoomState();
     this.engine.data.save();
-    this.engine.worldNotices.showBottom(
-      t(this.engine.data.settings.language, "notice.interactionComplete"),
-      "cyan",
-    );
     audio.playPickup();
     this.engine.input.clearJustPressed();
   }
@@ -812,8 +859,6 @@ export class DungeonState extends GameState {
          this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8, state: "spawning", timer: 0.6 };
        }
        this.chest = this.createOrRestoreWeaponChest(currentRoom, "boss");
-       this.pickups.push(acquirePickup(216, 120, "hp", Math.round(20 * difficulty.rewardMultiplier)));
-       this.pickups.push(acquirePickup(152, 120, "coin", Math.round(50 * difficulty.rewardMultiplier)));
     } else if (currentRoom.type === "combat") {
        this.pickups.push(acquirePickup(
          160,
@@ -1281,11 +1326,14 @@ export class DungeonState extends GameState {
     );
     if (!room) return false;
 
-    floor.theme = theme;
+    const doorSceneMatch = /^(forest|dungeon|snow|lava)_(up|down|left|right)_(open|locked)$/.exec(scene);
+    floor.theme = (doorSceneMatch?.[1] as ThemeId | undefined) ?? theme;
     room.type = "start";
     room.templateId = "legacy_room";
     room.cleared = true;
     room.combatCleared = true;
+    room.combatStartNotified = true;
+    room.combatClearNotified = true;
     room.rewardGenerated = true;
     room.interactionCompleted = false;
     room.weaponChest = undefined;
@@ -1295,19 +1343,54 @@ export class DungeonState extends GameState {
     room.encounterState = undefined;
     room.doors = { up: true, down: true, left: true, right: true };
 
-    if (scene === "treasure_closed" || scene === "treasure_open") {
-      const opened = scene === "treasure_open";
-      room.type = "treasure";
+    const normalChestScenes = new Set<DungeonQaScene>([
+      "treasure_closed",
+      "treasure_open",
+      "treasure_open_with_weapon",
+      "treasure_open_with_multiple_loot",
+      "treasure_reenter_uncollected",
+      "treasure_complete_no_notice",
+      "chest_collision_debug",
+    ]);
+    const bossChestScenes = new Set<DungeonQaScene>(["boss_chest_closed", "boss_chest_open"]);
+    if (normalChestScenes.has(scene) || bossChestScenes.has(scene)) {
+      const kind: ChestKind = bossChestScenes.has(scene) ? "boss" : "treasure";
+      const opened = !["treasure_closed", "boss_chest_closed"].includes(scene);
+      room.type = kind === "boss" ? "boss" : "treasure";
       room.weaponChest = {
-        kind: "treasure",
+        kind,
         x: 160,
         y: 120,
-        weaponId: "pistol",
+        weaponId: kind === "boss" ? "void_rail" : "pistol",
         opened,
       };
       room.interactionCompleted = opened;
-    } else if (scene === "wish_fountain" || scene === "special_wish") {
+      if (opened && scene !== "treasure_open") {
+        const loot: ChestLootSpec[] = scene === "treasure_open_with_multiple_loot"
+          ? [
+              { type: "weapon", value: 1, weaponId: "pistol" },
+              { type: "hp", value: 20 },
+              { type: "coin", value: 50 },
+            ]
+          : kind === "boss"
+            ? [
+                { type: "weapon", value: 1, weaponId: "void_rail" },
+                { type: "hp", value: 20 },
+                { type: "coin", value: 50 },
+              ]
+            : [{ type: "weapon", value: 1, weaponId: "pistol" }];
+        const positions = resolveChestLootPositions({
+          kind,
+          chestX: 160,
+          chestY: 120,
+          count: loot.length,
+          isBlocked: () => false,
+        });
+        room.pickups = loot.map((spec, index) => ({ ...spec, ...positions[index] }));
+      }
+    } else if (scene === "wish_fountain" || scene === "special_wish" || scene === "wish_complete_no_notice") {
       room.type = "wish_fountain";
+      room.interactionCompleted = scene === "wish_complete_no_notice";
     } else if (
       scene === "portal_idle"
       || scene === "portal_hovered"
@@ -1315,6 +1398,24 @@ export class DungeonState extends GameState {
       || scene === "special_exit"
     ) {
       room.type = "exit";
+    } else if (doorSceneMatch) {
+      room.type = "combat";
+      room.templateId = "cross_room";
+      room.doors = { up: false, down: false, left: false, right: false };
+      room.doors[doorSceneMatch[2] as DoorOrientation] = true;
+    } else if (scene === "start_room_no_duplicate_gate" || scene === "door_geometry_debug") {
+      room.type = "start";
+      room.templateId = "cross_room";
+    } else if (scene === "combat_entry_notice" || scene === "combat_clear_notice" || scene === "reward_spawn_no_notice") {
+      room.type = "combat";
+      room.templateId = "cross_room";
+      room.combatStartNotified = false;
+      room.combatClearNotified = false;
+    } else if (scene === "boss_entry_notice" || scene === "boss_clear_notice") {
+      room.type = "boss";
+      room.templateId = "boss_arena";
+      room.combatStartNotified = false;
+      room.combatClearNotified = false;
     } else if (!scene.startsWith("hud_")) {
       room.templateId = scene;
     }
@@ -1347,6 +1448,39 @@ export class DungeonState extends GameState {
     this.pendingTransition = null;
     this.roomPhase = "exploration";
     this.phaseTimer = 0;
+    this.engine.worldNotices.clear();
+
+    if (doorSceneMatch?.[3] === "locked") {
+      this.roomPhase = "locking";
+      this.phaseTimer = room.type === "boss" ? 0.5 : 0.25;
+    }
+    if (scene === "door_geometry_debug" || scene === "chest_collision_debug") {
+      this.qaCollisionDebug = true;
+    }
+    if (scene === "combat_entry_notice") {
+      room.combatStartNotified = false;
+      this.emitCombatLifecycleNotice("combat_started", room);
+      this.roomPhase = "locking";
+    } else if (scene === "combat_clear_notice") {
+      room.combatClearNotified = false;
+      this.emitCombatLifecycleNotice("combat_cleared", room);
+      this.roomPhase = "cleared";
+    } else if (scene === "boss_entry_notice") {
+      room.combatStartNotified = false;
+      this.emitCombatLifecycleNotice("combat_started", room);
+      this.roomPhase = "locking";
+    } else if (scene === "boss_clear_notice") {
+      room.combatClearNotified = false;
+      this.emitCombatLifecycleNotice("combat_cleared", room);
+      this.roomPhase = "cleared";
+    } else if (
+      scene === "treasure_complete_no_notice"
+      || scene === "wish_complete_no_notice"
+      || scene === "reward_spawn_no_notice"
+    ) {
+      this.engine.worldNotices.clear();
+      this.roomPhase = scene === "reward_spawn_no_notice" ? "reward" : "exploration";
+    }
 
     if (scene.startsWith("hud_")) {
       this.engine.data.settings.language = scene === "hud_long_zh" ? "zh-CN" : "en";
@@ -1517,11 +1651,41 @@ export class DungeonState extends GameState {
       : null;
   }
 
-  private notifyInteractionComplete(): void {
-    this.engine.worldNotices.showBottom(
-      t(this.engine.data.settings.language, "notice.interactionComplete"),
-      "cyan",
-    );
+  private spawnChestLoot(chest: WeaponChest, loot: readonly ChestLootSpec[]): Pickup[] {
+    const positions = resolveChestLootPositions({
+      kind: chest.kind,
+      chestX: chest.x,
+      chestY: chest.y,
+      count: loot.length,
+      occupied: this.pickups,
+      isBlocked: (x, y, radius) => this.isCircleBlocked(x, y, radius, "player"),
+    });
+    const created: Pickup[] = [];
+
+    loot.forEach((spec, index) => {
+      const position = positions[index];
+      if (this.isCircleBlocked(position.x, position.y, 5, "player")) {
+        this.moveToNearestPassable(position, 5, "player");
+      }
+      const pickup = acquirePickup(position.x, position.y, spec.type, spec.value, spec.weaponId);
+      (pickup as any).bounceTimer = 0.2;
+      (pickup as any).baseY = pickup.y;
+      this.pickups.push(pickup);
+      created.push(pickup);
+    });
+    return created;
+  }
+
+  private getChestLoot(chest: WeaponChest): ChestLootSpec[] {
+    if (chest.kind === "treasure") {
+      return [{ type: "weapon", value: 1, weaponId: chest.weaponId }];
+    }
+    const difficulty = getStageDifficulty(this.engine.data.data.floor);
+    return [
+      { type: "weapon", value: 1, weaponId: chest.weaponId },
+      { type: "hp", value: Math.round(20 * difficulty.rewardMultiplier) },
+      { type: "coin", value: Math.round(50 * difficulty.rewardMultiplier) },
+    ];
   }
 
   private handleInteract(target: any) {
@@ -1554,7 +1718,6 @@ export class DungeonState extends GameState {
        this.syncRoomState();
        this.syncPlayerState();
        this.engine.data.save();
-       this.notifyInteractionComplete();
     } else if (target.type === "broadcast") {
        const floor = this.engine.data.data.floor;
        const room = floor.rooms.find((candidate: Room) => candidate.id === target.roomId);
@@ -1580,7 +1743,6 @@ export class DungeonState extends GameState {
          this.syncRoomState();
          this.syncPlayerState();
          this.engine.data.save();
-         this.notifyInteractionComplete();
        }
     } else if (target.type === "treasure" && this.chest && !this.chest.opened) {
        this.chest.opened = true;
@@ -1592,12 +1754,11 @@ export class DungeonState extends GameState {
           currentRoom.rewardGenerated = true;
           currentRoom.weaponChest = { ...this.chest };
        }
-       this.pickups.push(acquirePickup(this.chest.x, this.chest.y + 10, "weapon", 1, this.chest.weaponId));
+       this.spawnChestLoot(this.chest, this.getChestLoot(this.chest));
        this.engine.data.discoverWeapon(this.chest.weaponId);
        this.syncPlayerState();
        this.syncRoomState();
        this.engine.data.save();
-       this.notifyInteractionComplete();
     } else if (target.type === "shop") {
        this.shopOpen = true;
        this.shopSelectionIndex = 0;
@@ -1653,7 +1814,8 @@ export class DungeonState extends GameState {
     
     if (this.chest && !this.chest.opened) {
       if (this.canInteractWithFootprint(this.chest.kind === "boss" ? "boss_chest" : "treasure_chest", 28)) {
-         return { type: "treasure", x: this.chest.x, y: this.chest.y };
+         const anchor = chestWorldPoint(this.chest, getChestGeometry(this.chest.kind).interactionAnchor);
+         return { type: "treasure", x: anchor.x, y: anchor.y };
       }
     }
 
@@ -3197,9 +3359,10 @@ export class DungeonState extends GameState {
         const p = this.pickups[i];
         
         if ((p as any).bounceTimer > 0) {
-           (p as any).bounceTimer -= dt;
+           (p as any).bounceTimer = Math.max(0, (p as any).bounceTimer - dt);
            const jump = Math.sin(((p as any).bounceTimer / 0.2) * Math.PI) * 10;
            p.y = (p as any).baseY - jump;
+           if ((p as any).bounceTimer <= 0) p.y = (p as any).baseY;
         }
 
         const pickupDistance = Math.hypot(p.x - this.player.x, p.y - this.player.y);
@@ -3261,11 +3424,15 @@ export class DungeonState extends GameState {
     const room = floor.rooms.find(candidate => candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY);
     const objects: WorldObjectDefinition[] = [];
     if (this.chest) {
-      const width = this.chest.kind === "boss" ? 40 : 32;
+      const geometry = getChestGeometry(this.chest.kind);
+      const width = geometry.physicalFootprint.width + 4;
+      const lidAnchor = this.chest.opened ? geometry.openedLidAnchor : geometry.closedLidAnchor;
+      const top = this.chest.y + lidAnchor.y - (this.chest.kind === "boss" ? 13 : 11);
+      const bottom = this.chest.y + geometry.sortY;
       objects.push(this.dungeonOccluder(
         "depth:chest",
-        { x: this.chest.x - width / 2, y: this.chest.y - 27, width, height: 40 },
-        this.chest.y + 10,
+        { x: this.chest.x - width / 2, y: top, width, height: bottom - top + 2 },
+        bottom,
       ));
     }
     if (this.portal) {
@@ -3490,12 +3657,21 @@ export class DungeonState extends GameState {
     }
 
     if (this.chest) {
+      const chestGeometry = getChestGeometry(this.chest.kind);
+      ChestRenderer.drawPart(ctx, this.chest, time, theme, "shadow");
       depthRenderables.push({
-        id: "chest",
-        sortY: this.chest.y + (this.chest.kind === "boss" ? 13 : 11),
+        id: "chest:lid",
+        sortY: this.chest.y + chestGeometry.lidSortY,
         draw: () => this.drawWithOcclusion(ctx, "depth:chest", () =>
-          ChestRenderer.drawChest(ctx, this.chest!, time, theme)),
+          ChestRenderer.drawPart(ctx, this.chest!, time, theme, "lid")),
       });
+      depthRenderables.push({
+        id: "chest:body",
+        sortY: this.chest.y + chestGeometry.sortY,
+        draw: () => this.drawWithOcclusion(ctx, "depth:chest", () =>
+          ChestRenderer.drawPart(ctx, this.chest!, time, theme, "body")),
+      });
+      upperFacilityDraws.push(() => ChestRenderer.drawPart(ctx, this.chest!, time, theme, "sparkle"));
     }
     if (currentRoom?.type === "shop") {
       const shop = this.getShopPosition(currentRoom);

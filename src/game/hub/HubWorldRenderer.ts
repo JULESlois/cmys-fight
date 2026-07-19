@@ -440,7 +440,6 @@ export class HubWorldRenderer {
     else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time);
     else if (kind === "waystone") this.drawWaystone(ctx, object, time);
     else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time);
-    else if (kind === "trial_altar") this.drawTrialAltar(ctx, object, time);
     else if (kind === "training_marker") this.drawTrainingMarker(ctx, object);
     else if (kind === "garden_wish") this.drawGardenWish(ctx, object, time);
   }
@@ -584,15 +583,6 @@ export class HubWorldRenderer {
     ctx.fillStyle = COLORS.stone; ctx.fillRect(cx - 14, cy - 16, 28, 36);
     ctx.fillStyle = Math.floor(time * 4) % 2 === 0 ? COLORS.gold : COLORS.orange;
     ctx.fillRect(cx - 2, cy - 12, 4, 24); ctx.fillRect(cx - 10, cy - 2, 20, 4);
-  }
-
-  private drawTrialAltar(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
-    const cx = object.x + (object.width ?? 96) / 2;
-    const bottom = object.y + (object.height ?? 96);
-    ctx.fillStyle = COLORS.stoneDark; ctx.fillRect(cx - 44, bottom - 18, 88, 18); ctx.fillRect(cx - 32, bottom - 32, 64, 14); ctx.fillRect(cx - 18, bottom - 62, 36, 30);
-    ctx.fillStyle = COLORS.red; ctx.fillRect(cx - 12, bottom - 57, 24, 20);
-    ctx.fillStyle = Math.floor(time * 6) % 2 === 0 ? COLORS.fire : COLORS.orange;
-    ctx.fillRect(cx - 4, bottom - 72, 8, 18); ctx.fillRect(cx - 9, bottom - 66, 18, 8);
   }
 
   private drawTrainingMarker(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition): void {

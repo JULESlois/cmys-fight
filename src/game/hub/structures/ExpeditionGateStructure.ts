@@ -45,10 +45,10 @@ export const EXPEDITION_GATE_STRUCTURE: HubStructureDefinition = {
       type: "portal",
       action: "open_expedition",
       promptKey: "hub.expeditionGate",
+      promptAnchor: { x: 104, y: 24 },
       visiblePropId: "expedition_portal",
       interaction: {
         zone: { shape: "rect", x: 60, y: 0, width: 88, height: 58 },
-        promptPoint: { x: 104, y: 28 },
         lineOfSightTarget: { x: 104, y: 36 },
         requireLineOfSight: true,
         side: "north",

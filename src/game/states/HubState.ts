@@ -9,6 +9,7 @@ import { HubInteractionController } from "../hub/HubInteractionController";
 import { HUB_MAP } from "../hub/HubMap";
 import { HUB_MOVE_SPEED, HubPlayerController } from "../hub/HubPlayerController";
 import { HubPlayerRenderer } from "../hub/HubPlayerRenderer";
+import { clampHubPromptPosition, isHubPromptAnchorNearViewport } from "../hub/HubPromptLayout";
 import { resolveHubSpawn } from "../hub/HubProgress";
 import { HubWorldRenderer } from "../hub/HubWorldRenderer";
 import { HubDebugOverlay } from "../hub/HubDebugOverlay";
@@ -18,6 +19,7 @@ import { Camera2D } from "../world/Camera2D";
 import { WorldCollision } from "../world/WorldCollision";
 import { getWorldSize, type WorldObjectDefinition } from "../world/WorldMap";
 import { OcclusionController } from "../world/OcclusionController";
+import { closestPointOnFootprints } from "../world/SpatialSemantics";
 import { GameState } from "./GameState";
 
 type HubMode = "world" | "upgrades" | "expedition" | "trial";
@@ -32,6 +34,18 @@ interface HubEnterParams {
   panel?: "upgrades" | "expedition" | "trial";
   focusAction?: ExpeditionAction;
 }
+
+export type HubQaPromptScene =
+  | "rebirth_spring_south"
+  | "rebirth_spring_north"
+  | "rebirth_spring_left"
+  | "rebirth_spring_right"
+  | "expedition_gate_prompt"
+  | "workshop_prompt"
+  | "prompt_clamped_top"
+  | "prompt_clamped_left"
+  | "prompt_clamped_right"
+  | "hub_prompt_anchor_debug";
 
 export class HubState extends GameState {
   private readonly map = HUB_MAP;
@@ -242,7 +256,7 @@ export class HubState extends GameState {
       }
       this.engine.data.abandonRun();
       this.confirmationAction = null;
-      this.showMessage(t(this.language, "hub.expedition.abandoned"));
+      audio.playPickup();
       return;
     }
     this.closePanel();
@@ -303,13 +317,13 @@ export class HubState extends GameState {
         this.openPanel("trial", 0);
         break;
       case "open_training":
-        this.showMessage(t(this.language, "hub.trainingReserved"));
+        this.showMessage(t(this.language, "hub.trainingReserved"), true);
         break;
       case "open_wish_fountain":
-        this.showMessage(t(this.language, "hub.wishReserved"));
+        this.showMessage(t(this.language, "hub.wishReserved"), true);
         break;
       case "inspect_waystone":
-        this.showMessage(t(this.language, "hub.waystoneMessage"));
+        audio.playPickup();
         break;
       default:
         console.warn("[HubState] Unknown interaction action:", object.action, object.id);
@@ -337,8 +351,7 @@ export class HubState extends GameState {
     const id = META_UPGRADE_IDS[this.selectedIndex] as MetaUpgradeId;
     const result = this.engine.data.purchaseMetaUpgrade(id);
     if (result.success) {
-      const localized = getMetaUpgradeText(id, META_UPGRADES[id], this.language);
-      this.showMessage(t(this.language, "hub.upgraded", { name: localized.name }));
+      audio.playPickup();
     } else if (result.reason === "max") {
       this.showMessage(t(this.language, "hub.maxed"), true);
     } else {
@@ -353,12 +366,8 @@ export class HubState extends GameState {
       return;
     }
     const refunded = this.engine.data.refundMetaUpgrades();
-    this.showMessage(
-      refunded > 0
-        ? t(this.language, "hub.refunded", { amount: refunded })
-        : t(this.language, "hub.noRefund"),
-      refunded <= 0,
-    );
+    if (refunded > 0) audio.playPickup();
+    else this.showMessage(t(this.language, "hub.noRefund"), true);
     this.refundArmed = false;
   }
 
@@ -486,6 +495,82 @@ export class HubState extends GameState {
     return true;
   }
 
+  public qaSetPromptScene(scene: HubQaPromptScene, time = 12.5): boolean {
+    if (!this.engine.debugMode || !Number.isFinite(time)) return false;
+    const configs: Record<HubQaPromptScene, {
+      objectId: string;
+      direction: { x: number; y: number };
+      cameraOffset?: { x: number; y: number };
+      debug?: boolean;
+    }> = {
+      rebirth_spring_south: { objectId: "rebirth_spring", direction: { x: 0, y: 1 } },
+      rebirth_spring_north: { objectId: "rebirth_spring", direction: { x: 0, y: -1 } },
+      rebirth_spring_left: { objectId: "rebirth_spring", direction: { x: -1, y: 0 } },
+      rebirth_spring_right: { objectId: "rebirth_spring", direction: { x: 1, y: 0 } },
+      expedition_gate_prompt: { objectId: "expedition_gate", direction: { x: 0, y: -1 } },
+      workshop_prompt: { objectId: "blacksmith_forge", direction: { x: 0, y: 1 } },
+      prompt_clamped_top: { objectId: "rebirth_spring", direction: { x: 0, y: 1 }, cameraOffset: { x: 0, y: 115 } },
+      prompt_clamped_left: { objectId: "blacksmith_forge", direction: { x: 0, y: 1 }, cameraOffset: { x: 155, y: 0 } },
+      prompt_clamped_right: { objectId: "astral_console", direction: { x: 0, y: 1 }, cameraOffset: { x: -155, y: 0 } },
+      hub_prompt_anchor_debug: { objectId: "trial_altar", direction: { x: 0, y: 1 }, debug: true },
+    };
+    const config = configs[scene];
+    const object = this.map.objects.find(candidate => candidate.id === config.objectId);
+    const prompt = object?.interaction?.promptPoint;
+    if (!object?.interaction || !prompt) return false;
+
+    let playerPoint = { x: prompt.x, y: prompt.y };
+    if (object.interactionShell && object.physicalFootprint?.length) {
+      const edge = closestPointOnFootprints(
+        object.physicalFootprint,
+        prompt.x + config.direction.x * 240,
+        prompt.y + config.direction.y * 240,
+      );
+      if (edge) {
+        playerPoint = {
+          x: edge.x + config.direction.x * 18,
+          y: edge.y + config.direction.y * 18,
+        };
+      }
+    } else {
+      const zone = object.interaction.zone;
+      const center = zone.shape === "circle"
+        ? { x: zone.x, y: zone.y }
+        : { x: zone.x + zone.width / 2, y: zone.y + zone.height / 2 };
+      const radiusX = zone.shape === "circle" ? zone.radius - 6 : zone.width / 2 - 4;
+      const radiusY = zone.shape === "circle" ? zone.radius - 6 : zone.height / 2 - 4;
+      playerPoint = {
+        x: center.x + config.direction.x * Math.max(4, radiusX),
+        y: center.y + config.direction.y * Math.max(4, radiusY),
+      };
+    }
+
+    const worldSize = getWorldSize(this.map);
+    const cameraOffset = config.cameraOffset ?? { x: 0, y: 0 };
+    this.camera.snapTo(
+      prompt.x + cameraOffset.x,
+      prompt.y + cameraOffset.y,
+      worldSize.width,
+      worldSize.height,
+    );
+    this.player.x = playerPoint.x;
+    this.player.y = playerPoint.y;
+    this.player.animState = "idle";
+    this.player.animFrame = 0;
+    this.player.animTimer = 0;
+    this.mode = "world";
+    this.qaPresentationTime = Math.max(0, time);
+    this.time = this.qaPresentationTime;
+    this.debugOverlayVisible = config.debug === true;
+    this.interactionTarget = {
+      object,
+      distance: Math.hypot(playerPoint.x - prompt.x, playerPoint.y - prompt.y),
+      x: prompt.x,
+      y: prompt.y,
+    };
+    return true;
+  }
+
   public isHubDebugOverlayVisible(): boolean {
     return this.debugOverlayVisible;
   }
@@ -545,9 +630,11 @@ export class HubState extends GameState {
   private drawWorldOverlay(ctx: CanvasRenderingContext2D): void {
     if (this.interactionTarget) {
       const screen = this.camera.worldToScreen(this.interactionTarget.x, this.interactionTarget.y);
+      if (!isHubPromptAnchorNearViewport(screen)) return;
+      const prompt = clampHubPromptPosition({ x: screen.x, y: screen.y - 13 });
       const promptKey = this.interactionTarget.object.promptKey;
       const label = promptKey ? t(this.language, promptKey as Parameters<typeof t>[1]) : t(this.language, "hub.interact");
-      PromptRenderer.drawAt(ctx, screen.x, screen.y - 13, label, this.engine.input.getPrompt("interact"), this.language, this.time);
+      PromptRenderer.drawAt(ctx, prompt.x, prompt.y, label, this.engine.input.getPrompt("interact"), this.language, this.time);
     }
   }
 

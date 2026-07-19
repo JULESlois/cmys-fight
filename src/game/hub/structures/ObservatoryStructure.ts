@@ -44,10 +44,10 @@ export const OBSERVATORY_STRUCTURE: HubStructureDefinition = {
       type: "interactable",
       action: "open_settings",
       promptKey: "hub.settings",
+      promptAnchor: { x: 112, y: 136 },
       visiblePropId: "astral_console",
       interaction: {
         zone: { shape: "rect", x: 72, y: 136, width: 80, height: 54 },
-        promptPoint: { x: 112, y: 144 },
         lineOfSightTarget: { x: 112, y: 190 },
         requireLineOfSight: true,
       },

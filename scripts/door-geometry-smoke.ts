@@ -13,7 +13,7 @@ import {
   type DoorRect,
 } from "../src/game/dungeon/DoorGeometry";
 import { getMapData, isSolid, MAP_WIDTH } from "../src/game/MapData";
-import { DoorRenderer } from "../src/game/render/DoorRenderer";
+import { DoorRenderer, getDoorRenderLayout } from "../src/game/render/DoorRenderer";
 
 interface FillCall extends DoorRect { color: string }
 
@@ -44,10 +44,13 @@ function rectContains(outer: DoorRect, inner: DoorRect): boolean {
 const themes = ["forest", "dungeon", "snow", "lava"] as const;
 let renderChecks = 0;
 let mapChecks = 0;
+let roomCombinationChecks = 0;
 
 for (const orientation of DOOR_ORIENTATIONS) {
   const geometry = getDoorGeometry(orientation, 6);
+  assert.equal(geometry.direction, orientation);
   assert.equal(geometry.orientation, orientation);
+  assert.equal(geometry.wallDepth, 32);
   assert.ok(rectContains(geometry.frameBounds, geometry.aperture), `${orientation} frame contains aperture`);
   assert.ok(rectContains(geometry.aperture, geometry.triggerBounds), `${orientation} trigger stays inside aperture`);
   assert.deepEqual(getOppositeDoor(getOppositeDoor(orientation)), orientation);
@@ -70,22 +73,29 @@ for (const orientation of DOOR_ORIENTATIONS) {
     ),
     true,
   );
+  const layout = getDoorRenderLayout(geometry);
+  assert.deepEqual(layout.aperture, geometry.aperture);
+  assert.ok(rectContains(geometry.frameBounds, layout.jambA));
+  assert.ok(rectContains(geometry.frameBounds, layout.jambB));
+  assert.ok(rectContains(geometry.frameBounds, layout.outerLintel));
+  assert.ok(rectContains(geometry.aperture, layout.lockBounds));
 
   for (const theme of themes) {
     for (const locked of [false, true]) {
       const { ctx, fills } = createCanvasRecorder();
       DoorRenderer.draw(ctx, geometry, theme, locked);
-      assert.ok(fills.length > 0, `${orientation}/${theme}/${locked ? "locked" : "open"} renders`);
+      assert.ok(fills.length >= (locked ? 18 : 12), `${orientation}/${theme}/${locked ? "locked" : "open"} restores layered model`);
       assert.ok(
         fills.every(fill => rectContains(geometry.frameBounds, fill)),
         `${orientation}/${theme}/${locked ? "locked" : "open"} stays in frame bounds`,
       );
       if (locked) {
         assert.ok(
-          fills.some(fill => fill.x >= geometry.aperture.x && fill.y >= geometry.aperture.y),
+          fills.some(fill => rectContains(geometry.aperture, fill)),
           `${orientation}/${theme} locked state draws inside aperture`,
         );
       }
+      assert.ok(new Set(fills.map(fill => fill.color)).size >= 5, `${orientation}/${theme} has material/theme depth`);
       renderChecks++;
     }
   }
@@ -119,6 +129,36 @@ for (const orientation of DOOR_ORIENTATIONS) {
   }
 }
 
+const roomTypes = ["start", "combat", "treasure", "exit", "boss"] as const;
+const doorSets = [
+  { up: true, down: false, left: false, right: false },
+  { up: true, down: true, left: false, right: false },
+  { up: true, down: true, left: true, right: false },
+  { up: true, down: true, left: true, right: true },
+] as const;
+for (const type of roomTypes) {
+  for (const doors of doorSets) {
+    const room = {
+      id: `${type}-${Object.values(doors).filter(Boolean).length}`,
+      x: 0,
+      y: 0,
+      type,
+      templateId: type === "boss" ? "boss_arena" : "cross_room",
+      encounterSeed: 17,
+      doors,
+    } as any;
+    const map = getMapData(room, "forest");
+    for (const orientation of DOOR_ORIENTATIONS) {
+      if (!doors[orientation]) continue;
+      const geometry = getDoorGeometry(orientation);
+      const entryTileX = Math.floor(geometry.entryPoint.x / 16);
+      const entryTileY = Math.floor(geometry.entryPoint.y / 16);
+      assert.equal(isSolid(map[entryTileY * MAP_WIDTH + entryTileX]), false, `${type}/${orientation} entry passable`);
+    }
+    roomCombinationChecks++;
+  }
+}
+
 assert.equal(getDoorGeometry("right").aperture.x + getDoorGeometry("right").aperture.width, DUNGEON_ROOM_WIDTH);
 assert.equal(getDoorGeometry("down").aperture.y + getDoorGeometry("down").aperture.height, DUNGEON_ROOM_HEIGHT);
 
@@ -141,7 +181,9 @@ console.log(JSON.stringify({
   states: ["open", "locked"],
   renderChecks,
   mapChecks,
+  roomCombinationChecks,
   sharedConsumers: ["MapData", "RoomRenderer", "DungeonState", "QA"],
+  visualLayers: ["void", "wall-base", "jambs", "lintel", "inner-lip", "theme-detail", "shadow", "lock-energy"],
   startRoomDuplicateGate: "removed",
 }));
 

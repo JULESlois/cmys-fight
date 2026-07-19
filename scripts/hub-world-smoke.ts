@@ -69,6 +69,7 @@ const expectedStructureIds = [
   "workshop_keep",
   "armory_keep",
   "expedition_gate",
+  "trial_altar_structure",
 ] as const;
 assert.deepEqual(HUB_STRUCTURE_DEFINITIONS.map(definition => definition.id), expectedStructureIds);
 assert.equal(HUB_STRUCTURES.length, expectedStructureIds.length);
@@ -333,6 +334,14 @@ const collisionSamples: Record<(typeof expectedStructureIds)[number], CollisionS
     { label: "side-wall", point: { x: 573, y: 900 }, blocked: true },
     { label: "rear-wall", point: { x: 573, y: 930 }, blocked: true },
     { label: "exterior", point: { x: 648, y: 938 }, blocked: false },
+  ],
+  trial_altar_structure: [
+    { label: "visual-base", point: { x: 1088, y: 823 }, blocked: true },
+    { label: "door-corridor", point: { x: 1096, y: 842 }, blocked: false },
+    { label: "stairs", point: { x: 1096, y: 848 }, blocked: false },
+    { label: "side-wall", point: { x: 1048, y: 823 }, blocked: true },
+    { label: "rear-wall", point: { x: 1096, y: 810 }, blocked: true },
+    { label: "exterior", point: { x: 1096, y: 856 }, blocked: false },
   ],
 };
 for (const [structureId, samples] of Object.entries(collisionSamples)) {

@@ -4,6 +4,7 @@ import { ARMORY_STRUCTURE } from "./ArmoryStructure";
 import { EXPEDITION_GATE_STRUCTURE } from "./ExpeditionGateStructure";
 import { OBSERVATORY_STRUCTURE } from "./ObservatoryStructure";
 import { REBIRTH_SPRING_STRUCTURE } from "./RebirthSpringStructure";
+import { TRIAL_ALTAR_STRUCTURE } from "./TrialAltarStructure";
 import { WORKSHOP_STRUCTURE } from "./WorkshopStructure";
 
 export const HUB_STRUCTURE_DEFINITIONS: readonly HubStructureDefinition[] = [
@@ -13,6 +14,7 @@ export const HUB_STRUCTURE_DEFINITIONS: readonly HubStructureDefinition[] = [
   WORKSHOP_STRUCTURE,
   ARMORY_STRUCTURE,
   EXPEDITION_GATE_STRUCTURE,
+  TRIAL_ALTAR_STRUCTURE,
 ] as const;
 
 export const HUB_STRUCTURES: readonly MaterializedHubStructure[] = HUB_STRUCTURE_DEFINITIONS.map(materializeHubStructure);

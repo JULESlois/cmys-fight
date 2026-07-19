@@ -44,6 +44,40 @@ const browserQa = fs.readFileSync("src/game/qa/BrowserQa.ts", "utf8");
 assert.match(browserQa, /focusHubAnchor/);
 assert.match(browserQa, /focusHubLandmark/);
 assert.match(browserQa, /setHubDebug/);
+assert.match(browserQa, /setHubPromptScene/);
+assert.match(browserQa, /qaHubScene/);
+assert.match(browserQa, /qaScene/);
+assert.match(browserQa, /setCaptureFrozen/);
+assert.match(browserQa, /dataset\.qaReady = "pending"/);
+assert.match(browserQa, /dataset\.qaReady = "1"/);
+
+const engine = fs.readFileSync("src/game/Engine.ts", "utf8");
+assert.match(engine, /private qaCaptureFrozen = false/);
+assert.match(engine, /if \(this\.qaCaptureFrozen\)/);
+
+const dungeonState = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
+for (const scene of [
+  "boss_chest_closed",
+  "boss_chest_open",
+  "treasure_open_with_multiple_loot",
+  "door_geometry_debug",
+  "combat_entry_notice",
+  "treasure_complete_no_notice",
+] as const) {
+  assert.match(dungeonState, new RegExp(`\\| \\\"${scene}\\\"`), `QA scene ${scene}`);
+}
+
+const hubState = fs.readFileSync("src/game/states/HubState.ts", "utf8");
+for (const scene of [
+  "rebirth_spring_south",
+  "rebirth_spring_north",
+  "prompt_clamped_top",
+  "prompt_clamped_left",
+  "prompt_clamped_right",
+  "hub_prompt_anchor_debug",
+] as const) {
+  assert.match(hubState, new RegExp(`\\| \\\"${scene}\\\"`), `Hub QA scene ${scene}`);
+}
 
 const qaPanel = fs.readFileSync("src/components/QaPanel.tsx", "utf8");
 assert.match(qaPanel, /data-testid="qa-run-checks"/);
@@ -60,6 +94,7 @@ assert.match(server, /APP_VERSION/);
 
 console.log(JSON.stringify({
   browserQaBridge: "ok",
+  screenshotScenes: "chest-door-prompt-notice-debug",
   qaPanel: "ok",
   audioDiagnostics: "ok",
   externalFallbackContract: "ok",

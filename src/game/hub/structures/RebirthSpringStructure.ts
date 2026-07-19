@@ -41,10 +41,10 @@ export const REBIRTH_SPRING_STRUCTURE: HubStructureDefinition = {
       type: "interactable",
       action: "open_rebirth_spring",
       promptKey: "hub.rebirthSpring",
+      promptAnchor: { x: 72, y: 78 },
       visiblePropId: "rebirth_spring_visual",
       interaction: {
         zone: { shape: "rect", x: 44, y: 80, width: 56, height: 44 },
-        promptPoint: { x: 72, y: 84 },
         lineOfSightTarget: { x: 72, y: 82 },
         requireLineOfSight: true,
       },

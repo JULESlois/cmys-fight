@@ -74,7 +74,16 @@ export class HubDebugOverlay {
     }
 
     for (const object of map.objects) {
-      if (object.interaction) drawZone(ctx, object.interaction.zone);
+      if (object.interaction) {
+        drawZone(ctx, object.interaction.zone);
+        if (object.interaction.promptPoint) {
+          const point = object.interaction.promptPoint;
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(Math.round(point.x) - 2, Math.round(point.y) - 2, 5, 5);
+          ctx.strokeStyle = "#1B9FFF";
+          ctx.strokeRect(Math.round(point.x) - 3.5, Math.round(point.y) - 3.5, 7, 7);
+        }
+      }
 
       if (object.visualBounds && object.properties?.visible !== false) {
         strokeRect(ctx, object.visualBounds, "#FFE45E");

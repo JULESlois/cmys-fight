@@ -155,7 +155,6 @@ for (const [index, pillarX] of [px(28) + 28, px(28) + 112, px(53) - 116, px(53) 
   rectCollider(`plaza_colonnade_pillar_${index}`, pillarX - 10, px(18) + 51, 20, 18, "plaza_banners");
 }
 
-rectCollider("trial_altar_base", px(65) + 4, px(46) + px(6) - 24, 88, 24, "trial_altar_visual");
 rectCollider("training_marker_base", px(60) + 31, px(47) + px(5) - 20, 18, 20, "training_marker");
 
 // Garden wish spring: segmented rim and a smaller true water footprint leave
@@ -243,6 +242,9 @@ function hotspot(
   const physicalColliders = visiblePropId
     ? colliders.filter(collider => collider.properties?.visiblePropId === visiblePropId)
     : [];
+  const promptAnchor = interaction.promptPoint ?? (zone.shape === "rect"
+    ? { x: zone.x + zone.width / 2, y: zone.y }
+    : { x: zone.x, y: zone.y - zone.radius });
   return {
     id,
     type,
@@ -263,6 +265,8 @@ function hotspot(
       layer: "sorted",
       visible: false,
       physicalColliderIds: physicalColliders.map(collider => collider.id),
+      promptAnchorX: promptAnchor.x,
+      promptAnchorY: promptAnchor.y,
       ...properties,
     },
   };
@@ -293,34 +297,32 @@ const objects: WorldObjectDefinition[] = [
   decoration("north_waystone", 39, 15, 3, 4, "waystone", "sorted", { accent: "#9B74D5" }, "footprint"),
   decoration("south_waystone", 39, 44, 3, 4, "waystone", "sorted", { accent: "#9B74D5" }, "footprint"),
   decoration("reforge_stone", 12, 34, 4, 4, "reforge_stone", "sorted", {}, "footprint"),
-  decoration("trial_altar_visual", 65, 46, 6, 6, "trial_altar", "sorted", {}, "custom"),
   decoration("training_marker", 60, 47, 5, 5, "training_marker", "sorted", {}, "custom"),
   decoration("garden_wish", 9, 47, 6, 5, "garden_wish", "sorted", {}, "custom"),
 
   hotspot("north_waystone_hotspot", "interactable", "inspect_waystone", "hub.waystone", {
     zone: { shape: "circle", x: px(40.5), y: px(18), radius: 34 },
+    promptPoint: { x: px(40.5), y: px(14.5) },
     requireLineOfSight: true,
   }, { visiblePropId: "north_waystone" }),
   hotspot("south_waystone_hotspot", "interactable", "inspect_waystone", "hub.waystone", {
     zone: { shape: "circle", x: px(40.5), y: px(47), radius: 34 },
+    promptPoint: { x: px(40.5), y: px(43.5) },
     requireLineOfSight: true,
   }, { visiblePropId: "south_waystone" }),
   hotspot("reforge_hotspot", "interactable", "open_meta_refund", "hub.reforge", {
     zone: { shape: "circle", x: px(14), y: px(37), radius: 38 },
-    promptPoint: { x: px(14), y: px(35.5) },
+    promptPoint: { x: px(14), y: px(33.5) },
     requireLineOfSight: true,
   }, { visiblePropId: "reforge_stone" }),
-  hotspot("trial_altar", "interactable", "open_challenge", "hub.trialAltar", {
-    zone: { shape: "circle", x: tileCenter(68, 52).x, y: tileCenter(68, 52).y, radius: 42 },
-    requireLineOfSight: true,
-  }, { visiblePropId: "trial_altar_visual" }),
   hotspot("training_marker_hotspot", "interactable", "open_training", "hub.training", {
     zone: { shape: "circle", x: tileCenter(62, 52).x, y: tileCenter(62, 52).y, radius: 40 },
+    promptPoint: { x: px(62.5), y: px(46.5) },
     requireLineOfSight: true,
   }, { visiblePropId: "training_marker" }),
   hotspot("garden_wish_hotspot", "interactable", "open_wish_fountain", "hub.wishGarden", {
     zone: { shape: "circle", x: 192, y: 848, radius: 44 },
-    promptPoint: { x: 192, y: 816 },
+    promptPoint: { x: 192, y: 744 },
     lineOfSightTarget: { x: 192, y: 816 },
     requireLineOfSight: true,
   }, { visiblePropId: "garden_wish" }),

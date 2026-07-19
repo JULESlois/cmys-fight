@@ -46,10 +46,10 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
       type: "interactable",
       action: "open_meta_upgrades",
       promptKey: "hub.blacksmith",
+      promptAnchor: { x: 108, y: 148 },
       visiblePropId: "blacksmith_workstation",
       interaction: {
         zone: { shape: "rect", x: 68, y: 150, width: 80, height: 48 },
-        promptPoint: { x: 108, y: 156 },
         // Aim LOS at the player-facing edge of the workstation collider. The
         // visible prop remains behind this point, but its own footprint no
         // longer invalidates a legitimate south-side interaction.
@@ -63,10 +63,10 @@ export const WORKSHOP_STRUCTURE: HubStructureDefinition = {
       type: "interactable",
       action: "open_meta_upgrades",
       promptKey: "hub.enchanter",
+      promptAnchor: { x: 194, y: 148 },
       visiblePropId: "enchanting_table",
       interaction: {
         zone: { shape: "rect", x: 156, y: 150, width: 76, height: 48 },
-        promptPoint: { x: 194, y: 156 },
         lineOfSightTarget: { x: 194, y: 174 },
         requireLineOfSight: true,
       },

@@ -44,10 +44,10 @@ export const ARMORY_STRUCTURE: HubStructureDefinition = {
       type: "interactable",
       action: "open_armory",
       promptKey: "hub.armory",
+      promptAnchor: { x: 58, y: 146 },
       visiblePropId: "armory_rack",
       interaction: {
         zone: { shape: "rect", x: 12, y: 148, width: 92, height: 52 },
-        promptPoint: { x: 58, y: 156 },
         lineOfSightTarget: { x: 58, y: 178 },
         requireLineOfSight: true,
       },

@@ -3,6 +3,7 @@ import { audio, type AudioDiagnostics } from "../audio/AudioManager";
 import type { MusicMode, MusicScene } from "../audio/MusicLibrary";
 import { APP_VERSION } from "../../version";
 import type { DungeonQaScene } from "../states/DungeonState";
+import type { HubQaPromptScene } from "../states/HubState";
 
 export type QaCheckStatus = "pass" | "warn" | "fail";
 
@@ -219,8 +220,10 @@ export interface QaBridge {
   setHubDebug: (enabled: boolean) => boolean;
   setHubPresentation: (time: number, characterId: string) => boolean;
   focusHubPoint: (cameraX: number, cameraY: number, playerX?: number, playerY?: number) => boolean;
+  setHubPromptScene: (scene: HubQaPromptScene, time: number) => boolean;
   setDungeonScene: (scene: DungeonQaScene, theme: "forest" | "dungeon" | "snow" | "lava", time: number) => boolean;
   setDungeonCollisionDebug: (enabled: boolean) => boolean;
+  setCaptureFrozen: (enabled: boolean) => boolean;
   toggleDebugOverlay: () => boolean;
   setMusicScene: (scene: MusicScene) => void;
   setMusicMode: (mode: MusicMode) => void;
@@ -245,8 +248,10 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     setHubDebug: enabled => engine.qaSetHubDebug(enabled),
     setHubPresentation: (time, characterId) => engine.qaSetHubPresentation(time, characterId),
     focusHubPoint: (cameraX, cameraY, playerX, playerY) => engine.qaFocusHubPoint(cameraX, cameraY, playerX, playerY),
+    setHubPromptScene: (scene, time) => engine.qaSetHubPromptScene(scene, time),
     setDungeonScene: (scene, theme, time) => engine.qaSetDungeonScene(scene, theme, time),
     setDungeonCollisionDebug: enabled => engine.qaSetDungeonCollisionDebug(enabled),
+    setCaptureFrozen: enabled => engine.qaSetCaptureFrozen(enabled),
     toggleDebugOverlay: () => engine.toggleDebugOverlay(),
     setMusicScene: scene => audio.setMusicScene(scene),
     setMusicMode: mode => {
@@ -261,21 +266,42 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
   if (isQaMode()) {
     const params = new URLSearchParams(window.location.search);
     const scene = params.get("qaScene") as DungeonQaScene | null;
+    const hubScene = params.get("qaHubScene") as HubQaPromptScene | null;
     const theme = params.get("qaTheme") as "forest" | "dungeon" | "snow" | "lava" | null;
     const time = Number(params.get("qaTime") ?? 12.5);
-    if (params.get("qaCapture") === "1") {
+    const captureMode = params.get("qaCapture") === "1";
+    if (captureMode) {
       const style = document.createElement("style");
       style.dataset.qaCaptureStyle = "true";
       style.textContent = '.touch-controls, [data-testid="browser-qa-panel"] { display: none !important; }';
       document.head.appendChild(style);
+      document.documentElement.dataset.qaReady = "pending";
     }
-    if (scene) {
+    if (hubScene || scene) {
       requestAnimationFrame(() => {
-        bridge.setDungeonScene(scene, theme ?? "dungeon", Number.isFinite(time) ? time : 12.5);
+        if (captureMode) bridge.setCaptureFrozen(false);
+        const configured = hubScene
+          ? bridge.setHubPromptScene(hubScene, Number.isFinite(time) ? time : 12.5)
+          : bridge.setDungeonScene(scene!, theme ?? "dungeon", Number.isFinite(time) ? time : 12.5);
+        if (captureMode) {
+          bridge.setCaptureFrozen(true);
+          document.documentElement.dataset.qaReady = configured ? "rendering" : "error";
+          if (configured) {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                document.documentElement.dataset.qaReady = "1";
+              });
+            });
+          }
+        }
       });
+    } else if (captureMode) {
+      document.documentElement.dataset.qaReady = "error";
     }
   }
   return () => {
+    engine.qaSetCaptureFrozen(false);
+    delete document.documentElement.dataset.qaReady;
     document.querySelector('style[data-qa-capture-style="true"]')?.remove();
     if ((window as any).__CMYS_QA__ === bridge) delete (window as any).__CMYS_QA__;
   };

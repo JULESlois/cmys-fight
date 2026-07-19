@@ -34,8 +34,9 @@ export class PromptRenderer {
     const actionWidth = Math.ceil(ctx.measureText(action).width);
     ctx.font = uiFont(language, 6, true);
     const keyWidth = Math.max(15, Math.ceil(ctx.measureText(interactPrompt).width) + 8);
-    const width = Math.max(58, actionWidth + keyWidth + 15);
-    const x = Math.round(screenX - width / 2);
+    const width = Math.min(312, Math.max(58, actionWidth + keyWidth + 15));
+    const x = Math.round(Math.max(4, Math.min(316 - width, screenX - width / 2)));
+    const pointerX = Math.max(x + 8, Math.min(x + width - 8, screenX));
     drawPixelPanel(ctx, x, yBase - 11, width, 18, "cyan", true);
     ctx.fillStyle = UI_COLORS.cyan;
     ctx.fillRect(x + 4, yBase - 7, keyWidth, 10);
@@ -49,9 +50,9 @@ export class PromptRenderer {
     ctx.fillText(action, x + keyWidth + 9, yBase + 1);
     ctx.fillStyle = UI_COLORS.cyan;
     ctx.beginPath();
-    ctx.moveTo(screenX - 3, yBase + 8);
-    ctx.lineTo(screenX + 3, yBase + 8);
-    ctx.lineTo(screenX, yBase + 11);
+    ctx.moveTo(pointerX - 3, yBase + 8);
+    ctx.lineTo(pointerX + 3, yBase + 8);
+    ctx.lineTo(pointerX, yBase + 11);
     ctx.fill();
     ctx.restore();
   }

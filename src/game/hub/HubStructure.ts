@@ -45,6 +45,7 @@ export interface HubLocalInteractionDefinition {
   type: Extract<WorldObjectType, "interactable" | "portal" | "npc">;
   action: string;
   promptKey: string;
+  promptAnchor: WorldPoint;
   interaction: WorldInteractionDefinition;
   visiblePropId: string;
   properties?: Record<string, unknown>;
@@ -216,7 +217,11 @@ function interactionObject(
   local: HubLocalInteractionDefinition,
   colliders: readonly WorldColliderDefinition[],
 ): WorldObjectDefinition {
-  const interaction = worldInteraction(structure.origin, local.interaction);
+  const interaction = worldInteraction(structure.origin, {
+    ...local.interaction,
+    promptPoint: local.promptAnchor,
+  });
+  const promptAnchor = worldPoint(structure.origin, local.promptAnchor);
   const zone = interaction.zone;
   const bounds = zone.shape === "rect"
     ? { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
@@ -244,6 +249,8 @@ function interactionObject(
       structureId: structure.id,
       visiblePropId: local.visiblePropId,
       physicalColliderIds: physicalColliders.map(collider => collider.id),
+      promptAnchorX: promptAnchor.x,
+      promptAnchorY: promptAnchor.y,
       ...local.properties,
     },
   };

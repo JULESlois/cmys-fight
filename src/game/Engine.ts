@@ -12,7 +12,7 @@ import { SplashState } from "./states/SplashState";
 import { RebirthLoadoutState } from "./states/RebirthLoadoutState";
 import { SettingsState } from "./states/SettingsState";
 import { RunResultState } from "./states/RunResultState";
-import { HubState } from "./states/HubState";
+import { HubState, type HubQaPromptScene } from "./states/HubState";
 import { RecordsState } from "./states/RecordsState";
 import { events } from "./EventBus";
 import { audio } from "./audio/AudioManager";
@@ -44,6 +44,7 @@ export class Engine {
   private shakeTimer = 0;
   private shakeIntensity = 0;
   private showDebugOverlay = false;
+  private qaCaptureFrozen = false;
 
   private transitionTimer = 0;
   private readonly TRANSITION_DURATION = 0.75;
@@ -253,6 +254,12 @@ export class Engine {
     return (this.states.hub as HubState).qaFocusPoint(cameraX, cameraY, playerX, playerY);
   }
 
+  public qaSetHubPromptScene(scene: HubQaPromptScene, time = 12.5): boolean {
+    if (!this.debugMode) return false;
+    if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: "central_plaza" });
+    return (this.states.hub as HubState).qaSetPromptScene(scene, time);
+  }
+
   public qaSetDungeonScene(
     scene: DungeonQaScene,
     theme: "forest" | "dungeon" | "snow" | "lava",
@@ -267,6 +274,12 @@ export class Engine {
     if (!this.debugMode) return false;
     if (this.currentState !== "dungeon") this.doSwitchState("dungeon");
     return (this.states.dungeon as DungeonState).qaSetCollisionDebug(enabled);
+  }
+
+  public qaSetCaptureFrozen(enabled: boolean): boolean {
+    if (!this.debugMode) return false;
+    this.qaCaptureFrozen = enabled;
+    return this.qaCaptureFrozen;
   }
 
   private syncStateMusic(params?: any) {
@@ -359,6 +372,10 @@ export class Engine {
     const cappedDt = Math.min(dt, 0.1);
     this.performanceMonitor.update(dt);
     this.input.beginFrame();
+    if (this.qaCaptureFrozen) {
+      this.input.update();
+      return;
+    }
     this.shakeTimer = Math.max(0, this.shakeTimer - cappedDt);
     this.worldNotices.update(cappedDt);
 

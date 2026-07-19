@@ -13,12 +13,14 @@ export interface DoorRect {
 }
 
 export interface DoorGeometry {
+  direction: DoorOrientation;
   orientation: DoorOrientation;
   aperture: DoorRect;
   frameBounds: DoorRect;
   triggerBounds: DoorRect;
   entryPoint: DoorPoint;
   inwardDirection: DoorPoint;
+  wallDepth: number;
 }
 
 export interface DoorTileBounds {
@@ -84,12 +86,14 @@ function insetTrigger(aperture: DoorRect, orientation: DoorOrientation, radius: 
 export function getDoorGeometry(orientation: DoorOrientation, playerRadius = 6): DoorGeometry {
   const aperture = { ...APERTURES[orientation] };
   return {
+    direction: orientation,
     orientation,
     aperture,
     frameBounds: { ...FRAME_BOUNDS[orientation] },
     triggerBounds: insetTrigger(aperture, orientation, playerRadius),
     entryPoint: { ...ENTRY_POINTS[orientation] },
     inwardDirection: { ...INWARD_DIRECTIONS[orientation] },
+    wallDepth: orientation === "up" || orientation === "down" ? aperture.height : aperture.width,
   };
 }
 

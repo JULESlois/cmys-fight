@@ -1,4 +1,5 @@
 import type { RoomType } from "../data/roomTemplates";
+import { getChestGeometry } from "./ChestGeometry";
 import { RITUAL_SPRING_GEOMETRY } from "../render/RitualSpringRenderer";
 import { closestPointOnFootprints } from "../world/SpatialSemantics";
 import type { WorldSpatialShape } from "../world/WorldMap";
@@ -157,9 +158,14 @@ export function createRoomObjectColliders(scene: RoomObjectCollisionScene): Room
   const colliders: RoomObjectCollider[] = [];
   if (scene.chest) {
     const { x, y, kind } = scene.chest;
-    colliders.push(kind === "boss"
-      ? rect("boss_chest", x - 18, y - 2, 36, 13)
-      : rect("treasure_chest", x - 14, y - 1, 28, 11));
+    const footprint = getChestGeometry(kind).physicalFootprint;
+    colliders.push(rect(
+      kind === "boss" ? "boss_chest" : "treasure_chest",
+      x + footprint.x,
+      y + footprint.y,
+      footprint.width,
+      footprint.height,
+    ));
   }
   if (scene.portal) colliders.push(...createPortalColliders(scene.portal.x, scene.portal.y));
   if (scene.roomType === "wish_fountain" && scene.special) {

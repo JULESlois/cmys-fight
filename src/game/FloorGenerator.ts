@@ -22,6 +22,8 @@ export interface Room {
   type: "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics" | "wish_fountain" | "photo_booth";
   cleared: boolean;
   combatCleared?: boolean;
+  combatStartNotified?: boolean;
+  combatClearNotified?: boolean;
   rewardGenerated?: boolean;
   interactionCompleted?: boolean;
   weaponChest?: {

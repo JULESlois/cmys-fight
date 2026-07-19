@@ -30,6 +30,23 @@ assert.ok(notices.getRegion(), "longer chapter notice remains after bottom notic
 notices.update(1);
 assert.equal(notices.getRegion(), null);
 
+notices.clear();
+assert.equal(notices.showBottom({
+  id: "combat-start:room-1",
+  text: "COMBAT START",
+  tone: "yellow",
+  dedupe: true,
+  dedupeWindow: 30,
+}), true);
+assert.equal(notices.showBottom({
+  id: "combat-start:room-1",
+  text: "COMBAT START",
+  tone: "yellow",
+  dedupe: true,
+  dedupeWindow: 30,
+}), false, "duplicate room lifecycle notice is rejected");
+assert.equal(notices.getBottom()?.id, "combat-start:room-1");
+
 const data = new GameData();
 data.startNewRun("knight", "pistol", false);
 jumpToStage(data, 4);
@@ -53,30 +70,52 @@ const controller = read("src/game/notice/WorldNoticeController.ts");
 const renderer = read("src/game/notice/WorldNoticeRenderer.ts");
 const i18n = read("src/game/i18n.ts");
 
-const lifecycleEvents: Array<{ text: string; tone: string }> = [];
+const lifecycleEvents: Array<{ id?: string; text: string; tone: string }> = [];
 const dungeonHarness = new DungeonState({
   data: { settings: { language: "en" } },
   worldNotices: {
-    showBottom(text: string, tone: string) { lifecycleEvents.push({ text, tone }); },
+    showBottom(request: any, tone?: string) {
+      if (typeof request === "string") lifecycleEvents.push({ text: request, tone: tone ?? "yellow" });
+      else lifecycleEvents.push({ id: request.id, text: request.text, tone: request.tone });
+      return true;
+    },
   },
 } as any) as any;
-dungeonHarness.emitCombatLifecycleNotice("combat_started", false);
-dungeonHarness.emitCombatLifecycleNotice("combat_cleared");
+const normalRoom = {
+  id: "normal-room",
+  type: "combat",
+  combatStartNotified: false,
+  combatClearNotified: false,
+};
+dungeonHarness.emitCombatLifecycleNotice("combat_started", normalRoom);
+dungeonHarness.emitCombatLifecycleNotice("combat_started", normalRoom);
+dungeonHarness.emitCombatLifecycleNotice("combat_cleared", normalRoom);
+dungeonHarness.emitCombatLifecycleNotice("combat_cleared", normalRoom);
 assert.deepEqual(lifecycleEvents, [
-  { text: "COMBAT START", tone: "yellow" },
-  { text: "ROOM CLEAR", tone: "yellow" },
+  { id: "combat-start:normal-room", text: "COMBAT START", tone: "yellow" },
+  { id: "combat-clear:normal-room", text: "ROOM CLEAR", tone: "yellow" },
 ]);
+assert.equal(normalRoom.combatStartNotified, true);
+assert.equal(normalRoom.combatClearNotified, true);
 lifecycleEvents.length = 0;
-dungeonHarness.emitCombatLifecycleNotice("combat_started", true);
-dungeonHarness.emitCombatLifecycleNotice("combat_cleared");
+const bossRoom = {
+  id: "boss-room",
+  type: "boss",
+  combatStartNotified: false,
+  combatClearNotified: false,
+};
+dungeonHarness.emitCombatLifecycleNotice("combat_started", bossRoom);
+dungeonHarness.emitCombatLifecycleNotice("combat_cleared", bossRoom);
 assert.deepEqual(lifecycleEvents, [
-  { text: "BOSS ENGAGED", tone: "red" },
-  { text: "ROOM CLEAR", tone: "yellow" },
+  { id: "combat-start:boss-room", text: "BOSS ENGAGED", tone: "red" },
+  { id: "combat-clear:boss-room", text: "ROOM CLEAR", tone: "yellow" },
 ]);
 
 assert.match(engine, /readonly worldNotices = new WorldNoticeController/);
 assert.match(engine, /WorldNoticeRenderer\.draw/);
 assert.match(controller, /showBottom/);
+assert.match(controller, /dedupeWindow/);
+assert.match(controller, /recentBottomIds/);
 assert.match(controller, /showRegion/);
 assert.match(renderer, /getBottomNoticeBounds\(scene\)/);
 assert.match(renderer, /drawRegion/);
@@ -92,9 +131,14 @@ assert.match(i18n, /"notice\.combatStarted"/);
 assert.match(i18n, /"notice\.bossCombatStarted"/);
 assert.match(i18n, /"notice\.combatCleared"/);
 assert.doesNotMatch(i18n, /"notice\.rewardGenerated"/);
+assert.doesNotMatch(i18n, /"notice\.interactionComplete"/);
 assert.doesNotMatch(dungeon, /notice\.rewardGenerated/);
+assert.doesNotMatch(dungeon, /notice\.interactionComplete/);
+assert.doesNotMatch(dungeon, /notifyInteractionComplete/);
 assert.match(dungeon, /emitCombatLifecycleNotice\("combat_started"/);
 assert.match(dungeon, /emitCombatLifecycleNotice\("combat_cleared"/);
+assert.match(dungeon, /id: `combat-start:\$\{room\.id\}`/);
+assert.match(dungeon, /id: `combat-clear:\$\{room\.id\}`/);
 assert.match(dungeon, /this\.phaseTimer = room\?\.type === "boss" \? 0\.5 : 0\.25/);
 assert.match(dungeon, /this\.setPhase\(room\?\.type === "boss" \? "intro" : "locking"\)/);
 assert.match(dungeon, /const bossSlowPacing = currentRoom\?\.type === "boss"/);
@@ -109,6 +153,8 @@ console.log(JSON.stringify({
   normalCombat: ["combat_started", "combat_cleared"],
   bossCombat: ["boss_combat_started", "combat_cleared"],
   rewardNotice: "none",
+  specialRoomSuccessNotice: "none",
+  lifecycleDedupe: "room-id-and-persisted-flags",
   normalEntry: "fade-to-0.25s-locking-at-full-speed",
   bossEntry: "0.8s-intro-0.5s-locking-at-20-percent-speed",
   doorLockAndSpeed: "separate-controls",

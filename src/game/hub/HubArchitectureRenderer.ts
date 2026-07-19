@@ -1,20 +1,22 @@
 import type { WorldObjectDefinition } from "../world/WorldMap";
-import { drawArchiveStructure } from "./structures/ArchiveStructure";
-import { drawArmoryStructure } from "./structures/ArmoryStructure";
-import { drawExpeditionGateStructure } from "./structures/ExpeditionGateStructure";
-import { drawObservatoryStructure } from "./structures/ObservatoryStructure";
-import { drawRebirthSpringStructure } from "./structures/RebirthSpringStructure";
-import { drawWorkshopStructure } from "./structures/WorkshopStructure";
+import { drawArchiveArt } from "./art/ArchiveArt";
+import { drawArmoryArt } from "./art/ArmoryArt";
+import { drawExpeditionGateArt } from "./art/ExpeditionGateArt";
+import { drawObservatoryArt } from "./art/ObservatoryArt";
+import { drawRebirthSpringArt } from "./art/RebirthSpringArt";
+import { drawTrialAltarArt } from "./art/TrialAltarArt";
+import { drawWorkshopArt } from "./art/WorkshopArt";
 
 type StructureDraw = (ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number) => void;
 
 const DRAWERS: Record<string, StructureDraw> = {
-  archive: drawArchiveStructure,
-  observatory: drawObservatoryStructure,
-  workshop: drawWorkshopStructure,
-  armory: drawArmoryStructure,
-  rebirth_spring: drawRebirthSpringStructure,
-  expedition_gate: drawExpeditionGateStructure,
+  archive: drawArchiveArt,
+  observatory: drawObservatoryArt,
+  workshop: drawWorkshopArt,
+  armory: drawArmoryArt,
+  rebirth_spring: drawRebirthSpringArt,
+  expedition_gate: drawExpeditionGateArt,
+  trial_altar: drawTrialAltarArt,
 };
 
 export class HubArchitectureRenderer {

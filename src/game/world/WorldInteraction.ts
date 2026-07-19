@@ -94,7 +94,9 @@ export class WorldInteraction {
       if (!isOnRequiredSide(playerX, playerY, interaction)) continue;
       if (!matchesFacing(facing, interaction.facing)) continue;
 
-      const prompt = shellPoint ?? interaction.promptPoint ?? zoneCenter(interaction.zone);
+      // Detection and LOS may use the nearest physical edge, but the prompt
+      // itself must remain anchored to the authored object position.
+      const prompt = interaction.promptPoint ?? zoneCenter(interaction.zone);
       const losTarget = shellPoint ?? interaction.lineOfSightTarget ?? prompt;
       const ignoredColliderIds = Array.isArray(object.properties?.physicalColliderIds)
         ? object.properties.physicalColliderIds.filter((id): id is string => typeof id === "string")

@@ -31,6 +31,8 @@ export function normalizeRoomState(room: Room): Room {
 
   room.combatCleared = combatCleared;
   room.cleared = combatCleared;
+  room.combatStartNotified ??= false;
+  room.combatClearNotified ??= combatCleared;
   room.rewardGenerated ??= false;
   room.interactionCompleted ??= false;
   if (room.weaponChest) {
