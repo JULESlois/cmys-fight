@@ -180,26 +180,172 @@ function drawLavaDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, 
   }
 }
 
-function drawLockedLayer(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
-  const lock = layout.lockBounds;
-  fill(ctx, palette.lock, lock);
-  const horizontal = geometry.direction === "up" || geometry.direction === "down";
-  if (horizontal) {
-    for (let x = lock.x + 4; x <= lock.x + lock.width - 5; x += 8) {
-      fill(ctx, palette.accent, { x, y: lock.y + 2, width: 2, height: lock.height - 4 });
-      fill(ctx, palette.lockLight, { x: x + 1, y: lock.y + 5, width: 1, height: lock.height - 10 });
-    }
-  } else {
-    for (let y = lock.y + 4; y <= lock.y + lock.height - 5; y += 8) {
-      fill(ctx, palette.accent, { x: lock.x + 2, y, width: lock.width - 4, height: 2 });
-      fill(ctx, palette.lockLight, { x: lock.x + 5, y: y + 1, width: lock.width - 10, height: 1 });
-    }
+function localRect(
+  geometry: DoorGeometry,
+  bounds: DoorRect,
+  u: number,
+  v: number,
+  width: number,
+  height: number,
+): DoorRect {
+  if (geometry.direction === "up") {
+    return { x: bounds.x + u, y: bounds.y + v, width, height };
   }
-  const centerX = lock.x + lock.width / 2;
-  const centerY = lock.y + lock.height / 2;
-  fill(ctx, palette.frameDark, { x: centerX - 5, y: centerY - 5, width: 10, height: 10 });
-  fill(ctx, palette.lockLight, { x: centerX - 3, y: centerY - 3, width: 6, height: 6 });
-  fill(ctx, "#FFFFFF", { x: centerX - 1, y: centerY - 2, width: 2, height: 4 });
+  if (geometry.direction === "down") {
+    return {
+      x: bounds.x + u,
+      y: bounds.y + bounds.height - v - height,
+      width,
+      height,
+    };
+  }
+  if (geometry.direction === "left") {
+    return { x: bounds.x + v, y: bounds.y + u, width: height, height: width };
+  }
+  return {
+    x: bounds.x + bounds.width - v - height,
+    y: bounds.y + u,
+    width: height,
+    height: width,
+  };
+}
+
+function drawLocal(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  bounds: DoorRect,
+  color: string,
+  u: number,
+  v: number,
+  width: number,
+  height: number,
+): void {
+  fill(ctx, color, localRect(geometry, bounds, u, v, width, height));
+}
+
+function getLocalSize(geometry: DoorGeometry, bounds: DoorRect): { length: number; depth: number } {
+  const horizontal = geometry.direction === "up" || geometry.direction === "down";
+  return horizontal
+    ? { length: bounds.width, depth: bounds.height }
+    : { length: bounds.height, depth: bounds.width };
+}
+
+function drawForestLockedCore(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  lock: DoorRect,
+  palette: DoorPalette,
+): void {
+  const { length, depth } = getLocalSize(geometry, lock);
+  fill(ctx, palette.lock, lock);
+  for (let u = 4; u <= length - 7; u += 8) {
+    drawLocal(ctx, geometry, lock, "#352319", u, 2, 4, depth - 4);
+    drawLocal(ctx, geometry, lock, palette.accent, u + 1, 4, 2, depth - 8);
+  }
+  drawLocal(ctx, geometry, lock, "#2A1C14", 2, Math.floor(depth / 2) - 2, length - 4, 5);
+  drawLocal(ctx, geometry, lock, palette.accentLight, 5, 3, 3, 3);
+  drawLocal(ctx, geometry, lock, palette.accent, length - 9, depth - 7, 4, 4);
+  const cx = Math.floor(length / 2);
+  const cy = Math.floor(depth / 2);
+  drawLocal(ctx, geometry, lock, "#1C2C21", cx - 5, cy - 5, 10, 10);
+  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 3, cy - 3, 6, 6);
+  drawLocal(ctx, geometry, lock, "#E9FFD8", cx - 1, cy - 2, 2, 4);
+}
+
+function drawDungeonLockedCore(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  lock: DoorRect,
+  palette: DoorPalette,
+): void {
+  const { length, depth } = getLocalSize(geometry, lock);
+  fill(ctx, palette.lock, lock);
+  for (let u = 4; u <= length - 7; u += 7) {
+    drawLocal(ctx, geometry, lock, "#111820", u, 1, 3, depth - 2);
+    drawLocal(ctx, geometry, lock, "#7B8993", u + 1, 3, 1, depth - 6);
+    drawLocal(ctx, geometry, lock, "#111820", u - 1, depth - 5, 5, 3);
+  }
+  drawLocal(ctx, geometry, lock, "#0C1118", 2, Math.floor(depth / 2) - 2, length - 4, 5);
+  drawLocal(ctx, geometry, lock, "#7B8993", 4, Math.floor(depth / 2) - 1, length - 8, 1);
+  const cx = Math.floor(length / 2);
+  const cy = Math.floor(depth / 2);
+  // Offset chain links preserve the reference entrance's mechanical lock language.
+  drawLocal(ctx, geometry, lock, "#0B1016", cx - 13, cy - 6, 7, 4);
+  drawLocal(ctx, geometry, lock, "#0B1016", cx - 8, cy - 3, 4, 7);
+  drawLocal(ctx, geometry, lock, "#0B1016", cx + 4, cy - 6, 7, 4);
+  drawLocal(ctx, geometry, lock, "#0B1016", cx + 2, cy, 4, 7);
+  drawLocal(ctx, geometry, lock, "#89969D", cx - 8, cy - 4, 4, 2);
+  drawLocal(ctx, geometry, lock, "#89969D", cx + 4, cy + 3, 4, 2);
+  drawLocal(ctx, geometry, lock, "#241531", cx - 5, cy - 6, 10, 12);
+  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 3, cy - 4, 6, 8);
+  drawLocal(ctx, geometry, lock, "#F2D8FF", cx - 1, cy - 2, 2, 4);
+}
+
+function drawSnowLockedCore(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  lock: DoorRect,
+  palette: DoorPalette,
+): void {
+  const { length, depth } = getLocalSize(geometry, lock);
+  const cx = Math.floor(length / 2);
+  const cy = Math.floor(depth / 2);
+  fill(ctx, palette.lock, lock);
+  drawLocal(ctx, geometry, lock, "#284E5E", 2, 2, cx - 4, depth - 4);
+  drawLocal(ctx, geometry, lock, "#719EAA", 4, 4, cx - 7, depth - 8);
+  drawLocal(ctx, geometry, lock, "#284E5E", cx + 2, 2, length - cx - 4, depth - 4);
+  drawLocal(ctx, geometry, lock, "#719EAA", cx + 4, 4, length - cx - 7, depth - 8);
+  drawLocal(ctx, geometry, lock, "#173744", cx - 2, 1, 4, depth - 2);
+  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 1, 3, 2, depth - 6);
+  drawLocal(ctx, geometry, lock, "#B7D9DF", 5, 3, 2, depth - 6);
+  drawLocal(ctx, geometry, lock, "#B7D9DF", length - 7, 3, 2, depth - 6);
+  drawLocal(ctx, geometry, lock, "#C94C55", cx - 10, cy - 1, 3, 3);
+  drawLocal(ctx, geometry, lock, "#FFD16A", cx + 7, cy, 2, 2);
+  drawLocal(ctx, geometry, lock, "#21485A", cx - 6, cy - 6, 12, 12);
+  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 4, cy - 4, 8, 8);
+  drawLocal(ctx, geometry, lock, "#E8FFFF", cx - 1, cy - 2, 2, 4);
+}
+
+function drawLavaLockedCore(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  lock: DoorRect,
+  palette: DoorPalette,
+): void {
+  const { length, depth } = getLocalSize(geometry, lock);
+  const cx = Math.floor(length / 2);
+  const cy = Math.floor(depth / 2);
+  fill(ctx, palette.lock, lock);
+  drawLocal(ctx, geometry, lock, "#2A2027", 2, cy - 4, 11, 8);
+  drawLocal(ctx, geometry, lock, "#8B8583", 4, cy - 2, 10, 3);
+  drawLocal(ctx, geometry, lock, "#2A2027", length - 13, cy - 4, 11, 8);
+  drawLocal(ctx, geometry, lock, "#8B8583", length - 14, cy - 2, 10, 3);
+  drawLocal(ctx, geometry, lock, palette.accent, 10, cy - 3, 3, 6);
+  drawLocal(ctx, geometry, lock, palette.accent, length - 13, cy - 3, 3, 6);
+  // Six iris plates converge on the furnace eye without covering the frame.
+  drawLocal(ctx, geometry, lock, "#913B2C", cx - 15, 2, 10, 5);
+  drawLocal(ctx, geometry, lock, "#913B2C", cx + 5, 2, 10, 5);
+  drawLocal(ctx, geometry, lock, "#913B2C", cx - 11, depth - 7, 9, 5);
+  drawLocal(ctx, geometry, lock, "#913B2C", cx + 2, depth - 7, 9, 5);
+  drawLocal(ctx, geometry, lock, "#6D2B24", cx - 8, cy - 3, 6, 6);
+  drawLocal(ctx, geometry, lock, "#6D2B24", cx + 2, cy - 3, 6, 6);
+  drawLocal(ctx, geometry, lock, "#5A211C", cx - 6, cy - 6, 12, 12);
+  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 4, cy - 4, 8, 8);
+  drawLocal(ctx, geometry, lock, "#FFB52C", cx - 2, cy - 3, 4, 6);
+  drawLocal(ctx, geometry, lock, "#FFE86E", cx, cy - 1, 1, 2);
+}
+
+function drawLockedCore(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  layout: DoorRenderLayout,
+  palette: DoorPalette,
+  theme: DoorTheme,
+): void {
+  if (theme === "forest") drawForestLockedCore(ctx, geometry, layout.lockBounds, palette);
+  else if (theme === "snow") drawSnowLockedCore(ctx, geometry, layout.lockBounds, palette);
+  else if (theme === "lava") drawLavaLockedCore(ctx, geometry, layout.lockBounds, palette);
+  else drawDungeonLockedCore(ctx, geometry, layout.lockBounds, palette);
 }
 
 export class DoorRenderer {
@@ -228,7 +374,7 @@ export class DoorRenderer {
     else if (theme === "lava") drawLavaDetails(ctx, geometry, layout, palette);
     else drawDungeonDetails(ctx, geometry, layout, palette);
 
-    if (locked) drawLockedLayer(ctx, geometry, layout, palette);
+    if (locked) drawLockedCore(ctx, geometry, layout, palette, theme);
     else {
       const edge = geometry.direction === "up" || geometry.direction === "down"
         ? { x: layout.aperture.x + 5, y: layout.innerLip.y + 1, width: layout.aperture.width - 10, height: 1 }

@@ -266,7 +266,8 @@ assert.match(roomRenderer, /function drawLavaStructureTile/, "lava combat rooms 
 assert.match(roomRenderer, /function drawBreakableTile/, "combat rooms render chapter-specific breakable props");
 assert.match(roomRenderer, /SpecialRoomRenderer\.drawRoomStage/, "special interactions use authored room stages rather than flat decals");
 assert.match(merchantRenderer, /drawStallBack[\s\S]*drawBackpack[\s\S]*drawMerchantBody[\s\S]*drawCounterFront/, "merchant includes a layered stall, backpack and readable body silhouette");
-assert.match(chestRenderer, /drawClosedTreasureChest[\s\S]*drawClosedBossChest/, "treasure and Boss chests use independent authored models");
+assert.match(chestRenderer, /drawTreasureLid[\s\S]*drawTreasureBody/, "treasure chest keeps independent body and lid art");
+assert.match(chestRenderer, /drawBossLid[\s\S]*drawBossBody/, "Boss chest uses an independent reinforced body and lid model");
 assert.match(specialRoomRenderer, /drawRitualSpring/, "wish fountain delegates to shared authored spring geometry");
 assert.doesNotMatch(specialRoomRenderer, /drawForestStage|drawDungeonStage|drawSnowStage|drawLavaStage|drawChapterStage/, "special rooms omit unrelated chapter side scenery");
 assert.match(ritualSpringRenderer, /ritual_court|front_rim|lantern_pylons|soul_motes/, "shared spring contains court, rim, lantern and mote layers");

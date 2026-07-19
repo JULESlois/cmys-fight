@@ -226,6 +226,7 @@ const portalSource = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8"
 const ritualSpringSource = fs.readFileSync("src/game/render/RitualSpringRenderer.ts", "utf8");
 const merchantSource = fs.readFileSync("src/game/render/MerchantRenderer.ts", "utf8");
 const chestSource = fs.readFileSync("src/game/render/ChestRenderer.ts", "utf8");
+const chestGeometrySource = fs.readFileSync("src/game/dungeon/ChestGeometry.ts", "utf8");
 const shopRendererSource = fs.readFileSync("src/game/render/ShopRenderer.ts", "utf8");
 assert.match(specialRoomSource, /drawRoomStage/, "special rooms keep a sparse central rune stage");
 assert.match(merchantSource, /drawStallBack[\s\S]*drawMerchantBody[\s\S]*drawCounterFront/, "merchant uses separated stall, body and foreground layers");
@@ -243,9 +244,11 @@ assert.match(portalSource, /PORTAL_OUTER_RING_POINTS[\s\S]*PORTAL_INNER_RING_POI
 assert.match(portalSource, /getPortalPointIndex[\s\S]*direction: 1 \| -1/, "portal rotation uses discrete positive-modulo point indices");
 assert.match(portalSource, /drawMinimalFrame/, "portal keeps only compact supports and split bases");
 assert.doesNotMatch(portalSource, /drawThemeFrame|drawForestFrame|drawDungeonFrame|drawSnowFrame|drawLavaFrame|scan bands|aperture/, "portal removes chapter machinery and rectangular scan energy");
-assert.match(chestSource, /drawClosedTreasureChest[\s\S]*drawOpenTreasureChest/, "treasure chest has distinct closed and open structures");
-assert.match(chestSource, /drawClosedBossChest[\s\S]*drawOpenBossChest/, "Boss chest has a dedicated reinforced model and open state");
-assert.match(dungeonSource, /ChestRenderer\.drawChest/, "Dungeon delegates chest art to the dedicated renderer");
+assert.match(chestSource, /drawTreasureLid[\s\S]*drawTreasureBody/, "treasure chest separates its body and lid structures");
+assert.match(chestSource, /drawBossLid[\s\S]*drawBossBody/, "Boss chest keeps a dedicated reinforced body and lid model");
+assert.match(chestSource, /geometry\.openedLidAnchor[\s\S]*geometry\.closedLidAnchor/, "open and closed lids consume authored geometry anchors");
+assert.match(chestGeometrySource, /openedLidAnchor:[\s\S]*lootDropAnchor:[\s\S]*physicalFootprint:/, "chest geometry separates lid, loot and collision anchors");
+assert.match(dungeonSource, /ChestRenderer\.drawPart/, "Dungeon delegates chest depth parts to the dedicated renderer");
 assert.doesNotMatch(dungeonSource, /fillRect\(this\.chest\.x - 9/, "Dungeon no longer draws chests as inline flat rectangles");
 
 console.log(JSON.stringify({

@@ -165,6 +165,7 @@ assert.equal(getDoorGeometry("down").aperture.y + getDoorGeometry("down").apertu
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const roomRendererSource = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
 const mapSource = fs.readFileSync("src/game/MapData.ts", "utf8");
+const doorRendererSource = fs.readFileSync("src/game/render/DoorRenderer.ts", "utf8");
 assert.doesNotMatch(dungeonSource, /upDoorXMin|upDoorXMax|downDoorXMin|leftDoorYMin|rightDoorYMin|DOOR_ENTRY_POINTS/);
 assert.match(dungeonSource, /getDoorGeometry/);
 assert.match(dungeonSource, /getDoorBarrierBounds/);
@@ -174,6 +175,15 @@ assert.doesNotMatch(roomRendererSource, /theme === "forest" && currentRoom\?\.ty
 assert.doesNotMatch(roomRendererSource, /theme === "dungeon" && currentRoom\?\.type === "start"/);
 assert.doesNotMatch(roomRendererSource, /theme === "snow" && currentRoom\?\.type === "start"/);
 assert.doesNotMatch(roomRendererSource, /theme === "lava" && currentRoom\?\.type === "start"/);
+for (const core of [
+  "drawForestLockedCore",
+  "drawDungeonLockedCore",
+  "drawSnowLockedCore",
+  "drawLavaLockedCore",
+]) {
+  assert.match(doorRendererSource, new RegExp(`function ${core}`), `${core} is authored independently`);
+}
+assert.doesNotMatch(doorRendererSource, /function drawLockedLayer/, "generic shared energy barrier is removed");
 
 console.log(JSON.stringify({
   orientations: DOOR_ORIENTATIONS,
@@ -183,7 +193,8 @@ console.log(JSON.stringify({
   mapChecks,
   roomCombinationChecks,
   sharedConsumers: ["MapData", "RoomRenderer", "DungeonState", "QA"],
-  visualLayers: ["void", "wall-base", "jambs", "lintel", "inner-lip", "theme-detail", "shadow", "lock-energy"],
+  visualLayers: ["void", "wall-base", "jambs", "lintel", "inner-lip", "theme-detail", "shadow", "theme-lock-core"],
+  lockedCores: ["forest-roots", "dungeon-portcullis", "snow-airlock", "lava-iris"],
   startRoomDuplicateGate: "removed",
 }));
 
