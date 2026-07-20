@@ -251,7 +251,8 @@ assert.match(roomRenderer, /function drawLavaWallTile/, "lava walls use adjacenc
 assert.match(roomRenderer, /ruptured foundry crucible/, "lava boss room uses a foundry crucible arena");
 assert.match(roomRenderer, /DoorRenderer\.draw/, "all room doors delegate to the shared renderer");
 for (const theme of ["Forest", "Dungeon", "Snow", "Lava"]) {
-  assert.match(doorRenderer, new RegExp(`function draw${theme}Door`), `${theme} door has an authored per-theme model`);
+  assert.match(doorRenderer, new RegExp(`function drawTop${theme}Door`), `${theme} door has an authored top-door model`);
+  assert.match(doorRenderer, new RegExp(`function drawBottom${theme}Door`), `${theme} door has an authored bottom-door model`);
 }
 assert.doesNotMatch(
   roomRenderer,

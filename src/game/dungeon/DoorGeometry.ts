@@ -51,10 +51,10 @@ const FRAME_BOUNDS: Record<DoorOrientation, DoorRect> = {
 };
 
 const VISUAL_BOUNDS: Record<DoorOrientation, DoorRect> = {
-  up: { x: 112, y: 0, width: 96, height: 40 },
-  down: { x: 112, y: 200, width: 96, height: 40 },
-  left: { x: 0, y: 80, width: 40, height: 80 },
-  right: { x: 280, y: 80, width: 40, height: 80 },
+  up: { x: 112, y: 0, width: 96, height: 52 },
+  down: { x: 120, y: 224, width: 80, height: 16 },
+  left: { x: 0, y: 88, width: 16, height: 64 },
+  right: { x: 304, y: 88, width: 16, height: 64 },
 };
 
 const ENTRY_POINTS: Record<DoorOrientation, DoorPoint> = {

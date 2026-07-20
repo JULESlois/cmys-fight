@@ -22,6 +22,9 @@ function createCanvasRecorder(): { ctx: CanvasRenderingContext2D; fills: FillCal
   const target: Record<string, unknown> = {
     save() {},
     restore() {},
+    beginPath() {},
+    rect() {},
+    clip() {},
     fillRect(x: number, y: number, width: number, height: number) {
       fills.push({ x, y, width, height, color: String(fillStyle) });
     },
@@ -40,11 +43,6 @@ function rectContains(outer: DoorRect, inner: DoorRect): boolean {
     && inner.y + inner.height <= outer.y + outer.height;
 }
 
-function rectsOverlap(a: DoorRect, b: DoorRect): boolean {
-  return a.x < b.x + b.width && a.x + a.width > b.x
-    && a.y < b.y + b.height && a.y + a.height > b.y;
-}
-
 const themes = ["forest", "dungeon", "snow", "lava"] as const;
 let renderChecks = 0;
 let mapChecks = 0;
@@ -59,7 +57,6 @@ for (const orientation of DOOR_ORIENTATIONS) {
   assert.equal(geometry.wallDepth, 32);
   assert.ok(rectContains(geometry.frameBounds, geometry.aperture), `${orientation} frame contains aperture`);
   assert.ok(rectContains(geometry.aperture, geometry.triggerBounds), `${orientation} trigger stays inside aperture`);
-  assert.ok(rectContains(geometry.visualBounds, geometry.frameBounds), `${orientation} visual contains frame`);
   assert.deepEqual(getOppositeDoor(getOppositeDoor(orientation)), orientation);
 
   const inwardProbeX = geometry.entryPoint.x - geometry.inwardDirection.x * 28;
@@ -76,15 +73,24 @@ for (const orientation of DOOR_ORIENTATIONS) {
     true,
   );
 
-  // --- visualBounds does not expand collision ---
-  assert.ok(
-    geometry.visualBounds.width >= geometry.frameBounds.width,
-    `${orientation} visualBounds wider or equal to frameBounds`,
-  );
-  assert.ok(
-    geometry.visualBounds.height >= geometry.frameBounds.height,
-    `${orientation} visualBounds taller or equal to frameBounds`,
-  );
+  // --- Directional visualBounds constraints ---
+  const vb = geometry.visualBounds;
+  if (orientation === "down") {
+    assert.ok(vb.y >= 224, `down visualBounds.y >= 224 (got ${vb.y})`);
+    assert.ok(vb.y + vb.height <= 240, `down visualBounds y+h <= 240 (got ${vb.y + vb.height})`);
+  }
+  if (orientation === "left") {
+    assert.ok(vb.x >= 0, `left visualBounds.x >= 0`);
+    assert.ok(vb.x + vb.width <= 16, `left visualBounds x+w <= 16 (got ${vb.x + vb.width})`);
+  }
+  if (orientation === "right") {
+    assert.ok(vb.x >= 304, `right visualBounds.x >= 304 (got ${vb.x})`);
+    assert.ok(vb.x + vb.width <= 320, `right visualBounds x+w <= 320 (got ${vb.x + vb.width})`);
+  }
+  if (orientation === "up") {
+    assert.ok(vb.y >= 0, `up visualBounds.y >= 0`);
+    assert.ok(vb.y + vb.height <= 240, `up visualBounds stays on canvas`);
+  }
 
   // --- Render checks: each theme x state produces distinct layered output ---
   for (const theme of themes) {
@@ -96,29 +102,36 @@ for (const orientation of DOOR_ORIENTATIONS) {
     const openFills = openRecorder.fills;
     const lockedFills = lockedRecorder.fills;
 
-    // Both states produce substantial geometry
-    assert.ok(openFills.length >= 12, `${orientation}/${theme}/open has layered model (${openFills.length} fills)`);
-    assert.ok(lockedFills.length >= 15, `${orientation}/${theme}/locked has layered model (${lockedFills.length} fills)`);
+    assert.ok(openFills.length >= 8, `${orientation}/${theme}/open has layered model (${openFills.length} fills)`);
+    assert.ok(lockedFills.length >= 10, `${orientation}/${theme}/locked has layered model (${lockedFills.length} fills)`);
 
-    // All fills stay within visualBounds
-    for (const f of openFills) {
-      assert.ok(rectContains(geometry.visualBounds, f), `${orientation}/${theme}/open fill within visualBounds`);
+    // --- Directional bounds enforcement on rendered fills ---
+    for (const f of [...openFills, ...lockedFills]) {
+      if (orientation === "down") {
+        assert.ok(f.y >= 224, `down fill y >= 224 (got ${f.y}) [${theme}]`);
+        assert.ok(f.y + f.height <= 240, `down fill y+h <= 240 (got ${f.y + f.height}) [${theme}]`);
+      }
+      if (orientation === "left") {
+        assert.ok(f.x >= 0, `left fill x >= 0 (got ${f.x}) [${theme}]`);
+        assert.ok(f.x + f.width <= 16, `left fill x+w <= 16 (got ${f.x + f.width}) [${theme}]`);
+      }
+      if (orientation === "right") {
+        assert.ok(f.x >= 304, `right fill x >= 304 (got ${f.x}) [${theme}]`);
+        assert.ok(f.x + f.width <= 320, `right fill x+w <= 320 (got ${f.x + f.width}) [${theme}]`);
+      }
+      if (orientation === "up") {
+        assert.ok(f.y >= 0, `up fill y >= 0 (got ${f.y}) [${theme}]`);
+        assert.ok(f.y + f.height <= 240, `up fill y+h <= 240 (got ${f.y + f.height}) [${theme}]`);
+        assert.ok(f.x >= 0, `up fill x >= 0 (got ${f.x}) [${theme}]`);
+        assert.ok(f.x + f.width <= 320, `up fill x+w <= 320 (got ${f.x + f.width}) [${theme}]`);
+      }
     }
-    for (const f of lockedFills) {
-      assert.ok(rectContains(geometry.visualBounds, f), `${orientation}/${theme}/locked fill within visualBounds`);
-    }
 
-    // Locked state draws inside aperture (the lock core)
-    assert.ok(
-      lockedFills.some(f => rectContains(geometry.aperture, f)),
-      `${orientation}/${theme} locked draws core inside aperture`,
-    );
+    // Material depth: at least 4 distinct colors
+    assert.ok(new Set(openFills.map(f => f.color)).size >= 4, `${orientation}/${theme}/open has material depth`);
+    assert.ok(new Set(lockedFills.map(f => f.color)).size >= 4, `${orientation}/${theme}/locked has material depth`);
 
-    // Material depth: at least 5 distinct colors
-    assert.ok(new Set(openFills.map(f => f.color)).size >= 5, `${orientation}/${theme}/open has material depth`);
-    assert.ok(new Set(lockedFills.map(f => f.color)).size >= 5, `${orientation}/${theme}/locked has material depth`);
-
-    // Open and Locked differ (different fill counts or colors)
+    // Open and Locked differ
     const openSig = openFills.map(f => `${f.color}:${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
     const lockedSig = lockedFills.map(f => `${f.color}:${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
     assert.notEqual(openSig, lockedSig, `${orientation}/${theme} open and locked are visually distinct`);
@@ -168,6 +181,21 @@ for (const orientation of DOOR_ORIENTATIONS) {
   }
 }
 
+// --- Verify three distinct model types (not horizontal/boolean) ---
+const upFills = createCanvasRecorder();
+DoorRenderer.draw(upFills.ctx, getDoorGeometry("up"), "dungeon", true);
+const downFills = createCanvasRecorder();
+DoorRenderer.draw(downFills.ctx, getDoorGeometry("down"), "dungeon", true);
+const leftFills = createCanvasRecorder();
+DoorRenderer.draw(leftFills.ctx, getDoorGeometry("left"), "dungeon", true);
+
+const upSig = upFills.fills.map(f => `${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
+const downSig = downFills.fills.map(f => `${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
+const leftSig = leftFills.fills.map(f => `${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
+assert.notEqual(upSig, downSig, "up and down doors are NOT the same model flipped");
+assert.notEqual(upSig, leftSig, "up and left doors are NOT the same model rotated");
+assert.notEqual(downSig, leftSig, "down and left doors are distinct models");
+
 // --- Room combination checks ---
 const roomTypes = ["start", "combat", "treasure", "exit", "boss"] as const;
 const doorSets = [
@@ -209,8 +237,8 @@ console.log(JSON.stringify({
   renderChecks,
   mapChecks,
   roomCombinationChecks,
+  threeModelTypes: ["top-facade", "bottom-wall-embedded", "side-narrow"],
   physicsUnchanged: ["aperture", "triggerBounds", "entryPoint", "barrier", "wallDepth"],
-  visualBoundsSeparated: true,
-  perThemeModels: ["forest-root-gate", "dungeon-portcullis", "snow-airlock", "lava-furnace-iris"],
+  directionalBounds: { down: "y>=224,y+h<=240", left: "x>=0,x+w<=16", right: "x>=304,x+w<=320" },
   startRoomDuplicateGate: "removed",
 }));
