@@ -2,351 +2,310 @@ import type { DoorGeometry, DoorRect } from "../dungeon/DoorGeometry";
 
 export type DoorTheme = "forest" | "dungeon" | "snow" | "lava" | string;
 
-interface DoorPalette {
-  void: string;
-  voidDeep: string;
-  frameDark: string;
-  frame: string;
-  frameLight: string;
-  accent: string;
-  accentLight: string;
-  lock: string;
-  lockLight: string;
-}
-
-export interface DoorRenderLayout {
-  aperture: DoorRect;
-  jambA: DoorRect;
-  jambB: DoorRect;
-  outerLintel: DoorRect;
-  innerLip: DoorRect;
-  groundShadow: DoorRect;
-  lockBounds: DoorRect;
-}
-
-const PALETTES: Record<string, DoorPalette> = {
-  forest: {
-    void: "rgba(18,38,27,0.62)", voidDeep: "#142219", frameDark: "#2A1C14", frame: "#65482F",
-    frameLight: "#A0764A", accent: "#557B45", accentLight: "#91C96E", lock: "#20382A", lockLight: "#86E49D",
-  },
-  dungeon: {
-    void: "rgba(7,11,18,0.72)", voidDeep: "#080D15", frameDark: "#111925", frame: "#3D4858",
-    frameLight: "#7A8798", accent: "#69517A", accentLight: "#B57CE0", lock: "#171C27", lockLight: "#B16BE1",
-  },
-  snow: {
-    void: "rgba(19,52,66,0.64)", voidDeep: "#173440", frameDark: "#294A5B", frame: "#6F929E",
-    frameLight: "#D9E8EB", accent: "#5CB7C8", accentLight: "#BDF7FF", lock: "#244956", lockLight: "#70E5F2",
-  },
-  lava: {
-    void: "rgba(30,18,21,0.72)", voidDeep: "#150F13", frameDark: "#171219", frame: "#493943",
-    frameLight: "#8B8583", accent: "#9C3D24", accentLight: "#FF9A43", lock: "#481A17", lockLight: "#FF6A2B",
-  },
-};
-
-function fill(ctx: CanvasRenderingContext2D, color: string, rect: DoorRect): void {
+function fill(ctx: CanvasRenderingContext2D, color: string, x: number, y: number, w: number, h: number): void {
   ctx.fillStyle = color;
-  ctx.fillRect(Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height));
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-function inset(rect: DoorRect, amount: number): DoorRect {
-  return {
-    x: rect.x + amount,
-    y: rect.y + amount,
-    width: Math.max(1, rect.width - amount * 2),
-    height: Math.max(1, rect.height - amount * 2),
-  };
+function fillRect(ctx: CanvasRenderingContext2D, color: string, rect: DoorRect): void {
+  fill(ctx, color, rect.x, rect.y, rect.width, rect.height);
 }
 
-export function getDoorRenderLayout(geometry: DoorGeometry): DoorRenderLayout {
-  const { aperture, frameBounds, direction } = geometry;
-  const horizontal = direction === "up" || direction === "down";
-  if (horizontal) {
-    const leftWidth = aperture.x - frameBounds.x;
-    const rightX = aperture.x + aperture.width;
-    const rightWidth = frameBounds.x + frameBounds.width - rightX;
-    const outerY = direction === "up" ? frameBounds.y : frameBounds.y + frameBounds.height - 6;
-    const innerY = direction === "up" ? aperture.y + aperture.height - 4 : aperture.y;
-    const shadowY = direction === "up" ? innerY - 4 : innerY + 4;
-    return {
-      aperture: { ...aperture },
-      jambA: { x: frameBounds.x, y: frameBounds.y, width: leftWidth, height: frameBounds.height },
-      jambB: { x: rightX, y: frameBounds.y, width: rightWidth, height: frameBounds.height },
-      outerLintel: { x: frameBounds.x, y: outerY, width: frameBounds.width, height: 6 },
-      innerLip: { x: aperture.x, y: innerY, width: aperture.width, height: 4 },
-      groundShadow: { x: aperture.x + 4, y: shadowY, width: aperture.width - 8, height: 4 },
-      lockBounds: inset(aperture, 3),
-    };
-  }
+// --- Forest Door ---
 
-  const topHeight = aperture.y - frameBounds.y;
-  const bottomY = aperture.y + aperture.height;
-  const bottomHeight = frameBounds.y + frameBounds.height - bottomY;
-  const outerX = direction === "left" ? frameBounds.x : frameBounds.x + frameBounds.width - 6;
-  const innerX = direction === "left" ? aperture.x + aperture.width - 4 : aperture.x;
-  const shadowX = direction === "left" ? innerX - 4 : innerX + 4;
-  return {
-    aperture: { ...aperture },
-    jambA: { x: frameBounds.x, y: frameBounds.y, width: frameBounds.width, height: topHeight },
-    jambB: { x: frameBounds.x, y: bottomY, width: frameBounds.width, height: bottomHeight },
-    outerLintel: { x: outerX, y: frameBounds.y, width: 6, height: frameBounds.height },
-    innerLip: { x: innerX, y: aperture.y, width: 4, height: aperture.height },
-    groundShadow: { x: shadowX, y: aperture.y + 4, width: 4, height: aperture.height - 8 },
-    lockBounds: inset(aperture, 3),
-  };
-}
+function drawForestDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, horizontal: boolean, locked: boolean): void {
+  const { x, y, width: w, height: h } = vb;
 
-function drawBeveledFrame(ctx: CanvasRenderingContext2D, rect: DoorRect, palette: DoorPalette): void {
-  fill(ctx, palette.frameDark, rect);
-  const inner = inset(rect, 2);
-  fill(ctx, palette.frame, inner);
-  if (inner.width >= inner.height) {
-    fill(ctx, palette.frameLight, { x: inner.x + 1, y: inner.y + 1, width: inner.width - 2, height: 2 });
-    fill(ctx, palette.frameDark, { x: inner.x + 1, y: inner.y + inner.height - 2, width: inner.width - 2, height: 1 });
-  } else {
-    fill(ctx, palette.frameLight, { x: inner.x + 1, y: inner.y + 1, width: 2, height: inner.height - 2 });
-    fill(ctx, palette.frameDark, { x: inner.x + inner.width - 2, y: inner.y + 1, width: 1, height: inner.height - 2 });
-  }
-}
+  // Recess
+  fill(ctx, locked ? "rgba(51,78,45,0.55)" : "rgba(28,55,38,0.22)", x, y, w, h);
 
-function drawForestDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
-  const horizontal = geometry.direction === "up" || geometry.direction === "down";
-  if (horizontal) {
-    for (const jamb of [layout.jambA, layout.jambB]) {
-      fill(ctx, palette.accent, { x: jamb.x + 2, y: jamb.y + 7, width: Math.max(2, jamb.width - 4), height: 3 });
-      fill(ctx, palette.accentLight, { x: jamb.x + jamb.width / 2 - 1, y: jamb.y + 10, width: 2, height: 7 });
+  // Outer frame: thick bark posts
+  fill(ctx, "#3E2B20", horizontal ? x : x, horizontal ? y : y, horizontal ? w : 5, horizontal ? 5 : h);
+  fill(ctx, "#3E2B20", horizontal ? x : x + w - 5, horizontal ? y + h - 5 : y, horizontal ? w : 5, horizontal ? 5 : h);
+  // Heartwood highlight
+  fill(ctx, "#6A4B31", horizontal ? x + 1 : x + 1, horizontal ? y + 1 : y + 1, horizontal ? w - 2 : 2, horizontal ? 2 : h - 2);
+  fill(ctx, "#6A4B31", horizontal ? x + 1 : x + w - 3, horizontal ? y + h - 3 : y + 1, horizontal ? w - 2 : 2, horizontal ? 2 : h - 2);
+
+  // Inner frame: secondary bark layer
+  fill(ctx, "#2A1C14", horizontal ? x + 5 : x + 5, horizontal ? y + 2 : y + 5, horizontal ? w - 10 : 3, horizontal ? 3 : h - 10);
+  fill(ctx, "#2A1C14", horizontal ? x + 5 : x + w - 8, horizontal ? y + h - 5 : y + 5, horizontal ? w - 10 : 3, horizontal ? 3 : h - 10);
+
+  // Threshold: root floor strip
+  fill(ctx, "#56864B", horizontal ? x + 8 : x + 3, horizontal ? y + h - 4 : y + 8, horizontal ? 10 : 3, horizontal ? 3 : 10);
+  fill(ctx, "#56864B", horizontal ? x + w - 18 : x + w - 6, horizontal ? y + 3 : y + h - 18, horizontal ? 10 : 3, horizontal ? 3 : 10);
+
+  if (locked) {
+    // Root lattice bars
+    fill(ctx, "#29472F", horizontal ? x + 8 : x + 8, horizontal ? y + 5 : y + 8, horizontal ? w - 16 : w - 16, horizontal ? h - 10 : h - 16);
+    if (horizontal) {
+      for (let i = x + 10; i < x + w - 8; i += 8) {
+        fill(ctx, "#29472F", i, y + 5, 3, h - 10);
+        fill(ctx, "#81A957", i + 1, y + 7, 1, h - 14);
+      }
+    } else {
+      for (let i = y + 10; i < y + h - 8; i += 8) {
+        fill(ctx, "#29472F", x + 5, i, w - 10, 3);
+        fill(ctx, "#81A957", x + 7, i + 1, w - 14, 1);
+      }
     }
+    // Flower lock point
+    const cx = x + Math.floor(w / 2);
+    const cy = y + Math.floor(h / 2);
+    fill(ctx, "#1C2C21", cx - 4, cy - 4, 9, 9);
+    fill(ctx, "#E783A5", cx - 2, cy - 2, 5, 5);
+    fill(ctx, "#FFE47A", cx, cy, 2, 2);
   } else {
-    for (const jamb of [layout.jambA, layout.jambB]) {
-      fill(ctx, palette.accent, { x: jamb.x + 7, y: jamb.y + 2, width: 3, height: Math.max(2, jamb.height - 4) });
-      fill(ctx, palette.accentLight, { x: jamb.x + 10, y: jamb.y + jamb.height / 2 - 1, width: 7, height: 2 });
+    // Open: root arch with natural light
+    if (horizontal) {
+      fill(ctx, "#4A3324", x + 8, y + 4, 4, h - 8);
+      fill(ctx, "#4A3324", x + w - 12, y + 4, 4, h - 8);
+      fill(ctx, "#6F4F32", x + 9, y + 5, 2, h - 10);
+      fill(ctx, "#6F4F32", x + w - 11, y + 5, 2, h - 10);
+      // Moss on inner posts
+      fill(ctx, "#6C9C53", x + 7, y + 6, 3, 4);
+      fill(ctx, "#6C9C53", x + w - 10, y + h - 10, 3, 4);
+      // Natural light through gaps
+      fill(ctx, "#91C96E", x + Math.floor(w / 2) - 3, y + 3, 6, 2);
+    } else {
+      fill(ctx, "#4A3324", x + 4, y + 8, w - 8, 4);
+      fill(ctx, "#4A3324", x + 4, y + h - 12, w - 8, 4);
+      fill(ctx, "#6F4F32", x + 5, y + 9, w - 10, 2);
+      fill(ctx, "#6F4F32", x + 5, y + h - 11, w - 10, 2);
+      fill(ctx, "#6C9C53", x + 6, y + 7, 4, 3);
+      fill(ctx, "#6C9C53", x + w - 10, y + h - 10, 4, 3);
+      fill(ctx, "#91C96E", x + 3, y + Math.floor(h / 2) - 3, 2, 6);
     }
   }
+
+  // Foreground: vine tendrils overhanging
+  fill(ctx, "#56864B", horizontal ? x + 3 : x + 3, horizontal ? y : y + 3, horizontal ? 6 : 3, horizontal ? 3 : 6);
+  fill(ctx, "#56864B", horizontal ? x + w - 9 : x + w - 6, horizontal ? y + h - 3 : y + h - 9, horizontal ? 6 : 3, horizontal ? 3 : 6);
+  fill(ctx, "#91C96E", horizontal ? x + 4 : x + 3, horizontal ? y : y + 4, horizontal ? 3 : 2, horizontal ? 2 : 3);
 }
 
-function drawDungeonDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
-  const horizontal = geometry.direction === "up" || geometry.direction === "down";
-  const boltRects = horizontal
-    ? [
-        { x: layout.jambA.x + 2, y: layout.jambA.y + 7, width: 2, height: 2 },
-        { x: layout.jambB.x + layout.jambB.width - 4, y: layout.jambB.y + 19, width: 2, height: 2 },
-      ]
-    : [
-        { x: layout.jambA.x + 7, y: layout.jambA.y + 2, width: 2, height: 2 },
-        { x: layout.jambB.x + 19, y: layout.jambB.y + layout.jambB.height - 4, width: 2, height: 2 },
-      ];
-  for (const bolt of boltRects) fill(ctx, palette.frameLight, bolt);
-  const centerX = layout.innerLip.x + layout.innerLip.width / 2;
-  const centerY = layout.innerLip.y + layout.innerLip.height / 2;
-  const runeX = Math.max(geometry.frameBounds.x + 3, Math.min(geometry.frameBounds.x + geometry.frameBounds.width - 3, centerX));
-  const runeY = Math.max(geometry.frameBounds.y + 3, Math.min(geometry.frameBounds.y + geometry.frameBounds.height - 3, centerY));
-  fill(ctx, palette.accent, { x: runeX - 3, y: runeY - 3, width: 6, height: 6 });
-  fill(ctx, palette.accentLight, { x: runeX - 1, y: runeY - 1, width: 2, height: 2 });
-}
+// --- Dungeon Door ---
 
-function drawSnowDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
-  const horizontal = geometry.direction === "up" || geometry.direction === "down";
-  fill(ctx, palette.accentLight, horizontal
-    ? { x: layout.outerLintel.x + 5, y: layout.outerLintel.y, width: layout.outerLintel.width - 10, height: 2 }
-    : { x: layout.outerLintel.x, y: layout.outerLintel.y + 5, width: 2, height: layout.outerLintel.height - 10 });
-  const shards = horizontal
-    ? [
-        { x: layout.jambA.x + 2, y: layout.jambA.y + 10, width: 3, height: 7 },
-        { x: layout.jambB.x + layout.jambB.width - 5, y: layout.jambB.y + 14, width: 3, height: 9 },
-      ]
-    : [
-        { x: layout.jambA.x + 10, y: layout.jambA.y + 2, width: 7, height: 3 },
-        { x: layout.jambB.x + 14, y: layout.jambB.y + layout.jambB.height - 5, width: 9, height: 3 },
-      ];
-  for (const shard of shards) fill(ctx, palette.accent, shard);
-}
+function drawDungeonDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, horizontal: boolean, locked: boolean): void {
+  const { x, y, width: w, height: h } = vb;
 
-function drawLavaDetails(ctx: CanvasRenderingContext2D, geometry: DoorGeometry, layout: DoorRenderLayout, palette: DoorPalette): void {
-  const horizontal = geometry.direction === "up" || geometry.direction === "down";
-  const cracks = horizontal
-    ? [
-        { x: layout.jambA.x + 3, y: layout.jambA.y + 8, width: 2, height: 10 },
-        { x: layout.jambB.x + layout.jambB.width - 5, y: layout.jambB.y + 13, width: 2, height: 11 },
-      ]
-    : [
-        { x: layout.jambA.x + 8, y: layout.jambA.y + 3, width: 10, height: 2 },
-        { x: layout.jambB.x + 13, y: layout.jambB.y + layout.jambB.height - 5, width: 11, height: 2 },
-      ];
-  for (const crack of cracks) {
-    fill(ctx, palette.accent, crack);
-    const core = horizontal
-      ? { x: crack.x, y: crack.y + 2, width: 1, height: Math.max(2, crack.height - 4) }
-      : { x: crack.x + 2, y: crack.y, width: Math.max(2, crack.width - 4), height: 1 };
-    fill(ctx, palette.accentLight, core);
+  // Recess
+  fill(ctx, locked ? "rgba(22,15,31,0.78)" : "rgba(10,15,24,0.45)", x, y, w, h);
+
+  // Outer frame: layered stone jambs
+  fill(ctx, "#111925", horizontal ? x : x, horizontal ? y : y, horizontal ? w : 6, horizontal ? 6 : h);
+  fill(ctx, "#111925", horizontal ? x : x + w - 6, horizontal ? y + h - 6 : y, horizontal ? w : 6, horizontal ? 6 : h);
+  // Inner stone layer
+  fill(ctx, "#3B485C", horizontal ? x + 1 : x + 1, horizontal ? y + 1 : y + 1, horizontal ? w - 2 : 4, horizontal ? 4 : h - 2);
+  fill(ctx, "#3B485C", horizontal ? x + 1 : x + w - 5, horizontal ? y + h - 5 : y + 1, horizontal ? w - 2 : 4, horizontal ? 4 : h - 2);
+
+  // Inner frame: iron rivet strips
+  if (horizontal) {
+    for (let i = x + 5; i < x + w - 7; i += 10) {
+      fill(ctx, "#718095", i, y + 1, 5, 2);
+      fill(ctx, "#718095", i + 2, y + h - 3, 5, 2);
+    }
+  } else {
+    for (let i = y + 5; i < y + h - 7; i += 10) {
+      fill(ctx, "#718095", x + 1, i, 2, 5);
+      fill(ctx, "#718095", x + w - 3, i + 2, 2, 5);
+    }
   }
-}
 
-function localRect(
-  geometry: DoorGeometry,
-  bounds: DoorRect,
-  u: number,
-  v: number,
-  width: number,
-  height: number,
-): DoorRect {
-  if (geometry.direction === "up") {
-    return { x: bounds.x + u, y: bounds.y + v, width, height };
+  // Threshold
+  fill(ctx, "#1A202D", horizontal ? x + 6 : x + 6, horizontal ? y + h - 3 : y + 6, horizontal ? w - 12 : 2, horizontal ? 2 : h - 12);
+
+  if (locked) {
+    // Portcullis grid
+    const cx = x + Math.floor(w / 2);
+    const cy = y + Math.floor(h / 2);
+    fill(ctx, "#151C25", horizontal ? x + 6 : x + 6, horizontal ? y + 5 : y + 6, horizontal ? w - 12 : w - 12, horizontal ? h - 10 : h - 12);
+    if (horizontal) {
+      for (let i = x + 8; i < x + w - 6; i += 7) {
+        fill(ctx, "#151C25", i, y + 5, 3, h - 10);
+        fill(ctx, "#7B8993", i + 1, y + 6, 1, h - 13);
+      }
+      fill(ctx, "#151C25", x + 6, cy - 2, w - 12, 4);
+      fill(ctx, "#7B8993", x + 7, cy - 1, w - 14, 1);
+    } else {
+      for (let i = y + 8; i < y + h - 6; i += 7) {
+        fill(ctx, "#151C25", x + 5, i, w - 10, 3);
+        fill(ctx, "#7B8993", x + 6, i + 1, w - 13, 1);
+      }
+      fill(ctx, "#151C25", cx - 2, y + 6, 4, h - 12);
+      fill(ctx, "#7B8993", cx - 1, y + 7, 1, h - 14);
+    }
+    // Offset chain links
+    fill(ctx, "#111820", horizontal ? cx - 12 : cx - 5, horizontal ? cy - 5 : cy - 12, horizontal ? 7 : 4, horizontal ? 4 : 7);
+    fill(ctx, "#111820", horizontal ? cx - 7 : cx - 2, horizontal ? cy - 2 : cy - 7, horizontal ? 4 : 7, horizontal ? 7 : 4);
+    fill(ctx, "#111820", horizontal ? cx + 3 : cx - 5, horizontal ? cy - 5 : cy + 3, horizontal ? 7 : 4, horizontal ? 4 : 7);
+    fill(ctx, "#111820", horizontal ? cx + 1 : cx - 1, horizontal ? cy - 1 : cy + 1, horizontal ? 4 : 7, horizontal ? 7 : 4);
+    fill(ctx, "#89969D", cx - 7, cy - 3, 4, 2);
+    fill(ctx, "#89969D", cx + 3, cy + 2, 4, 2);
+    // Soul-lock keystone
+    fill(ctx, "#241531", cx - 5, cy - 5, 11, 11);
+    fill(ctx, "#9E59C8", cx - 3, cy - 3, 7, 7);
+    fill(ctx, "#E0B8F2", cx - 1, cy - 2, 3, 4);
+  } else {
+    // Open: short iron teeth at frame edges
+    fill(ctx, "#6D7B85", horizontal ? x + 7 : x + 7, horizontal ? y + 6 : y + 7, horizontal ? 4 : 5, horizontal ? 5 : 4);
+    fill(ctx, "#6D7B85", horizontal ? x + w - 11 : x + w - 12, horizontal ? y + h - 11 : y + h - 11, horizontal ? 4 : 5, horizontal ? 5 : 4);
+    // Dark passage depth
+    fill(ctx, "#080D15", horizontal ? x + 12 : x + 10, horizontal ? y + 8 : y + 12, horizontal ? w - 24 : w - 20, horizontal ? h - 16 : h - 24);
   }
-  if (geometry.direction === "down") {
-    return {
-      x: bounds.x + u,
-      y: bounds.y + bounds.height - v - height,
-      width,
-      height,
-    };
+
+  // Foreground: pointed arch stones
+  fill(ctx, "#3B485C", horizontal ? x + 2 : x + 2, horizontal ? y : y + 2, horizontal ? 4 : 3, horizontal ? 3 : 4);
+  fill(ctx, "#3B485C", horizontal ? x + w - 6 : x + w - 5, horizontal ? y + h - 3 : y + h - 6, horizontal ? 4 : 3, horizontal ? 3 : 4);
+  fill(ctx, "#718095", horizontal ? x + 3 : x + 2, horizontal ? y : y + 3, horizontal ? 2 : 2, horizontal ? 2 : 2);
+}
+
+// --- Snow Door ---
+
+function drawSnowDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, horizontal: boolean, locked: boolean): void {
+  const { x, y, width: w, height: h } = vb;
+
+  // Recess
+  fill(ctx, locked ? "rgba(31,73,91,0.72)" : "rgba(47,92,108,0.28)", x, y, w, h);
+
+  // Outer frame: steel jambs under ice
+  fill(ctx, "#294A5B", horizontal ? x : x, horizontal ? y : y, horizontal ? w : 6, horizontal ? 6 : h);
+  fill(ctx, "#294A5B", horizontal ? x : x + w - 6, horizontal ? y + h - 6 : y, horizontal ? w : 6, horizontal ? 6 : h);
+  // Steel inner
+  fill(ctx, "#6F929E", horizontal ? x + 1 : x + 1, horizontal ? y + 1 : y + 1, horizontal ? w - 2 : 4, horizontal ? 4 : h - 2);
+  fill(ctx, "#6F929E", horizontal ? x + 1 : x + w - 5, horizontal ? y + h - 5 : y + 1, horizontal ? w - 2 : 4, horizontal ? 4 : h - 2);
+
+  // Snow cap (ice overhang)
+  fill(ctx, "#D9E8EB", horizontal ? x + 2 : x, horizontal ? y : y + 2, horizontal ? w - 4 : 2, horizontal ? 2 : h - 4);
+  fill(ctx, "#D9E8EB", horizontal ? x + 6 : x + w - 5, horizontal ? y + h - 5 : y + 6, horizontal ? Math.max(2, w - 12) : 1, horizontal ? 1 : Math.max(2, h - 12));
+
+  // Inner frame: frost seam
+  fill(ctx, "#173744", horizontal ? x + 6 : x + 6, horizontal ? y + 3 : y + 6, horizontal ? w - 12 : 2, horizontal ? 2 : h - 12);
+  fill(ctx, "#173744", horizontal ? x + 6 : x + w - 8, horizontal ? y + h - 5 : y + 6, horizontal ? w - 12 : 2, horizontal ? 2 : h - 12);
+
+  if (locked) {
+    // Two-panel airlock
+    const cx = x + Math.floor(w / 2);
+    const cy = y + Math.floor(h / 2);
+    fill(ctx, "#284E5E", horizontal ? x + 7 : x + 7, horizontal ? y + 5 : y + 7, horizontal ? w - 14 : w - 14, horizontal ? h - 10 : h - 14);
+    // Left/top panel
+    fill(ctx, "#719EAA", horizontal ? x + 9 : x + 9, horizontal ? y + 6 : y + 9, horizontal ? Math.max(3, cx - x - 12) : w - 18, horizontal ? h - 12 : Math.max(3, cy - y - 12));
+    // Right/bottom panel
+    fill(ctx, "#719EAA", horizontal ? cx + 3 : x + 9, horizontal ? y + 6 : cy + 3, horizontal ? Math.max(3, x + w - cx - 12) : w - 18, horizontal ? h - 12 : Math.max(3, y + h - cy - 12));
+    // Pressure seam
+    fill(ctx, "#173744", horizontal ? cx - 2 : x + 6, horizontal ? y + 5 : cy - 2, horizontal ? 4 : w - 12, horizontal ? h - 10 : 4);
+    fill(ctx, "#55BBC9", horizontal ? cx - 1 : x + 7, horizontal ? y + 6 : cy - 1, horizontal ? 2 : w - 14, horizontal ? h - 12 : 2);
+    // Edge highlights
+    fill(ctx, "#B7D9DF", horizontal ? x + 10 : x + 9, horizontal ? y + 6 : y + 10, horizontal ? 2 : w - 18, horizontal ? h - 12 : 2);
+    fill(ctx, "#B7D9DF", horizontal ? x + w - 12 : x + 9, horizontal ? y + 6 : y + h - 12, horizontal ? 2 : w - 18, horizontal ? h - 12 : 2);
+    // Diagonal braces
+    fill(ctx, "#365F6F", horizontal ? cx - 8 : cx - 6, horizontal ? cy - 6 : cy - 8, horizontal ? 4 : 3, horizontal ? 3 : 4);
+    fill(ctx, "#365F6F", horizontal ? cx + 4 : cx + 3, horizontal ? cy + 3 : cy + 4, horizontal ? 4 : 3, horizontal ? 3 : 4);
+    // Status light
+    fill(ctx, "#21485A", cx - 5, cy - 5, 11, 11);
+    fill(ctx, "#55BBC9", cx - 3, cy - 3, 7, 7);
+    fill(ctx, "#E2FFFF", cx - 1, cy - 2, 2, 4);
+    // Warning lamps
+    fill(ctx, "#C94C55", horizontal ? cx - 10 : cx - 8, horizontal ? cy - 1 : cy - 10, 3, 3);
+    fill(ctx, "#C94C55", horizontal ? cx + 8 : cx + 5, horizontal ? cy - 1 : cy + 8, 3, 3);
+    fill(ctx, "#FFD16A", horizontal ? cx - 9 : cx - 7, horizontal ? cy : cy - 9, 1, 1);
+    fill(ctx, "#FFD16A", horizontal ? cx + 9 : cx + 6, horizontal ? cy : cy + 9, 1, 1);
+  } else {
+    // Open: retracted insulated pockets
+    fill(ctx, "#A9D4DC", horizontal ? x + 8 : x + 7, horizontal ? y + 6 : y + 8, horizontal ? 4 : 6, horizontal ? 6 : 4);
+    fill(ctx, "#A9D4DC", horizontal ? x + w - 12 : x + w - 13, horizontal ? y + h - 12 : y + h - 12, horizontal ? 4 : 6, horizontal ? 6 : 4);
+    // Frost wedges
+    fill(ctx, "#EFFBFC", horizontal ? x + 10 : x + 8, horizontal ? y + 4 : y + 10, horizontal ? 3 : 2, horizontal ? 2 : 3);
+    fill(ctx, "#EFFBFC", horizontal ? x + w - 13 : x + w - 10, horizontal ? y + h - 6 : y + h - 13, horizontal ? 3 : 2, horizontal ? 2 : 3);
+    // Dark passage
+    fill(ctx, "#173440", horizontal ? x + 14 : x + 12, horizontal ? y + 8 : y + 14, horizontal ? w - 28 : w - 24, horizontal ? h - 16 : h - 28);
   }
-  if (geometry.direction === "left") {
-    return { x: bounds.x + v, y: bounds.y + u, width: height, height: width };
+
+  // Foreground: ice-cap overhang
+  fill(ctx, "#EFFBFC", horizontal ? x + 4 : x, horizontal ? y : y + 4, horizontal ? 8 : 2, horizontal ? 2 : 8);
+  fill(ctx, "#EFFBFC", horizontal ? x + w - 12 : x + w - 2, horizontal ? y : y + w - 12, horizontal ? 8 : 2, horizontal ? 2 : 8);
+}
+
+// --- Lava Door ---
+
+function drawLavaDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, horizontal: boolean, locked: boolean): void {
+  const { x, y, width: w, height: h } = vb;
+
+  // Recess
+  fill(ctx, locked ? "rgba(77,29,24,0.76)" : "rgba(42,29,35,0.38)", x, y, w, h);
+
+  // Outer frame: basalt heat-shield
+  fill(ctx, "#171219", horizontal ? x : x, horizontal ? y : y, horizontal ? w : 6, horizontal ? 6 : h);
+  fill(ctx, "#171219", horizontal ? x : x + w - 6, horizontal ? y + h - 6 : y, horizontal ? w : 6, horizontal ? 6 : h);
+  // Inner basalt
+  fill(ctx, "#493943", horizontal ? x + 1 : x + 1, horizontal ? y + 1 : y + 1, horizontal ? w - 2 : 4, horizontal ? 4 : h - 2);
+  fill(ctx, "#493943", horizontal ? x + 1 : x + w - 5, horizontal ? y + h - 5 : y + 1, horizontal ? w - 2 : 4, horizontal ? 4 : h - 2);
+
+  // Iron rails
+  if (horizontal) {
+    for (let i = x + 5; i < x + w - 7; i += 10) {
+      fill(ctx, "#777E7F", i, y + 1, 5, 2);
+      fill(ctx, "#777E7F", i + 2, y + h - 3, 5, 2);
+    }
+  } else {
+    for (let i = y + 5; i < y + h - 7; i += 10) {
+      fill(ctx, "#777E7F", x + 1, i, 2, 5);
+      fill(ctx, "#777E7F", x + w - 3, i + 2, 2, 5);
+    }
   }
-  return {
-    x: bounds.x + bounds.width - v - height,
-    y: bounds.y + u,
-    width: height,
-    height: width,
-  };
-}
 
-function drawLocal(
-  ctx: CanvasRenderingContext2D,
-  geometry: DoorGeometry,
-  bounds: DoorRect,
-  color: string,
-  u: number,
-  v: number,
-  width: number,
-  height: number,
-): void {
-  fill(ctx, color, localRect(geometry, bounds, u, v, width, height));
-}
+  // Threshold
+  fill(ctx, "#21181E", horizontal ? x + 6 : x + 6, horizontal ? y + h - 3 : y + 6, horizontal ? w - 12 : 2, horizontal ? 2 : h - 12);
 
-function getLocalSize(geometry: DoorGeometry, bounds: DoorRect): { length: number; depth: number } {
-  const horizontal = geometry.direction === "up" || geometry.direction === "down";
-  return horizontal
-    ? { length: bounds.width, depth: bounds.height }
-    : { length: bounds.height, depth: bounds.width };
-}
+  const cx = x + Math.floor(w / 2);
+  const cy = y + Math.floor(h / 2);
 
-function drawForestLockedCore(
-  ctx: CanvasRenderingContext2D,
-  geometry: DoorGeometry,
-  lock: DoorRect,
-  palette: DoorPalette,
-): void {
-  const { length, depth } = getLocalSize(geometry, lock);
-  fill(ctx, palette.lock, lock);
-  for (let u = 4; u <= length - 7; u += 8) {
-    drawLocal(ctx, geometry, lock, "#352319", u, 2, 4, depth - 4);
-    drawLocal(ctx, geometry, lock, palette.accent, u + 1, 4, 2, depth - 8);
+  if (locked) {
+    // Octagonal furnace ring
+    fill(ctx, "#261C22", horizontal ? x + 7 : x + 7, horizontal ? y + 5 : y + 7, horizontal ? w - 14 : w - 14, horizontal ? h - 10 : h - 14);
+    fill(ctx, "#5B454C", horizontal ? x + 10 : x + 10, horizontal ? y + 6 : y + 10, horizontal ? w - 20 : w - 20, horizontal ? h - 12 : h - 20);
+    // Iris blades
+    fill(ctx, "#913B2C", horizontal ? cx - 14 : cx - 12, horizontal ? y + 5 : cy - 14, horizontal ? 9 : 5, horizontal ? 5 : 9);
+    fill(ctx, "#913B2C", horizontal ? cx + 5 : cx + 7, horizontal ? y + 5 : cy + 5, horizontal ? 9 : 5, horizontal ? 5 : 9);
+    fill(ctx, "#913B2C", horizontal ? cx - 10 : cx + 5, horizontal ? y + h - 10 : cy - 10, horizontal ? 8 : 5, horizontal ? 5 : 8);
+    fill(ctx, "#913B2C", horizontal ? cx + 2 : cx - 10, horizontal ? y + h - 10 : cy + 2, horizontal ? 8 : 5, horizontal ? 5 : 8);
+    // Blade highlights
+    fill(ctx, "#B74A2D", horizontal ? cx - 12 : cx - 10, horizontal ? y + 6 : cy - 12, horizontal ? 5 : 2, horizontal ? 2 : 5);
+    fill(ctx, "#B74A2D", horizontal ? cx + 7 : cx + 8, horizontal ? y + 6 : cy + 7, horizontal ? 5 : 2, horizontal ? 2 : 5);
+    // Side pistons
+    fill(ctx, "#2A2027", horizontal ? x + 5 : cx - 4, horizontal ? cy - 4 : y + 5, horizontal ? 9 : 8, horizontal ? 8 : 9);
+    fill(ctx, "#2A2027", horizontal ? x + w - 14 : cx - 4, horizontal ? cy - 4 : y + h - 14, horizontal ? 9 : 8, horizontal ? 8 : 9);
+    fill(ctx, "#8B8583", horizontal ? x + 7 : cx - 2, horizontal ? cy - 2 : y + 7, horizontal ? 7 : 3, horizontal ? 3 : 7);
+    fill(ctx, "#8B8583", horizontal ? x + w - 12 : cx - 2, horizontal ? cy - 2 : y + h - 12, horizontal ? 7 : 3, horizontal ? 3 : 7);
+    fill(ctx, "#D94B1F", horizontal ? x + 11 : cx - 1, horizontal ? cy - 3 : y + 11, horizontal ? 3 : 2, horizontal ? 5 : 3);
+    fill(ctx, "#D94B1F", horizontal ? x + w - 10 : cx - 1, horizontal ? cy - 3 : y + h - 10, horizontal ? 3 : 2, horizontal ? 5 : 3);
+    // Combustion eye
+    fill(ctx, "#5A211C", cx - 6, cy - 6, 12, 12);
+    fill(ctx, "#E34F1E", cx - 4, cy - 4, 8, 8);
+    fill(ctx, "#FFB52C", cx - 2, cy - 3, 5, 6);
+    fill(ctx, "#FFE86E", cx, cy - 1, 2, 3);
+    // Rivet dots
+    fill(ctx, "#B2A6A1", horizontal ? x + 9 : cx - 1, horizontal ? cy - 1 : y + 9, 2, 2);
+    fill(ctx, "#B2A6A1", horizontal ? x + w - 11 : cx - 1, horizontal ? cy - 1 : y + h - 11, 2, 2);
+  } else {
+    // Open: retracted iris teeth and hydraulic sockets
+    fill(ctx, "#8C4A37", horizontal ? x + 8 : x + 7, horizontal ? y + 6 : y + 8, horizontal ? 4 : 6, horizontal ? 6 : 4);
+    fill(ctx, "#8C4A37", horizontal ? x + w - 12 : x + w - 13, horizontal ? y + h - 12 : y + h - 12, horizontal ? 4 : 6, horizontal ? 6 : 4);
+    // Hydraulic sockets
+    fill(ctx, "#2A2027", horizontal ? x + 6 : cx - 3, horizontal ? cy - 3 : y + 6, horizontal ? 6 : 6, horizontal ? 6 : 6);
+    fill(ctx, "#2A2027", horizontal ? x + w - 12 : cx - 3, horizontal ? cy - 3 : y + h - 12, horizontal ? 6 : 6, horizontal ? 6 : 6);
+    fill(ctx, "#8B8583", horizontal ? x + 7 : cx - 2, horizontal ? cy - 2 : y + 7, horizontal ? 4 : 4, horizontal ? 4 : 4);
+    fill(ctx, "#8B8583", horizontal ? x + w - 11 : cx - 2, horizontal ? cy - 2 : y + h - 11, horizontal ? 4 : 4, horizontal ? 4 : 4);
+    // Dark passage with furnace glow
+    fill(ctx, "#150F13", horizontal ? x + 14 : x + 12, horizontal ? y + 8 : y + 14, horizontal ? w - 28 : w - 24, horizontal ? h - 16 : h - 28);
+    fill(ctx, "rgba(227,79,30,0.15)", horizontal ? x + 16 : x + 14, horizontal ? y + 10 : y + 16, horizontal ? w - 32 : w - 28, horizontal ? h - 20 : h - 32);
   }
-  drawLocal(ctx, geometry, lock, "#2A1C14", 2, Math.floor(depth / 2) - 2, length - 4, 5);
-  drawLocal(ctx, geometry, lock, palette.accentLight, 5, 3, 3, 3);
-  drawLocal(ctx, geometry, lock, palette.accent, length - 9, depth - 7, 4, 4);
-  const cx = Math.floor(length / 2);
-  const cy = Math.floor(depth / 2);
-  drawLocal(ctx, geometry, lock, "#1C2C21", cx - 5, cy - 5, 10, 10);
-  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 3, cy - 3, 6, 6);
-  drawLocal(ctx, geometry, lock, "#E9FFD8", cx - 1, cy - 2, 2, 4);
+
+  // Foreground: piston rods extending beyond frame
+  fill(ctx, "#8B8583", horizontal ? x + 2 : x + 2, horizontal ? y + Math.floor(h / 2) - 1 : y + 3, horizontal ? 4 : 2, horizontal ? 2 : 4);
+  fill(ctx, "#8B8583", horizontal ? x + w - 6 : x + w - 4, horizontal ? y + Math.floor(h / 2) - 1 : y + h - 7, horizontal ? 4 : 2, horizontal ? 2 : 4);
 }
 
-function drawDungeonLockedCore(
-  ctx: CanvasRenderingContext2D,
-  geometry: DoorGeometry,
-  lock: DoorRect,
-  palette: DoorPalette,
-): void {
-  const { length, depth } = getLocalSize(geometry, lock);
-  fill(ctx, palette.lock, lock);
-  for (let u = 4; u <= length - 7; u += 7) {
-    drawLocal(ctx, geometry, lock, "#111820", u, 1, 3, depth - 2);
-    drawLocal(ctx, geometry, lock, "#7B8993", u + 1, 3, 1, depth - 6);
-    drawLocal(ctx, geometry, lock, "#111820", u - 1, depth - 5, 5, 3);
-  }
-  drawLocal(ctx, geometry, lock, "#0C1118", 2, Math.floor(depth / 2) - 2, length - 4, 5);
-  drawLocal(ctx, geometry, lock, "#7B8993", 4, Math.floor(depth / 2) - 1, length - 8, 1);
-  const cx = Math.floor(length / 2);
-  const cy = Math.floor(depth / 2);
-  // Offset chain links preserve the reference entrance's mechanical lock language.
-  drawLocal(ctx, geometry, lock, "#0B1016", cx - 13, cy - 6, 7, 4);
-  drawLocal(ctx, geometry, lock, "#0B1016", cx - 8, cy - 3, 4, 7);
-  drawLocal(ctx, geometry, lock, "#0B1016", cx + 4, cy - 6, 7, 4);
-  drawLocal(ctx, geometry, lock, "#0B1016", cx + 2, cy, 4, 7);
-  drawLocal(ctx, geometry, lock, "#89969D", cx - 8, cy - 4, 4, 2);
-  drawLocal(ctx, geometry, lock, "#89969D", cx + 4, cy + 3, 4, 2);
-  drawLocal(ctx, geometry, lock, "#241531", cx - 5, cy - 6, 10, 12);
-  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 3, cy - 4, 6, 8);
-  drawLocal(ctx, geometry, lock, "#F2D8FF", cx - 1, cy - 2, 2, 4);
-}
-
-function drawSnowLockedCore(
-  ctx: CanvasRenderingContext2D,
-  geometry: DoorGeometry,
-  lock: DoorRect,
-  palette: DoorPalette,
-): void {
-  const { length, depth } = getLocalSize(geometry, lock);
-  const cx = Math.floor(length / 2);
-  const cy = Math.floor(depth / 2);
-  fill(ctx, palette.lock, lock);
-  drawLocal(ctx, geometry, lock, "#284E5E", 2, 2, cx - 4, depth - 4);
-  drawLocal(ctx, geometry, lock, "#719EAA", 4, 4, cx - 7, depth - 8);
-  drawLocal(ctx, geometry, lock, "#284E5E", cx + 2, 2, length - cx - 4, depth - 4);
-  drawLocal(ctx, geometry, lock, "#719EAA", cx + 4, 4, length - cx - 7, depth - 8);
-  drawLocal(ctx, geometry, lock, "#173744", cx - 2, 1, 4, depth - 2);
-  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 1, 3, 2, depth - 6);
-  drawLocal(ctx, geometry, lock, "#B7D9DF", 5, 3, 2, depth - 6);
-  drawLocal(ctx, geometry, lock, "#B7D9DF", length - 7, 3, 2, depth - 6);
-  drawLocal(ctx, geometry, lock, "#C94C55", cx - 10, cy - 1, 3, 3);
-  drawLocal(ctx, geometry, lock, "#FFD16A", cx + 7, cy, 2, 2);
-  drawLocal(ctx, geometry, lock, "#21485A", cx - 6, cy - 6, 12, 12);
-  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 4, cy - 4, 8, 8);
-  drawLocal(ctx, geometry, lock, "#E8FFFF", cx - 1, cy - 2, 2, 4);
-}
-
-function drawLavaLockedCore(
-  ctx: CanvasRenderingContext2D,
-  geometry: DoorGeometry,
-  lock: DoorRect,
-  palette: DoorPalette,
-): void {
-  const { length, depth } = getLocalSize(geometry, lock);
-  const cx = Math.floor(length / 2);
-  const cy = Math.floor(depth / 2);
-  fill(ctx, palette.lock, lock);
-  drawLocal(ctx, geometry, lock, "#2A2027", 2, cy - 4, 11, 8);
-  drawLocal(ctx, geometry, lock, "#8B8583", 4, cy - 2, 10, 3);
-  drawLocal(ctx, geometry, lock, "#2A2027", length - 13, cy - 4, 11, 8);
-  drawLocal(ctx, geometry, lock, "#8B8583", length - 14, cy - 2, 10, 3);
-  drawLocal(ctx, geometry, lock, palette.accent, 10, cy - 3, 3, 6);
-  drawLocal(ctx, geometry, lock, palette.accent, length - 13, cy - 3, 3, 6);
-  // Six iris plates converge on the furnace eye without covering the frame.
-  drawLocal(ctx, geometry, lock, "#913B2C", cx - 15, 2, 10, 5);
-  drawLocal(ctx, geometry, lock, "#913B2C", cx + 5, 2, 10, 5);
-  drawLocal(ctx, geometry, lock, "#913B2C", cx - 11, depth - 7, 9, 5);
-  drawLocal(ctx, geometry, lock, "#913B2C", cx + 2, depth - 7, 9, 5);
-  drawLocal(ctx, geometry, lock, "#6D2B24", cx - 8, cy - 3, 6, 6);
-  drawLocal(ctx, geometry, lock, "#6D2B24", cx + 2, cy - 3, 6, 6);
-  drawLocal(ctx, geometry, lock, "#5A211C", cx - 6, cy - 6, 12, 12);
-  drawLocal(ctx, geometry, lock, palette.lockLight, cx - 4, cy - 4, 8, 8);
-  drawLocal(ctx, geometry, lock, "#FFB52C", cx - 2, cy - 3, 4, 6);
-  drawLocal(ctx, geometry, lock, "#FFE86E", cx, cy - 1, 1, 2);
-}
-
-function drawLockedCore(
-  ctx: CanvasRenderingContext2D,
-  geometry: DoorGeometry,
-  layout: DoorRenderLayout,
-  palette: DoorPalette,
-  theme: DoorTheme,
-): void {
-  if (theme === "forest") drawForestLockedCore(ctx, geometry, layout.lockBounds, palette);
-  else if (theme === "snow") drawSnowLockedCore(ctx, geometry, layout.lockBounds, palette);
-  else if (theme === "lava") drawLavaLockedCore(ctx, geometry, layout.lockBounds, palette);
-  else drawDungeonLockedCore(ctx, geometry, layout.lockBounds, palette);
-}
+// --- Public API ---
 
 export class DoorRenderer {
   public static draw(
@@ -355,32 +314,14 @@ export class DoorRenderer {
     theme: DoorTheme,
     locked: boolean,
   ): void {
-    const palette = PALETTES[theme] ?? PALETTES.dungeon;
-    const layout = getDoorRenderLayout(geometry);
+    const vb = geometry.visualBounds;
+    const horizontal = geometry.direction === "up" || geometry.direction === "down";
 
     ctx.save();
-    fill(ctx, palette.voidDeep, layout.aperture);
-    fill(ctx, palette.void, inset(layout.aperture, 2));
-    fill(ctx, "rgba(0,0,0,0.28)", layout.groundShadow);
-
-    drawBeveledFrame(ctx, layout.jambA, palette);
-    drawBeveledFrame(ctx, layout.jambB, palette);
-    drawBeveledFrame(ctx, layout.outerLintel, palette);
-    fill(ctx, palette.frameDark, layout.innerLip);
-    fill(ctx, palette.frameLight, inset(layout.innerLip, 1));
-
-    if (theme === "forest") drawForestDetails(ctx, geometry, layout, palette);
-    else if (theme === "snow") drawSnowDetails(ctx, geometry, layout, palette);
-    else if (theme === "lava") drawLavaDetails(ctx, geometry, layout, palette);
-    else drawDungeonDetails(ctx, geometry, layout, palette);
-
-    if (locked) drawLockedCore(ctx, geometry, layout, palette, theme);
-    else {
-      const edge = geometry.direction === "up" || geometry.direction === "down"
-        ? { x: layout.aperture.x + 5, y: layout.innerLip.y + 1, width: layout.aperture.width - 10, height: 1 }
-        : { x: layout.innerLip.x + 1, y: layout.aperture.y + 5, width: 1, height: layout.aperture.height - 10 };
-      fill(ctx, palette.accent, edge);
-    }
+    if (theme === "forest") drawForestDoor(ctx, vb, horizontal, locked);
+    else if (theme === "snow") drawSnowDoor(ctx, vb, horizontal, locked);
+    else if (theme === "lava") drawLavaDoor(ctx, vb, horizontal, locked);
+    else drawDungeonDoor(ctx, vb, horizontal, locked);
     ctx.restore();
   }
 }

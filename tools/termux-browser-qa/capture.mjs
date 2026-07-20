@@ -8,14 +8,22 @@ const BASE_URL = `http://localhost:${PORT}`;
 const OUT_DIR = path.resolve("screenshots");
 
 const DOOR_SCENES = [
-  { scene: "forest_up_open", theme: "forest", label: "door-forest-open" },
-  { scene: "forest_up_locked", theme: "forest", label: "door-forest-locked" },
-  { scene: "dungeon_left_open", theme: "dungeon", label: "door-dungeon-open" },
-  { scene: "dungeon_left_locked", theme: "dungeon", label: "door-dungeon-locked" },
-  { scene: "snow_down_open", theme: "snow", label: "door-snow-open" },
-  { scene: "snow_down_locked", theme: "snow", label: "door-snow-locked" },
-  { scene: "lava_right_open", theme: "lava", label: "door-lava-open" },
-  { scene: "lava_right_locked", theme: "lava", label: "door-lava-locked" },
+  { scene: "forest_up_open", theme: "forest", label: "door-forest-h-open" },
+  { scene: "forest_up_locked", theme: "forest", label: "door-forest-h-locked" },
+  { scene: "forest_left_open", theme: "forest", label: "door-forest-v-open" },
+  { scene: "forest_left_locked", theme: "forest", label: "door-forest-v-locked" },
+  { scene: "dungeon_up_open", theme: "dungeon", label: "door-dungeon-h-open" },
+  { scene: "dungeon_up_locked", theme: "dungeon", label: "door-dungeon-h-locked" },
+  { scene: "dungeon_left_open", theme: "dungeon", label: "door-dungeon-v-open" },
+  { scene: "dungeon_left_locked", theme: "dungeon", label: "door-dungeon-v-locked" },
+  { scene: "snow_down_open", theme: "snow", label: "door-snow-h-open" },
+  { scene: "snow_down_locked", theme: "snow", label: "door-snow-h-locked" },
+  { scene: "snow_left_open", theme: "snow", label: "door-snow-v-open" },
+  { scene: "snow_left_locked", theme: "snow", label: "door-snow-v-locked" },
+  { scene: "lava_up_open", theme: "lava", label: "door-lava-h-open" },
+  { scene: "lava_up_locked", theme: "lava", label: "door-lava-h-locked" },
+  { scene: "lava_right_open", theme: "lava", label: "door-lava-v-open" },
+  { scene: "lava_right_locked", theme: "lava", label: "door-lava-v-locked" },
 ];
 
 const CHEST_SCENES = [

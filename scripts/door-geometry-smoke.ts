@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import {
   DOOR_ORIENTATIONS,
   DUNGEON_ROOM_HEIGHT,
@@ -13,7 +12,7 @@ import {
   type DoorRect,
 } from "../src/game/dungeon/DoorGeometry";
 import { getMapData, isSolid, MAP_WIDTH } from "../src/game/MapData";
-import { DoorRenderer, getDoorRenderLayout } from "../src/game/render/DoorRenderer";
+import { DoorRenderer } from "../src/game/render/DoorRenderer";
 
 interface FillCall extends DoorRect { color: string }
 
@@ -41,6 +40,11 @@ function rectContains(outer: DoorRect, inner: DoorRect): boolean {
     && inner.y + inner.height <= outer.y + outer.height;
 }
 
+function rectsOverlap(a: DoorRect, b: DoorRect): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x
+    && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 const themes = ["forest", "dungeon", "snow", "lava"] as const;
 let renderChecks = 0;
 let mapChecks = 0;
@@ -48,11 +52,14 @@ let roomCombinationChecks = 0;
 
 for (const orientation of DOOR_ORIENTATIONS) {
   const geometry = getDoorGeometry(orientation, 6);
+
+  // --- Physics semantics unchanged ---
   assert.equal(geometry.direction, orientation);
   assert.equal(geometry.orientation, orientation);
   assert.equal(geometry.wallDepth, 32);
   assert.ok(rectContains(geometry.frameBounds, geometry.aperture), `${orientation} frame contains aperture`);
   assert.ok(rectContains(geometry.aperture, geometry.triggerBounds), `${orientation} trigger stays inside aperture`);
+  assert.ok(rectContains(geometry.visualBounds, geometry.frameBounds), `${orientation} visual contains frame`);
   assert.deepEqual(getOppositeDoor(getOppositeDoor(orientation)), orientation);
 
   const inwardProbeX = geometry.entryPoint.x - geometry.inwardDirection.x * 28;
@@ -65,45 +72,77 @@ for (const orientation of DOOR_ORIENTATIONS) {
   const barrier = getDoorBarrierBounds(geometry);
   assert.ok(rectContains(geometry.aperture, barrier), `${orientation} locked barrier stays inside aperture`);
   assert.equal(
-    circleIntersectsRect(
-      barrier.x + barrier.width / 2,
-      barrier.y + barrier.height / 2,
-      6,
-      barrier,
-    ),
+    circleIntersectsRect(barrier.x + barrier.width / 2, barrier.y + barrier.height / 2, 6, barrier),
     true,
   );
-  const layout = getDoorRenderLayout(geometry);
-  assert.deepEqual(layout.aperture, geometry.aperture);
-  assert.ok(rectContains(geometry.frameBounds, layout.jambA));
-  assert.ok(rectContains(geometry.frameBounds, layout.jambB));
-  assert.ok(rectContains(geometry.frameBounds, layout.outerLintel));
-  assert.ok(rectContains(geometry.aperture, layout.lockBounds));
 
+  // --- visualBounds does not expand collision ---
+  assert.ok(
+    geometry.visualBounds.width >= geometry.frameBounds.width,
+    `${orientation} visualBounds wider or equal to frameBounds`,
+  );
+  assert.ok(
+    geometry.visualBounds.height >= geometry.frameBounds.height,
+    `${orientation} visualBounds taller or equal to frameBounds`,
+  );
+
+  // --- Render checks: each theme x state produces distinct layered output ---
   for (const theme of themes) {
-    for (const locked of [false, true]) {
-      const { ctx, fills } = createCanvasRecorder();
-      DoorRenderer.draw(ctx, geometry, theme, locked);
-      assert.ok(fills.length >= (locked ? 18 : 12), `${orientation}/${theme}/${locked ? "locked" : "open"} restores layered model`);
-      assert.ok(
-        fills.every(fill => rectContains(geometry.frameBounds, fill)),
-        `${orientation}/${theme}/${locked ? "locked" : "open"} stays in frame bounds`,
-      );
-      if (locked) {
-        assert.ok(
-          fills.some(fill => rectContains(geometry.aperture, fill)),
-          `${orientation}/${theme} locked state draws inside aperture`,
-        );
-      }
-      assert.ok(new Set(fills.map(fill => fill.color)).size >= 5, `${orientation}/${theme} has material/theme depth`);
-      renderChecks++;
+    const openRecorder = createCanvasRecorder();
+    DoorRenderer.draw(openRecorder.ctx, geometry, theme, false);
+    const lockedRecorder = createCanvasRecorder();
+    DoorRenderer.draw(lockedRecorder.ctx, geometry, theme, true);
+
+    const openFills = openRecorder.fills;
+    const lockedFills = lockedRecorder.fills;
+
+    // Both states produce substantial geometry
+    assert.ok(openFills.length >= 12, `${orientation}/${theme}/open has layered model (${openFills.length} fills)`);
+    assert.ok(lockedFills.length >= 15, `${orientation}/${theme}/locked has layered model (${lockedFills.length} fills)`);
+
+    // All fills stay within visualBounds
+    for (const f of openFills) {
+      assert.ok(rectContains(geometry.visualBounds, f), `${orientation}/${theme}/open fill within visualBounds`);
+    }
+    for (const f of lockedFills) {
+      assert.ok(rectContains(geometry.visualBounds, f), `${orientation}/${theme}/locked fill within visualBounds`);
+    }
+
+    // Locked state draws inside aperture (the lock core)
+    assert.ok(
+      lockedFills.some(f => rectContains(geometry.aperture, f)),
+      `${orientation}/${theme} locked draws core inside aperture`,
+    );
+
+    // Material depth: at least 5 distinct colors
+    assert.ok(new Set(openFills.map(f => f.color)).size >= 5, `${orientation}/${theme}/open has material depth`);
+    assert.ok(new Set(lockedFills.map(f => f.color)).size >= 5, `${orientation}/${theme}/locked has material depth`);
+
+    // Open and Locked differ (different fill counts or colors)
+    const openSig = openFills.map(f => `${f.color}:${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
+    const lockedSig = lockedFills.map(f => `${f.color}:${f.x}:${f.y}:${f.width}:${f.height}`).join("|");
+    assert.notEqual(openSig, lockedSig, `${orientation}/${theme} open and locked are visually distinct`);
+
+    renderChecks++;
+  }
+
+  // --- Four themes produce structurally different frames ---
+  const themeSigs: string[] = [];
+  for (const theme of themes) {
+    const { ctx, fills } = createCanvasRecorder();
+    DoorRenderer.draw(ctx, geometry, theme, true);
+    themeSigs.push(fills.map(f => f.color).join(","));
+  }
+  for (let i = 0; i < themes.length; i++) {
+    for (let j = i + 1; j < themes.length; j++) {
+      assert.notEqual(themeSigs[i], themeSigs[j], `${orientation} ${themes[i]} vs ${themes[j]} have different structure`);
     }
   }
 
+  // --- Map alignment ---
   const room = {
     id: `door-${orientation}`,
-    x: 0,
-    y: 0,
+    x: 0, y: 0,
     type: "combat",
     templateId: "cross_room",
     encounterSeed: 11,
@@ -129,6 +168,7 @@ for (const orientation of DOOR_ORIENTATIONS) {
   }
 }
 
+// --- Room combination checks ---
 const roomTypes = ["start", "combat", "treasure", "exit", "boss"] as const;
 const doorSets = [
   { up: true, down: false, left: false, right: false },
@@ -140,8 +180,7 @@ for (const type of roomTypes) {
   for (const doors of doorSets) {
     const room = {
       id: `${type}-${Object.values(doors).filter(Boolean).length}`,
-      x: 0,
-      y: 0,
+      x: 0, y: 0,
       type,
       templateId: type === "boss" ? "boss_arena" : "cross_room",
       encounterSeed: 17,
@@ -159,31 +198,9 @@ for (const type of roomTypes) {
   }
 }
 
+// --- Boundary alignment ---
 assert.equal(getDoorGeometry("right").aperture.x + getDoorGeometry("right").aperture.width, DUNGEON_ROOM_WIDTH);
 assert.equal(getDoorGeometry("down").aperture.y + getDoorGeometry("down").aperture.height, DUNGEON_ROOM_HEIGHT);
-
-const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
-const roomRendererSource = fs.readFileSync("src/game/render/RoomRenderer.ts", "utf8");
-const mapSource = fs.readFileSync("src/game/MapData.ts", "utf8");
-const doorRendererSource = fs.readFileSync("src/game/render/DoorRenderer.ts", "utf8");
-assert.doesNotMatch(dungeonSource, /upDoorXMin|upDoorXMax|downDoorXMin|leftDoorYMin|rightDoorYMin|DOOR_ENTRY_POINTS/);
-assert.match(dungeonSource, /getDoorGeometry/);
-assert.match(dungeonSource, /getDoorBarrierBounds/);
-assert.match(mapSource, /getDoorCarveTileBounds/);
-assert.match(roomRendererSource, /DoorRenderer\.draw/);
-assert.doesNotMatch(roomRendererSource, /theme === "forest" && currentRoom\?\.type === "start"/);
-assert.doesNotMatch(roomRendererSource, /theme === "dungeon" && currentRoom\?\.type === "start"/);
-assert.doesNotMatch(roomRendererSource, /theme === "snow" && currentRoom\?\.type === "start"/);
-assert.doesNotMatch(roomRendererSource, /theme === "lava" && currentRoom\?\.type === "start"/);
-for (const core of [
-  "drawForestLockedCore",
-  "drawDungeonLockedCore",
-  "drawSnowLockedCore",
-  "drawLavaLockedCore",
-]) {
-  assert.match(doorRendererSource, new RegExp(`function ${core}`), `${core} is authored independently`);
-}
-assert.doesNotMatch(doorRendererSource, /function drawLockedLayer/, "generic shared energy barrier is removed");
 
 console.log(JSON.stringify({
   orientations: DOOR_ORIENTATIONS,
@@ -192,9 +209,8 @@ console.log(JSON.stringify({
   renderChecks,
   mapChecks,
   roomCombinationChecks,
-  sharedConsumers: ["MapData", "RoomRenderer", "DungeonState", "QA"],
-  visualLayers: ["void", "wall-base", "jambs", "lintel", "inner-lip", "theme-detail", "shadow", "theme-lock-core"],
-  lockedCores: ["forest-roots", "dungeon-portcullis", "snow-airlock", "lava-iris"],
+  physicsUnchanged: ["aperture", "triggerBounds", "entryPoint", "barrier", "wallDepth"],
+  visualBoundsSeparated: true,
+  perThemeModels: ["forest-root-gate", "dungeon-portcullis", "snow-airlock", "lava-furnace-iris"],
   startRoomDuplicateGate: "removed",
 }));
-

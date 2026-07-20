@@ -17,6 +17,7 @@ export interface DoorGeometry {
   orientation: DoorOrientation;
   aperture: DoorRect;
   frameBounds: DoorRect;
+  visualBounds: DoorRect;
   triggerBounds: DoorRect;
   entryPoint: DoorPoint;
   inwardDirection: DoorPoint;
@@ -47,6 +48,13 @@ const FRAME_BOUNDS: Record<DoorOrientation, DoorRect> = {
   down: { x: 120, y: 208, width: 80, height: 32 },
   left: { x: 0, y: 88, width: 32, height: 64 },
   right: { x: 288, y: 88, width: 32, height: 64 },
+};
+
+const VISUAL_BOUNDS: Record<DoorOrientation, DoorRect> = {
+  up: { x: 112, y: 0, width: 96, height: 40 },
+  down: { x: 112, y: 200, width: 96, height: 40 },
+  left: { x: 0, y: 80, width: 40, height: 80 },
+  right: { x: 280, y: 80, width: 40, height: 80 },
 };
 
 const ENTRY_POINTS: Record<DoorOrientation, DoorPoint> = {
@@ -90,6 +98,7 @@ export function getDoorGeometry(orientation: DoorOrientation, playerRadius = 6):
     orientation,
     aperture,
     frameBounds: { ...FRAME_BOUNDS[orientation] },
+    visualBounds: { ...VISUAL_BOUNDS[orientation] },
     triggerBounds: insetTrigger(aperture, orientation, playerRadius),
     entryPoint: { ...ENTRY_POINTS[orientation] },
     inwardDirection: { ...INWARD_DIRECTIONS[orientation] },

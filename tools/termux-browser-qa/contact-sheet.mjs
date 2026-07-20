@@ -5,29 +5,33 @@ import path from "node:path";
 const CHROMIUM = "/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/debian/usr/lib/chromium/chromium-headless-shell";
 const SCREENSHOTS_DIR = path.resolve("screenshots");
 
-const DOOR_SHEET = {
-  label: "door-contact-sheet",
+const DOOR_H_SHEET = {
+  label: "door-horizontal-contact-sheet",
   columns: 2,
   images: [
-    { file: "door-forest-open.png", caption: "Forest Open" },
-    { file: "door-forest-locked.png", caption: "Forest Locked" },
-    { file: "door-dungeon-open.png", caption: "Dungeon Open" },
-    { file: "door-dungeon-locked.png", caption: "Dungeon Locked" },
-    { file: "door-snow-open.png", caption: "Snow Open" },
-    { file: "door-snow-locked.png", caption: "Snow Locked" },
-    { file: "door-lava-open.png", caption: "Lava Open" },
-    { file: "door-lava-locked.png", caption: "Lava Locked" },
+    { file: "door-forest-h-open.png", caption: "Forest H Open" },
+    { file: "door-forest-h-locked.png", caption: "Forest H Locked" },
+    { file: "door-dungeon-h-open.png", caption: "Dungeon H Open" },
+    { file: "door-dungeon-h-locked.png", caption: "Dungeon H Locked" },
+    { file: "door-snow-h-open.png", caption: "Snow H Open" },
+    { file: "door-snow-h-locked.png", caption: "Snow H Locked" },
+    { file: "door-lava-h-open.png", caption: "Lava H Open" },
+    { file: "door-lava-h-locked.png", caption: "Lava H Locked" },
   ],
 };
 
-const CHEST_SHEET = {
-  label: "chest-contact-sheet",
+const DOOR_V_SHEET = {
+  label: "door-vertical-contact-sheet",
   columns: 2,
   images: [
-    { file: "chest-treasure-closed.png", caption: "Treasure Closed" },
-    { file: "chest-treasure-open.png", caption: "Treasure Open" },
-    { file: "chest-boss-open.png", caption: "Boss Open" },
-    { file: "chest-treasure-multi-loot.png", caption: "Multi Loot" },
+    { file: "door-forest-v-open.png", caption: "Forest V Open" },
+    { file: "door-forest-v-locked.png", caption: "Forest V Locked" },
+    { file: "door-dungeon-v-open.png", caption: "Dungeon V Open" },
+    { file: "door-dungeon-v-locked.png", caption: "Dungeon V Locked" },
+    { file: "door-snow-v-open.png", caption: "Snow V Open" },
+    { file: "door-snow-v-locked.png", caption: "Snow V Locked" },
+    { file: "door-lava-v-open.png", caption: "Lava V Open" },
+    { file: "door-lava-v-locked.png", caption: "Lava V Locked" },
   ],
 };
 
@@ -97,7 +101,7 @@ async function main() {
     args: ["--no-sandbox", "--disable-gpu", "--disable-software-rasterizer"],
   });
 
-  for (const sheet of [DOOR_SHEET, CHEST_SHEET]) {
+  for (const sheet of [DOOR_H_SHEET, DOOR_V_SHEET]) {
     const outPath = await generateSheet(browser, sheet);
     console.log(`  generated: ${path.basename(outPath)}`);
   }
