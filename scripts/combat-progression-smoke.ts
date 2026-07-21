@@ -45,7 +45,7 @@ assert.equal(player.mana, player.maxMana);
 
 player.setWeaponLoadout(["laser"], 0);
 player.mana = 10;
-player.fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 const fired = WeaponController.fire(player, 0, () => 0.5);
 assert.equal(fired.fired, true);
 assert.equal(player.mana, 9);

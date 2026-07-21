@@ -155,6 +155,7 @@ export class PortalRenderer {
     theme: string,
     part: PortalRenderPart,
   ): void {
+    if (!portal) return;
     const energyColor = PALETTES[theme]?.portal ?? "#00FFFF";
     const highlight = portal.state === "hovered" || portal.state === "activating" ? "#FFFFFF" : "#D8FFFF";
     const params = stateParameters(portal, time);

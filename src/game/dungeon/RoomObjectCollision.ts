@@ -156,7 +156,7 @@ function createPortalColliders(x: number, y: number): RoomObjectCollider[] {
 
 export function createRoomObjectColliders(scene: RoomObjectCollisionScene): RoomObjectCollider[] {
   const colliders: RoomObjectCollider[] = [];
-  if (scene.chest) {
+  if (scene.chest && typeof scene.chest.x === "number" && typeof scene.chest.y === "number") {
     const { x, y, kind } = scene.chest;
     const footprint = getChestGeometry(kind).physicalFootprint;
     colliders.push(rect(
@@ -167,22 +167,20 @@ export function createRoomObjectColliders(scene: RoomObjectCollisionScene): Room
       footprint.height,
     ));
   }
-  if (scene.portal) colliders.push(...createPortalColliders(scene.portal.x, scene.portal.y));
-  if (scene.roomType === "wish_fountain" && scene.special) {
+  if (scene.portal && typeof scene.portal.x === "number" && typeof scene.portal.y === "number") {
+    colliders.push(...createPortalColliders(scene.portal.x, scene.portal.y));
+  }
+  if (scene.roomType === "combat" && scene.special && typeof scene.special.x === "number" && typeof scene.special.y === "number") {
     colliders.push(...createWishFountainColliders(scene.special.x, scene.special.y));
+    colliders.push(rect("combat", scene.special.x - 16, scene.special.y + 5, 32, 11));
   }
-  if (scene.roomType === "photo_booth" && scene.special) {
-    colliders.push(rect("photo_booth", scene.special.x - 16, scene.special.y + 5, 32, 11));
-  }
-  if (scene.roomType === "npc" && scene.broadcast) {
+  if (scene.roomType === "npc" && scene.broadcast && typeof scene.broadcast.x === "number" && typeof scene.broadcast.y === "number") {
     colliders.push(rect("broadcast_terminal", scene.broadcast.x - 13, scene.broadcast.y + 1, 26, 11));
   }
-  if ((scene.roomType === "legacy_rpg" || scene.roomType === "legacy_tactics") && scene.legacy) {
+  if (scene.roomType === "combat" && scene.legacy && typeof scene.legacy.x === "number" && typeof scene.legacy.y === "number") {
     colliders.push(rect("legacy_device", scene.legacy.x - 14, scene.legacy.y + 1, 28, 11));
   }
-  if (scene.roomType === "shop" && scene.shop) {
-    colliders.push(rect("shop_counter", scene.shop.x - 25, scene.shop.y + 5, 50, 12));
-  }
+  
   return colliders;
 }
 

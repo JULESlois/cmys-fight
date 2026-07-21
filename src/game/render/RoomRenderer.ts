@@ -1061,9 +1061,7 @@ export class RoomRenderer {
     }
 
     // Room identity decals make special rooms readable without relying on the HUD.
-    if (currentRoom?.type === "shop") {
-      SpecialRoomRenderer.drawRoomStage(ctx, currentRoom.type, theme, this.windTime, false);
-    } else if (currentRoom?.type === "boss") {
+    if (currentRoom?.type === "boss") {
       if (theme === "forest") {
         // A root-ring altar gives the forest bosses a physical arena rather
         // than the same abstract square decal used by every chapter.
@@ -1400,8 +1398,8 @@ export class RoomRenderer {
     } else if (
       currentRoom?.type === "exit" ||
       currentRoom?.type === "npc" ||
-      currentRoom?.type === "wish_fountain" ||
-      currentRoom?.type === "photo_booth"
+      false ||
+      false
     ) {
       SpecialRoomRenderer.drawRoomStage(
         ctx,

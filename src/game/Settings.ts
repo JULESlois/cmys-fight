@@ -1,5 +1,5 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 8;
+export const SETTINGS_VERSION = 9;
 
 export type InputAction =
   | "moveUp"
@@ -10,7 +10,8 @@ export type InputAction =
   | "skill"
   | "interact"
   | "swapWeapon"
-  | "pause";
+  | "pause"
+  | "dodge";
 
 export const INPUT_ACTIONS: InputAction[] = [
   "moveUp",
@@ -22,6 +23,7 @@ export const INPUT_ACTIONS: InputAction[] = [
   "interact",
   "swapWeapon",
   "pause",
+  "dodge"
 ];
 
 export const ACTION_LABELS: Record<InputAction, string> = {
@@ -34,6 +36,7 @@ export const ACTION_LABELS: Record<InputAction, string> = {
   interact: "INTERACT",
   swapWeapon: "SWAP WEAPON",
   pause: "PAUSE",
+  dodge: "DODGE"
 };
 
 const LEGACY_V4_KEY_BINDINGS: Record<InputAction, string> = {
@@ -46,6 +49,7 @@ const LEGACY_V4_KEY_BINDINGS: Record<InputAction, string> = {
   interact: " ",
   swapWeapon: "q",
   pause: "p",
+  dodge: "shift"
 };
 
 const LEGACY_V6_KEY_BINDINGS: Record<InputAction, string> = {
@@ -58,6 +62,7 @@ const LEGACY_V6_KEY_BINDINGS: Record<InputAction, string> = {
   interact: "l",
   swapWeapon: "i",
   pause: "escape",
+  dodge: " "
 };
 
 export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
@@ -70,6 +75,7 @@ export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
   interact: "k",
   swapWeapon: "i",
   pause: "escape",
+  dodge: " "
 };
 
 export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";

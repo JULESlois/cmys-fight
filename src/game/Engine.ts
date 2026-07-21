@@ -573,7 +573,7 @@ export class Engine {
     const pools = getEntityPoolStats();
     ctx.fillText(`FPS ${perf.fps} // ${perf.frameTimeMs}MS`, 222, 65);
     ctx.fillText(`STATE ${this.currentState.toUpperCase()}`, 222, 75);
-    ctx.fillText(`STAGE ${this.data.data.run.chapterIndex}-${this.data.data.run.stageIndex}`, 222, 85);
+    ctx.fillText(`STAGE ${this.data.data.run.routeDepth}-${this.data.data.run.stageWithinNode}`, 222, 85);
     ctx.fillText(`POOL P${pools.projectiles.available} E${pools.enemies.available} D${pools.pickups.available}`, 222, 95);
     ctx.fillStyle = perf.degraded ? "#E74C3C" : "#7F8C8D";
     ctx.fillText(perf.degraded ? "AUTO LOW-FX" : "F6 HIDE · F7/F8 STAGE", 222, 103);

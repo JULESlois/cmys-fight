@@ -160,7 +160,7 @@ releaseProjectile(resetProjectile);
 passiveDungeon.player.invulnerabilityTimer = 0;
 passiveDungeon.player.setWeaponLoadout(["inspector"], 0);
 passiveDungeon.player.mana = 42;
-passiveDungeon.player.fireCooldown = 0;
+passiveDungeon.player.weaponLoadout.slots[passiveDungeon.player.weaponLoadout.activeSlot].fireCooldown = 0;
 attacker.x = 60;
 attacker.y = 40;
 attacker.hp = attacker.maxHp = 20;

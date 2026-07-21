@@ -228,7 +228,7 @@ export class LegacyRpgState extends GameState {
 
   private interact() {
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find(r => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     if (currentRoom?.type !== "npc" && currentRoom?.type !== "start") return;
 
     const px = this.engine.data.data.legacyData.player.x;
@@ -252,7 +252,7 @@ export class LegacyRpgState extends GameState {
     const newY = this.engine.data.data.legacyData.player.y + dy;
 
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find(r => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
 
     if (newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) {
       events.emit("state:change", "dungeon", {
@@ -310,7 +310,7 @@ export class LegacyRpgState extends GameState {
 
   draw(ctx: CanvasRenderingContext2D) {
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find(r => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     const hasNpcs = currentRoom?.type === "npc" || currentRoom?.type === "start";
     const mapData = getMapData(currentRoom);
 

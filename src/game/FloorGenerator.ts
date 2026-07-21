@@ -19,7 +19,7 @@ export interface Room {
   id: string;
   x: number;
   y: number;
-  type: "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics" | "wish_fountain" | "photo_booth";
+  type: "start" | "combat" | "treasure" | "boss" | "exit" | "npc";
   cleared: boolean;
   combatCleared?: boolean;
   combatStartNotified?: boolean;
@@ -73,8 +73,8 @@ export interface Room {
 export interface StageData {
   /** Compatibility index used by older systems as a difficulty value. */
   depth: number;
-  chapterIndex: number;
-  stageIndex: number;
+  routeDepth: number;
+  stageWithinNode: number;
   globalStageIndex: number;
   isBossStage: boolean;
   hardMode: boolean;
@@ -106,7 +106,7 @@ function createRoom(x: number, y: number, type: Room["type"]): Room {
     x,
     y,
     type,
-    cleared: type === "start" || type === "treasure" || type === "shop" || type === "exit" || type === "npc" || type === "wish_fountain" || type === "photo_booth" || type === "legacy_rpg" || type === "legacy_tactics",
+    cleared: type === "start" || type === "treasure" || type === "exit" || type === "npc",
     doors: { up: false, down: false, left: false, right: false },
   };
 }
@@ -203,7 +203,7 @@ function assignTemplates(stage: StageData, random: RandomSource): void {
 
 function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, random: RandomSource): StageData {
   const start = createRoom(0, 0, "start");
-  const preparation = createRoom(1, 0, "shop");
+  const preparation = createRoom(1, 0, "treasure");
   const boss = createRoom(2, 0, "boss");
   const rooms = [start, preparation, boss];
   const mapGrid: Record<string, Room> = {
@@ -215,8 +215,8 @@ function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, ra
 
   const stage: StageData = {
     depth: progress.globalStageIndex,
-    chapterIndex: progress.chapterIndex,
-    stageIndex: progress.stageIndex,
+    routeDepth: progress.routeDepth,
+    stageWithinNode: progress.stageIndex,
     globalStageIndex: progress.globalStageIndex,
     isBossStage: true,
     hardMode: progress.hardMode,
@@ -253,7 +253,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
   addRoom(createRoom(0, 0, "start"));
 
   const mainPathLength = 3 + Math.min(2, Math.floor((progress.stageIndex - 1) / 2));
-  const branchCount = 2 + Math.min(2, Math.floor((progress.chapterIndex - 1) / 2));
+  const branchCount = 2 + Math.min(2, Math.floor((progress.routeDepth - 1) / 2));
   let currentX = 0;
   let currentY = 0;
 
@@ -291,20 +291,20 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
 
   const specialDeadEnds = deadEnds.filter(room => room !== exitRoom);
   const remainingCombat = rooms.filter(room => room.type === "combat");
-  assignRoomType(random() < 0.55 ? "shop" : "treasure", specialDeadEnds, remainingCombat, random);
+  assignRoomType("treasure", specialDeadEnds, remainingCombat, random);
   const specialRoll = random();
   if (specialRoll < 0.28) {
     assignRoomType("npc", specialDeadEnds, remainingCombat, random);
   } else if (specialRoll < 0.64) {
-    assignRoomType("wish_fountain", specialDeadEnds, remainingCombat, random);
+    
   } else {
-    assignRoomType("photo_booth", specialDeadEnds, remainingCombat, random);
+    
   }
 
   const stage: StageData = {
     depth: progress.globalStageIndex,
-    chapterIndex: progress.chapterIndex,
-    stageIndex: progress.stageIndex,
+    routeDepth: progress.routeDepth,
+    stageWithinNode: progress.stageIndex,
     globalStageIndex: progress.globalStageIndex,
     isBossStage: false,
     hardMode: progress.hardMode,
@@ -324,7 +324,7 @@ export function generateStage(progressValue: RunProgress, random: RandomSource =
   const progress = normalizeRunProgress(progressValue);
   const seed = createRandomSeed(random);
   const seededRandom = createSeededRandom(seed);
-  const theme = THEMES[(progress.chapterIndex - 1) % THEMES.length];
+  const theme = THEMES[(progress.routeDepth - 1) % THEMES.length];
   const stage = isBossStage(progress)
     ? createBossStage(progress, theme, seed, seededRandom)
     : createNormalStage(progress, theme, seed, seededRandom);

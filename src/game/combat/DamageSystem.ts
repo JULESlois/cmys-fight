@@ -1,6 +1,7 @@
 import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
+import { CombatEventDispatcher } from "./CombatEvents";
 
 export interface DamageResult {
   applied: boolean;
@@ -44,7 +45,16 @@ export class DamageSystem {
 
   static damagePlayer(player: Player, amount: number, invulnerabilityDuration = 0.55): DamageResult {
     let damage = Math.max(0, amount);
-    if (damage <= 0 || player.hp <= 0 || player.invulnerabilityTimer > 0) {
+    if (damage <= 0 || player.hp <= 0) {
+      return { ...NO_DAMAGE, killed: player.hp <= 0 };
+    }
+    
+    if (player.perfectDodgeWindow > 0 && !player.justPerfectDodged) {
+      player.justPerfectDodged = true;
+      CombatEventDispatcher.emit("player_perfect_dodge", { player });
+    }
+    
+    if (player.invulnerabilityTimer > 0) {
       return { ...NO_DAMAGE, killed: player.hp <= 0 };
     }
 
@@ -88,7 +98,7 @@ export class DamageSystem {
     };
   }
 
-  static damageEnemy(enemy: Enemy, amount: number): DamageResult {
+  static damageEnemy(enemy: Enemy, amount: number, player?: Player, isCrit?: boolean): DamageResult {
     const damage = Math.max(0, amount);
     if (damage <= 0 || enemy.hp <= 0) {
       return { ...NO_DAMAGE, killed: enemy.hp <= 0 };
@@ -98,11 +108,18 @@ export class DamageSystem {
     enemy.hp = Math.max(0, enemy.hp - damage);
     enemy.hitFlash = 0.1;
 
-    return {
+    const result = {
       applied: true,
       armorDamage: 0,
       hpDamage: hpBefore - enemy.hp,
       killed: enemy.hp <= 0,
     };
+    if (player && result.hpDamage > 0) {
+      CombatEventDispatcher.emit("player_hit_enemy", { player, enemy, damage: result.hpDamage, isCrit: isCrit ?? false });
+      if (result.killed) {
+        CombatEventDispatcher.emit("player_kill_enemy", { player, enemy });
+      }
+    }
+    return result;
   }
 }

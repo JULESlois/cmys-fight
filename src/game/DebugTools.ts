@@ -1,3 +1,4 @@
+import { createWeaponRuntimeState } from "./combat/WeaponRuntimeState";
 import type { GameData } from "./GameData";
 import { createRunProgressFromGlobalStage, FINAL_GLOBAL_STAGE } from "./RunProgress";
 import { generateStage } from "./FloorGenerator";
@@ -26,8 +27,7 @@ export function grantDebugLoadout(data: GameData): void {
   player.armor = player.maxArmor;
   player.mana = player.maxMana;
   player.coins = 999;
-  player.weaponSlots = ["void_rail", "dragon_breath"];
-  player.activeWeaponSlot = 0;
+  player.weaponLoadout.slots = [createWeaponRuntimeState("void_rail"), createWeaponRuntimeState("dragon_breath")];
   player.currentWeaponId = "void_rail";
   const buffIds: BuffId[] = [
     "overclock_core", "execution_matrix", "mana_well",

@@ -89,7 +89,7 @@ export class PauseOverlayRenderer {
     drawPixelPanel(ctx, 210, 54, 88, 142, "yellow");
     drawSectionLabel(ctx, t(language, "pause.loadout"), 217, 68, 74, language, "yellow");
     if (player) {
-      player.weaponSlots.forEach((weaponId, index) => {
+      player.weaponLoadout.slots.map(s => s?.weaponId).forEach((weaponId, index) => {
         const y = 79 + index * 42;
         const weapon = weaponId ? WEAPONS[weaponId] : undefined;
         const active = player.activeWeaponSlot === index;

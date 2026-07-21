@@ -153,23 +153,25 @@ storage.clear();
 const legacyBossSave = new GameData();
 legacyBossSave.data.saveVersion = 23;
 legacyBossSave.data.run = {
-  chapterIndex: 2,
-  stageIndex: 5,
+  worldNodeId: "overgrown_archive",
+  routeHistory: [],
+  routeDepth: 2,
+  stageWithinNode: 5,
   globalStageIndex: 10,
   stagesCleared: 9,
   hardMode: false,
 };
 legacyBossSave.data.runStats.highestStage = 10;
 legacyBossSave.data.runStats.stagesCleared = 9;
-legacyBossSave.data.floor.chapterIndex = 2;
-legacyBossSave.data.floor.stageIndex = 5;
+legacyBossSave.data.floor.routeDepth = 2;
+legacyBossSave.data.floor.stageWithinNode = 5;
 legacyBossSave.data.floor.globalStageIndex = 10;
 legacyBossSave.data.floor.depth = 10;
 storage.setItem(RUN_SAVE_KEY, JSON.stringify(legacyBossSave.data));
 const migratedBossSave = new GameData();
 assert.equal(migratedBossSave.load(), true);
-assert.equal(migratedBossSave.data.run.chapterIndex, 2);
-assert.equal(migratedBossSave.data.run.stageIndex, 4);
+assert.equal(migratedBossSave.data.run.routeDepth, 2);
+assert.equal(migratedBossSave.data.run.stageWithinNode, 4);
 assert.equal(migratedBossSave.data.run.globalStageIndex, 8);
 assert.equal(migratedBossSave.data.floor.globalStageIndex, 8);
 assert.equal(migratedBossSave.data.floor.isBossStage, true);
@@ -259,15 +261,15 @@ for (const weapon of Object.values(WEAPONS).filter(candidate => candidate.manaCo
 }
 resourcePlayer.setWeaponLoadout(["laser"], 0);
 resourcePlayer.mana = 1;
-resourcePlayer.fireCooldown = 0;
+resourcePlayer.weaponLoadout.slots[resourcePlayer.weaponLoadout.activeSlot].fireCooldown = 0;
 const resourceShot = WeaponController.fire(resourcePlayer, 0, () => 0.5);
 assert.equal(resourceShot.fired, true);
 assert.equal(resourcePlayer.mana, 0);
 assert.equal(WeaponController.formatEnergyCost(0.8), "0.8");
 assert.equal(WeaponController.formatEnergyCost(2), "2");
 assert.equal(ENEMY_ATTACK_RATE_MULTIPLIER, 0.7);
-assert.ok(Math.abs(getStageDifficulty({ globalStageIndex: 1, chapterIndex: 1 }).attackCooldownMultiplier - 1 / 0.7) < 1e-9);
-const finalDifficulty = getStageDifficulty({ globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 });
+assert.ok(Math.abs(getStageDifficulty({ globalStageIndex: 1, routeDepth: 1 }).attackCooldownMultiplier - 1 / 0.7) < 1e-9);
+const finalDifficulty = getStageDifficulty({ globalStageIndex: FINAL_GLOBAL_STAGE, routeDepth: 4 });
 assert.equal(finalDifficulty.difficultyStageIndex, 20);
 assert.ok(finalDifficulty.healthMultiplier > 3);
 
@@ -314,7 +316,7 @@ assert.equal(iceShamanDefinition.attackDamage, 2);
 assert.equal(iceShamanDefinition.areaRadius, 18);
 assert.equal(iceShamanDefinition.statusDuration, 1.25);
 assert.equal(iceShamanDefinition.attackRange, 135);
-const snowStage = { globalStageIndex: 12, chapterIndex: 3, stageIndex: 4, hardMode: false } as any;
+const snowStage = { globalStageIndex: 12, routeDepth: 3, stageWithinNode: 4, hardMode: false } as any;
 const scaledShaman = EnemyFactory.create(snowStage, {
   x: 80, y: 80, type: "ranged", enemyId: "ice_shaman", isElite: false,
 });
@@ -351,8 +353,8 @@ for (const template of ROOM_TEMPLATES.filter(candidate => candidate.allowedRoomT
     const stage = {
       seed,
       globalStageIndex: 13,
-      chapterIndex: 3,
-      stageIndex: 3,
+      routeDepth: 3,
+      stageWithinNode: 3,
       hardMode: false,
     } as any;
     const room = {

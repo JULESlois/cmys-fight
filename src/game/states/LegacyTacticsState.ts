@@ -47,7 +47,7 @@ export class LegacyTacticsState extends GameState {
     this.message = t(language, "legacyTactics.start");
 
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(r => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find(r => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
 
     if (currentRoom?.type === "boss") {
       this.enemies = [

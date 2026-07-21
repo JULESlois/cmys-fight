@@ -132,7 +132,7 @@ assert.equal(kanami.kanamiBeaconFlightTimer, 0);
 const persistence = new GameData();
 (persistence as any).discoverPlayerBuild = () => {};
 persistence.data.player.characterId = "michele";
-persistence.data.player.weaponSlots = ["inspector"];
+persistence.data.player.weaponLoadout = { slots: [{ weaponId: "inspector", fireCooldown: 0, resourceType: "magazine", resourceState: { value: 6, max: 6 }, customState: {} }], activeSlot: 0, swapTimer: 0 };
 persistence.data.player.currentWeaponId = "inspector";
 const persistenceDungeon = new DungeonState({ data: persistence } as any) as any;
 const activeMichele = new Player(100, 100);

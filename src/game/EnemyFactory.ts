@@ -15,7 +15,7 @@ import {
 import { applyStageDifficulty, getStageDifficulty } from "./combat/StageDifficulty";
 
 function fallbackDefinition(stage: StageData, role: EnemyRole): EnemyDefinition {
-  const theme = getThemeForChapter(stage.chapterIndex);
+  const theme = getThemeForChapter(stage.routeDepth);
   if (role === "boss") return getBossDefinition(theme);
   return getEnemyPool(theme, role)[0] ?? getEnemyPool(theme)[0];
 }

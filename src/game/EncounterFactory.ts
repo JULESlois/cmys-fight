@@ -94,7 +94,7 @@ export class EncounterFactory {
     const difficulty = getStageDifficulty(stage);
     const seed = room.encounterSeed ?? hashSeed(stage.seed, room.id);
     const random = createSeededRandom(seed);
-    const theme = getThemeForChapter(stage.chapterIndex);
+    const theme = getThemeForChapter(stage.routeDepth);
 
     if (room.type === "boss") {
       const point = template.enemySpawnPoints[0] ?? { x: 10, y: 6 };
@@ -130,7 +130,7 @@ export class EncounterFactory {
         const role: EnemyRole = random() < difficulty.rangedChance ? "ranged" : "melee";
         const definition = chooseEnemyForWave(
           theme,
-          stage.stageIndex,
+          stage.stageWithinNode,
           role,
           spawns,
           cramped,
@@ -146,14 +146,14 @@ export class EncounterFactory {
       }
 
       if (spawns.length > 1 && spawns.every(spawn => spawn.type === "ranged")) {
-        const melee = chooseEnemyForWave(theme, stage.stageIndex, "melee", spawns.slice(1), cramped, random);
+        const melee = chooseEnemyForWave(theme, stage.stageWithinNode, "melee", spawns.slice(1), cramped, random);
         spawns[0].type = melee.role;
         spawns[0].enemyId = melee.id;
       }
       if (spawns.length > 2 && spawns.every(spawn => spawn.type === "melee")) {
         const ranged = chooseEnemyForWave(
           theme,
-          stage.stageIndex,
+          stage.stageWithinNode,
           "ranged",
           spawns.slice(0, -1),
           cramped,

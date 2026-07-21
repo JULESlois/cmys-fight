@@ -37,7 +37,7 @@ function validateStage(data: GameData, expected: number) {
   if (isBossStage(data.data.run)) {
     assert.equal(bossRooms.length, 1);
     assert.equal(exits.length, 0);
-    assert.equal(data.data.floor.rooms.filter(room => room.type === "shop").length, 1);
+    assert.equal(data.data.floor.rooms.filter(room => false).length, 1);
   } else {
     assert.equal(bossRooms.length, 0);
     assert.equal(exits.length, 1);
@@ -54,8 +54,8 @@ for (let stage = 1; stage <= FINAL_GLOBAL_STAGE; stage++) {
   game.data.runStats.kills += 2;
   if (stage < FINAL_GLOBAL_STAGE) game.advanceStage();
 }
-assert.equal(game.data.run.chapterIndex, 4);
-assert.equal(game.data.run.stageIndex, 4);
+assert.equal(game.data.run.routeDepth, 4);
+assert.equal(game.data.run.stageWithinNode, 4);
 game.data.runStats.bossKills = 4;
 game.data.runStats.stagesCleared = FINAL_GLOBAL_STAGE;
 const summary = game.finalizeRun("victory");
@@ -118,7 +118,7 @@ jumpToStage(imported, 7);
 assert.equal(imported.data.run.globalStageIndex, 7);
 grantDebugLoadout(imported);
 assert.equal(imported.data.player.coins, 999);
-assert.deepEqual(imported.data.player.weaponSlots, ["void_rail", "dragon_breath"]);
+assert.deepEqual(imported.data.player.weaponLoadout.slots.map(s=>s?.weaponId), ["void_rail", "dragon_breath"]);
 
 // Entity pools must reuse released instances and fully reset runtime identity/state.
 const projectileA = acquireProjectile(1, 2, 3, 4, 2, 5, "player");

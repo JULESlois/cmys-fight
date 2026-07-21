@@ -68,7 +68,7 @@ export function isQaMode(): boolean {
 export function createQaSnapshot(engine: Engine, canvas: HTMLCanvasElement): QaSnapshot {
   const floor = engine.data.data.floor;
   const room = floor?.rooms?.find(candidate =>
-    candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+    candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY
   );
   const perf = engine.performanceMonitor.getSnapshot();
   return {
@@ -77,7 +77,7 @@ export function createQaSnapshot(engine: Engine, canvas: HTMLCanvasElement): QaS
     state: engine.currentState,
     overlay: engine.getOverlayState(),
     paused: engine.isPaused,
-    stage: `${engine.data.data.run.chapterIndex}-${engine.data.data.run.stageIndex}`,
+    stage: `${engine.data.data.run.routeDepth}-${engine.data.data.run.stageWithinNode}`,
     globalStageIndex: engine.data.data.run.globalStageIndex,
     theme: floor?.theme ?? "none",
     roomType: room?.type ?? "none",

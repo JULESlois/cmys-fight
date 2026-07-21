@@ -109,10 +109,10 @@ export class MinimapRenderer {
       if (isCurrent) ctx.fillStyle = "#FFFFFF";
       else if (room.type === "boss") ctx.fillStyle = room.cleared ? "#922B21" : "#E74C3C";
       else if (room.type === "exit") ctx.fillStyle = "#00F2FE";
-      else if (room.type === "shop") ctx.fillStyle = "#F1C40F";
+      
       else if (room.type === "treasure") ctx.fillStyle = room.interactionCompleted ? "#7F8C8D" : "#F39C12";
       else if (room.type === "npc") ctx.fillStyle = room.interactionCompleted ? "#566573" : "#D980FA";
-      else if (room.type === "wish_fountain" || room.type === "photo_booth") {
+      else if (false) {
         ctx.fillStyle = room.interactionCompleted ? "#5B3A6E" : "#A569BD";
       } else ctx.fillStyle = room.cleared ? "#7F8C8D" : "#34495E";
 

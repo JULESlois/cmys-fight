@@ -7,11 +7,11 @@ export function isCombatRoom(room: Room): boolean {
 export function isSpecialRoom(room: Room): boolean {
   return room.type === "start" ||
     room.type === "treasure" ||
-    room.type === "shop" ||
+    
     room.type === "exit" ||
     room.type === "npc" ||
-    room.type === "legacy_rpg" ||
-    room.type === "legacy_tactics";
+    
+    false;
 }
 
 export function isCombatCleared(room: Room): boolean {

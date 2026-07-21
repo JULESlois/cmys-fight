@@ -278,9 +278,10 @@ export class HubWorldRenderer {
   }
 
   public drawObjects(ctx: CanvasRenderingContext2D, map: WorldMapDefinition, camera: Camera2D, layer: "back" | "upper", time: number): void {
+    if (!map?.objects) return;
     for (const object of map.objects) {
-      if (object.type !== "decoration" || layerOf(object) !== layer || object.properties?.visible === false) continue;
-      if (!camera.isVisible(object.x, object.y, object.width ?? 0, object.height ?? 0, 48)) continue;
+      if (!object || object.type !== "decoration" || layerOf(object) !== layer || object.properties?.visible === false) continue;
+      if (!camera.isVisible(object.x ?? 0, object.y ?? 0, object.width ?? 0, object.height ?? 0, 48)) continue;
       this.drawObject(ctx, object, time);
     }
   }
@@ -291,6 +292,7 @@ export class HubWorldRenderer {
     time: number,
     alpha = 1,
   ): void {
+    if (!object) return;
     ctx.save();
     ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
     this.drawObject(ctx, object, time);
@@ -298,11 +300,13 @@ export class HubWorldRenderer {
   }
 
   public getVisibleSortedObjects(map: WorldMapDefinition, camera: Camera2D): WorldObjectDefinition[] {
+    if (!map?.objects) return [];
     return map.objects.filter(object =>
-      object.type !== "region"
+      object
+      && object.type !== "region"
       && object.properties?.visible !== false
       && layerOf(object) === "sorted"
-      && camera.isVisible(object.x, object.y, object.width ?? 0, object.height ?? 0, 48)
+      && camera.isVisible(object.x ?? 0, object.y ?? 0, object.width ?? 0, object.height ?? 0, 48)
     );
   }
 

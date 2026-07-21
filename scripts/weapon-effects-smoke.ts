@@ -139,7 +139,7 @@ assert.equal(
 const player = new Player(160, 120);
 player.mana = 100;
 const fire = (weaponId: string) => {
-  player.fireCooldown = 0;
+  player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
   player.setWeaponLoadout([weaponId], 0);
   const result = WeaponController.fire(player, 0, () => 0.99);
   assert.equal(result.fired, true, weaponId);
@@ -204,12 +204,12 @@ assert.ok(
   Math.abs(r90VolleyKnockback - WEAPONS.r9_0.knockback * WeaponController.SHOTGUN_VOLLEY_KNOCKBACK_MULTIPLIER) < 1e-9,
   "shotgun knockback is capped per volley instead of stacking once per pellet",
 );
-assert.ok(Math.abs(r90Player.fireCooldown - 0.12) < 1e-9, "R9-0 first blast must quickly chamber the second barrel");
+assert.ok(Math.abs(r90Player.weaponLoadout.slots[r90Player.weaponLoadout.activeSlot].fireCooldown - 0.12) < 1e-9, "R9-0 first blast must quickly chamber the second barrel");
 for (const projectile of r90First.projectiles) releaseProjectile(projectile);
-r90Player.fireCooldown = 0;
+r90Player.weaponLoadout.slots[r90Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const r90Second = WeaponController.fire(r90Player, 0, () => 0.5);
 assert.equal(r90Second.fired, true);
-assert.ok(Math.abs(r90Player.fireCooldown - 0.72) < 1e-9, "R9-0 second blast must enter pump recovery");
+assert.ok(Math.abs(r90Player.weaponLoadout.slots[r90Player.weaponLoadout.activeSlot].fireCooldown - 0.72) < 1e-9, "R9-0 second blast must enter pump recovery");
 for (const projectile of r90Second.projectiles) releaseProjectile(projectile);
 
 const mg42Player = new Player(160, 120);
@@ -217,40 +217,40 @@ mg42Player.setWeaponLoadout(["mg42", "pistol"], 0);
 mg42Player.mana = 0;
 const coolShot = WeaponController.fire(mg42Player, 0, () => 0.99);
 assert.equal(coolShot.fired, true);
-assert.equal(mg42Player.weaponHeat, 2.3);
+assert.equal(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat, 2.3);
 const coolAngle = Math.abs(Math.atan2(coolShot.projectiles[0].vy, coolShot.projectiles[0].vx));
 for (const projectile of coolShot.projectiles) releaseProjectile(projectile);
-mg42Player.weaponHeat = 90;
-mg42Player.fireCooldown = 0;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat = 90;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const hotShot = WeaponController.fire(mg42Player, 0, () => 0.99);
 assert.equal(hotShot.fired, true);
 const hotAngle = Math.abs(Math.atan2(hotShot.projectiles[0].vy, hotShot.projectiles[0].vx));
 assert.ok(hotAngle > coolAngle * 1.7, "MG42 spread must widen as heat rises");
 for (const projectile of hotShot.projectiles) releaseProjectile(projectile);
-mg42Player.weaponHeat = 99;
-mg42Player.fireCooldown = 0;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat = 99;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const overheatShot = WeaponController.fire(mg42Player, 0, () => 0.5);
 assert.equal(overheatShot.fired, true);
-assert.ok(mg42Player.weaponOverheatTimer > 0);
+assert.ok(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.overheatTimer > 0);
 for (const projectile of overheatShot.projectiles) releaseProjectile(projectile);
-mg42Player.fireCooldown = 0;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].fireCooldown = 0;
 assert.equal(WeaponController.fire(mg42Player, 0, () => 0.5).reason, "overheated");
-const heatBeforeSwap = mg42Player.weaponHeat;
+const heatBeforeSwap = mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat;
 assert.equal(WeaponController.switchWeapon(mg42Player), true);
 WeaponController.updateRuntime(mg42Player, 0.25, false);
-assert.ok(mg42Player.weaponHeat < heatBeforeSwap && mg42Player.weaponHeat > 0, "MG42 must cool instead of resetting when holstered");
+assert.ok(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat < heatBeforeSwap && mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat > 0, "MG42 must cool instead of resetting when holstered");
 WeaponController.updateRuntime(mg42Player, 2, false);
-assert.equal(mg42Player.weaponOverheatTimer, 0);
-assert.ok(mg42Player.weaponHeat <= 35);
+assert.equal(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.overheatTimer, 0);
+assert.ok(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat <= 35);
 
 const sustainedMg42 = new Player(160, 120);
 sustainedMg42.setWeaponLoadout(["mg42"], 0);
 const heatStep = 1 / 120;
 let sustainedFireTime = 0;
-while (sustainedFireTime < 5 && sustainedMg42.weaponOverheatTimer <= 0) {
-  sustainedMg42.fireCooldown = Math.max(0, sustainedMg42.fireCooldown - heatStep);
+while (sustainedFireTime < 5 && sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].customState.overheatTimer <= 0) {
+  sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown = Math.max(0, sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown - heatStep);
   WeaponController.updateRuntime(sustainedMg42, heatStep, true);
-  if (sustainedMg42.fireCooldown <= 0) {
+  if (sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown <= 0) {
     const shot = WeaponController.fire(sustainedMg42, 0, () => 0.5);
     for (const projectile of shot.projectiles) releaseProjectile(projectile);
   }
@@ -271,7 +271,7 @@ assert.equal(primerVolley.projectiles[0].linkedShotMode, "primer");
 assert.equal(primerVolley.projectiles[0].linkedExplosionRadius, 42);
 assert.equal(primerVolley.projectiles[0].life, 2, "NA-45 Primer fuse must begin when fired");
 assert.equal(na45Player.mana, 76);
-na45Player.fireCooldown = 0;
+na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const catalystVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(catalystVolley.fired, true);
 assert.equal(catalystVolley.projectiles[0].linkedShotMode, "catalyst");
@@ -287,20 +287,20 @@ assert.equal(so14Lead.projectiles[0].damage, 14);
 assert.equal(so14Lead.projectiles[0].pierceRemaining, 2);
 assert.equal(so14Lead.projectiles[0].color, "#F4D35E");
 assert.equal(so14Lead.recoil, 1.05);
-assert.ok(Math.abs(so14Player.fireCooldown - 0.09) < 1e-9);
+assert.ok(Math.abs(so14Player.weaponLoadout.slots[so14Player.weaponLoadout.activeSlot].fireCooldown - 0.09) < 1e-9);
 for (const projectile of so14Lead.projectiles) releaseProjectile(projectile);
-so14Player.fireCooldown = 0;
+so14Player.weaponLoadout.slots[so14Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const so14FollowA = WeaponController.fire(so14Player, 0, () => 0.99);
 assert.equal(so14FollowA.projectiles[0].damage, 6);
 assert.equal(so14FollowA.projectiles[0].pierceRemaining, 0);
 assert.equal(so14FollowA.projectiles[0].color, "#CFA7FF");
 assert.equal(so14FollowA.recoil, 0.28);
 for (const projectile of so14FollowA.projectiles) releaseProjectile(projectile);
-so14Player.fireCooldown = 0;
+so14Player.weaponLoadout.slots[so14Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const so14FollowB = WeaponController.fire(so14Player, 0, () => 0.99);
 assert.equal(so14FollowB.projectiles[0].damage, 6);
 assert.equal(so14FollowB.projectiles[0].color, "#8FD9FF");
-assert.ok(Math.abs(so14Player.fireCooldown - 0.52) < 1e-9);
+assert.ok(Math.abs(so14Player.weaponLoadout.slots[so14Player.weaponLoadout.activeSlot].fireCooldown - 0.52) < 1e-9);
 assert.equal(so14Player.mana, 71);
 for (const projectile of so14FollowB.projectiles) releaseProjectile(projectile);
 
@@ -364,9 +364,9 @@ assert.equal(WEAPONS.ultimate.rarity, "myth");
 assert.equal(WEAPONS.ultimate.dualWield, true);
 assert.ok(WEAPONS.ultimate.fireRate >= 18);
 assert.equal(ultimateVolley.projectiles.length, 2, "Ultimate fires both electronic pistols per trigger cycle");
-assert.ok(ultimatePlayer.fireCooldown <= 1 / 18 + 1e-9);
+assert.ok(ultimatePlayer.weaponLoadout.slots[ultimatePlayer.weaponLoadout.activeSlot].fireCooldown <= 1 / 18 + 1e-9);
 assert.equal(ultimatePlayer.mana, 79.2);
-assert.ok(ultimatePlayer.weaponHeat > 0);
+assert.ok(ultimatePlayer.weaponLoadout.slots[ultimatePlayer.weaponLoadout.activeSlot].customState.heat > 0);
 for (const projectile of ultimateVolley.projectiles) releaseProjectile(projectile);
 
 const awpPlayer = new Player(160, 120);
@@ -438,8 +438,8 @@ assert.equal(terrarian.tetherRange, 108);
 assert.equal(terrarian.repeatHitDelay, 0.35);
 assert.equal(terrarian.maxLife, 0.35);
 
-player.fireCooldown = 0;
-player.weaponChannelTime = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
 player.setWeaponLoadout(["last_prism"], 0);
 player.mana = 80;
 const prismOpen = WeaponController.fire(player, 0, () => 0.5);
@@ -450,8 +450,8 @@ const openSpread = Math.max(...openAngles) - Math.min(...openAngles);
 const openDamage = prismOpen.projectiles[0].damage;
 const openCost = 80 - player.mana;
 
-player.fireCooldown = 0;
-player.weaponChannelTime = WEAPONS.last_prism.channelTime ?? 3.2;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = WEAPONS.last_prism.channelTime ?? 3.2;
 player.mana = 80;
 const prismFocused = WeaponController.fire(player, 0, () => 0.5);
 assert.equal(prismFocused.fired, true);
@@ -462,8 +462,8 @@ assert.ok(prismFocused.projectiles[0].damage > openDamage);
 assert.ok(80 - player.mana > openCost);
 assert.equal(prismFocused.projectiles[0].beamWidth, 4);
 
-player.fireCooldown = 0;
-player.weaponChannelTime = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
 player.setWeaponLoadout(["zenith"], 0);
 player.mana = 80;
 const zenithVolley = WeaponController.fire(player, 0, () => 0.5);
@@ -471,7 +471,7 @@ assert.equal(zenithVolley.fired, true);
 assert.equal(zenithVolley.projectiles.length, 3);
 assert.ok(zenithVolley.projectiles.every(projectile => projectile.style === "sword" && projectile.ignoreWalls));
 
-player.fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.setWeaponLoadout(["stardust_dragon_staff"], 0);
 player.mana = 80;
 const dragon = WeaponController.fire(player, 0, () => 0.5);
@@ -530,7 +530,7 @@ dungeon.player.mana = 80;
 dungeon.player.setWeaponLoadout(["stardust_dragon_staff"], 0);
 dungeon.getPlayerAimAngle = () => 0;
 dungeon.fireWeapon();
-dungeon.player.fireCooldown = 0;
+dungeon.player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 dungeon.fireWeapon();
 assert.equal(dungeon.projectiles.length, 1, "recasting the staff must strengthen the existing dragon");
 assert.equal(dungeon.projectiles[0].summonLevel, 2);
@@ -540,7 +540,7 @@ dungeon.projectiles = [];
 
 dungeon.player.mana = 80;
 dungeon.player.setWeaponLoadout(["terrarian"], 0);
-dungeon.player.fireCooldown = 0;
+dungeon.player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 dungeon.fireWeapon();
 assert.equal(dungeon.player.activeYoyoWeaponId, "terrarian", "deployed yoyo must replace the held weapon model");
 const manaAfterYoyoLaunch = dungeon.player.mana;
@@ -593,7 +593,7 @@ assert.equal(linkedPrimer.detonated, true);
 assert.equal(dungeon.projectiles.length, 0, "NA-45 linked rounds must be released after detonation");
 assert.ok(linkedBlastTarget.hp < 30, "NA-45 Catalyst must detonate the nearby Primer");
 
-na45Player.fireCooldown = 0;
+na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const autoPrimer = WeaponController.fire(na45Player, 0, () => 0.5).projectiles[0];
 autoPrimer.x = autoPrimer.y = 40;
 dungeon.projectiles = [autoPrimer];

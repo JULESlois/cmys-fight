@@ -1,4 +1,4 @@
-export type RoomType = "start" | "combat" | "treasure" | "shop" | "boss" | "exit" | "npc" | "legacy_rpg" | "legacy_tactics" | "wish_fountain" | "photo_booth";
+export type RoomType = "start" | "combat" | "treasure" | "boss" | "exit" | "npc";
 
 export interface DoorMask {
   up: boolean;
@@ -29,8 +29,8 @@ const BREAKABLE = 5;
 const ANY_DOORS: DoorMask = { up: true, down: true, left: true, right: true };
 const COMBAT_TYPES: RoomType[] = ["combat", "npc"];
 const SPECIAL_TYPES: RoomType[] = [
-  "treasure", "shop", "boss", "exit", "npc",
-  "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics",
+  "treasure", "boss", "exit", "npc",
+  
 ];
 
 function normalizeMask(mask: DoorMask | "any"): DoorMask {
@@ -102,7 +102,7 @@ export const OPEN_LAYOUT_TEMPLATE_IDS = [
 ] as const;
 
 export const ROOM_TEMPLATES: RoomTemplate[] = [
-  template("horizontal_corridor", ["combat", "shop", "npc"], { left: true, right: true, up: false, down: false },
+  template("horizontal_corridor", ["combat", "npc"], { left: true, right: true, up: false, down: false },
     [{ x: 10, y: 5 }, { x: 10, y: 9 }, { x: 5, y: 7 }, { x: 15, y: 7 }], [{ x: 10, y: 7 }], { detail: "combat" }),
   template("vertical_corridor", COMBAT_TYPES, { left: false, right: false, up: true, down: true },
     [{ x: 5, y: 7 }, { x: 15, y: 7 }, { x: 10, y: 3 }, { x: 10, y: 11 }], [{ x: 10, y: 7 }], { detail: "combat" }),
@@ -110,11 +110,11 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
     [{ x: 5, y: 5 }, { x: 10, y: 5 }, { x: 5, y: 10 }], [{ x: 15, y: 5 }], { detail: "combat" }),
   template("cross_room", ["combat", "start"], "any",
     [{ x: 5, y: 5 }, { x: 15, y: 5 }, { x: 5, y: 10 }, { x: 15, y: 10 }], [{ x: 10, y: 7 }], { detail: "combat", weight: 1 }),
-  template("dead_end", ["treasure", "shop"], "any", [], [{ x: 10, y: 7 }]),
+  template("dead_end", ["treasure"], "any", [], [{ x: 10, y: 7 }]),
   template("boss_arena", ["boss"], "any", [{ x: 10, y: 6 }], [], {
     detail: "boss", portalSpawnPoint: { x: 10, y: 7 },
   }),
-  template("legacy_room", ["wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics"], "any", [], [], {
+  template("legacy_room", ["combat", "combat", "combat", "combat"], "any", [], [], {
     legacySpawnPoint: { x: 10, y: 7 },
   }),
   template("corner_rt", COMBAT_TYPES, { left: false, right: true, up: true, down: false },

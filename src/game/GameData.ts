@@ -1,3 +1,4 @@
+import { WeaponLoadoutRuntime, createWeaponRuntimeState } from "./combat/WeaponRuntimeState";
 import { generateStage, type FloorData } from "./FloorGenerator";
 import { CHARACTERS } from "./data/characters";
 import { normalizeRoomState } from "./RoomState";
@@ -92,8 +93,8 @@ export interface GameSave {
     manaRechargeTimer: number;
     manaRechargeDelay: number;
     manaRechargeRate: number;
-    weaponSlots: WeaponSlots;
-    activeWeaponSlot: 0 | 1;
+    weaponLoadout: WeaponLoadoutRuntime;
+    
     /** Compatibility mirror for saves created before dual weapon slots. */
     currentWeaponId: string;
     level: number;
@@ -156,8 +157,8 @@ export const defaultSave: GameSave = {
     manaRechargeTimer: 0,
     manaRechargeDelay: CHARACTERS.knight.manaRechargeDelay,
     manaRechargeRate: CHARACTERS.knight.manaRechargeRate,
-    weaponSlots: ["pistol"],
-    activeWeaponSlot: 0,
+    weaponLoadout: { slots: [createWeaponRuntimeState("pistol")], activeSlot: 0, swapTimer: 0 },
+    
     currentWeaponId: "pistol",
     level: 1,
     exp: 0,
@@ -257,13 +258,19 @@ export class GameData {
 
       this.data = { ...defaultSave, ...parsed };
       this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
-      if (!Array.isArray(parsed.player?.weaponSlots)) {
+      
+      if (!parsed.player?.weaponLoadout) {
+        const { createWeaponRuntimeState } = require("./combat/WeaponRuntimeState");
         const legacyWeapon = isWeaponId(parsed.player?.currentWeaponId)
           ? parsed.player.currentWeaponId
           : "pistol";
-        this.data.player.weaponSlots = [legacyWeapon];
-        this.data.player.activeWeaponSlot = 0;
+        this.data.player.weaponLoadout = {
+          slots: [createWeaponRuntimeState(legacyWeapon)],
+          activeSlot: 0,
+          swapTimer: 0
+        };
       }
+
       this.normalizePlayerWeapons();
       this.migrateMicheleStarterLoadout(loadedVersion);
       if (typeof parsed.player?.knightGuardReady !== "boolean") {
@@ -437,7 +444,7 @@ export class GameData {
     return {
       previous,
       current,
-      chapterChanged: previous.chapterIndex !== current.chapterIndex,
+      chapterChanged: previous.routeDepth !== current.routeDepth,
     };
   }
 
@@ -470,9 +477,13 @@ export class GameData {
 
   private setStarterWeapons(starterWeapon: string, characterId = this.data.player.characterId) {
     const slots = createStarterWeaponSlots(starterWeapon, characterId);
-    this.data.player.weaponSlots = slots[1] ? [slots[0], slots[1]] : [slots[0]];
-    this.data.player.activeWeaponSlot = 0;
-    this.data.player.currentWeaponId = this.data.player.weaponSlots[0];
+    
+    const { createWeaponRuntimeState } = require("./combat/WeaponRuntimeState");
+    this.data.player.weaponLoadout.slots = [createWeaponRuntimeState(slots[0])];
+    if (slots[1]) this.data.player.weaponLoadout.slots.push(createWeaponRuntimeState(slots[1]));
+    this.data.player.weaponLoadout.activeSlot = 0;
+    this.data.player.currentWeaponId = slots[0];
+
   }
 
   public isCharacterUnlocked(characterId: string): boolean {
@@ -593,7 +604,11 @@ export class GameData {
   }
 
   public discoverPlayerBuild(): void {
-    for (const weaponId of this.data.player.weaponSlots) {
+    
+    for (const slot of this.data.player.weaponLoadout.slots) {
+      const weaponId = slot?.weaponId;
+      if (!weaponId) continue;
+
       if (weaponId) this.discoverWeapon(weaponId);
     }
     for (const buffId of this.data.player.buffs) this.discoverBuff(buffId);
@@ -866,16 +881,29 @@ export class GameData {
   private normalizePlayerWeapons() {
     const player = this.data.player;
     const fallback = isWeaponId(player.currentWeaponId) ? player.currentWeaponId : "pistol";
-    player.weaponSlots = normalizeWeaponSlots(player.weaponSlots, fallback);
-    const eligibleSlots = player.weaponSlots.filter((weaponId): weaponId is string =>
-      Boolean(weaponId) && isWeaponAvailableForCharacter(WEAPONS[weaponId], player.characterId)
-    );
+    
+    if (!player.weaponLoadout) {
+      const { createWeaponRuntimeState } = require("./combat/WeaponRuntimeState");
+      const w1 = Array.isArray((player as any).weaponSlots) ? (player as any).weaponSlots[0] : fallback;
+      const w2 = Array.isArray((player as any).weaponSlots) ? (player as any).weaponSlots[1] : undefined;
+      player.weaponLoadout = {
+        slots: [createWeaponRuntimeState(w1)],
+        activeSlot: (player as any).activeWeaponSlot || 0,
+        swapTimer: 0
+      };
+      if (w2) player.weaponLoadout.slots[1] = createWeaponRuntimeState(w2);
+    }
+
+    
+    const eligibleSlots = player.weaponLoadout.slots.filter(s => s && isWeaponAvailableForCharacter(WEAPONS[s.weaponId], player.characterId));
     const characterStarter = CHARACTERS[player.characterId]?.starterWeapon ?? "pistol";
-    player.weaponSlots = eligibleSlots.length > 0
-      ? (eligibleSlots[1] ? [eligibleSlots[0], eligibleSlots[1]] : [eligibleSlots[0]])
-      : [characterStarter];
-    player.activeWeaponSlot = player.activeWeaponSlot === 1 && player.weaponSlots[1] ? 1 : 0;
-    player.currentWeaponId = player.weaponSlots[player.activeWeaponSlot] ?? player.weaponSlots[0];
+    if (eligibleSlots.length === 0) { player.weaponLoadout.slots = [createWeaponRuntimeState(characterStarter)]; } else { player.weaponLoadout.slots = eligibleSlots as any; }
+    
+    player.weaponLoadout.activeSlot = player.weaponLoadout.activeSlot === 1 && player.weaponLoadout.slots[1] ? 1 : 0;
+
+    
+    player.currentWeaponId = player.weaponLoadout.slots[player.weaponLoadout.activeSlot]?.weaponId ?? player.weaponLoadout.slots[0].weaponId;
+
   }
 
   private resetSkillState(characterId: string) {
@@ -933,11 +961,11 @@ export class GameData {
     const player = this.data.player;
     if (
       player.characterId === "michele" &&
-      player.weaponSlots[0] === "inspector" &&
-      player.weaponSlots[1] === "pistol"
+      player.weaponLoadout.slots[0]?.weaponId === "inspector" &&
+      player.weaponLoadout.slots[1]?.weaponId === "pistol"
     ) {
-      player.weaponSlots = ["inspector"];
-      player.activeWeaponSlot = 0;
+      player.weaponLoadout.slots = [createWeaponRuntimeState("inspector")];
+      player.weaponLoadout.activeSlot = 0;
       player.currentWeaponId = "inspector";
     }
   }
@@ -988,8 +1016,8 @@ export class GameData {
       return;
     }
     stage.depth = run.globalStageIndex;
-    stage.chapterIndex = run.chapterIndex;
-    stage.stageIndex = run.stageIndex;
+    stage.routeDepth = run.routeDepth;
+    stage.stageWithinNode = run.stageWithinNode;
     stage.globalStageIndex = run.globalStageIndex;
     stage.isBossStage = isBossStage(run);
     stage.hardMode = run.hardMode;
@@ -997,13 +1025,13 @@ export class GameData {
     stage.challengeKey = run.challengeKey;
     stage.buffChoiceRerollCount = Math.max(0, Math.floor(Number(stage.buffChoiceRerollCount) || 0));
     for (const room of stage.rooms) {
-      if (room.type === "legacy_rpg") {
-        room.type = "wish_fountain";
+      if (false) {
+        room.type = "combat";
         room.templateId = "legacy_room";
         room.interactionCompleted = false;
         room.rewardGenerated = false;
-      } else if (room.type === "legacy_tactics") {
-        room.type = "photo_booth";
+      } else if (false) {
+        room.type = "combat";
         room.templateId = "legacy_room";
         room.interactionCompleted = false;
         room.rewardGenerated = false;
@@ -1017,10 +1045,10 @@ export class GameData {
       Number(stage.seed) || hashSeed(0xC0FFEE, `${run.globalStageIndex}:${roomSignature}`),
     );
 
-    if (stage.isBossStage && !stage.rooms.some(room => room.type === "shop")) {
+    if (false) {
       const preparation = stage.rooms.find(room => room.type === "treasure");
       if (preparation) {
-        preparation.type = "shop";
+        
         preparation.templateId = "horizontal_corridor";
         preparation.interactionCompleted = false;
         preparation.rewardGenerated = false;
@@ -1036,16 +1064,12 @@ export class GameData {
       for (const enemy of room.enemies ?? []) {
         enemy.statusEffects = StatusEffectSystem.normalize(enemy.statusEffects);
       }
-      if (room.type === "shop") {
-        room.shopSeed = ShopSystem.getSeed(stage, room);
-        room.shopStock = ShopSystem.normalizeStock(room.shopStock);
-      }
-    }
+          }
   }
 
   private isStageCompatible(stage: any, run: RunProgress): boolean {
     if (!stage || !Array.isArray(stage.rooms) || stage.rooms.length === 0) return false;
-    if (stage.chapterIndex !== run.chapterIndex || stage.stageIndex !== run.stageIndex) return false;
+    if (stage.routeDepth !== run.routeDepth || stage.stageWithinNode !== run.stageWithinNode) return false;
     if (stage.globalStageIndex !== run.globalStageIndex) return false;
     if ((stage.hardMode === true) !== run.hardMode) return false;
     if (stage.challengeId !== run.challengeId) return false;

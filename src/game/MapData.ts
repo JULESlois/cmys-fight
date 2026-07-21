@@ -201,7 +201,7 @@ export function validateRoomLayout(
   let centerWallFree = true;
   for (let y = 5; y <= 9; y++) for (let x = 7; x <= 13; x++) if (isSolid(tiles[y * MAP_WIDTH + x])) centerWallFree = false;
   const specialTypes: Room["type"][] = [
-    "treasure", "shop", "boss", "exit", "npc", "wish_fountain", "photo_booth", "legacy_rpg", "legacy_tactics",
+    "treasure", "boss", "exit", "npc",
   ];
   const isSpecial = roomType ? specialTypes.includes(roomType) : template.allowedRoomTypes.some(type => specialTypes.includes(type));
   let specialCentralOpen = true;

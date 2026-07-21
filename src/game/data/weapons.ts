@@ -113,6 +113,14 @@ export interface WeaponData {
   burstSize?: number;
   burstInterval?: number;
   burstRecovery?: number;
+  resourceType?: "magazine" | "battery" | "heat" | "charge" | "action";
+  magazineSize?: number;
+  reloadTime?: number;
+  batteryCapacity?: number;
+  batteryRechargeRate?: number;
+  batteryRechargeDelay?: number;
+  chargeSlots?: number;
+  chargeTime?: number;
   heatPerShot?: number;
   heatDecayRate?: number;
   maxHeat?: number;
@@ -148,12 +156,14 @@ export const WEAPONS: Record<string, WeaponData> = {
   pistol: {
     id: "pistol", name: "Old Pistol", category: "sidearm", rarity: "common",
     damage: 4, fireRate: 3.1, bulletSpeed: 190, manaCost: 0, spread: 0.08,
+    resourceType: "magazine", magazineSize: 12, reloadTime: 1.2,
     pelletCount: 1, knockback: 5, critChance: 0.08, color: "#F39C12",
     mechanic: "Reliable zero-energy ballistic sidearm.", projectileStyle: "bullet",
   },
   shotgun: {
     id: "shotgun", name: "Rusty Shotgun", category: "shotgun", rarity: "uncommon",
     damage: 2, fireRate: 1.35, bulletSpeed: 185, manaCost: 2, spread: 0.38,
+    resourceType: "magazine", magazineSize: 4, reloadTime: 1.8,
     pelletCount: 5, knockback: 7, critChance: 0.05, color: "#E74C3C",
     mechanic: "Wide five-pellet close-range blast.", projectileStyle: "bullet",
     muzzleEffect: "smoke", recoil: 1.15,
@@ -161,6 +171,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   laser: {
     id: "laser", name: "Energy Blaster", category: "energy", rarity: "rare",
     damage: 5, fireRate: 4.2, bulletSpeed: 300, manaCost: 1, spread: 0,
+    resourceType: "battery", batteryCapacity: 30, batteryRechargeRate: 8, batteryRechargeDelay: 1.0,
     pelletCount: 1, knockback: 3, critChance: 0.12, color: "#00F2FE",
     mechanic: "Fast coherent beam with a long luminous trace.", projectileStyle: "beam",
     trailLength: 34, beamWidth: 2, muzzleEffect: "beam", impactEffect: "plasma",
@@ -168,6 +179,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   bell_repeater: {
     id: "bell_repeater", name: "Ding-Dong Repeater", category: "rifle", rarity: "common",
     damage: 2, fireRate: 6.8, bulletSpeed: 220, manaCost: 1, spread: 0.12,
+    resourceType: "magazine", magazineSize: 25, reloadTime: 1.5,
     pelletCount: 1, knockback: 2, critChance: 0.07, color: "#F1C40F",
     projectileLife: 1.45,
     mechanic: "Rapid ringing tracer rounds.", projectileStyle: "tracer", trailLength: 15,
@@ -175,6 +187,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   mask_sprayer: {
     id: "mask_sprayer", name: "Mask Sprayer", category: "shotgun", rarity: "uncommon",
     damage: 1, fireRate: 2.2, bulletSpeed: 170, manaCost: 2, spread: 0.68,
+    resourceType: "heat", maxHeat: 100, heatPerShot: 15, heatDecayRate: 35, overheatLockout: 2.5,
     pelletCount: 8, knockback: 4, critChance: 0.03, color: "#ECF0F1",
     projectileLife: 1.05, statusEffect: "slow", statusDuration: 1.2,
     mechanic: "Short-lived freezing particulate spray.", projectileStyle: "flame",
@@ -183,6 +196,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   code_scanner: {
     id: "code_scanner", name: "Code Scanner", category: "energy", rarity: "rare",
     damage: 5, fireRate: 2.8, bulletSpeed: 275, manaCost: 2, spread: 0.02,
+    resourceType: "battery", batteryCapacity: 40, batteryRechargeRate: 15, batteryRechargeDelay: 0.8,
     pelletCount: 1, knockback: 3, critChance: 0.14, color: "#2ECC71",
     pierce: 2, projectileLife: 2.3,
     mechanic: "Scanning beam penetrates multiple targets.", projectileStyle: "beam",
@@ -191,6 +205,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   swab_lance: {
     id: "swab_lance", name: "Swab Lance", category: "launcher", rarity: "uncommon",
     damage: 12, fireRate: 0.95, bulletSpeed: 128, manaCost: 3, spread: 0.04,
+    resourceType: "charge", chargeSlots: 3, chargeTime: 3.5,
     pelletCount: 1, knockback: 13, critChance: 0.1, color: "#D6EAF8",
     projectileRadius: 4, projectileLife: 2.8, pierce: 1,
     mechanic: "Heavy lance accelerates after leaving the barrel.", projectileStyle: "tracer",
@@ -199,6 +214,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   vat_horse_cannon: {
     id: "vat_horse_cannon", name: "Vat-Horse Cannon", category: "launcher", rarity: "rare",
     damage: 5, fireRate: 1.2, bulletSpeed: 145, manaCost: 4, spread: 0.24,
+    resourceType: "magazine", magazineSize: 3, reloadTime: 2.2,
     pelletCount: 3, knockback: 10, critChance: 0.08, color: "#FF8A65",
     projectileRadius: 4, projectileLife: 2.6, wallBounces: 1,
     statusEffect: "burn", statusDuration: 2.1,

@@ -6,8 +6,7 @@ import type { PowerSeries } from "../PowerSeries";
 
 export type BuffRarity = "common" | "uncommon" | "rare" | "legendary";
 export type BuffCategory = "weapon" | "defense" | "skill";
-export type BuffId =
-  | "scattershot" | "rapid_fire" | "heavy_rounds" | "critical_focus"
+export type BuffId = "counter_strike" | "scattershot" | "rapid_fire" | "heavy_rounds" | "critical_focus"
   | "piercing_shots" | "rebound_rounds" | "reinforced_heart"
   | "armor_capacitor" | "fast_recharge" | "emergency_barrier"
   | "skill_accelerator" | "energy_feedback" | "status_resistance"
@@ -28,6 +27,7 @@ export interface BuffDefinition {
 }
 
 export const BUFFS: Record<BuffId, BuffDefinition> = {
+  counter_strike: { id: "counter_strike", name: "COUNTER STRIKE", description: "Perfect dodge empowers your next attack.", shortCode: "CTR", rarity: "rare", category: "defense" },
   scattershot: { id: "scattershot", name: "PATTERN CALIBRATOR", description: "Spread -30%; critical chance +5%.", shortCode: "CAL", rarity: "common", category: "weapon" },
   rapid_fire: { id: "rapid_fire", name: "TRIGGER DISCIPLINE", description: "Spread -20%; projectile speed +12%.", shortCode: "TRG", rarity: "common", category: "weapon" },
   heavy_rounds: { id: "heavy_rounds", name: "HOLLOW-POINT KIT", description: "Critical damage +35%; knockback +3.", shortCode: "HPT", rarity: "uncommon", category: "weapon" },
@@ -71,7 +71,17 @@ type ManaRuntimePlayer = Pick<
 
 type RuntimePlayer = ManaRuntimePlayer & Pick<Player, "armorRechargeDelay" | "armorRechargeRate">;
 
+import { CombatEventDispatcher } from "./CombatEvents";
+
 export class BuffSystem {
+  static init() {
+    CombatEventDispatcher.on("player_perfect_dodge", (payload) => {
+      if (BuffSystem.has(payload.player, "counter_strike")) {
+        payload.player.buffState.counterStrikeReady = true;
+      }
+    });
+  }
+
   static readonly MAX_BUFFS = 12;
   static readonly ACTIVE_REWARD_BUFF_LIMIT = 6;
 
@@ -231,3 +241,4 @@ export class BuffSystem {
     return BuffSystem.has(player, "elemental_rounds") ? { id: "burn", duration: 2.4 } : null;
   }
 }
+BuffSystem.init();

@@ -1,4 +1,5 @@
 import { WeaponController } from "../combat/WeaponController";
+import { ResourceStrategies } from "../combat/WeaponResourceStrategies";
 import { WEAPONS, type WeaponData } from "../data/weapons";
 import type { Player } from "../entities/Player";
 import { uiFont, type Language } from "../i18n";
@@ -53,34 +54,33 @@ function drawWeaponIcon(
   ctx.restore();
 }
 
-function drawEnergyCells(
+function drawResourceTrack(
   ctx: CanvasRenderingContext2D,
   player: Player,
-  weapon: WeaponData,
+  slotIndex: 0 | 1,
   x: number,
   y: number,
   width: number,
 ): void {
-  const cells = 14;
-  const gap = 1;
-  const cellWidth = Math.floor((width - (cells - 1) * gap) / cells);
-  const maxMana = Math.max(1, player.maxMana);
-  const current = Math.max(0, Math.min(maxMana, player.mana));
-  const attackCost = Math.max(0, WeaponController.getEnergyCost(player, weapon.id));
-  const insufficient = current + 1e-9 < attackCost;
-  const remainingAfterAttack = Math.max(0, current - attackCost);
-
-  for (let index = 0; index < cells; index++) {
-    const cellStart = index / cells * maxMana;
-    const cellEnd = (index + 1) / cells * maxMana;
-    let color = "#17202A";
-    if (cellStart < current) color = UI_COLORS.cyan;
-    if (attackCost > 0 && cellEnd > remainingAfterAttack && cellStart < current) {
-      color = insufficient ? UI_COLORS.red : UI_COLORS.yellow;
-    }
-    ctx.fillStyle = color;
-    ctx.fillRect(x + index * (cellWidth + gap), y, cellWidth, 4);
-  }
+  const slot = player.weaponLoadout.slots[slotIndex];
+  if (!slot) return;
+  const weapon = WEAPONS[slot.weaponId];
+  if (!weapon) return;
+  
+  const strategy = ResourceStrategies[slot.resourceType];
+  if (!strategy) return;
+  
+  const ratio = strategy.getRatio(slot, weapon);
+  const color = slot.resourceType === "heat" ? (slot.customState.overheatTimer > 0 ? UI_COLORS.red : UI_COLORS.orange) 
+    : slot.resourceType === "battery" ? UI_COLORS.cyan 
+    : slot.resourceType === "magazine" ? UI_COLORS.white 
+    : slot.resourceType === "charge" ? UI_COLORS.green : UI_COLORS.muted;
+  
+  ctx.fillStyle = "#17202A";
+  ctx.fillRect(x, y, width, 4);
+  
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, Math.round(width * ratio), 4);
 }
 
 export class WeaponHudRenderer {
@@ -93,11 +93,11 @@ export class WeaponHudRenderer {
     const activeWeapon = WEAPONS[player.currentWeaponId];
     if (!activeWeapon) return;
     const bounds = options.bounds ?? HUD_LAYOUT.bottomRightWeapon;
-    const standbyIndex = player.activeWeaponSlot === 0 ? 1 : 0;
-    const standbyId = player.weaponSlots[standbyIndex];
+    const standbyIndex = player.weaponLoadout.activeSlot === 0 ? 1 : 0;
+    const standbyId = player.weaponLoadout.slots[standbyIndex]?.weaponId;
     const standbyWeapon = standbyId ? WEAPONS[standbyId] : undefined;
-    const activeSlot = player.activeWeaponSlot === 0 ? "I" : "II";
-    const standbySlot = player.activeWeaponSlot === 0 ? "II" : "I";
+    const activeSlot = player.weaponLoadout.activeSlot === 0 ? "I" : "II";
+    const standbySlot = player.weaponLoadout.activeSlot === 0 ? "II" : "I";
     const activeName = options.activeNameOverride ?? activeWeapon.name;
 
     ctx.save();
@@ -131,28 +131,29 @@ export class WeaponHudRenderer {
     drawWeaponIcon(ctx, activeWeapon, bounds.x + 4, bounds.y + 14, 20, 18, 0.62);
     const trackX = bounds.x + 27;
     const trackWidth = bounds.width - 32;
-    drawEnergyCells(ctx, player, activeWeapon, trackX, bounds.y + 16, trackWidth);
+    drawResourceTrack(ctx, player, player.weaponLoadout.activeSlot, trackX, bounds.y + 16, trackWidth);
 
     ctx.font = uiFont(language, 5, true);
     ctx.textAlign = "right";
-    ctx.fillStyle = player.mana + 1e-9 < WeaponController.getEnergyCost(player, activeWeapon.id)
-      ? UI_COLORS.red
+    
+    const activeSlotData = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    const resourceVal = activeSlotData?.resourceState.value ?? 0;
+    const resourceMax = activeSlotData?.resourceState.max ?? 0;
+    
+    ctx.fillStyle = activeSlotData && ResourceStrategies[activeSlotData.resourceType] && !ResourceStrategies[activeSlotData.resourceType].canFire(activeSlotData, activeWeapon, player) 
+      ? UI_COLORS.red 
       : UI_COLORS.white;
-    ctx.fillText(`${Math.floor(player.mana)}/${Math.floor(player.maxMana)}`, bounds.x + bounds.width - 5, bounds.y + 27);
-
+      
+    if (activeSlotData && activeSlotData.resourceType !== "action") {
+      ctx.fillText(`${Math.floor(resourceVal)}/${Math.floor(resourceMax)}`, bounds.x + bounds.width - 5, bounds.y + 27);
+    }
+    
     if (activeWeapon.sustainEnergyPerSecond) {
       ctx.textAlign = "left";
       ctx.fillStyle = UI_COLORS.yellow;
       ctx.fillText(`-${activeWeapon.sustainEnergyPerSecond}/S`, trackX, bounds.y + 27);
     }
 
-    if (activeWeapon.maxHeat) {
-      const heatRatio = WeaponController.getHeatRatio(player, activeWeapon.id);
-      ctx.fillStyle = "#17202A";
-      ctx.fillRect(trackX, bounds.y + 32, trackWidth, 3);
-      ctx.fillStyle = player.weaponOverheatTimer > 0 ? UI_COLORS.red : UI_COLORS.yellow;
-      ctx.fillRect(trackX, bounds.y + 32, Math.round(trackWidth * heatRatio), 3);
-    }
     ctx.restore();
   }
 }

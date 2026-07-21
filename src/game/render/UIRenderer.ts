@@ -182,7 +182,7 @@ export class UIRenderer {
     ctx.textAlign = "right";
     ctx.fillStyle = UI_COLORS.white;
     ctx.font = uiFont(language, 7, true);
-    ctx.fillText(`${floor.chapterIndex}-${floor.stageIndex}`, 312, 14);
+    ctx.fillText(`${floor.routeDepth}-${floor.stageWithinNode}`, 312, 14);
     ctx.textAlign = "left";
   }
 }

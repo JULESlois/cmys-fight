@@ -127,7 +127,7 @@ export class ShopSystem {
     return normalizeSeed(room.shopSeed ?? hashSeed(stage.seed, `shop:${room.id}`));
   }
 
-  static generateStock(stage: StageData, room: Room, player: Pick<Player, "characterId" | "buffs" | "weaponSlots" | "shopDiscount">): ShopItem[] {
+  static generateStock(stage: StageData, room: Room, player: Pick<Player, "characterId" | "buffs" | "weaponLoadout" | "shopDiscount">): ShopItem[] {
     const seed = ShopSystem.getSeed(stage, room);
     room.shopSeed = seed;
     const random = createSeededRandom(seed);
@@ -141,7 +141,7 @@ export class ShopSystem {
     const desiredWeaponCount = SHOP_STOCK_SIZE - desiredBuffCount;
 
     const weaponItems: ShopItem[] = [];
-    const excludedWeapons = new Set(player.weaponSlots.filter((id): id is string => Boolean(id)));
+    const excludedWeapons = new Set((player.weaponLoadout.slots.map(s => s?.weaponId).filter(Boolean) as string[]));
     for (let slot = 0; slot < desiredWeaponCount && excludedWeapons.size < Object.keys(WEAPONS).length; slot++) {
       const weapon = rollAvailableWeapon(stage.globalStageIndex, random, "shop", excludedWeapons, player.characterId);
       if (excludedWeapons.has(weapon.id)) break;
@@ -180,7 +180,7 @@ export class ShopSystem {
   static reconcileStock(
     stage: StageData,
     room: Room,
-    player: Pick<Player, "characterId" | "buffs" | "weaponSlots" | "shopDiscount">,
+    player: Pick<Player, "characterId" | "buffs" | "weaponLoadout" | "shopDiscount">,
   ): ShopItem[] {
     const existing = ShopSystem.normalizeStock(room.shopStock);
     if (!existing) return ShopSystem.generateStock(stage, room, player);
@@ -199,7 +199,7 @@ export class ShopSystem {
         !item.buffId || player.buffs.includes(item.buffId) || player.buffs.length >= BuffSystem.MAX_BUFFS
       );
       const invalidWeapon = item.kind === "weapon" && !item.purchased && (
-        !item.weaponId || player.weaponSlots.includes(item.weaponId) ||
+        !item.weaponId || player.weaponLoadout.slots.map(s => s?.weaponId).includes(item.weaponId) ||
         !isWeaponAvailableForCharacter(WEAPONS[item.weaponId], player.characterId)
       );
       if (invalidBuff || invalidWeapon) continue;
@@ -262,7 +262,7 @@ export class ShopSystem {
       if (!item.weaponId || !(item.weaponId in WEAPONS)) {
         return { success: false, coinsAfter: coins, reason: "invalid" };
       }
-      if (player.weaponSlots.includes(item.weaponId)) {
+      if (player.weaponLoadout.slots.map(s => s?.weaponId).includes(item.weaponId)) {
         return { success: false, coinsAfter: coins, reason: "owned_weapon" };
       }
       const result = WeaponController.equipWeapon(player, item.weaponId);

@@ -17,18 +17,20 @@ interface AxisNavigationState {
 
 const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
   fire: [2, 7],
-  skill: [1],
+  skill: [4, 5],
   interact: [0],
   swapWeapon: [3],
   pause: [9],
+  dodge: [1],
 };
 
 const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X/RT",
-  skill: "B",
+  skill: "LB/RB",
   interact: "A",
   swapWeapon: "Y",
   pause: "START",
+  dodge: "B",
   moveUp: "L-STICK",
   moveDown: "L-STICK",
   moveLeft: "L-STICK",
@@ -37,10 +39,11 @@ const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
 
 const TOUCH_GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   fire: "X",
-  skill: "B",
+  skill: "LB/RB",
   interact: "A",
   swapWeapon: "Y",
   pause: "START",
+  dodge: "B",
   moveUp: "D-PAD",
   moveDown: "D-PAD",
   moveLeft: "D-PAD",

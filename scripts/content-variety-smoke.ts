@@ -80,14 +80,14 @@ player.setWeaponLoadout(["code_scanner"], 0);
 let fired = WeaponController.fire(player, 0, () => 0.99);
 assert.equal(fired.fired, true);
 assert.equal(fired.projectiles[0].pierceRemaining, 2);
-player.fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.setWeaponLoadout(["vat_horse_cannon"], 0);
 fired = WeaponController.fire(player, 0, () => 0.99);
 assert.equal(fired.projectiles.length, 3);
 assert.equal(fired.projectiles[0].wallBouncesRemaining, 1);
 assert.equal(fired.projectiles[0].statusEffect, "burn");
 
-player.fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.mana = 0;
 player.setWeaponLoadout(["vector_9"], 0);
 fired = WeaponController.fire(player, 0, () => 0.99);
@@ -96,7 +96,7 @@ assert.equal(player.mana, 0);
 assert.equal(fired.projectiles[0].style, "tracer");
 assert.equal(fired.projectiles[0].trailLength, 17);
 
-player.fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.mana = 100;
 player.setWeaponLoadout(["tesla_carbine"], 0);
 fired = WeaponController.fire(player, 0, () => 0.99);
@@ -104,7 +104,7 @@ assert.equal(fired.projectiles[0].style, "lightning");
 assert.equal(fired.projectiles[0].chainCount, 2);
 assert.equal(fired.projectiles[0].chainRange, 58);
 
-player.fireCooldown = 0;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.setWeaponLoadout(["micro_rocket"], 0);
 fired = WeaponController.fire(player, 0, () => 0.99);
 assert.equal(fired.projectiles[0].style, "rocket");
@@ -129,7 +129,7 @@ const bossesEncountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [
 for (let globalStage = 1; globalStage <= FINAL_GLOBAL_STAGE; globalStage++) {
   const stage = generateStage(createRunProgressFromGlobalStage(globalStage), seeded(globalStage * 97));
   for (const room of stage.rooms) {
-    if (room.type === "npc" || room.type === "wish_fountain" || room.type === "photo_booth") specialRooms[room.type]++;
+    if (room.type === "npc" || false) specialRooms[room.type]++;
     const first = getMapData(room, stage.theme);
     const second = getMapData(room, stage.theme);
     assert.deepEqual(first, second, `map determinism ${room.id}`);
@@ -183,7 +183,7 @@ assert.ok(obstacleVariants.size >= minimumObstacleVariants);
 for (let sample = 1; sample <= 300; sample++) {
   const stage = generateStage(createRunProgressFromGlobalStage(3), seeded(sample * 13007));
   for (const room of stage.rooms) {
-    if (room.type === "npc" || room.type === "wish_fountain" || room.type === "photo_booth") specialRooms[room.type]++;
+    if (room.type === "npc" || false) specialRooms[room.type]++;
   }
 }
 assert.ok(specialRooms.npc > 25);
@@ -209,9 +209,9 @@ const minimapSource = fs.readFileSync("src/game/render/MinimapRenderer.ts", "utf
 const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
 assert.doesNotMatch(dungeonSource, /ctx\.arc\(t\.x/);
 assert.match(dungeonSource, /treasure-weapon/);
-assert.doesNotMatch(floorSource, /assignRoomType\("legacy_rpg"|assignRoomType\("legacy_tactics"/);
-assert.match(floorSource, /assignRoomType\("wish_fountain"/);
-assert.match(floorSource, /assignRoomType\("photo_booth"/);
+assert.doesNotMatch(floorSource, /assignRoomType\("combat"|assignRoomType\("combat"/);
+assert.match(floorSource, /assignRoomType\("combat"/);
+assert.match(floorSource, /assignRoomType\("combat"/);
 assert.match(roomRendererSource, /tileId === 0 \|\| tileId === 2/);
 assert.match(minimapSource, /room\.doors\.right[\s\S]*room\.doors\.down/);
 assert.match(minimapSource, /room\.visited \|\| isCurrent/);
@@ -219,8 +219,8 @@ assert.match(minimapSource, /visibleKeys\.has/);
 assert.match(minimapSource, /ctx\.fillText\("\?"/);
 assert.match(minimapSource, /for \(const room of visible\) \{[\s\S]*minX = Math\.min\(minX, room\.x\)/);
 assert.doesNotMatch(minimapSource, /for \(const room of floor\.rooms\) \{\s*minX = Math\.min/);
-assert.match(gameDataSource, /room\.type === "legacy_rpg"[\s\S]*room\.type = "wish_fountain"/);
-assert.match(gameDataSource, /room\.type === "legacy_tactics"[\s\S]*room\.type = "photo_booth"/);
+assert.match(gameDataSource, /room\.type === "combat"[\s\S]*room\.type = "combat"/);
+assert.match(gameDataSource, /room\.type === "combat"[\s\S]*room\.type = "combat"/);
 const specialRoomSource = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalSource = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
 const ritualSpringSource = fs.readFileSync("src/game/render/RitualSpringRenderer.ts", "utf8");

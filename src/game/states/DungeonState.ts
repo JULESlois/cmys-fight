@@ -116,7 +116,7 @@ export type DungeonQaScene =
   | "treasure_open_with_multiple_loot"
   | "treasure_reenter_uncollected"
   | "chest_collision_debug"
-  | "wish_fountain"
+  | "combat"
   | "portal_idle"
   | "portal_hovered"
   | "portal_activating"
@@ -188,10 +188,10 @@ export class DungeonState extends GameState {
   private lightningArcs: LightningArc[] = [];
   private buffSelection: BuffId[] | null = null;
   private buffSelectionIndex = 0;
-  private shopOpen: boolean = false;
-  private shopSelectionIndex = 0;
+  
+  
   private shopFailure?: ShopPurchaseFailure;
-  private shopFailureTimer: number = 0;
+  
   private environmentHazards: EnvironmentHazard[] = [];
   private environmentTime: number = 0;
   private tutorial = new TutorialSystem();
@@ -206,7 +206,7 @@ export class DungeonState extends GameState {
   }
 
   public capturesPauseInput(): boolean {
-    return this.shopOpen;
+    return false;
   }
 
   private createPlayerFromSave(): Player {
@@ -223,7 +223,7 @@ export class DungeonState extends GameState {
     player.manaRechargeDelay = savedP.manaRechargeDelay ?? 1.35;
     player.manaRechargeRate = savedP.manaRechargeRate ?? 9;
     player.speed = savedP.speed;
-    player.setWeaponLoadout(savedP.weaponSlots, savedP.activeWeaponSlot);
+    player.setWeaponLoadout(savedP.weaponLoadout.slots.map(s => s?.weaponId) as any, savedP.weaponLoadout.activeSlot);
     player.skillCooldown = savedP.skillCooldown ?? 0;
     player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia"
       ? 0
@@ -265,7 +265,7 @@ export class DungeonState extends GameState {
     
     if (params && params.fromLegacy && params.result !== "loss") {
        const floor = this.engine.data.data.floor;
-       const sourceRoom = floor.rooms.find((r: Room) => r.id === params.sourceRoomId);
+       const sourceRoom = floor?.rooms?.find((r: Room) => r?.id === params.sourceRoomId);
        if (sourceRoom && !sourceRoom.interactionCompleted) {
           sourceRoom.interactionCompleted = true;
           audio.playClearRoom();
@@ -274,10 +274,10 @@ export class DungeonState extends GameState {
           const pts = template.pickupSpawnPoints;
           const p1 = pts.length > 0 ? pts[0] : { x: 10, y: 8.5 };
           const p2 = pts.length > 1 ? pts[1] : { x: 8.5, y: 7.5 };
-          if (params.legacyType === "legacy_rpg") {
+          if (params.legacyType === "combat") {
              this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "mana", 20));
              this.pickups.push(acquirePickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 50));
-          } else if (params.legacyType === "legacy_tactics") {
+          } else if (params.legacyType === "combat") {
              this.pickups.push(acquirePickup(p1.x * 16 + 8, p1.y * 16 + 8, "weapon", 1, "laser"));
              this.engine.data.discoverWeapon("laser");
              this.pickups.push(acquirePickup(p2.x * 16 + 8, p2.y * 16 + 8, "coin", 100));
@@ -309,10 +309,10 @@ export class DungeonState extends GameState {
     savedP.manaRechargeTimer = this.player.manaRechargeTimer;
     savedP.manaRechargeDelay = this.player.manaRechargeDelay;
     savedP.manaRechargeRate = this.player.manaRechargeRate;
-    savedP.weaponSlots = this.player.weaponSlots[1]
-      ? [this.player.weaponSlots[0], this.player.weaponSlots[1]]
-      : [this.player.weaponSlots[0]];
-    savedP.activeWeaponSlot = this.player.activeWeaponSlot;
+    
+    savedP.weaponLoadout = JSON.parse(JSON.stringify(this.player.weaponLoadout));
+
+    
     savedP.currentWeaponId = this.player.currentWeaponId;
     savedP.skillCooldown = this.player.skillCooldown;
     savedP.skillActiveTimer = this.player.characterId === "michele" || this.player.characterId === "kanami" || this.player.characterId === "celestia"
@@ -346,7 +346,7 @@ export class DungeonState extends GameState {
 
   private syncRoomState() {
     const floor = this.engine.data.data.floor;
-    const r = floor.rooms.find((rm: Room) => rm.x === floor.currentRoomX && rm.y === floor.currentRoomY);
+    const r = floor?.rooms?.find((rm: Room) => rm?.x === floor?.currentRoomX && rm?.y === floor?.currentRoomY);
     if (r) {
       normalizeRoomState(r);
       r.pickups = this.pickups.map(p => ({
@@ -402,7 +402,7 @@ export class DungeonState extends GameState {
     const template = getRoomTemplate(room);
     const seedLabel = kind === "boss" ? "boss-weapon-chest" : "treasure-weapon";
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, seedLabel));
-    const excluded = this.player.weaponSlots.filter((id): id is string => typeof id === "string");
+    const excluded = this.player.weaponLoadout.slots.map(s => s?.weaponId).filter((id): id is string => typeof id === "string");
     const weapon = rollAvailableWeapon(
       floor.globalStageIndex,
       random,
@@ -462,15 +462,15 @@ export class DungeonState extends GameState {
     this.lightningArcs = [];
     this.portal = undefined;
     this.chest = null;
-    this.shopOpen = false;
+    
     this.shopFailure = undefined;
-    this.shopFailureTimer = 0;
+    
     this.environmentHazards = [];
     this.environmentTime = 0;
     this.encounterCtrl = new EncounterController();
     
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find((r: Room) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find((r: Room) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     this.buffSelection = !floor.buffChoiceCompleted && floor.buffChoiceOptions?.length
       ? BuffSystem.normalizeBuffs(floor.buffChoiceOptions).slice(0, 3)
       : null;
@@ -508,7 +508,7 @@ export class DungeonState extends GameState {
       this.setPhase("exploration");
       return;
     }
-
+    
     if (currentRoom.type === "exit") {
       const portalPoint = template.portalSpawnPoint ?? { x: 10, y: 7.5 };
       this.portal = {
@@ -521,33 +521,11 @@ export class DungeonState extends GameState {
       this.setPhase("exploration");
       return;
     }
-
+    
     if (currentRoom.type === "treasure") {
       if (!currentRoom.interactionCompleted || currentRoom.weaponChest) {
         this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
       }
-      this.finalizeRoomObjects(currentRoom);
-      this.setPhase("exploration");
-      return;
-    }
-
-    if (currentRoom.type === "shop") {
-      currentRoom.shopStock = ShopSystem.reconcileStock(floor, currentRoom, this.player);
-      for (const item of currentRoom.shopStock) {
-        if (item.weaponId) this.engine.data.discoverWeapon(item.weaponId);
-        if (item.buffId) this.engine.data.discoverBuff(item.buffId);
-      }
-      this.finalizeRoomObjects(currentRoom);
-      this.setPhase("exploration");
-      return;
-    }
-
-    if (
-      currentRoom.type === "legacy_rpg" ||
-      currentRoom.type === "legacy_tactics" ||
-      currentRoom.type === "wish_fountain" ||
-      currentRoom.type === "photo_booth"
-    ) {
       this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
@@ -628,15 +606,15 @@ export class DungeonState extends GameState {
       this.phaseTimer = 0.8;
     } else if (phase === "locking") {
       const floor = this.engine.data.data.floor;
-      const room = floor.rooms.find(candidate =>
-        candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+      const room = floor?.rooms?.find(candidate =>
+        candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY
       );
       this.phaseTimer = room?.type === "boss" ? 0.5 : 0.25;
       this.emitCombatLifecycleNotice("combat_started", room);
     } else if (phase === "combat") {
       const activeFloor = this.engine.data.data.floor;
-      const activeRoom = activeFloor.rooms.find(
-        room => room.x === activeFloor.currentRoomX && room.y === activeFloor.currentRoomY,
+      const activeRoom = activeFloor?.rooms?.find(
+        room => room?.x === activeFloor?.currentRoomX && room?.y === activeFloor?.currentRoomY,
       );
       if (activeRoom?.type === "boss") this.engine.data.startBossFight();
       if (options?.startEncounter === false) {
@@ -657,7 +635,7 @@ export class DungeonState extends GameState {
       audio.playClearRoom();
       this.fx.emitRoomClear(160, 120, this.engine.isPerformanceDegraded());
       const floor = this.engine.data.data.floor;
-      const currentRoom = floor.rooms.find((r: Room) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+      const currentRoom = floor?.rooms?.find((r: Room) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
       if (currentRoom) {
          markCombatCleared(currentRoom);
          this.emitCombatLifecycleNotice("combat_cleared", currentRoom);
@@ -667,7 +645,7 @@ export class DungeonState extends GameState {
       }
     } else if (phase === "reward") {
       // Spawn rewards
-      this.spawnRoomRewards();
+      
       this.phaseTimer = 0.5;
     } else if (phase === "exiting") {
       // Free to move
@@ -784,136 +762,13 @@ export class DungeonState extends GameState {
     this.engine.input.suppressUntilReleased();
   }
 
-  private updateShop(dt: number) {
-    this.shopFailureTimer = Math.max(0, this.shopFailureTimer - dt);
-    if (this.shopFailureTimer <= 0) this.shopFailure = undefined;
-
-    if (this.engine.input.wasUiPressed("cancel")) {
-      this.shopOpen = false;
-      this.shopFailure = undefined;
-      this.engine.input.suppressUntilReleased();
-      return;
-    }
-
-    const floor = this.engine.data.data.floor;
-    const room = floor.rooms.find(candidate =>
-      candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
-    );
-    if (!room || room.type !== "shop") {
-      this.shopOpen = false;
-      return;
-    }
-
-    room.shopStock = ShopSystem.reconcileStock(floor, room, this.player);
-    const movePrevious = this.engine.input.wasUiPressed("left") || this.engine.input.wasUiPressed("up");
-    const moveNext = this.engine.input.wasUiPressed("right") || this.engine.input.wasUiPressed("down");
-    if (movePrevious) {
-      this.shopSelectionIndex = (this.shopSelectionIndex - 1 + room.shopStock.length) % room.shopStock.length;
-      audio.playShoot();
-    }
-    if (moveNext) {
-      this.shopSelectionIndex = (this.shopSelectionIndex + 1) % room.shopStock.length;
-      audio.playShoot();
-    }
-    const keys = ["1", "2", "3", "4"];
-    const directIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
-    const selectedIndex = directIndex >= 0
-      ? directIndex
-      : this.engine.input.wasUiPressed("confirm")
-        ? this.shopSelectionIndex
-        : -1;
-    if (selectedIndex < 0 || selectedIndex >= room.shopStock.length) return;
-
-    const item = room.shopStock[selectedIndex];
-    const coins = this.engine.data.data.player.coins;
-    const result = ShopSystem.purchase(this.player, item, coins);
-    if (!result.success) {
-      this.shopFailure = result.reason;
-      this.shopFailureTimer = 1.4;
-      this.engine.worldNotices.showBottom(
-        t(this.engine.data.settings.language, "notice.purchaseFailed"),
-        "red",
-      );
-      audio.playHurt();
-      return;
-    }
-
-    this.engine.data.data.player.coins = result.coinsAfter;
-    if (result.droppedWeaponId) {
-      const dropped = acquirePickup(this.player.x, this.player.y, "weapon", 1, result.droppedWeaponId);
-      dropped.blockedUntilPlayerLeaves = true;
-      (dropped as any).bounceTimer = 0.2;
-      (dropped as any).baseY = dropped.y;
-      this.pickups.push(dropped);
-    }
-
-    this.shopFailure = undefined;
-    this.syncPlayerState();
-    this.syncRoomState();
-    this.engine.data.save();
-    audio.playPickup();
-    this.engine.input.clearJustPressed();
-  }
-
-  private spawnRoomRewards() {
-    const floor = this.engine.data.data.floor;
-    const difficulty = getStageDifficulty(floor);
-    const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-    if (!currentRoom || currentRoom.rewardGenerated) return;
-    const template = getRoomTemplate(currentRoom);
-    
-    if (currentRoom.type === "boss") {
-       if (template.portalSpawnPoint) {
-         this.portal = { x: template.portalSpawnPoint.x * 16 + 8, y: template.portalSpawnPoint.y * 16 + 8, state: "spawning", timer: 0.6 };
-       }
-       this.chest = this.createOrRestoreWeaponChest(currentRoom, "boss");
-    } else if (currentRoom.type === "combat") {
-       this.pickups.push(acquirePickup(
-         160,
-         120,
-         Math.random() > 0.5 ? "hp" : "mana",
-         Math.round(8 * difficulty.rewardMultiplier),
-       ));
-       this.pickups.push(acquirePickup(150, 110, "coin", Math.round(20 * difficulty.rewardMultiplier)));
-    } else if (currentRoom.type === "treasure") {
-       this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
-    }
-    
-    // Animate pickups (pop out)
-    for (const p of this.pickups) {
-      if ((p as any).bounceTimer === undefined) {
-          (p as any).bounceTimer = 0.2;
-          (p as any).baseY = p.y;
-      }
-    }
-    currentRoom.rewardGenerated = true;
-    this.finalizeRoomObjects(currentRoom);
-    this.syncPlayerState();
-    this.syncRoomState();
-    this.engine.data.save();
-  }
-
-  private syncMusicScene() {
-    const floor = this.engine.data.data.floor;
-    const room = floor.rooms.find(candidate => candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY);
-    const theme = floor.theme === "dungeon" || floor.theme === "snow" || floor.theme === "lava" ? floor.theme : "forest";
-    if (this.shopOpen || room?.type === "shop") {
-      audio.setMusicScene("shop");
-    } else if (room?.type === "boss" && this.roomPhase === "combat") {
-      audio.setMusicScene("boss");
-    } else if (this.roomPhase === "combat") {
-      audio.setMusicScene(`combat_${theme}` as const);
-    } else {
-      audio.setMusicScene(theme);
-    }
-  }
-
+  
   update(dt: number) {
     if (this.qaFrozen) {
       if (this.qaPresentationTime !== null) this.roomRenderer.setPresentationTime(this.qaPresentationTime);
       return;
     }
-    this.syncMusicScene();
+    
     this.roomRenderer.update(dt);
     this.fx.update(dt);
     this.occlusionController.update(
@@ -930,8 +785,8 @@ export class DungeonState extends GameState {
         this.transitionState = "none";
         if (this.roomPhase === "entering") {
           const floor = this.engine.data.data.floor;
-          const room = floor.rooms.find(candidate =>
-            candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+          const room = floor?.rooms?.find(candidate =>
+            candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY
           );
           this.setPhase(room?.type === "boss" ? "intro" : "locking");
         }
@@ -954,9 +809,8 @@ export class DungeonState extends GameState {
       return;
     }
 
-    if (this.shopOpen) {
-      this.updateShop(dt);
-      return;
+    if (false) {
+            return;
     }
 
     if (this.player.hp <= 0) {
@@ -998,8 +852,8 @@ export class DungeonState extends GameState {
     this.updatePlayerFacingAndAnimation(dt, moved);
     
     // 3. Firing logic
-    if (this.player.fireCooldown > 0) {
-      this.player.fireCooldown -= dt;
+    if (this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].fireCooldown > 0) {
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].fireCooldown -= dt;
     }
     if (this.player.muzzleFlash > 0) {
       this.player.muzzleFlash -= dt * 10;
@@ -1009,6 +863,12 @@ export class DungeonState extends GameState {
     if (this.player.hitFlash > 0) {
       this.player.hitFlash = Math.max(0, this.player.hitFlash - dt);
     }
+    
+    this.player.dodgeTimer = Math.max(0, this.player.dodgeTimer - dt);
+    this.player.dodgeCooldown = Math.max(0, this.player.dodgeCooldown - dt);
+    this.player.perfectDodgeWindow = Math.max(0, this.player.perfectDodgeWindow - dt);
+    this.player.justPerfectDodged = false;
+
     SkillController.update(this.player, dt);
     this.updateMicheleTurret(dt);
     this.updateKanamiBeacon(dt);
@@ -1022,6 +882,14 @@ export class DungeonState extends GameState {
     ) {
       this.activateCharacterSkill();
     }
+    if (
+      canUseSkill &&
+      this.transitionState === "none" &&
+      this.engine.input.wasActionPressed("dodge")
+    ) {
+      this.activateDodge();
+    }
+
 
     if (
       this.player.hp > 0 &&
@@ -1050,12 +918,12 @@ export class DungeonState extends GameState {
       Boolean(heldYoyo && fireHeld && canFireWeapon && this.transitionState === "none"),
     );
     if (activeWeapon?.attackMode === "channel" && fireHeld && canFireWeapon && this.transitionState === "none") {
-      this.player.weaponChannelTime = Math.min(
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.channelTime = Math.min(
         activeWeapon.channelTime ?? 3.2,
-        this.player.weaponChannelTime + dt,
+        this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.channelTime + dt,
       );
     } else {
-      this.player.weaponChannelTime = 0;
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.channelTime = 0;
     }
 
     // Interactive objects
@@ -1073,7 +941,7 @@ export class DungeonState extends GameState {
       this.handleInteract(interactTarget);
     } else if (
       fireHeld &&
-      this.player.fireCooldown <= 0 &&
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].fireCooldown <= 0 &&
       canFireWeapon &&
       !heldYoyo
     ) {
@@ -1116,7 +984,7 @@ export class DungeonState extends GameState {
              }
              const transition = this.engine.data.advanceStage();
              if (transition.chapterChanged) {
-               const chapter = Math.max(1, Math.min(4, transition.current.chapterIndex));
+               const chapter = Math.max(1, Math.min(4, transition.current.routeDepth));
                this.engine.worldNotices.showRegion(
                  t(this.engine.data.settings.language, `notice.chapter.${chapter}.title` as Parameters<typeof t>[1]),
                  t(this.engine.data.settings.language, `notice.chapter.${chapter}.name` as Parameters<typeof t>[1]),
@@ -1139,6 +1007,29 @@ export class DungeonState extends GameState {
     const summary = this.engine.data.finalizeRun(outcome);
     this.engine.switchState("run_result", { summary });
   }
+
+  
+  private activateDodge(): void {
+    if (this.player.dodgeCooldown > 0 || this.player.dodgeTimer > 0) return;
+    const axis = this.engine.input.getAxis();
+    let dx = axis.x;
+    let dy = axis.y;
+    if (dx === 0 && dy === 0) {
+      dx = this.player.facingLeft ? -1 : 1;
+      dy = 0;
+    }
+    const len = Math.hypot(dx, dy) || 1;
+    this.player.dodgeDirectionX = dx / len;
+    this.player.dodgeDirectionY = dy / len;
+    this.player.dodgeTimer = 0.22;
+    this.player.dodgeCooldown = 1.0;
+    this.player.perfectDodgeWindow = 0.12;
+    this.player.invulnerabilityTimer = Math.max(this.player.invulnerabilityTimer, this.player.dodgeTimer + 0.05);
+    
+    // Play dodge sound if any, or dash sound
+    audio.playSkill(); // Temp sound or use something else
+  }
+
 
   private activateCharacterSkill() {
     const result = SkillController.activate(
@@ -1217,8 +1108,8 @@ export class DungeonState extends GameState {
 
   private updateRoomPhase(dt: number) {
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(room =>
-      room.x === floor.currentRoomX && room.y === floor.currentRoomY
+    const currentRoom = floor?.rooms?.find(room =>
+      room?.x === floor?.currentRoomX && room?.y === floor?.currentRoomY
     );
     const bossSlowPacing = currentRoom?.type === "boss"
       && (this.roomPhase === "intro" || this.roomPhase === "locking");
@@ -1229,13 +1120,16 @@ export class DungeonState extends GameState {
     
     if (this.player.hp > 0 && this.transitionState === "none") {
        const axis = this.engine.input.getAxis();
-       const isDashing = SkillController.isRogueDashing(this.player);
+       
+       const isDashing = this.player.dodgeTimer > 0 || SkillController.isRogueDashing(this.player);
        const statusMovement = StatusEffectSystem.getMovementMultiplier(this.player);
-       const inputX = isDashing ? this.player.skillDirectionX : axis.x;
-       const inputY = isDashing ? this.player.skillDirectionY : axis.y;
+       const inputX = isDashing ? (this.player.dodgeTimer > 0 ? this.player.dodgeDirectionX : this.player.skillDirectionX) : axis.x;
+       const inputY = isDashing ? (this.player.dodgeTimer > 0 ? this.player.dodgeDirectionY : this.player.skillDirectionY) : axis.y;
+       const dashSpeed = this.player.dodgeTimer > 0 ? 320 : SkillController.ROGUE_DASH_SPEED;
        const moveSpeed = (isDashing
-         ? SkillController.ROGUE_DASH_SPEED * speedMult
+         ? dashSpeed * speedMult
          : this.player.speed * speedMult) * statusMovement;
+
 
        const onIce = !isDashing && this.environmentHazards.some(hazard =>
          hazard.type === "ice" && EnvironmentSystem.contains(hazard, this.player.x, this.player.y, this.player.radius)
@@ -1329,8 +1223,8 @@ export class DungeonState extends GameState {
   public qaSetScene(scene: DungeonQaScene, theme: ThemeId = "forest", time = 12.5): boolean {
     if (!this.engine.debugMode || !Number.isFinite(time)) return false;
     const floor = this.engine.data.data.floor;
-    const room = floor.rooms.find(candidate =>
-      candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+    const room = floor?.rooms?.find(candidate =>
+      candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY
     );
     if (!room) return false;
 
@@ -1396,8 +1290,8 @@ export class DungeonState extends GameState {
         });
         room.pickups = loot.map((spec, index) => ({ ...spec, ...positions[index] }));
       }
-    } else if (scene === "wish_fountain" || scene === "special_wish" || scene === "wish_complete_no_notice") {
-      room.type = "wish_fountain";
+    } else if (scene === "combat" || scene === "special_wish" || scene === "wish_complete_no_notice") {
+      room.type = "combat";
       room.interactionCompleted = scene === "wish_complete_no_notice";
     } else if (
       scene === "portal_idle"
@@ -1494,15 +1388,15 @@ export class DungeonState extends GameState {
       this.engine.data.settings.language = scene === "hud_long_zh" ? "zh-CN" : "en";
       this.player.maxMana = 50;
       this.player.mana = scene === "hud_energy_0" ? 0 : 33;
-      this.player.weaponHeat = 0;
-      this.player.weaponHeatWeaponId = undefined;
-      this.player.weaponOverheatTimer = 0;
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heat = 0;
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heatWeaponId = undefined;
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.overheatTimer = 0;
       if (scene === "hud_sustain") {
         this.player.setWeaponLoadout(["terrarian"], 0);
       } else if (scene === "hud_heat") {
         this.player.setWeaponLoadout(["mg42"], 0);
-        this.player.weaponHeatWeaponId = "mg42";
-        this.player.weaponHeat = 72;
+        this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heatWeaponId = "mg42";
+        this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heat = 72;
       } else if (scene === "hud_dual") {
         this.player.setWeaponLoadout(["na_45", "shotgun"], 0);
       } else if (scene === "hud_long_en") {
@@ -1606,12 +1500,12 @@ export class DungeonState extends GameState {
       roomType: room.type,
       chest: this.chest ? { kind: this.chest.kind, x: this.chest.x, y: this.chest.y } : null,
       portal: this.portal ? { x: this.portal.x, y: this.portal.y } : null,
-      shop: room.type === "shop" ? this.getShopPosition(room) : null,
+      shop: null,
       broadcast: room.type === "npc" ? this.getBroadcastPosition(room) : null,
-      special: room.type === "wish_fountain" || room.type === "photo_booth"
+      special: false
         ? this.getSpecialRoomPosition(room)
         : null,
-      legacy: room.type === "legacy_rpg" || room.type === "legacy_tactics"
+      legacy: false
         ? this.getLegacyPosition(room)
         : null,
     });
@@ -1701,15 +1595,15 @@ export class DungeonState extends GameState {
        this.portal.state = "activating";
        this.portal.timer = 0.4;
        audio.playPortal();
-    } else if (target.type === "legacy_rpg" || target.type === "legacy_tactics") {
+    } else if (false || false) {
        this.engine.input.suppressUntilReleased();
        this.engine.switchState(target.type, { sourceRoomId: target.roomId });
-    } else if (target.type === "wish_fountain" || target.type === "photo_booth") {
+    } else if (false || false) {
        const floor = this.engine.data.data.floor;
        const room = floor.rooms.find((candidate: Room) => candidate.id === target.roomId);
        if (!room || room.interactionCompleted) return;
        const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, target.type));
-       if (target.type === "wish_fountain") {
+       if (false) {
          const reward = Math.floor(random() * 4);
          if (reward === 0) this.player.hp = Math.min(this.player.maxHp, this.player.hp + 3);
          else if (reward === 1) this.player.mana = Math.min(this.player.maxMana, this.player.mana + 16);
@@ -1756,7 +1650,7 @@ export class DungeonState extends GameState {
        this.chest.opened = true;
        audio.playPickup();
        const floor = this.engine.data.data.floor;
-       const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+       const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
        if (currentRoom) {
           currentRoom.interactionCompleted = true;
           currentRoom.rewardGenerated = true;
@@ -1767,19 +1661,12 @@ export class DungeonState extends GameState {
        this.syncPlayerState();
        this.syncRoomState();
        this.engine.data.save();
-    } else if (target.type === "shop") {
-       this.shopOpen = true;
-       this.shopSelectionIndex = 0;
-       this.shopFailure = undefined;
-       this.shopFailureTimer = 0;
-       audio.playPickup();
-       this.engine.input.clearJustPressed();
-    }
+      }
   }
-
+  
   private getInteractTarget(): { type: string, x: number, y: number, roomId?: string } | null {
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
 
     if (currentRoom?.type === "npc" && !currentRoom.interactionCompleted) {
       const broadcast = this.getBroadcastPosition(currentRoom);
@@ -1790,29 +1677,24 @@ export class DungeonState extends GameState {
 
     if (
       currentRoom &&
-      (currentRoom.type === "wish_fountain" || currentRoom.type === "photo_booth") &&
+      ( false) &&
       !currentRoom.interactionCompleted
     ) {
       const special = this.getSpecialRoomPosition(currentRoom);
-      const prefix = currentRoom.type === "wish_fountain" ? "wish_fountain:" : "photo_booth";
+      const prefix = false ? "wish_fountain:" : "combat";
       if (this.canInteractWithFootprint(prefix, 30)) {
         return { type: currentRoom.type, x: special.x, y: special.y, roomId: currentRoom.id };
       }
     }
 
-    if (currentRoom && (currentRoom.type === "legacy_rpg" || currentRoom.type === "legacy_tactics") && !currentRoom.interactionCompleted) {
+    if (currentRoom && ( false) && !currentRoom.interactionCompleted) {
       const legacy = this.getLegacyPosition(currentRoom);
       if (this.canInteractWithFootprint("legacy_device", 28)) {
          return { type: currentRoom.type, x: legacy.x, y: legacy.y, roomId: currentRoom.id };
       }
     }
 
-    if (currentRoom?.type === "shop") {
-      const shop = this.getShopPosition(currentRoom);
-      if (this.canInteractWithFootprint("shop_counter", 30, true)) {
-        return { type: "shop", x: shop.x, y: shop.y, roomId: currentRoom.id };
-      }
-    }
+    
 
     if (this.portal && this.portal.state !== "spawning" && this.portal.state !== "activating") {
       if (this.canInteractWithFootprint("portal:", 30)) {
@@ -1900,8 +1782,8 @@ export class DungeonState extends GameState {
     }
     if (this.areRoomDoorsLocked()) {
       const floor = this.engine.data?.data?.floor;
-      const room = floor?.rooms.find(candidate =>
-        candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY
+      const room = floor?.rooms?.find(candidate =>
+        candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY
       );
       if (room) {
         for (const orientation of DOOR_ORIENTATIONS) {
@@ -1957,8 +1839,8 @@ export class DungeonState extends GameState {
     if (index === null) return false;
     this.currentMapData[index] = 0;
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find((room: Room) =>
-      room.x === floor.currentRoomX && room.y === floor.currentRoomY
+    const currentRoom = floor?.rooms?.find((room: Room) =>
+      room?.x === floor?.currentRoomX && room?.y === floor?.currentRoomY
     );
     if (currentRoom) {
       currentRoom.destroyedPropTiles ??= [];
@@ -2970,7 +2852,7 @@ export class DungeonState extends GameState {
           ) {
             directDamage *= Math.max(1, weapon.markedTargetDamageMultiplier ?? 1);
           }
-          const result = DamageSystem.damageEnemy(e, directDamage);
+          const result = DamageSystem.damageEnemy(e, directDamage, this.player);
           p.hitEnemyIds.add(e.id);
           directEnemyId = e.id;
           if (result.applied) {
@@ -3232,7 +3114,7 @@ export class DungeonState extends GameState {
         life: 0.18,
         maxLife: 0.18,
       });
-      const result = DamageSystem.damageEnemy(target, damage);
+      const result = DamageSystem.damageEnemy(target, damage, this.player, false);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(target, projectile.statusEffect, projectile.statusDuration);
@@ -3308,7 +3190,7 @@ export class DungeonState extends GameState {
         distance,
         radius,
       );
-      const result = DamageSystem.damageEnemy(enemy, damage);
+      const result = DamageSystem.damageEnemy(enemy, damage, this.player);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration);
@@ -3429,7 +3311,7 @@ export class DungeonState extends GameState {
 
   private getDungeonOcclusionObjects(): WorldObjectDefinition[] {
     const floor = this.engine.data.data.floor;
-    const room = floor.rooms.find(candidate => candidate.x === floor.currentRoomX && candidate.y === floor.currentRoomY);
+    const room = floor?.rooms?.find(candidate => candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY);
     const objects: WorldObjectDefinition[] = [];
     if (this.chest) {
       const geometry = getChestGeometry(this.chest.kind);
@@ -3458,13 +3340,13 @@ export class DungeonState extends GameState {
         point.y + sortOffset,
       ));
     };
-    if (room.type === "shop") addFacility("depth:shop", this.getShopPosition(room), 58, 58, 17);
+    
     if (room.type === "npc") addFacility("depth:broadcast", this.getBroadcastPosition(room), 34, 42, 12);
-    if (room.type === "photo_booth") addFacility("depth:photo", this.getSpecialRoomPosition(room), 40, 48, 16);
-    if (room.type === "legacy_rpg" || room.type === "legacy_tactics") {
+    if (false) addFacility("depth:photo", this.getSpecialRoomPosition(room), 40, 48, 16);
+    if (false) {
       addFacility("depth:legacy", this.getLegacyPosition(room), 36, 44, 13);
     }
-    if (room.type === "wish_fountain") {
+    if (false) {
       const spring = this.getSpecialRoomPosition(room);
       const scale = DUNGEON_RITUAL_SPRING_SCALE;
       objects.push(this.dungeonOccluder(
@@ -3509,8 +3391,8 @@ export class DungeonState extends GameState {
       ctx.fillText(collider.id, Math.round(collider.x) + 2, Math.round(collider.y) - 2);
     }
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find(room =>
-      room.x === floor.currentRoomX && room.y === floor.currentRoomY
+    const currentRoom = floor?.rooms?.find(room =>
+      room?.x === floor?.currentRoomX && room?.y === floor?.currentRoomY
     );
     if (currentRoom) {
       for (const orientation of DOOR_ORIENTATIONS) {
@@ -3543,7 +3425,7 @@ export class DungeonState extends GameState {
 
   draw(ctx: CanvasRenderingContext2D) {
     const floor = this.engine.data.data.floor;
-    const currentRoom = floor.rooms.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+    const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     
     this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
     const time = this.qaPresentationTime ?? Date.now() / 1000;
@@ -3626,43 +3508,6 @@ export class DungeonState extends GameState {
     const upperFacilityDraws: Array<() => void> = [];
     const theme = floor.theme || "forest";
 
-    if (currentRoom?.type === "wish_fountain") {
-      const spring = this.getSpecialRoomPosition(currentRoom);
-      const options = {
-        x: spring.x,
-        y: spring.y,
-        scale: DUNGEON_RITUAL_SPRING_SCALE,
-        time,
-        theme,
-        completed: currentRoom.interactionCompleted === true,
-      } as const;
-      drawRitualSpringPart(ctx, "court", options);
-      depthRenderables.push({
-        id: "wish:basin",
-        sortY: spring.y + 14 * DUNGEON_RITUAL_SPRING_SCALE,
-        draw: () => drawRitualSpringPart(ctx, "basin", options),
-      });
-      depthRenderables.push({
-        id: "wish:crystal",
-        sortY: spring.y + 6 * DUNGEON_RITUAL_SPRING_SCALE,
-        draw: () => this.drawWithOcclusion(ctx, "depth:wish-crystal", () =>
-          drawRitualSpringPart(ctx, "crystal", options)),
-      });
-      RITUAL_SPRING_GEOMETRY.lanterns.forEach((lantern, index) => {
-        const lanternPart = (["lantern_0", "lantern_1", "lantern_2", "lantern_3"] as const)[index];
-        depthRenderables.push({
-          id: `wish:lantern:${index}`,
-          sortY: spring.y + (lantern.y + 20) * DUNGEON_RITUAL_SPRING_SCALE,
-          draw: () => drawRitualSpringPart(ctx, lanternPart, options),
-        });
-      });
-      depthRenderables.push({
-        id: "wish:front-rim",
-        sortY: spring.y + 29 * DUNGEON_RITUAL_SPRING_SCALE,
-        draw: () => this.drawWithOcclusion(ctx, "depth:wish-front", () =>
-          drawRitualSpringPart(ctx, "front_rim", options)),
-      });
-    }
 
     if (this.chest) {
       const chestGeometry = getChestGeometry(this.chest.kind);
@@ -3681,23 +3526,6 @@ export class DungeonState extends GameState {
       });
       upperFacilityDraws.push(() => ChestRenderer.drawPart(ctx, this.chest!, time, theme, "sparkle"));
     }
-    if (currentRoom?.type === "shop") {
-      const shop = this.getShopPosition(currentRoom);
-      ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "back");
-      depthRenderables.push({
-        id: "shop:body",
-        sortY: shop.y + 8,
-        draw: () => this.drawWithOcclusion(ctx, "depth:shop", () =>
-          ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "body")),
-      });
-      depthRenderables.push({
-        id: "shop:front",
-        sortY: shop.y + 17,
-        draw: () => this.drawWithOcclusion(ctx, "depth:shop", () =>
-          ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "front")),
-      });
-      upperFacilityDraws.push(() => ShopRenderer.drawMerchantPart(ctx, shop.x, shop.y, time, theme, "upper"));
-    }
     if (currentRoom?.type === "npc") {
       const broadcast = this.getBroadcastPosition(currentRoom);
       const completed = currentRoom.interactionCompleted === true;
@@ -3715,43 +3543,6 @@ export class DungeonState extends GameState {
           SpecialRoomRenderer.drawBroadcastTerminalPart(ctx, broadcast.x, broadcast.y, time, theme, completed, "front")),
       });
       upperFacilityDraws.push(() => SpecialRoomRenderer.drawBroadcastTerminalPart(ctx, broadcast.x, broadcast.y, time, theme, completed, "upper"));
-    }
-    if (currentRoom?.type === "photo_booth") {
-      const special = this.getSpecialRoomPosition(currentRoom);
-      const completed = currentRoom.interactionCompleted === true;
-      SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "back");
-      depthRenderables.push({
-        id: "photo:body",
-        sortY: special.y + 8,
-        draw: () => this.drawWithOcclusion(ctx, "depth:photo", () =>
-          SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "body")),
-      });
-      depthRenderables.push({
-        id: "photo:front",
-        sortY: special.y + 16,
-        draw: () => this.drawWithOcclusion(ctx, "depth:photo", () =>
-          SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "front")),
-      });
-      upperFacilityDraws.push(() => SpecialRoomRenderer.drawPhotoBoothPart(ctx, special.x, special.y, time, theme, completed, "upper"));
-    }
-    if (currentRoom?.type === "legacy_rpg" || currentRoom?.type === "legacy_tactics") {
-      const legacy = this.getLegacyPosition(currentRoom);
-      const legacyType = currentRoom.type;
-      const completed = currentRoom.interactionCompleted === true;
-      SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "back");
-      depthRenderables.push({
-        id: "legacy:body",
-        sortY: legacy.y + 7,
-        draw: () => this.drawWithOcclusion(ctx, "depth:legacy", () =>
-          SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "body")),
-      });
-      depthRenderables.push({
-        id: "legacy:front",
-        sortY: legacy.y + 13,
-        draw: () => this.drawWithOcclusion(ctx, "depth:legacy", () =>
-          SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "front")),
-      });
-      upperFacilityDraws.push(() => SpecialRoomRenderer.drawLegacyDevicePart(ctx, legacy.x, legacy.y, time, legacyType, completed, "upper"));
     }
     for (const pickup of this.pickups) {
       depthRenderables.push({ id: `pickup:${pickup.id}`, sortY: pickup.y, draw: () => EntityRenderer.drawPickup(ctx, pickup, time) });
@@ -3787,17 +3578,6 @@ export class DungeonState extends GameState {
     for (const renderable of depthRenderables) renderable.draw();
     for (const drawUpper of upperFacilityDraws) drawUpper();
 
-    if (currentRoom?.type === "wish_fountain") {
-      const spring = this.getSpecialRoomPosition(currentRoom);
-      drawRitualSpringPart(ctx, "soul_motes", {
-        x: spring.x,
-        y: spring.y,
-        scale: DUNGEON_RITUAL_SPRING_SCALE,
-        time,
-        theme,
-        completed: currentRoom.interactionCompleted === true,
-      });
-    }
     
     for (const p of this.projectiles) {
        EntityRenderer.drawProjectile(ctx, p, this.engine.data.settings.reducedFlashing);
@@ -3836,19 +3616,7 @@ export class DungeonState extends GameState {
       );
     }
 
-    if (this.shopOpen && currentRoom?.type === "shop") {
-      ShopRenderer.drawOverlay(
-        ctx,
-        currentRoom.shopStock ?? [],
-        this.engine.data.data.player.coins,
-        this.shopFailure,
-        this.shopSelectionIndex,
-        this.engine.input.getConfirmPrompt(),
-        this.engine.input.getNavigationPrompt("horizontal"),
-        this.engine.input.getCancelPrompt(),
-        this.engine.data.settings.language,
-      );
-    }
+    
     
     if (this.transitionAlpha > 0) {
       ctx.fillStyle = `rgba(0, 0, 0, ${this.transitionAlpha})`;

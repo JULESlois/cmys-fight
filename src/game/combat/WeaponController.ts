@@ -1,3 +1,6 @@
+import { ResourceStrategies } from "./WeaponResourceStrategies";
+import { CombatEventDispatcher } from "./CombatEvents";
+import { createWeaponRuntimeState } from "./WeaponRuntimeState";
 import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, isWeaponId, type WeaponData } from "../data/weapons";
 import { Player } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
@@ -17,7 +20,7 @@ export interface FireWeaponResult {
   projectiles: Projectile[];
   recoil: number;
   echoTriggered?: boolean;
-  reason?: "cooldown" | "energy" | "overheated" | "invalid_weapon";
+  reason?: "energy" | "cooldown" | "overheated" | "invalid_weapon" | "reloading";
 }
 
 export class WeaponController {
@@ -39,7 +42,16 @@ export class WeaponController {
   static getChannelRatio(player: Player, weaponId = player.currentWeaponId): number {
     const weapon = WEAPONS[weaponId];
     if (!weapon || weapon.attackMode !== "channel" || weaponId !== player.currentWeaponId) return 0;
-    return Math.max(0, Math.min(1, player.weaponChannelTime / Math.max(0.1, weapon.channelTime ?? 3.2)));
+    return Math.max(0, Math.min(1, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime / Math.max(0.1, weapon.channelTime ?? 3.2)));
+  }
+
+  static getResourceRatio(player: Player, slotIndex: 0 | 1): number {
+    const slot = player.weaponLoadout.slots[slotIndex];
+    if (!slot) return 1;
+    const weaponDef = WEAPONS[slot.weaponId];
+    if (!weaponDef) return 1;
+    const strategy = ResourceStrategies[slot.resourceType];
+    return strategy ? strategy.getRatio(slot, weaponDef) : 1;
   }
 
   static getEnergyCost(player: Player, weaponId = player.currentWeaponId): number {
@@ -49,8 +61,8 @@ export class WeaponController {
     const multiplier = BuffSystem.getWeaponModifiers(player).energyCostMultiplier;
     const channelMultiplier = 1 + WeaponController.getChannelRatio(player, weaponId);
     const catalystShot = weapon.linkedShot === true &&
-      player.linkedShotWeaponId === weapon.id &&
-      player.linkedShotStep === 1;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId === weapon.id &&
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep === 1;
     const baseCost = catalystShot
       ? Math.max(0, weapon.linkedCatalystEnergyCost ?? weapon.manaCost)
       : weapon.manaCost;
@@ -63,58 +75,44 @@ export class WeaponController {
 
   static getHeatRatio(player: Player, weaponId = player.currentWeaponId): number {
     const weapon = WEAPONS[weaponId];
-    if (!weapon?.maxHeat || player.weaponHeatWeaponId !== weapon.id) return 0;
-    return Math.max(0, Math.min(1, player.weaponHeat / weapon.maxHeat));
+    if (!weapon?.maxHeat || player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heatWeaponId !== weapon.id) return 0;
+    return Math.max(0, Math.min(1, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat / weapon.maxHeat));
   }
 
+  
   static updateRuntime(player: Player, dt: number, fireHeld: boolean): void {
-    const activeWeapon = WEAPONS[player.currentWeaponId];
-    const heatWeapon = activeWeapon?.maxHeat
-      ? activeWeapon
-      : player.weaponHeatWeaponId
-        ? WEAPONS[player.weaponHeatWeaponId]
-        : undefined;
-    if (!heatWeapon?.maxHeat) {
-      player.weaponHeat = 0;
-      player.weaponHeatWeaponId = "";
-      player.weaponOverheatTimer = 0;
-      return;
-    }
-    if (activeWeapon?.maxHeat && player.weaponHeatWeaponId !== activeWeapon.id) {
-      player.weaponHeatWeaponId = activeWeapon.id;
-      player.weaponHeat = 0;
-      player.weaponOverheatTimer = 0;
-    }
-    const decayRate = Math.max(0, heatWeapon.heatDecayRate ?? 0);
-    if (player.weaponOverheatTimer > 0) {
-      player.weaponOverheatTimer = Math.max(0, player.weaponOverheatTimer - dt);
-      player.weaponHeat = Math.max(0, player.weaponHeat - decayRate * 1.8 * dt);
-      if (player.weaponOverheatTimer <= 0) {
-        player.weaponHeat = Math.min(player.weaponHeat, heatWeapon.maxHeat * 0.35);
+    player.weaponLoadout.slots.forEach((slot, index) => {
+      if (!slot) return;
+      const weaponDef = WEAPONS[slot.weaponId];
+      if (!weaponDef) return;
+      
+      const isActive = index === player.weaponLoadout.activeSlot;
+      
+      if (slot.fireCooldown > 0) {
+        slot.fireCooldown = Math.max(0, slot.fireCooldown - dt);
       }
-    } else {
-      const firingHeatWeapon = activeWeapon?.id === heatWeapon.id && fireHeld;
-      player.weaponHeat = Math.max(0, player.weaponHeat - decayRate * (firingHeatWeapon ? 0.25 : 1) * dt);
-    }
-    if (player.weaponHeat <= 0 && activeWeapon?.id !== heatWeapon.id) {
-      player.weaponHeat = 0;
-      player.weaponHeatWeaponId = "";
-      player.weaponOverheatTimer = 0;
-    }
+      
+      const strategy = ResourceStrategies[slot.resourceType];
+      if (strategy) {
+        strategy.update(slot, weaponDef, player, dt, isActive);
+      }
+    });
   }
 
   static resetWeaponRuntime(player: Player): void {
-    player.weaponBurstIndex = 0;
-    player.weaponBurstWeaponId = "";
-    player.linkedShotStep = 0;
-    player.linkedShotWeaponId = "";
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex = 0;
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstWeaponId = "";
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep = 0;
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId = "";
   }
 
   static switchWeapon(player: Player): boolean {
-    if (!player.weaponSlots[1]) return false;
-    player.activeWeaponSlot = player.activeWeaponSlot === 0 ? 1 : 0;
-    player.weaponChannelTime = 0;
+    const previousId = player.currentWeaponId;
+    if (!player.weaponLoadout.slots[1]) return false;
+    player.weaponLoadout.activeSlot = player.weaponLoadout.activeSlot === 0 ? 1 : 0;
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
     WeaponController.resetWeaponRuntime(player);
+    CombatEventDispatcher.emit("player_weapon_swapped", { player, previousWeaponId: previousId, newWeaponId: player.currentWeaponId });
     return true;
   }
 
@@ -123,27 +121,28 @@ export class WeaponController {
       return {
         consumed: false,
         changed: false,
-        activeSlot: player.activeWeaponSlot,
+        activeSlot: player.weaponLoadout.activeSlot,
       };
     }
 
-    const existingSlot = player.weaponSlots.findIndex(id => id === weaponId);
+    const previousId = player.currentWeaponId;
+    const existingSlot = player.weaponLoadout.slots.map(s => s?.weaponId).findIndex(id => id === weaponId);
     if (existingSlot === 0 || existingSlot === 1) {
-      const changed = player.activeWeaponSlot !== existingSlot;
-      player.activeWeaponSlot = existingSlot;
-      player.weaponChannelTime = 0;
+      const changed = player.weaponLoadout.activeSlot !== existingSlot;
+      player.weaponLoadout.activeSlot = existingSlot;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
       WeaponController.resetWeaponRuntime(player);
+      if (changed) CombatEventDispatcher.emit("player_weapon_swapped", { player, previousWeaponId: previousId, newWeaponId: player.currentWeaponId });
       return {
         consumed: true,
         changed,
-        activeSlot: player.activeWeaponSlot,
+        activeSlot: player.weaponLoadout.activeSlot,
       };
     }
-
-    if (!player.weaponSlots[1]) {
-      player.weaponSlots[1] = weaponId;
-      player.activeWeaponSlot = 1;
-      player.weaponChannelTime = 0;
+    if (!player.weaponLoadout.slots[1]) {
+      player.weaponLoadout.slots[1] = createWeaponRuntimeState(weaponId);
+      player.weaponLoadout.activeSlot = 1;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
       WeaponController.resetWeaponRuntime(player);
       return {
         consumed: true,
@@ -153,13 +152,13 @@ export class WeaponController {
     }
 
     const droppedWeaponId = player.currentWeaponId;
-    player.weaponSlots[player.activeWeaponSlot] = weaponId;
-    player.weaponChannelTime = 0;
+    player.weaponLoadout.slots.map(s => s?.weaponId)[player.weaponLoadout.activeSlot] = weaponId;
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
     WeaponController.resetWeaponRuntime(player);
     return {
       consumed: true,
       changed: true,
-      activeSlot: player.activeWeaponSlot,
+      activeSlot: player.weaponLoadout.activeSlot,
       droppedWeaponId,
     };
   }
@@ -173,27 +172,40 @@ export class WeaponController {
     if (!weapon || !isWeaponAvailableForCharacter(weapon, player.characterId)) {
       return { fired: false, projectiles: [], recoil: 0, reason: "invalid_weapon" };
     }
-    if (player.fireCooldown > 0) {
+    
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (slot.fireCooldown > 0) {
       return { fired: false, projectiles: [], recoil: 0, reason: "cooldown" };
     }
-    if (weapon.maxHeat && player.weaponHeatWeaponId === weapon.id && player.weaponOverheatTimer > 0) {
-      return { fired: false, projectiles: [], recoil: 0, reason: "overheated" };
+    
+    const strategy = ResourceStrategies[slot.resourceType];
+    const isMageOverdrive = SkillController.isMageOverdriveActive(player);
+    const ignoreCost = isMageOverdrive;
+    
+    if (!ignoreCost && strategy && !strategy.canFire(slot, weapon, player)) {
+      const reason = strategy.getFailReason ? strategy.getFailReason(slot, weapon, player) : "energy";
+      return { fired: false, projectiles: [], recoil: 0, reason };
     }
+    
     const modifiers = BuffSystem.getWeaponModifiers(player);
     const channelRatio = WeaponController.getChannelRatio(player, weapon.id);
+    
+    // Legacy energyCost handling for characters that might use it
     const energyCost = WeaponController.getEnergyCost(player, weapon.id);
-    if (player.mana + 1e-9 < energyCost) {
-      return { fired: false, projectiles: [], recoil: 0, reason: "energy" };
-    }
+
 
     const buffProjectileStatus = BuffSystem.getProjectileStatus(player);
     const projectileStatus = weapon.statusEffect
       ? { id: weapon.statusEffect, duration: weapon.statusDuration ?? 0 }
       : buffProjectileStatus;
-    player.mana = Math.max(0, player.mana - energyCost);
-    if (energyCost > 0) player.manaRechargeTimer = player.manaRechargeDelay;
-
+    
+    if (!ignoreCost && strategy) {
+      strategy.consume(slot, weapon, player);
+    }
+    
+    // Fallback for mage arcane charge logic which still uses manaCost internally
     const attackMode = weapon.attackMode ?? "projectile";
+
     const echoEligible = attackMode !== "summon" && attackMode !== "yoyo";
     let echoTriggered = false;
     if (player.characterId === "mage" && energyCost > 0) {
@@ -207,51 +219,51 @@ export class WeaponController {
     let nextFireCooldown = 1 / weapon.fireRate;
     let burstStep = 0;
     if ((weapon.burstSize ?? 0) > 1) {
-      if (player.weaponBurstWeaponId !== weapon.id) {
-        player.weaponBurstWeaponId = weapon.id;
-        player.weaponBurstIndex = 0;
+      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstWeaponId !== weapon.id) {
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstWeaponId = weapon.id;
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex = 0;
       }
       const burstSize = Math.max(2, Math.floor(weapon.burstSize ?? 2));
-      burstStep = Math.max(0, Math.min(burstSize - 1, player.weaponBurstIndex));
-      player.weaponBurstIndex += 1;
-      if (player.weaponBurstIndex < burstSize) {
+      burstStep = Math.max(0, Math.min(burstSize - 1, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex));
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex += 1;
+      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex < burstSize) {
         nextFireCooldown = Math.max(0.03, weapon.burstInterval ?? nextFireCooldown);
       } else {
-        player.weaponBurstIndex = 0;
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex = 0;
         nextFireCooldown = Math.max(0.05, weapon.burstRecovery ?? nextFireCooldown);
       }
     } else {
-      player.weaponBurstIndex = 0;
-      player.weaponBurstWeaponId = weapon.id;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstIndex = 0;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstWeaponId = weapon.id;
     }
 
     if (weapon.maxHeat) {
-      if (player.weaponHeatWeaponId !== weapon.id) {
-        player.weaponHeatWeaponId = weapon.id;
-        player.weaponHeat = 0;
-        player.weaponOverheatTimer = 0;
+      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heatWeaponId !== weapon.id) {
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heatWeaponId = weapon.id;
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat = 0;
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.overheatTimer = 0;
       }
-      player.weaponHeat = Math.min(weapon.maxHeat, player.weaponHeat + Math.max(0, weapon.heatPerShot ?? 0));
-      if (player.weaponHeat >= weapon.maxHeat) {
-        player.weaponOverheatTimer = Math.max(0.1, weapon.overheatLockout ?? 1);
-        nextFireCooldown = Math.max(nextFireCooldown, player.weaponOverheatTimer);
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat = Math.min(weapon.maxHeat, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat + Math.max(0, weapon.heatPerShot ?? 0));
+      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat >= weapon.maxHeat) {
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.overheatTimer = Math.max(0.1, weapon.overheatLockout ?? 1);
+        nextFireCooldown = Math.max(nextFireCooldown, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.overheatTimer);
       }
     }
 
     let linkedShotMode: "none" | "primer" | "catalyst" = "none";
     if (weapon.linkedShot) {
-      if (player.linkedShotWeaponId !== weapon.id) {
-        player.linkedShotWeaponId = weapon.id;
-        player.linkedShotStep = 0;
+      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId !== weapon.id) {
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId = weapon.id;
+        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep = 0;
       }
-      linkedShotMode = player.linkedShotStep === 0 ? "primer" : "catalyst";
-      player.linkedShotStep = player.linkedShotStep === 0 ? 1 : 0;
+      linkedShotMode = player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep === 0 ? "primer" : "catalyst";
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep = player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep === 0 ? 1 : 0;
     } else {
-      player.linkedShotStep = 0;
-      player.linkedShotWeaponId = weapon.id;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotStep = 0;
+      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId = weapon.id;
     }
 
-    player.fireCooldown = nextFireCooldown;
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = nextFireCooldown;
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;
     player.facing = Math.cos(aimAngle) >= 0 ? "right" : "left";
@@ -275,6 +287,11 @@ export class WeaponController {
     const extraPierce = mageOverdriveActive ? SkillController.MAGE_OVERDRIVE_PIERCE : 0;
     const heatRatio = WeaponController.getHeatRatio(player, weapon.id);
     const heatSpreadMultiplier = 1 + heatRatio * Math.max(0, weapon.heatSpreadMultiplier ?? 0);
+    const isEmpowered = slot?.customState?.isEmpowered || player.buffState.counterStrikeReady;
+    if (isEmpowered && slot) {
+      slot.customState.isEmpowered = false;
+      player.buffState.counterStrikeReady = false;
+    }
     const burstDamageMultiplier = Math.max(0.1, weapon.burstDamagePattern?.[burstStep] ?? 1);
     const burstPierceBonus = Math.max(0, Math.floor(weapon.burstPiercePattern?.[burstStep] ?? 0));
     const burstCritBonus = Math.max(0, weapon.burstCritBonusPattern?.[burstStep] ?? 0);
@@ -325,11 +342,14 @@ export class WeaponController {
         const critical = random() < Math.min(1, weapon.critChance + burstCritBonus + rogueCritBonus + modifiers.critChanceBonus);
         const channelDamageMultiplier = weapon.attackMode === "channel" ? 1 + channelRatio * 1.5 : 1;
         const appraisalDamageMultiplier = zeroAppraisalActive ? 1.35 : 1;
+        const empowerDamageMultiplier = isEmpowered ? 1.5 : 1;
+        const isCritOverride = isEmpowered ? true : critical;
+        
         const baseDamage = Math.max(1, Math.round(
-          weapon.damage * channelDamageMultiplier * burstDamageMultiplier * appraisalDamageMultiplier,
+          weapon.damage * channelDamageMultiplier * burstDamageMultiplier * appraisalDamageMultiplier * empowerDamageMultiplier,
         ));
         const criticalMultiplier = Math.max(1, (weapon.critMultiplier ?? 2) + modifiers.critDamageBonus);
-        const fullDamage = critical ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
+        const fullDamage = isCritOverride ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;
         const damage = volley.damageMultiplier !== 1
           ? Math.max(0.5, Math.round(fullDamage * volley.damageMultiplier * 2) / 2)
           : fullDamage;
@@ -342,7 +362,7 @@ export class WeaponController {
           damage,
           "player",
           weapon.projectileLife ?? 2,
-          volley.followUp
+          isEmpowered ? "#FFE066" : volley.followUp
             ? "#FF8FAE"
             : volley.echo
             ? "#C792EA"
@@ -354,7 +374,7 @@ export class WeaponController {
                   ? prismColors[i % prismColors.length]
                   : burstColor ?? weapon.color,
           WeaponController.getPerProjectileKnockback(weapon, modifiers.knockbackBonus),
-          critical,
+          isCritOverride,
           modifiers.pierce + (weapon.pierce ?? 0) + burstPierceBonus + extraPierce + (zeroAppraisalActive ? 1 : 0),
           modifiers.wallBounces + (weapon.wallBounces ?? 0),
           projectileStatus?.id,

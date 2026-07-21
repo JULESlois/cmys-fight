@@ -25,7 +25,7 @@ function drawSparseRunes(ctx: CanvasRenderingContext2D, roomType: RoomType, them
   const p = palette(theme);
   const color = completed ? "rgba(112,122,126,0.22)" : `${p.energy}66`;
   const phase = Math.floor(time * 4) % 2;
-  const radius = roomType === "shop" ? 35 : roomType === "exit" ? 31 : 40;
+  const radius = roomType === "exit" ? 31 : 40;
   const diagonal = Math.round(radius * 0.7);
   const points = [[0,-radius],[radius,0],[0,radius],[-radius,0],[diagonal,diagonal],[-diagonal,diagonal],[diagonal,-diagonal],[-diagonal,-diagonal]] as const;
   for (let index = 0; index < points.length; index++) {
@@ -44,6 +44,7 @@ export class SpecialRoomRenderer {
   }
 
   static drawWishFountain(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string, completed: boolean): void {
+    if (typeof x !== "number" || typeof y !== "number" || Number.isNaN(x) || Number.isNaN(y)) return;
     drawRitualSpring(ctx, { x, y, scale: DUNGEON_RITUAL_SPRING_SCALE, time, theme: theme as EnemyTheme, completed });
   }
 
@@ -56,6 +57,7 @@ export class SpecialRoomRenderer {
     completed: boolean,
     part: SpecialFacilityPart | "all" = "all",
   ): void {
+    if (typeof x !== "number" || typeof y !== "number" || Number.isNaN(x) || Number.isNaN(y)) return;
     const signal = Math.floor(time * 7) % 4;
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));

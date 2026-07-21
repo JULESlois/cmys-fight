@@ -25,11 +25,11 @@ export interface StageDifficulty {
 }
 
 export function getStageDifficulty(
-  stage: Pick<StageData, "globalStageIndex" | "chapterIndex"> & Partial<Pick<StageData, "hardMode" | "challengeId">>,
+  stage: Pick<StageData, "globalStageIndex" | "routeDepth"> & Partial<Pick<StageData, "hardMode" | "challengeId">>,
 ): StageDifficulty {
   const globalStageIndex = Math.max(1, Math.floor(stage.globalStageIndex || 1));
   const difficultyStageIndex = getDifficultyStageIndex(globalStageIndex);
-  const chapterIndex = Math.max(1, Math.floor(stage.chapterIndex || 1));
+  const chapterIndex = Math.max(1, Math.floor(stage.routeDepth || 1));
   const progress = difficultyStageIndex - 1;
   const hard = stage.hardMode === true;
   const healthScale = hard ? 1.35 : 1;

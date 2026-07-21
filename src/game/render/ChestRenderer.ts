@@ -170,6 +170,7 @@ export class ChestRenderer {
     theme: string,
     part: ChestRenderPart,
   ): void {
+    if (!chest) return;
     const geometry = getChestGeometry(chest.kind);
     const p = palette(theme, chest.kind);
     ctx.save();

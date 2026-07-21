@@ -39,7 +39,7 @@ function isDoorSpine(tileX: number, tileY: number): boolean {
 export class EnvironmentSystem {
   static generate(stage: StageData, room: Room, mapData: number[]): EnvironmentHazard[] {
     if (room.type !== "combat" && room.type !== "boss") return [];
-    const type = typeForChapter(stage.chapterIndex);
+    const type = typeForChapter(stage.routeDepth);
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? stage.seed, `environment:${type}`));
     const walkableTiles = mapData.filter(tile => !isSolid(tile)).length;
     const walkableRatio = walkableTiles / Math.max(1, mapData.length);

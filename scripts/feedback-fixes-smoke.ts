@@ -39,15 +39,15 @@ let checkedDoors = 0;
 const originalLog = console.log;
 console.log = () => {};
 for (let seed = 1; seed <= 80; seed++) {
-  for (let stageIndex = 1; stageIndex <= FINAL_GLOBAL_STAGE; stageIndex++) {
+  for (let stageWithinNode = 1; stageWithinNode <= FINAL_GLOBAL_STAGE; stageWithinNode++) {
     const random = (() => {
-      let state = (seed * 2654435761 + stageIndex * 1013904223) >>> 0;
+      let state = (seed * 2654435761 + stageWithinNode * 1013904223) >>> 0;
       return () => {
         state = (state * 1664525 + 1013904223) >>> 0;
         return state / 0x100000000;
       };
     })();
-    const stage = generateStage(createRunProgressFromGlobalStage(stageIndex), random);
+    const stage = generateStage(createRunProgressFromGlobalStage(stageWithinNode), random);
     const roomById = new Map(stage.rooms.map(room => [room.id, room]));
     for (const room of stage.rooms) {
       checkedRooms++;
@@ -55,11 +55,11 @@ for (let seed = 1; seed <= 80; seed++) {
         if (!room.doors[direction]) continue;
         checkedDoors++;
         const neighbor = roomById.get(`${room.x + spec.dx},${room.y + spec.dy}`);
-        assert.ok(neighbor, `${stage.chapterIndex}-${stage.stageIndex} ${room.id} missing ${direction} neighbor`);
+        assert.ok(neighbor, `${stage.routeDepth}-${stage.stageWithinNode} ${room.id} missing ${direction} neighbor`);
         const opposite = direction === "left" ? "right" : direction === "right" ? "left" : direction === "up" ? "down" : "up";
         assert.equal(neighbor!.doors[opposite], true, `${room.id} ${direction} is not reciprocal`);
         assert.equal(reachableToCenter(room, stage.theme, direction), true,
-          `${stage.chapterIndex}-${stage.stageIndex} ${room.id}/${room.templateId} ${direction} door blocked from center`);
+          `${stage.routeDepth}-${stage.stageWithinNode} ${room.id}/${room.templateId} ${direction} door blocked from center`);
       }
     }
   }

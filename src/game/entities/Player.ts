@@ -1,3 +1,4 @@
+import { WeaponLoadoutRuntime, createWeaponRuntimeState } from "../combat/WeaponRuntimeState";
 import { WEAPONS, type WeaponSlots } from "../data/weapons";
 import { usesDetailedCharacterArt } from "../data/characters";
 import type { BuffId } from "../combat/BuffSystem";
@@ -31,17 +32,47 @@ export class Player {
   
   public speed: number = 80;
   public characterId: string = "knight";
-  public weaponSlots: WeaponSlots = ["pistol"];
-  public activeWeaponSlot: 0 | 1 = 0;
-  public fireCooldown: number = 0;
-  public weaponChannelTime: number = 0;
-  public weaponBurstIndex: number = 0;
-  public weaponBurstWeaponId: string = "";
-  public weaponHeat: number = 0;
-  public weaponHeatWeaponId: string = "";
-  public weaponOverheatTimer: number = 0;
-  public linkedShotStep: 0 | 1 = 0;
-  public linkedShotWeaponId: string = "";
+
+  public weaponLoadout: WeaponLoadoutRuntime = {
+    slots: [
+      createWeaponRuntimeState("pistol")
+    ],
+    activeSlot: 0,
+    swapTimer: 0
+  };
+
+  /** @deprecated use weaponLoadout */
+  public get weaponSlots(): [string, string?] {
+    return [
+      this.weaponLoadout.slots[0].weaponId,
+      this.weaponLoadout.slots[1]?.weaponId
+    ];
+  }
+
+  /** @deprecated use weaponLoadout */
+  public set weaponSlots(slots: [string, string?]) {
+    this.weaponLoadout.slots[0] = createWeaponRuntimeState(slots[0]);
+    if (slots[1]) {
+      this.weaponLoadout.slots[1] = createWeaponRuntimeState(slots[1]);
+    } else {
+      this.weaponLoadout.slots.pop(); // Remove second element
+    }
+  }
+
+  /** @deprecated use weaponLoadout */
+  public get activeWeaponSlot(): 0 | 1 {
+    return this.weaponLoadout.activeSlot;
+  }
+
+  /** @deprecated use weaponLoadout */
+  public set activeWeaponSlot(slot: 0 | 1) {
+    this.weaponLoadout.activeSlot = slot;
+  }
+
+  // Remove the old weapon states here:
+  // fireCooldown, weaponChannelTime, weaponBurstIndex, weaponBurstWeaponId,
+  // weaponHeat, weaponHeatWeaponId, weaponOverheatTimer, linkedShotStep, linkedShotWeaponId
+
   public aimAngle: number = 0;
   
   public facingLeft: boolean = false;
@@ -64,6 +95,12 @@ export class Player {
   public skillDirectionX: number = 0;
   public skillDirectionY: number = 0;
   public rogueCritTimer: number = 0;
+  public dodgeTimer: number = 0;
+  public dodgeCooldown: number = 0;
+  public dodgeDirectionX: number = 0;
+  public dodgeDirectionY: number = 0;
+  public perfectDodgeWindow: number = 0;
+  public justPerfectDodged: boolean = false;
   public mageArcaneCharge: number = 0;
   public knightGuardReady: boolean = false;
   public micheleMarkedEnemyId: number = -1;
@@ -82,6 +119,7 @@ export class Player {
   public celestiaTemporaryArmor: number = 0;
   public celestiaTemporaryArmorTimer: number = 0;
   public buffs: BuffId[] = [];
+  public buffState: Record<string, any> = {};
   public emergencyBarrierReady: boolean = false;
   public phoenixProtocolReady: boolean = false;
   public statusEffects: ActiveStatusEffect[] = [];
@@ -102,16 +140,16 @@ export class Player {
   }
 
   public get currentWeaponId(): string {
-    return this.weaponSlots[this.activeWeaponSlot] ?? this.weaponSlots[0] ?? "pistol";
+    return this.weaponLoadout.slots[this.weaponLoadout.activeSlot]?.weaponId ?? this.weaponLoadout.slots[0]?.weaponId ?? "pistol";
   }
 
   public set currentWeaponId(weaponId: string) {
-    this.weaponSlots[this.activeWeaponSlot] = weaponId;
+    if (this.weaponLoadout.slots[this.weaponLoadout.activeSlot]) this.weaponLoadout.slots[this.weaponLoadout.activeSlot]!.weaponId = weaponId;
   }
 
   public setWeaponLoadout(slots: WeaponSlots, activeSlot: 0 | 1): void {
-    this.weaponSlots = slots[1] ? [slots[0], slots[1]] : [slots[0]];
-    this.activeWeaponSlot = activeSlot === 1 && this.weaponSlots[1] ? 1 : 0;
+    this.weaponLoadout.slots = slots[1] ? [createWeaponRuntimeState(slots[0]), createWeaponRuntimeState(slots[1])] : [createWeaponRuntimeState(slots[0])];
+    this.weaponLoadout.activeSlot = activeSlot === 1 && this.weaponLoadout.slots[1] ? 1 : 0;
   }
 
   public get weaponHandOffsetY(): number {

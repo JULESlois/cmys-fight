@@ -85,8 +85,8 @@ const scenarios = [
   },
 ];
 
-scenarios[4].player.weaponHeatWeaponId = "mg42";
-scenarios[4].player.weaponHeat = 72;
+scenarios[4].player.weaponLoadout.slots[scenarios[4].player.weaponLoadout.activeSlot].customState.heatWeaponId = "mg42";
+scenarios[4].player.weaponLoadout.slots[scenarios[4].player.weaponLoadout.activeSlot].customState.heat = 72;
 
 const results = [];
 for (const scenario of scenarios) {
