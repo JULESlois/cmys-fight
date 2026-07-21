@@ -205,7 +205,7 @@ export class RecordsState extends GameState {
         ctx.textAlign = "left";
         ctx.font = uiFont(language, 8, true);
         ctx.fillStyle = row.unlocked ? "#ECF0F1" : "#4B5563";
-        ctx.fillText(`${active ? ">" : " "} ${row.unlocked ? row.name : "???"}`, 40, y);
+        ctx.fillText(row.unlocked ? row.name : "???", 40, y);
         ctx.textAlign = "right";
         ctx.fillStyle = row.unlocked ? "#2ECC71" : "#7F8C8D";
         ctx.fillText(t(language, row.unlocked ? "common.found" : "common.hidden"), 280, y);

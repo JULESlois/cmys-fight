@@ -86,9 +86,7 @@ export function drawPixelButton(
   ctx.strokeStyle = selected ? UI_COLORS.white : tone === "neutral" ? UI_COLORS.edgeSoft : accent;
   ctx.stroke();
   if (selected) {
-    ctx.fillStyle = accent;
-    ctx.fillRect(x + 3, y + 3, 3, h - 6);
-    ctx.fillRect(x + 8, y + h - 3, Math.max(8, w - 16), 1);
+    // Only keeping the background and border highlight, removing left block and underline
   }
   ctx.restore();
 }

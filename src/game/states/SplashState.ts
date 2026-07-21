@@ -6,7 +6,7 @@ export class SplashState extends GameState {
   
   private phases = [
     { topText: "POWERED BY", bottomText: "REACT", duration: 3.5 },
-    { topText: "CMYS", bottomText: "PRESENTS", duration: 3.5 }
+    { topText: "DRAGON EDUCATION", bottomText: "PRESENTS", duration: 3.5 }
   ];
   
   private currentPhaseIndex = 0;

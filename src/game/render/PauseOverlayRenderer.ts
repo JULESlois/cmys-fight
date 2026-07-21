@@ -100,7 +100,7 @@ export class PauseOverlayRenderer {
         ctx.fillStyle = active ? UI_COLORS.yellow : UI_COLORS.muted;
         ctx.font = uiFont(language, 5, true);
         ctx.textAlign = "left";
-        ctx.fillText(`${active ? ">" : " "}${index + 1}`, 221, y + 8);
+        ctx.fillText(`${index + 1}`, 221, y + 8);
         if (!weapon) {
           ctx.fillText("EMPTY", 237, y + 22);
           return;
