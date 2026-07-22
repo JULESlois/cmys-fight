@@ -8,7 +8,15 @@ export type CombatEventType =
   | "player_damaged"
   | "player_weapon_swapped"
   | "player_room_cleared"
-  | "player_room_entered";
+  | "player_room_entered"
+  | "weapon_fired"
+  | "reload_started"
+  | "reload_completed"
+  | "battery_depleted"
+  | "battery_full"
+  | "weapon_overheated"
+  | "charge_restored"
+  | "skill_activated";
 
 export interface CombatEventPayloads {
   "player_perfect_dodge": { player: Player };
@@ -18,6 +26,14 @@ export interface CombatEventPayloads {
   "player_weapon_swapped": { player: Player, previousWeaponId: string, newWeaponId: string };
   "player_room_cleared": { player: Player, noDamageTaken: boolean };
   "player_room_entered": { player: Player };
+  "weapon_fired": { player: Player, weaponId: string, resourceType: string };
+  "reload_started": { player: Player, weaponId: string };
+  "reload_completed": { player: Player, weaponId: string };
+  "battery_depleted": { player: Player, weaponId: string };
+  "battery_full": { player: Player, weaponId: string };
+  "weapon_overheated": { player: Player, weaponId: string };
+  "charge_restored": { player: Player, weaponId: string };
+  "skill_activated": { player: Player, skillId: string };
 }
 
 export type CombatEventListener<T extends CombatEventType> = (payload: CombatEventPayloads[T]) => void;

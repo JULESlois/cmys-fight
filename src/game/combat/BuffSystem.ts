@@ -72,6 +72,9 @@ type ManaRuntimePlayer = Pick<
 type RuntimePlayer = ManaRuntimePlayer & Pick<Player, "armorRechargeDelay" | "armorRechargeRate">;
 
 import { CombatEventDispatcher } from "./CombatEvents";
+import { initBuffEventHandlers } from "./BuffEventHandlers";
+import { initWeaponModuleHandlers } from "./WeaponModules";
+import { initSynergyHandlers } from "./SynergySystem";
 
 export class BuffSystem {
   static init() {
@@ -80,6 +83,9 @@ export class BuffSystem {
         payload.player.buffState.counterStrikeReady = true;
       }
     });
+    initBuffEventHandlers();
+    initWeaponModuleHandlers();
+    initSynergyHandlers();
   }
 
   static readonly MAX_BUFFS = 12;

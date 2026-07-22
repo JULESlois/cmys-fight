@@ -1,4 +1,6 @@
 import { Engine } from "../Engine";
+import { CombatEventDispatcher } from "../combat/CombatEvents";
+import { CharacterResourceController } from "../combat/CharacterResource";
 import { UI_COLORS } from "../render/PixelUi";
 import { generateStage, type Room, type ThemeId } from "../FloorGenerator";
 import { isCombatCleared, isCombatRoom, markCombatCleared, normalizeRoomState } from "../RoomState";
@@ -173,6 +175,8 @@ export class DungeonState extends GameState {
   private chest: WeaponChest | null = null;
   
   private portal?: { x: number, y: number, state: PortalState, timer: number };
+  private exitChoices: { worldNodeId: string; kind: string }[] | null = null;
+  private exitChoiceIndex = 0;
   
   private transitionState: "none" | "fade_in" | "fade_out" = "fade_in";
   private transitionAlpha: number = 1.0;
@@ -203,6 +207,7 @@ export class DungeonState extends GameState {
   constructor(engine: Engine) {
     super(engine);
     this.player = new Player(160, 120);
+    CharacterResourceController.initForCharacter(this.player.characterId, this.player);
   }
 
   public capturesPauseInput(): boolean {
@@ -247,6 +252,7 @@ export class DungeonState extends GameState {
     player.shopDiscount = savedP.shopDiscount ?? 0;
     player.supplyDropBonus = savedP.supplyDropBonus ?? 0;
     BuffSystem.applyRuntimeStats(player);
+    CharacterResourceController.initForCharacter(player.characterId, player);
     return player;
   }
 
@@ -502,6 +508,7 @@ export class DungeonState extends GameState {
     }
 
     currentRoom.visited = true;
+    CombatEventDispatcher.emit("player_room_entered", { player: this.player });
 
     if (currentRoom.type === "start" || currentRoom.type === "npc") {
       this.finalizeRoomObjects(currentRoom);
@@ -870,6 +877,11 @@ export class DungeonState extends GameState {
     this.player.justPerfectDodged = false;
 
     SkillController.update(this.player, dt);
+    CharacterResourceController.update(dt, {
+      player: this.player,
+      activeWeaponId: this.player.currentWeaponId,
+      activeWeaponResourceType: this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot]?.resourceType ?? "action",
+    });
     this.updateMicheleTurret(dt);
     this.updateKanamiBeacon(dt);
     this.updateLightningArcs(dt);
@@ -904,6 +916,22 @@ export class DungeonState extends GameState {
     const canFireWeapon = ["combat", "cleared", "reward", "exiting", "exploration"].includes(this.roomPhase);
     const fireHeld = this.engine.input.isActionDown("fire");
     WeaponController.updateRuntime(this.player, dt, fireHeld);
+
+    // Heat vent burst module: AoE damage on overheat
+    const activeSlot = this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot];
+    if (activeSlot?.customState.ventBurstPending) {
+      activeSlot.customState.ventBurstPending = false;
+      const ventRadius = 56;
+      const ventDamage = 4;
+      for (const enemy of this.enemies) {
+        const dx = enemy.x - this.player.x;
+        const dy = enemy.y - this.player.y;
+        if (dx * dx + dy * dy <= ventRadius * ventRadius) {
+          DamageSystem.damageEnemy(enemy, ventDamage, this.player, false);
+        }
+      }
+    }
+
     const activeWeapon = WEAPONS[this.player.currentWeaponId];
     const heldYoyo = activeWeapon?.attackMode === "yoyo"
       ? this.projectiles.find(projectile =>
@@ -973,6 +1001,17 @@ export class DungeonState extends GameState {
     } else if (this.portal && this.portal.state === "activating") {
        this.portal.timer -= dt;
        if (this.portal.timer <= 0) {
+          // Check for dual-exit choice
+          const floor = this.engine.data.data.floor;
+          const currentRoom = floor?.rooms?.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+          const destinations = currentRoom?.exitDestinations;
+          if (destinations && destinations.length >= 2) {
+            this.exitChoices = destinations;
+            this.exitChoiceIndex = 0;
+            this.portal.state = "idle";
+            return;
+          }
+
           this.transitionState = "fade_out";
           this.transitionAlpha = 0;
           this.pendingTransition = () => {
@@ -982,7 +1021,11 @@ export class DungeonState extends GameState {
                this.finishRun("victory");
                return;
              }
-             const transition = this.engine.data.advanceStage();
+             // Use chosen destination if available, otherwise default advance
+             const dest = destinations?.[0]?.worldNodeId;
+             const transition = dest
+               ? this.engine.data.advanceToNode(dest)
+               : this.engine.data.advanceStage();
              if (transition.chapterChanged) {
                const chapter = Math.max(1, Math.min(4, transition.current.routeDepth));
                this.engine.worldNotices.showRegion(
@@ -997,6 +1040,39 @@ export class DungeonState extends GameState {
              this.loadRoom();
           };
        }
+    }
+
+    // Exit choice navigation
+    if (this.exitChoices) {
+      if (this.engine.input.wasUiPressed("up")) {
+        this.exitChoiceIndex = (this.exitChoiceIndex - 1 + this.exitChoices.length) % this.exitChoices.length;
+      } else if (this.engine.input.wasUiPressed("down")) {
+        this.exitChoiceIndex = (this.exitChoiceIndex + 1) % this.exitChoices.length;
+      } else if (this.engine.input.wasUiPressed("confirm")) {
+        const chosen = this.exitChoices[this.exitChoiceIndex];
+        this.exitChoices = null;
+        this.transitionState = "fade_out";
+        this.transitionAlpha = 0;
+        this.pendingTransition = () => {
+          this.syncPlayerState();
+          this.syncRoomState();
+          const transition = this.engine.data.advanceToNode(chosen.worldNodeId);
+          if (transition.chapterChanged) {
+            const chapter = Math.max(1, Math.min(4, transition.current.routeDepth));
+            this.engine.worldNotices.showRegion(
+              t(this.engine.data.settings.language, `notice.chapter.${chapter}.title` as Parameters<typeof t>[1]),
+              t(this.engine.data.settings.language, `notice.chapter.${chapter}.name` as Parameters<typeof t>[1]),
+              3.6,
+            );
+          }
+          this.player.x = 160;
+          this.player.y = 120;
+          this.engine.input.suppressUntilReleased();
+          this.loadRoom();
+        };
+      } else if (this.engine.input.wasUiPressed("cancel")) {
+        this.exitChoices = null;
+      }
     }
   }
 
@@ -1169,6 +1245,7 @@ export class DungeonState extends GameState {
          this.addEnemy(EncounterFactory.createEnemy(this.engine.data.data.floor, spawn));
       });
       if (!this.encounterCtrl.active && this.enemies.length === 0) {
+         CombatEventDispatcher.emit("player_room_cleared", { player: this.player, noDamageTaken: false });
          this.setPhase("cleared");
       }
     } else if (this.roomPhase === "cleared") {
@@ -1388,15 +1465,13 @@ export class DungeonState extends GameState {
       this.engine.data.settings.language = scene === "hud_long_zh" ? "zh-CN" : "en";
       this.player.maxMana = 50;
       this.player.mana = scene === "hud_energy_0" ? 0 : 33;
-      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heat = 0;
-      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heatWeaponId = undefined;
+      this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].resourceState.value = 0;
       this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.overheatTimer = 0;
       if (scene === "hud_sustain") {
         this.player.setWeaponLoadout(["terrarian"], 0);
       } else if (scene === "hud_heat") {
         this.player.setWeaponLoadout(["mg42"], 0);
-        this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heatWeaponId = "mg42";
-        this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].customState.heat = 72;
+        this.player.weaponLoadout.slots[this.player.weaponLoadout.activeSlot].resourceState.value = 72;
       } else if (scene === "hud_dual") {
         this.player.setWeaponLoadout(["na_45", "shotgun"], 0);
       } else if (scene === "hud_long_en") {

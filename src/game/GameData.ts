@@ -448,6 +448,35 @@ export class GameData {
     };
   }
 
+  advanceToNode(worldNodeId: string): { previous: RunProgress; current: RunProgress; chapterChanged: boolean } {
+    const previous = { ...this.data.run };
+    const next = { ...this.data.run };
+    next.routeHistory.push(next.worldNodeId);
+    next.worldNodeId = worldNodeId;
+    next.routeDepth += 1;
+    next.stageWithinNode = 1;
+    this.data.run = next;
+    this.data.runStats.stagesCleared = Math.max(
+      this.data.runStats.stagesCleared,
+      this.data.run.stagesCleared,
+    );
+    this.data.runStats.highestStage = Math.max(
+      this.data.runStats.highestStage,
+      this.data.run.globalStageIndex,
+    );
+    this.data.player.x = 160;
+    this.data.player.y = 120;
+    this.data.floor = generateStage(this.data.run);
+    this.data.saveVersion = CURRENT_SAVE_VERSION;
+    this.save();
+    const current = { ...this.data.run };
+    return {
+      previous,
+      current,
+      chapterChanged: previous.routeDepth !== current.routeDepth,
+    };
+  }
+
   resetRun() {
     this.restartCurrentRun();
   }
@@ -477,8 +506,7 @@ export class GameData {
 
   private setStarterWeapons(starterWeapon: string, characterId = this.data.player.characterId) {
     const slots = createStarterWeaponSlots(starterWeapon, characterId);
-    
-    const { createWeaponRuntimeState } = require("./combat/WeaponRuntimeState");
+
     this.data.player.weaponLoadout.slots = [createWeaponRuntimeState(slots[0])];
     if (slots[1]) this.data.player.weaponLoadout.slots.push(createWeaponRuntimeState(slots[1]));
     this.data.player.weaponLoadout.activeSlot = 0;

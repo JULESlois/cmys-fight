@@ -1,8 +1,10 @@
 import { ROOM_TEMPLATES } from "./data/roomTemplates";
 import type { SerializedEncounterState } from "./EncounterController";
 import { normalizeRoomState } from "./RoomState";
+import { WORLD_NODES } from "./world/WorldNodes";
 import {
   createRunProgressFromGlobalStage,
+  getGlobalStageIndex,
   getStageLabel,
   isBossStage,
   normalizeRunProgress,
@@ -19,13 +21,15 @@ export interface Room {
   id: string;
   x: number;
   y: number;
-  type: "start" | "combat" | "treasure" | "boss" | "exit" | "npc";
+  type: "start" | "combat" | "treasure" | "boss" | "exit" | "npc" | "hidden";
   cleared: boolean;
   combatCleared?: boolean;
   combatStartNotified?: boolean;
   combatClearNotified?: boolean;
   rewardGenerated?: boolean;
   interactionCompleted?: boolean;
+  hiddenDiscovered?: boolean;
+  exitDestinations?: { worldNodeId: string; kind: string }[];
   weaponChest?: {
     kind: "treasure" | "boss";
     x: number;
@@ -211,13 +215,40 @@ function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, ra
     [preparation.id]: preparation,
     [boss.id]: boss,
   };
+
+  // Dual-exit: generate exit rooms based on world node destinations
+  const node = WORLD_NODES[progress.worldNodeId];
+  const exits = node?.exits ?? [];
+  if (exits.length >= 2) {
+    const exitA = createRoom(3, -1, "exit");
+    exitA.exitDestinations = [{ worldNodeId: exits[0].worldNodeId, kind: exits[0].kind }];
+    exitA.cleared = true;
+    const exitB = createRoom(3, 1, "exit");
+    exitB.exitDestinations = [{ worldNodeId: exits[1].worldNodeId, kind: exits[1].kind }];
+    exitB.cleared = true;
+    rooms.push(exitA, exitB);
+    mapGrid[exitA.id] = exitA;
+    mapGrid[exitB.id] = exitB;
+  } else if (exits.length === 1) {
+    const exitRoom = createRoom(3, 0, "exit");
+    exitRoom.exitDestinations = [{ worldNodeId: exits[0].worldNodeId, kind: exits[0].kind }];
+    exitRoom.cleared = true;
+    rooms.push(exitRoom);
+    mapGrid[exitRoom.id] = exitRoom;
+  } else {
+    const exitRoom = createRoom(3, 0, "exit");
+    exitRoom.cleared = true;
+    rooms.push(exitRoom);
+    mapGrid[exitRoom.id] = exitRoom;
+  }
+
   connectDoors(rooms, mapGrid);
 
   const stage: StageData = {
-    depth: progress.globalStageIndex,
+    depth: getGlobalStageIndex(progress.routeDepth, progress.stageWithinNode),
     routeDepth: progress.routeDepth,
-    stageWithinNode: progress.stageIndex,
-    globalStageIndex: progress.globalStageIndex,
+    stageWithinNode: progress.stageWithinNode,
+    globalStageIndex: getGlobalStageIndex(progress.routeDepth, progress.stageWithinNode),
     isBossStage: true,
     hardMode: progress.hardMode,
     challengeId: progress.challengeId,
@@ -252,7 +283,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
 
   addRoom(createRoom(0, 0, "start"));
 
-  const mainPathLength = 3 + Math.min(2, Math.floor((progress.stageIndex - 1) / 2));
+  const mainPathLength = 3 + Math.min(2, Math.floor((progress.stageWithinNode - 1) / 2));
   const branchCount = 2 + Math.min(2, Math.floor((progress.routeDepth - 1) / 2));
   let currentX = 0;
   let currentY = 0;
@@ -301,11 +332,31 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
     
   }
 
+  // Hidden room: ~20% chance to spawn adjacent to a combat room
+  const hiddenRoll = random();
+  if (hiddenRoll < 0.2) {
+    const combatRooms = rooms.filter(room => room.type === "combat");
+    if (combatRooms.length > 0) {
+      const origin = choose(combatRooms, random);
+      const hiddenAvailable = directions.filter(
+        direction => !getRoom(origin.x + direction.dx, origin.y + direction.dy)
+      );
+      if (hiddenAvailable.length > 0) {
+        const direction = choose(hiddenAvailable, random);
+        const hiddenRoom = createRoom(origin.x + direction.dx, origin.y + direction.dy, "hidden");
+        hiddenRoom.hiddenDiscovered = false;
+        hiddenRoom.cleared = true;
+        addRoom(hiddenRoom);
+        connectDoors(rooms, mapGrid);
+      }
+    }
+  }
+
   const stage: StageData = {
-    depth: progress.globalStageIndex,
+    depth: getGlobalStageIndex(progress.routeDepth, progress.stageWithinNode),
     routeDepth: progress.routeDepth,
-    stageWithinNode: progress.stageIndex,
-    globalStageIndex: progress.globalStageIndex,
+    stageWithinNode: progress.stageWithinNode,
+    globalStageIndex: getGlobalStageIndex(progress.routeDepth, progress.stageWithinNode),
     isBossStage: false,
     hardMode: progress.hardMode,
     challengeId: progress.challengeId,

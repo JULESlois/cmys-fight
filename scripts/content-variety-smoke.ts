@@ -123,7 +123,7 @@ const originalLog = console.log;
 console.log = () => {};
 let hazardsChecked = 0;
 let obstacleVariants = new Set<string>();
-const specialRooms = { npc: 0, wish_fountain: 0, photo_booth: 0 };
+const specialRooms = { npc: 0, hidden: 0 };
 const encountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [theme, new Set()]));
 const bossesEncountered = new Map<EnemyTheme, Set<string>>(themes.map(theme => [theme, new Set()]));
 for (let globalStage = 1; globalStage <= FINAL_GLOBAL_STAGE; globalStage++) {
@@ -183,12 +183,11 @@ assert.ok(obstacleVariants.size >= minimumObstacleVariants);
 for (let sample = 1; sample <= 300; sample++) {
   const stage = generateStage(createRunProgressFromGlobalStage(3), seeded(sample * 13007));
   for (const room of stage.rooms) {
-    if (room.type === "npc" || false) specialRooms[room.type]++;
+    if (room.type === "npc" || room.type === "hidden") specialRooms[room.type]++;
   }
 }
 assert.ok(specialRooms.npc > 25);
-assert.ok(specialRooms.wish_fountain > 25);
-assert.ok(specialRooms.photo_booth > 25);
+assert.ok(specialRooms.hidden > 25);
 console.log = originalLog;
 
 for (const file of [
@@ -209,9 +208,10 @@ const minimapSource = fs.readFileSync("src/game/render/MinimapRenderer.ts", "utf
 const gameDataSource = fs.readFileSync("src/game/GameData.ts", "utf8");
 assert.doesNotMatch(dungeonSource, /ctx\.arc\(t\.x/);
 assert.match(dungeonSource, /treasure-weapon/);
-assert.doesNotMatch(floorSource, /assignRoomType\("combat"|assignRoomType\("combat"/);
-assert.match(floorSource, /assignRoomType\("combat"/);
-assert.match(floorSource, /assignRoomType\("combat"/);
+assert.match(floorSource, /createRoom\(currentX, currentY, "combat"\)/);
+assert.match(floorSource, /assignRoomType\("treasure"/);
+assert.match(floorSource, /assignRoomType\("npc"/);
+assert.match(floorSource, /createRoom\(origin\.x \+ direction\.dx, origin\.y \+ direction\.dy, "hidden"\)/);
 assert.match(roomRendererSource, /tileId === 0 \|\| tileId === 2/);
 assert.match(minimapSource, /room\.doors\.right[\s\S]*room\.doors\.down/);
 assert.match(minimapSource, /room\.visited \|\| isCurrent/);
@@ -219,8 +219,8 @@ assert.match(minimapSource, /visibleKeys\.has/);
 assert.match(minimapSource, /ctx\.fillText\("\?"/);
 assert.match(minimapSource, /for \(const room of visible\) \{[\s\S]*minX = Math\.min\(minX, room\.x\)/);
 assert.doesNotMatch(minimapSource, /for \(const room of floor\.rooms\) \{\s*minX = Math\.min/);
-assert.match(gameDataSource, /room\.type === "combat"[\s\S]*room\.type = "combat"/);
-assert.match(gameDataSource, /room\.type === "combat"[\s\S]*room\.type = "combat"/);
+assert.match(gameDataSource, /room\.type = "combat"/);
+assert.match(gameDataSource, /room\.templateId = "legacy_room"/);
 const specialRoomSource = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalSource = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
 const ritualSpringSource = fs.readFileSync("src/game/render/RitualSpringRenderer.ts", "utf8");

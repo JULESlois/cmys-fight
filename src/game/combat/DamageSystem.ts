@@ -90,6 +90,11 @@ export class DamageSystem {
     player.armorRechargeTimer = player.armorRechargeDelay;
     player.hitFlash = actualHpDamage > 0 ? 0.2 : 0.1;
 
+    const totalDamage = armorDamage + actualHpDamage;
+    if (totalDamage > 0) {
+      CombatEventDispatcher.emit("player_damaged", { player, damage: totalDamage });
+    }
+
     return {
       applied: true,
       armorDamage,

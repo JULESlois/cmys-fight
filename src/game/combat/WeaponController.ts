@@ -74,9 +74,9 @@ export class WeaponController {
   }
 
   static getHeatRatio(player: Player, weaponId = player.currentWeaponId): number {
-    const weapon = WEAPONS[weaponId];
-    if (!weapon?.maxHeat || player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heatWeaponId !== weapon.id) return 0;
-    return Math.max(0, Math.min(1, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat / weapon.maxHeat));
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (!slot || slot.weaponId !== weaponId || slot.resourceType !== "heat") return 0;
+    return slot.resourceState.max > 0 ? Math.max(0, Math.min(1, slot.resourceState.value / slot.resourceState.max)) : 0;
   }
 
   
@@ -237,19 +237,6 @@ export class WeaponController {
       player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.burstWeaponId = weapon.id;
     }
 
-    if (weapon.maxHeat) {
-      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heatWeaponId !== weapon.id) {
-        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heatWeaponId = weapon.id;
-        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat = 0;
-        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.overheatTimer = 0;
-      }
-      player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat = Math.min(weapon.maxHeat, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat + Math.max(0, weapon.heatPerShot ?? 0));
-      if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.heat >= weapon.maxHeat) {
-        player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.overheatTimer = Math.max(0.1, weapon.overheatLockout ?? 1);
-        nextFireCooldown = Math.max(nextFireCooldown, player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.overheatTimer);
-      }
-    }
-
     let linkedShotMode: "none" | "primer" | "catalyst" = "none";
     if (weapon.linkedShot) {
       if (player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId !== weapon.id) {
@@ -392,6 +379,8 @@ export class WeaponController {
         projectiles.push(projectile);
       }
     }
+
+    CombatEventDispatcher.emit("weapon_fired", { player, weaponId: weapon.id, resourceType: slot.resourceType });
 
     return {
       fired: true,

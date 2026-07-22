@@ -60,7 +60,7 @@ assert.equal(kanami.mana, 43);
 const activation = SkillController.activate(kanami, [], { x: 0, y: 0 }, 0);
 assert.equal(activation.activated, true);
 assert.equal(kanami.skillActiveTimer, 7);
-assert.equal(kanami.skillCooldown, 13);
+assert.equal(kanami.skillCooldown, 0);
 assert.equal(kanami.kanamiBeaconDeployed, false);
 assert.equal(kanami.kanamiBeaconX, 80);
 assert.equal(kanami.kanamiBeaconY, 86);

@@ -1,6 +1,7 @@
 import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
+import { CombatEventDispatcher } from "./CombatEvents";
 
 export type SkillId =
   | "dual_fire"
@@ -17,6 +18,8 @@ export interface SkillConfig {
   name: string;
   cooldown: number;
   duration: number;
+  cooldownStart: "on_activate" | "on_effect_end";
+  refreshPolicy: "disabled_while_active" | "refresh_duration" | "replace_instance";
 }
 
 export interface LightningArc {
@@ -41,48 +44,64 @@ const SKILLS: Record<string, SkillConfig> = {
     name: "DUAL FIRE",
     cooldown: 10,
     duration: 3,
+    cooldownStart: "on_activate",
+    refreshPolicy: "refresh_duration",
   },
   mage: {
     id: "arcane_overdrive",
     name: "ARCANE OVERDRIVE",
     cooldown: 12,
     duration: 4,
+    cooldownStart: "on_activate",
+    refreshPolicy: "refresh_duration",
   },
   rogue: {
     id: "shadow_dash",
     name: "SHADOW DASH",
     cooldown: 4,
     duration: 0.22,
+    cooldownStart: "on_activate",
+    refreshPolicy: "replace_instance",
   },
   michele: {
     id: "pawtector",
     name: "PAWTECTOR",
     cooldown: 12,
     duration: 8,
+    cooldownStart: "on_effect_end",
+    refreshPolicy: "disabled_while_active",
   },
   kanami: {
     id: "beacon_lure",
     name: "BEACON LURE",
     cooldown: 13,
     duration: 7,
+    cooldownStart: "on_effect_end",
+    refreshPolicy: "disabled_while_active",
   },
   celestia: {
     id: "guardian_star",
     name: "GUARDIAN STAR",
     cooldown: 12,
     duration: 1.2,
+    cooldownStart: "on_activate",
+    refreshPolicy: "refresh_duration",
   },
   esper_zero: {
     id: "appraise_engrave",
     name: "ENGRAVING APPRAISAL",
     cooldown: 11,
     duration: 5,
+    cooldownStart: "on_effect_end",
+    refreshPolicy: "disabled_while_active",
   },
   nanally: {
     id: "colucci_authority",
     name: "COLLINS HOWL ART",
     cooldown: 15,
     duration: 12,
+    cooldownStart: "on_effect_end",
+    refreshPolicy: "disabled_while_active",
   },
 };
 
@@ -112,6 +131,13 @@ export class SkillController {
   static readonly KANAMI_BEACON_BOSS_PULL = 0.35;
   static readonly CELESTIA_TEMPORARY_ARMOR = 4;
   static readonly CELESTIA_TEMPORARY_ARMOR_DURATION = 10;
+  static readonly COOLDOWN_REDUCTION_CAP = 0.25;
+
+  static getEffectiveCooldown(player: Player, config: SkillConfig): number {
+    const rawMultiplier = BuffSystem.getSkillCooldownMultiplier(player);
+    const cappedMultiplier = Math.max(1 - SkillController.COOLDOWN_REDUCTION_CAP, rawMultiplier);
+    return config.cooldown * cappedMultiplier;
+  }
 
   static getConfig(characterId: string): SkillConfig {
     return SKILLS[characterId] ?? SKILLS.knight;
@@ -146,6 +172,10 @@ export class SkillController {
     const wasActive = player.skillActiveTimer > 0;
     player.skillActiveTimer = Math.max(0, player.skillActiveTimer - dt);
     if (player.skillActiveTimer <= 0) {
+      const config = SkillController.getConfig(player.characterId);
+      if (wasActive && config.cooldownStart === "on_effect_end") {
+        player.skillCooldown = SkillController.getEffectiveCooldown(player, config);
+      }
       if (player.characterId === "michele") {
         player.micheleTurretActive = false;
         player.micheleTurretHitsRemaining = 0;
@@ -184,21 +214,33 @@ export class SkillController {
     if (player.skillCooldown > 0) return { ...EMPTY_RESULT, reason: "cooldown" };
 
     const config = SkillController.getConfig(player.characterId);
-    const cooldown = config.cooldown * BuffSystem.getSkillCooldownMultiplier(player);
+
+    if (config.refreshPolicy === "disabled_while_active" && player.skillActiveTimer > 0) {
+      return { ...EMPTY_RESULT, reason: "cooldown" };
+    }
+
+    const cooldown = SkillController.getEffectiveCooldown(player, config);
+    const applyCooldown = () => {
+      if (config.cooldownStart === "on_activate") {
+        player.skillCooldown = cooldown;
+      }
+    };
     const restoreEnergy = () => {
       player.mana = Math.min(player.maxMana, player.mana + BuffSystem.getSkillEnergyRestore(player));
     };
 
+    CombatEventDispatcher.emit("skill_activated", { player, skillId: config.id });
+
     if (config.id === "dual_fire") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
     if (config.id === "pawtector") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       player.micheleTurretX = player.x;
       player.micheleTurretY = player.y;
       player.micheleTurretFireCooldown = 0;
@@ -210,7 +252,7 @@ export class SkillController {
 
     if (config.id === "beacon_lure") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       player.kanamiBeaconX = player.x;
       player.kanamiBeaconY = player.y - 4;
       player.kanamiBeaconVx = Math.cos(aimAngle) * SkillController.KANAMI_BEACON_SPEED;
@@ -223,7 +265,7 @@ export class SkillController {
 
     if (config.id === "guardian_star") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       player.celestiaTemporaryArmor = Math.max(
         player.celestiaTemporaryArmor,
         SkillController.CELESTIA_TEMPORARY_ARMOR,
@@ -235,7 +277,7 @@ export class SkillController {
 
     if (config.id === "appraise_engrave") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.25);
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
@@ -243,7 +285,7 @@ export class SkillController {
 
     if (config.id === "colucci_authority") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.15);
       restoreEnergy();
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
@@ -251,7 +293,7 @@ export class SkillController {
 
     if (config.id === "arcane_overdrive") {
       player.skillActiveTimer = config.duration;
-      player.skillCooldown = cooldown;
+      applyCooldown();
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.35);
       player.manaRechargeTimer = Math.max(player.manaRechargeTimer, config.duration);
       restoreEnergy();
@@ -265,7 +307,7 @@ export class SkillController {
     player.skillDirectionX /= length;
     player.skillDirectionY /= length;
     player.skillActiveTimer = config.duration;
-    player.skillCooldown = cooldown;
+    applyCooldown();
     player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, config.duration + 0.08);
     restoreEnergy();
     return { activated: true, killedEnemyIds: [], lightningArcs: [] };

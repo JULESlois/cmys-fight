@@ -72,7 +72,7 @@ skillUser.characterId = "michele";
 const activation = SkillController.activate(skillUser, [], { x: 0, y: 0 }, 0);
 assert.equal(activation.activated, true);
 assert.equal(skillUser.skillActiveTimer, 8);
-assert.equal(skillUser.skillCooldown, 12);
+assert.equal(skillUser.skillCooldown, 0);
 assert.equal(skillUser.micheleTurretX, 80);
 assert.equal(skillUser.micheleTurretY, 90);
 assert.equal(skillUser.micheleTurretHitsRemaining, 6);

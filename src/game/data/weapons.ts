@@ -315,6 +315,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   void_rail: {
     id: "void_rail", name: "Void Rail", category: "energy", rarity: "legendary",
     damage: 18, fireRate: 0.9, bulletSpeed: 360, manaCost: 7, spread: 0,
+    resourceType: "battery", batteryCapacity: 21, batteryRechargeRate: 7, batteryRechargeDelay: 0.7,
     pelletCount: 1, knockback: 16, critChance: 0.25, color: "#BB8FCE",
     projectileRadius: 3, pierce: 5, projectileLife: 2.8, series: "aether",
     mechanic: "Room-cutting rail beam penetrates six targets.", projectileStyle: "beam",
@@ -332,6 +333,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   siege_breaker: {
     id: "siege_breaker", name: "Siege Breaker", category: "launcher", rarity: "legendary",
     damage: 24, fireRate: 0.6, bulletSpeed: 112, manaCost: 8, spread: 0.02,
+    resourceType: "charge", chargeSlots: 3, chargeTime: 2.4,
     pelletCount: 1, knockback: 20, critChance: 0.18, color: "#FF8C69",
     projectileRadius: 5, projectileLife: 3, wallBounces: 1,
     statusEffect: "burn", statusDuration: 3, series: "phoenix",
@@ -416,6 +418,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   mg42: {
     id: "mg42", name: "MG42", category: "rifle", rarity: "rare",
     damage: 1, fireRate: 15, bulletSpeed: 275, manaCost: 0, spread: 0.085,
+    resourceType: "heat",
     pelletCount: 1, knockback: 3, critChance: 0.1, color: "#F0C56A",
     projectileLife: 1.8, pierce: 2,
     heatPerShot: 2.3, heatDecayRate: 24, maxHeat: 100, overheatLockout: 1.1, heatSpreadMultiplier: 1.65,
@@ -468,6 +471,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   m4a4_coalition: {
     id: "m4a4_coalition", name: "M4A4 | The Coalition", category: "rifle", rarity: "legendary",
     damage: 4, fireRate: 7.1, bulletSpeed: 305, manaCost: 2, spread: 0.04,
+    resourceType: "magazine", magazineSize: 18, reloadTime: 1.25,
     pelletCount: 1, knockback: 4, critChance: 0.16, critMultiplier: 2.15, color: "#D6B347",
     projectileLife: 2.1, pierce: 1,
     mechanic: "A disciplined gold-and-black assault rifle delivers high sustained damage, penetration and reliable critical hits.",
@@ -605,6 +609,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   last_prism: {
     id: "last_prism", name: "Last Prism", category: "magic", rarity: "legendary",
     damage: 1, fireRate: 4, bulletSpeed: 360, manaCost: 1.5, spread: 0.52,
+    resourceType: "battery", batteryCapacity: 24, batteryRechargeRate: 6, batteryRechargeDelay: 0.5,
     pelletCount: 6, knockback: 2, critChance: 0.12, color: "#FFFFFF",
     projectileRadius: 2, projectileLife: 0.42, pierce: 4,
     mechanic: "Six rotating rays converge while held, becoming a thicker, stronger and more costly beam.",
