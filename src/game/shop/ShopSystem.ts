@@ -50,7 +50,6 @@ const BUFF_PRICE: Record<BuffRarity, number> = {
   common: 34,
   uncommon: 52,
   rare: 78,
-  legendary: 116,
 };
 
 // Shop talents remain broadly accessible while receiving a small high-tier bias.
@@ -58,7 +57,6 @@ const SHOP_BUFF_RARITY_WEIGHT: Record<BuffRarity, number> = {
   common: 1,
   uncommon: 1.05,
   rare: 1.2,
-  legendary: 1.15,
 };
 
 function stagePrice(base: number, stage: StageData, discount = 0): number {

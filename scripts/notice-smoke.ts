@@ -51,14 +51,14 @@ const data = new GameData();
 data.startNewRun("knight", "pistol", false);
 jumpToStage(data, 4);
 const chapterTransition = data.advanceStage();
-assert.equal(chapterTransition.previous.chapterIndex, 1);
-assert.equal(chapterTransition.current.chapterIndex, 2);
+assert.equal(chapterTransition.previous.routeDepth, 1);
+assert.equal(chapterTransition.current.routeDepth, 2);
 assert.equal(chapterTransition.chapterChanged, true);
 
 jumpToStage(data, 5);
 const stageTransition = data.advanceStage();
-assert.equal(stageTransition.previous.chapterIndex, 2);
-assert.equal(stageTransition.current.chapterIndex, 2);
+assert.equal(stageTransition.previous.routeDepth, 2);
+assert.equal(stageTransition.current.routeDepth, 2);
 assert.equal(stageTransition.chapterChanged, false);
 
 const read = (path: string) => fs.readFileSync(path, "utf8");
@@ -126,7 +126,7 @@ assert.doesNotMatch(dungeon, /drawAlertBanner|THREAT ELIMINATED|ENGAGEMENT PROTO
 assert.doesNotMatch(dungeon, /centerY - bgHeight|y \+= 4/);
 assert.match(dungeon, /worldNotices\.showBottom/);
 assert.match(dungeon, /worldNotices\.showRegion/);
-assert.match(gameData, /chapterChanged: previous\.chapterIndex !== current\.chapterIndex/);
+assert.match(gameData, /chapterChanged: previous\.routeDepth !== current\.routeDepth/);
 assert.match(i18n, /"notice\.combatStarted"/);
 assert.match(i18n, /"notice\.bossCombatStarted"/);
 assert.match(i18n, /"notice\.combatCleared"/);

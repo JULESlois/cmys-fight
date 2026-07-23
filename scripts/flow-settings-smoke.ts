@@ -18,9 +18,8 @@ Object.defineProperty(globalThis, "localStorage", { value: new MemoryStorage(), 
 
 const data = new GameData();
 data.startNewRun("knight", "pistol", false);
-data.data.run.globalStageIndex = 3;
-data.data.run.chapterIndex = 1;
-data.data.run.stageIndex = 3;
+data.data.run.routeDepth = 1;
+data.data.run.stageWithinNode = 3;
 data.data.player.coins = 77;
 const runBefore = { ...data.data.run };
 let prepared = 0;
@@ -39,9 +38,9 @@ assert.equal(prepared, 1, "Dungeon state prepares before returning to Hub");
 assert.equal(overlayClosed, 1, "menu overlay closes before Hub transition");
 assert.deepEqual(switched, { state: "hub", params: { spawnAnchor: "rebirth_spring" } });
 assert.equal(returnHarness.isPaused, false);
-assert.equal(data.data.run.chapterIndex, runBefore.chapterIndex);
-assert.equal(data.data.run.stageIndex, runBefore.stageIndex);
-assert.equal(data.data.run.globalStageIndex, runBefore.globalStageIndex);
+assert.equal(data.data.run.routeDepth, runBefore.routeDepth);
+assert.equal(data.data.run.stageWithinNode, runBefore.stageWithinNode);
+assert.equal(data.data.run.worldNodeId, runBefore.worldNodeId);
 assert.equal(data.data.run.hardMode, runBefore.hardMode);
 assert.equal(data.data.runStats.outcome, "active", "returning to Hub does not settle the Run");
 assert.equal(data.hasValidSave(), true, "active Run remains resumable at the expedition gate");
@@ -73,11 +72,11 @@ assert.equal(resetCalls, 1);
 assert.equal(rebuildTarget, "hub");
 assert.deepEqual(rebuildParams, { spawnAnchor: "rebirth_spring" });
 
-assert.equal(SETTINGS_VERSION, 8);
+assert.equal(SETTINGS_VERSION, 9);
 const defaults = createDefaultSettings() as unknown as Record<string, unknown>;
 assert.equal("crtFilter" in defaults, false, "GameSettings no longer contains crtFilter");
 const migrated = normalizeSettings({ version: 7, crtFilter: true, masterVolume: 70 }) as unknown as Record<string, unknown>;
-assert.equal(migrated.version, 8);
+assert.equal(migrated.version, 9);
 assert.equal(migrated.masterVolume, 70);
 assert.equal("crtFilter" in migrated, false, "legacy crtFilter is ignored during migration");
 

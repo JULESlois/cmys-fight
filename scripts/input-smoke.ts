@@ -128,7 +128,7 @@ promptInput.setBindings({ fire: "j", skill: "l", interact: "k", swapWeapon: "i",
 promptInput.setTouchAction("fire", true);
 promptInput.setTouchPromptMode("gamepad");
 assert.equal(promptInput.getPrompt("fire"), "X");
-assert.equal(promptInput.getPrompt("skill"), "B");
+assert.equal(promptInput.getPrompt("skill"), "LB/RB");
 assert.equal(promptInput.getPrompt("interact"), "A");
 assert.equal(promptInput.getPrompt("swapWeapon"), "Y");
 assert.equal(promptInput.getPrompt("pause"), "START");
@@ -146,7 +146,7 @@ promptInput.beginFrame();
 assert.equal(promptInput.wasActionPressed("skill"), true, "gamepad B is the contextual gameplay skill button");
 assert.equal(promptInput.wasUiPressed("cancel"), true, "the same B button is cancel in menu contexts");
 assert.equal(promptInput.wasPressed("escape"), false, "gamepad buttons must not masquerade as keyboard keys");
-assert.equal(promptInput.getPrompt("skill"), "B");
+assert.equal(promptInput.getPrompt("skill"), "LB/RB");
 assert.equal(promptInput.getCancelPrompt(), "B");
 promptInput.suppressUntilReleased();
 promptInput.update();

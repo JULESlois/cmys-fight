@@ -55,7 +55,7 @@ assert.equal(finaleVolley.fired, true);
 assert.equal(finaleVolley.projectiles[0].weaponId, "finale");
 assert.equal(finaleVolley.projectiles[0].explosionRadius, 22);
 assert.equal(finaleVolley.projectiles[0].pierceRemaining, 0);
-assert.equal(kanami.mana, 43);
+assert.equal(kanami.weaponLoadout.slots[0].resourceState.value, 20);
 
 const activation = SkillController.activate(kanami, [], { x: 0, y: 0 }, 0);
 assert.equal(activation.activated, true);

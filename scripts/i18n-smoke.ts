@@ -21,7 +21,7 @@ import {
 import { META_UPGRADES } from "../src/game/MetaUpgrades";
 import { createDefaultSettings, normalizeSettings, SETTINGS_VERSION } from "../src/game/Settings";
 
-assert.equal(SETTINGS_VERSION, 8);
+assert.equal(SETTINGS_VERSION, 9);
 assert.equal(createDefaultSettings().language, "en");
 assert.equal(normalizeSettings({ version: 5 }).language, "en");
 assert.equal(normalizeSettings({ version: 7, language: "zh-CN" }).language, "zh-CN");

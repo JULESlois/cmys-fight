@@ -133,12 +133,13 @@ const dungeonSource = read("src/game/states/DungeonState.ts");
 const noticeRenderer = read("src/game/notice/WorldNoticeRenderer.ts");
 assert.match(uiSource, /WeaponHudRenderer\.draw/);
 assert.doesNotMatch(uiSource, /WEAPONS\[player\.currentWeaponId\]|Standby Weapon|FPS Style Weapon UI/);
-assert.match(hudSource, /const cells = 14/);
+assert.match(hudSource, /drawResourceTrack/);
+assert.match(hudSource, /ResourceStrategies/);
 assert.match(hudSource, /UI_COLORS\.cyan/);
 assert.match(hudSource, /UI_COLORS\.yellow/);
 assert.match(hudSource, /UI_COLORS\.red/);
 assert.match(hudSource, /sustainEnergyPerSecond/);
-assert.match(hudSource, /maxHeat/);
+assert.match(hudSource, /resourceType === "heat"/);
 for (const scene of [
   "hud_energy_0", "hud_energy_33", "hud_single_cost", "hud_sustain", "hud_heat",
   "hud_dual", "hud_long_en", "hud_long_zh", "hud_notice",

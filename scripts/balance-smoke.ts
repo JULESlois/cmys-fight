@@ -38,7 +38,7 @@ class MemoryStorage implements Storage {
 const storage = new MemoryStorage();
 Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
 
-assert.equal(SETTINGS_VERSION, 8);
+assert.equal(SETTINGS_VERSION, 9);
 assert.equal(STAGES_PER_CHAPTER, 4);
 assert.equal(FINAL_GLOBAL_STAGE, 16);
 assert.equal(getDifficultyStageIndex(4), 5);

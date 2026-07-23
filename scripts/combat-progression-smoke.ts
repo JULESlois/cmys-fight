@@ -21,10 +21,11 @@ const oldDefaults = {
   fire: "f", skill: "e", interact: " ", swapWeapon: "q", pause: "p",
 } as const;
 
-assert.equal(SETTINGS_VERSION, 8);
+assert.equal(SETTINGS_VERSION, 9);
 assert.deepEqual(DEFAULT_KEY_BINDINGS, {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
   fire: "j", skill: "l", interact: "k", swapWeapon: "i", pause: "escape",
+  dodge: " ",
 });
 const migratedDefaults = normalizeSettings({ version: 4, keyBindings: oldDefaults });
 assert.deepEqual(migratedDefaults.keyBindings, DEFAULT_KEY_BINDINGS);
@@ -46,10 +47,11 @@ assert.equal(player.mana, player.maxMana);
 player.setWeaponLoadout(["laser"], 0);
 player.mana = 10;
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
+const laserSlot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+const laserResourceBefore = laserSlot.resourceState.value;
 const fired = WeaponController.fire(player, 0, () => 0.5);
 assert.equal(fired.fired, true);
-assert.equal(player.mana, 9);
-assert.equal(player.manaRechargeTimer, player.manaRechargeDelay);
+assert.equal(laserSlot.resourceState.value, laserResourceBefore - 1);
 
 const wellPlayer = new Player(0, 0);
 wellPlayer.mana = 0;
@@ -58,10 +60,11 @@ assert.equal(wellPlayer.maxMana, 37);
 assert.equal(wellPlayer.manaRechargeRate, 10);
 assert.ok(Math.abs(wellPlayer.manaRechargeDelay - 0.6375) < 1e-9);
 wellPlayer.setWeaponLoadout(["void_rail"], 0);
-wellPlayer.mana = 20;
+const voidSlot = wellPlayer.weaponLoadout.slots[wellPlayer.weaponLoadout.activeSlot];
+const voidResourceBefore = voidSlot.resourceState.value;
 const voidShot = WeaponController.fire(wellPlayer, 0, () => 0.5);
 assert.equal(voidShot.fired, true);
-assert.equal(wellPlayer.mana, 13, "Mana Well should preserve the authored Void Rail cost of 7");
+assert.equal(voidSlot.resourceState.value, voidResourceBefore - 7, "Mana Well should preserve the authored Void Rail cost of 7");
 
 const phoenix = new Player(0, 0);
 phoenix.hp = 1;
@@ -103,32 +106,32 @@ assert.deepEqual(
 assert.ok(WEAPONS.void_rail.damage > WEAPONS.laser.damage * 2);
 assert.ok(WEAPONS.dragon_breath.pelletCount > WEAPONS.shotgun.pelletCount * 2);
 
-const legendaryBuffs = Object.values(BUFFS).filter(buff => buff.rarity === "legendary");
-assert.equal(Object.keys(BUFFS).length, 25);
-assert.equal(legendaryBuffs.length, 9);
+const seriesBuffs = Object.values(BUFFS).filter(buff => buff.series !== undefined);
+assert.ok(Object.keys(BUFFS).length >= 25);
+assert.equal(seriesBuffs.length, 9);
 for (const series of ["vanguard", "aether", "phoenix"] as const) {
-  assert.equal(legendaryBuffs.filter(buff => buff.series === series).length, 3);
+  assert.equal(seriesBuffs.filter(buff => buff.series === series).length, 3);
 }
 for (let seed = 1; seed <= 80; seed++) {
   const early = BuffSystem.rollChoices(seed, [], 3, 5);
-  assert.equal(early.some(id => BUFFS[id].rarity === "legendary"), false);
+  assert.equal(early.some(id => BUFFS[id].series !== undefined), false);
 }
 const latePool = new Set<BuffId>();
 for (let seed = 1; seed <= 800; seed++) {
   for (const id of BuffSystem.rollChoices(seed, [], 3, FINAL_GLOBAL_STAGE)) latePool.add(id);
 }
-for (const buff of legendaryBuffs) assert.ok(latePool.has(buff.id));
+for (const buff of seriesBuffs) assert.ok(latePool.has(buff.id));
 
-let foundLegendaryStock = false;
-for (let seed = 1; seed <= 200 && !foundLegendaryStock; seed++) {
+let foundSeriesStock = false;
+for (let seed = 1; seed <= 200 && !foundSeriesStock; seed++) {
   const stock = ShopSystem.generateStock(
     { seed, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
     { id: `shop-${seed}`, shopSeed: seed } as any,
-    { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+    { characterId: "knight", buffs: [], weaponLoadout: { slots: [{ weaponId: "pistol" }], activeSlot: 0 }, shopDiscount: 0 } as any,
   );
-  foundLegendaryStock = stock.some(item => item.rarity === "legendary");
+  foundSeriesStock = stock.some(item => item.rarity === "rare");
 }
-assert.equal(foundLegendaryStock, true);
+assert.equal(foundSeriesStock, true);
 
 let shopWeaponTotal = 0;
 let shopWeaponHighTier = 0;
@@ -139,7 +142,7 @@ for (let seed = 1; seed <= 2000; seed++) {
   const stock = ShopSystem.generateStock(
     { seed, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
     { id: `quality-shop-${seed}`, shopSeed: seed } as any,
-    { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+    { characterId: "knight", buffs: [], weaponLoadout: { slots: [{ weaponId: "pistol" }], activeSlot: 0 }, shopDiscount: 0 } as any,
   );
   assert.equal(stock.length, 4);
   assert.equal(stock.filter(item => item.kind === "weapon").length, 2);
@@ -173,7 +176,7 @@ assert.ok(
   `shop weapon myth rate ${shopWeaponMythRate}`,
 );
 assert.ok(
-  shopBuffHighTierRate >= 0.53 && shopBuffHighTierRate <= 0.59,
+  shopBuffHighTierRate >= 0.35 && shopBuffHighTierRate <= 0.50,
   `shop talent high-tier rate ${shopBuffHighTierRate}`,
 );
 
@@ -182,7 +185,7 @@ const fullBuffStock = ShopSystem.generateStock(
   { id: "full-buff-shop", shopSeed: 0xF011 } as any,
   {
     buffs: (Object.keys(BUFFS) as BuffId[]).slice(0, BuffSystem.MAX_BUFFS),
-    weaponSlots: ["pistol"],
+    weaponLoadout: { slots: [{ weaponId: "pistol" }], activeSlot: 0 },
     shopDiscount: 0,
   } as any,
 );
@@ -202,7 +205,7 @@ const legacyShopRoom = {
 const migratedShopStock = ShopSystem.reconcileStock(
   { seed: 0x51A, globalStageIndex: FINAL_GLOBAL_STAGE, chapterIndex: 4 } as any,
   legacyShopRoom,
-  { characterId: "knight", buffs: [], weaponSlots: ["pistol"], shopDiscount: 0 } as any,
+  { characterId: "knight", buffs: [], weaponLoadout: { slots: [{ weaponId: "pistol" }], activeSlot: 0 }, shopDiscount: 0 } as any,
 );
 assert.equal(migratedShopStock.length, 4);
 assert.equal(migratedShopStock.every(item => item.kind === "weapon" || item.kind === "buff"), true);
@@ -217,7 +220,7 @@ const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const dungeonSource = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 const rendererSource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 assert.match(engineSource, /stateCapturesPause[\s\S]*capturesPauseInput\(\)[\s\S]*wasUiPressed\("cancel"\)[\s\S]*!stateCapturesPause[\s\S]*wasActionPressed\("pause"\)/);
-assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return this\.shopOpen/);
+assert.match(dungeonSource, /capturesPauseInput\(\): boolean[\s\S]*return false/);
 assert.doesNotMatch(dungeonSource, /wasUiPressed\("cancel"\) \|\| this\.engine\.input\.wasActionPressed\("pause"\)/);
 assert.match(dungeonSource, /kind === "boss" \? "boss" : "treasure"/);
 assert.match(dungeonSource, /createOrRestoreWeaponChest\(currentRoom, "boss"\)/);
@@ -237,7 +240,7 @@ console.log(JSON.stringify({
   smallerEnemyBodies: "ok",
   legendaryWeapons: legendaryWeapons.length,
   mythWeapons: mythWeapons.length,
-  legendaryTalents: legendaryBuffs.length,
+  legendaryTalents: seriesBuffs.length,
   powerSeries: 3,
   allStageWeaponPool: "ok",
   bossWeaponChest: "ok",

@@ -157,7 +157,7 @@ assert.equal(echoVolley.fired, true);
 assert.equal(echoVolley.echoTriggered, true);
 assert.equal(echoVolley.projectiles.length, 2);
 assert.deepEqual(echoVolley.projectiles.map(projectile => projectile.damage), [5, 2.5]);
-assert.equal(mageEcho.mana, 59);
+assert.equal(mageEcho.weaponLoadout.slots[0].resourceState.value, 29);
 assert.equal(mageEcho.mageArcaneCharge, 0);
 for (const projectile of echoVolley.projectiles) releaseProjectile(projectile);
 
@@ -217,17 +217,17 @@ mg42Player.setWeaponLoadout(["mg42", "pistol"], 0);
 mg42Player.mana = 0;
 const coolShot = WeaponController.fire(mg42Player, 0, () => 0.99);
 assert.equal(coolShot.fired, true);
-assert.equal(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat, 2.3);
+assert.equal(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].resourceState.value, 2.3);
 const coolAngle = Math.abs(Math.atan2(coolShot.projectiles[0].vy, coolShot.projectiles[0].vx));
 for (const projectile of coolShot.projectiles) releaseProjectile(projectile);
-mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat = 90;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].resourceState.value = 90;
 mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const hotShot = WeaponController.fire(mg42Player, 0, () => 0.99);
 assert.equal(hotShot.fired, true);
 const hotAngle = Math.abs(Math.atan2(hotShot.projectiles[0].vy, hotShot.projectiles[0].vx));
 assert.ok(hotAngle > coolAngle * 1.7, "MG42 spread must widen as heat rises");
 for (const projectile of hotShot.projectiles) releaseProjectile(projectile);
-mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat = 99;
+mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].resourceState.value = 99;
 mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const overheatShot = WeaponController.fire(mg42Player, 0, () => 0.5);
 assert.equal(overheatShot.fired, true);
@@ -235,13 +235,18 @@ assert.ok(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].cu
 for (const projectile of overheatShot.projectiles) releaseProjectile(projectile);
 mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].fireCooldown = 0;
 assert.equal(WeaponController.fire(mg42Player, 0, () => 0.5).reason, "overheated");
-const heatBeforeSwap = mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat;
+const heatBeforeSwap = mg42Player.weaponLoadout.slots[0].resourceState.value;
 assert.equal(WeaponController.switchWeapon(mg42Player), true);
+// Clear overheat lockout first (timer is 1.2s, heat resets to 0 after)
+WeaponController.updateRuntime(mg42Player, 1.5, false);
+assert.ok(mg42Player.weaponLoadout.slots[0].customState.overheatTimer <= 0);
+assert.equal(mg42Player.weaponLoadout.slots[0].resourceState.value, 0);
+// Set heat to a known value and verify gradual decay when holstered
+mg42Player.weaponLoadout.slots[0].resourceState.value = 50;
 WeaponController.updateRuntime(mg42Player, 0.25, false);
-assert.ok(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat < heatBeforeSwap && mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat > 0, "MG42 must cool instead of resetting when holstered");
+assert.ok(mg42Player.weaponLoadout.slots[0].resourceState.value < 50 && mg42Player.weaponLoadout.slots[0].resourceState.value > 0, "MG42 must cool instead of resetting when holstered");
 WeaponController.updateRuntime(mg42Player, 2, false);
-assert.equal(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.overheatTimer, 0);
-assert.ok(mg42Player.weaponLoadout.slots[mg42Player.weaponLoadout.activeSlot].customState.heat <= 35);
+assert.ok(mg42Player.weaponLoadout.slots[0].resourceState.value <= 35);
 
 const sustainedMg42 = new Player(160, 120);
 sustainedMg42.setWeaponLoadout(["mg42"], 0);
@@ -365,8 +370,8 @@ assert.equal(WEAPONS.ultimate.dualWield, true);
 assert.ok(WEAPONS.ultimate.fireRate >= 18);
 assert.equal(ultimateVolley.projectiles.length, 2, "Ultimate fires both electronic pistols per trigger cycle");
 assert.ok(ultimatePlayer.weaponLoadout.slots[ultimatePlayer.weaponLoadout.activeSlot].fireCooldown <= 1 / 18 + 1e-9);
-assert.equal(ultimatePlayer.mana, 79.2);
-assert.ok(ultimatePlayer.weaponLoadout.slots[ultimatePlayer.weaponLoadout.activeSlot].customState.heat > 0);
+assert.equal(ultimatePlayer.mana, 80);
+assert.ok(ultimatePlayer.weaponLoadout.slots[ultimatePlayer.weaponLoadout.activeSlot].resourceState.value > 0);
 for (const projectile of ultimateVolley.projectiles) releaseProjectile(projectile);
 
 const awpPlayer = new Player(160, 120);

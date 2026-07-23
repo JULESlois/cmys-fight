@@ -6,7 +6,6 @@ const RARITY_COLORS: Record<BuffRarity, string> = {
   common: UI_COLORS.text,
   uncommon: UI_COLORS.green,
   rare: UI_COLORS.cyan,
-  legendary: UI_COLORS.orange,
 };
 
 function drawBuffSigil(ctx: CanvasRenderingContext2D, code: string, x: number, y: number, color: string, selected: boolean): void {
@@ -64,7 +63,7 @@ export class BuffSelectionRenderer {
       const x = startX + index * (cardWidth + gap);
       const y = index === selectedIndex ? 61 : 64;
       const color = RARITY_COLORS[buff.rarity];
-      drawPixelPanel(ctx, x, y, cardWidth, cardHeight, buff.rarity === "legendary" ? "yellow" : buff.rarity === "rare" ? "cyan" : buff.rarity === "uncommon" ? "green" : "neutral", index === selectedIndex);
+      drawPixelPanel(ctx, x, y, cardWidth, cardHeight, buff.rarity === "rare" ? "cyan" : buff.rarity === "uncommon" ? "green" : "neutral", index === selectedIndex);
       if (index === selectedIndex) {
         ctx.strokeStyle = UI_COLORS.white;
         ctx.strokeRect(x + 2, y + 2, cardWidth - 4, cardHeight - 4);
@@ -87,7 +86,7 @@ export class BuffSelectionRenderer {
       wrapLocalized(localized.description, language === "zh-CN" ? 16 : 19).slice(0, 4)
         .forEach((text, lineIndex) => ctx.fillText(text, x + cardWidth / 2, y + 88 + lineIndex * 9));
 
-      drawBadge(ctx, rarityLabel(buff.rarity, language), x + 8, y + 129, cardWidth - 16, language, buff.rarity === "legendary" ? "yellow" : buff.rarity === "rare" ? "cyan" : buff.rarity === "uncommon" ? "green" : "neutral");
+      drawBadge(ctx, rarityLabel(buff.rarity, language), x + 8, y + 129, cardWidth - 16, language, buff.rarity === "rare" ? "cyan" : buff.rarity === "uncommon" ? "green" : "neutral");
     });
     ctx.restore();
   }

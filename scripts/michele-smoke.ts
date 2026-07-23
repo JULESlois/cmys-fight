@@ -42,13 +42,17 @@ assert.deepEqual(createStarterWeaponSlots("laser", "michele"), ["laser"]);
 assert.deepEqual(createStarterWeaponSlots("laser", "mage"), ["laser", "pistol"]);
 const migratedRun = new GameData() as any;
 migratedRun.data.player.characterId = "michele";
-migratedRun.data.player.weaponSlots = ["inspector", "pistol"];
-migratedRun.data.player.activeWeaponSlot = 1;
+migratedRun.data.player.weaponLoadout = {
+  slots: [{ weaponId: "inspector", resourceType: "magazine", fireCooldown: 0, resourceState: { value: 12, max: 12 }, customState: {} }, { weaponId: "pistol", resourceType: "magazine", fireCooldown: 0, resourceState: { value: 12, max: 12 }, customState: {} }],
+  activeSlot: 1,
+  swapTimer: 0,
+};
 migratedRun.data.player.currentWeaponId = "pistol";
 migratedRun.migrateMicheleStarterLoadout(20);
-assert.deepEqual(migratedRun.data.player.weaponSlots, ["inspector"]);
+assert.equal(migratedRun.data.player.weaponLoadout.slots.length, 1);
+assert.equal(migratedRun.data.player.weaponLoadout.slots[0].weaponId, "inspector");
 assert.equal(migratedRun.data.player.currentWeaponId, "inspector");
-assert.equal(migratedRun.data.player.activeWeaponSlot, 0);
+assert.equal(migratedRun.data.player.weaponLoadout.activeSlot, 0);
 
 const knight = new Player(0, 0);
 knight.characterId = "knight";
