@@ -73,7 +73,7 @@ export function createWeaponRuntimeState(weaponId: string): WeaponRuntimeState {
 }
 
 export function normalizeWeaponRuntimeState(state: any): WeaponRuntimeState {
-  if (!state || typeof state !== "object" || !state.weaponId) {
+  if (!state || typeof state !== "object" || typeof state.weaponId !== "string") {
     return createWeaponRuntimeState("pistol");
   }
   
@@ -83,35 +83,54 @@ export function normalizeWeaponRuntimeState(state: any): WeaponRuntimeState {
   }
   
   const defaultState = createWeaponRuntimeState(state.weaponId);
+  const resourceType = defaultState.resourceType;
+  
+  let fireCooldown = Number(state.fireCooldown);
+  if (!Number.isFinite(fireCooldown) || fireCooldown < 0) fireCooldown = 0;
+  
+  let max = Number(state.resourceState?.max);
+  if (!Number.isFinite(max) || max <= 0) max = defaultState.resourceState.max;
+  
+  let value = Number(state.resourceState?.value);
+  if (!Number.isFinite(value) || value < 0) value = defaultState.resourceState.value;
+  value = Math.min(value, max);
+  
+  let customState = state.customState;
+  if (!customState || typeof customState !== "object" || Array.isArray(customState)) customState = {};
+  
   return {
     weaponId: state.weaponId,
-    resourceType: state.resourceType ?? defaultState.resourceType,
-    fireCooldown: typeof state.fireCooldown === "number" ? state.fireCooldown : 0,
-    resourceState: {
-      value: typeof state.resourceState?.value === "number" ? state.resourceState.value : defaultState.resourceState.value,
-      max: typeof state.resourceState?.max === "number" ? state.resourceState.max : defaultState.resourceState.max,
-    },
-    customState: state.customState && typeof state.customState === "object" ? { ...state.customState } : {},
+    resourceType,
+    fireCooldown,
+    resourceState: { value, max },
+    customState: { ...customState },
   };
 }
 
 export function normalizeWeaponLoadoutRuntime(loadout: any): WeaponLoadoutRuntime {
-  if (!loadout || !Array.isArray(loadout.slots) || loadout.slots.length === 0) {
-    return {
-      slots: [createWeaponRuntimeState("pistol")],
-      activeSlot: 0,
-      swapTimer: 0,
-    };
+  if (!loadout || typeof loadout !== "object") {
+    return { slots: [createWeaponRuntimeState("pistol")], activeSlot: 0, swapTimer: 0 };
   }
   
-  const s0 = normalizeWeaponRuntimeState(loadout.slots[0]);
-  const s1 = loadout.slots[1] ? normalizeWeaponRuntimeState(loadout.slots[1]) : undefined;
-  const activeSlot = (loadout.activeSlot === 1 && s1) ? 1 : 0;
+  let slots = loadout.slots;
+  if (!Array.isArray(slots) || slots.length === 0) {
+    slots = [createWeaponRuntimeState("pistol")];
+  }
+  
+  const s0 = normalizeWeaponRuntimeState(slots[0]);
+  let s1 = slots[1] ? normalizeWeaponRuntimeState(slots[1]) : undefined;
+  
+  let activeSlot = Number(loadout.activeSlot);
+  if (!Number.isFinite(activeSlot) || (activeSlot !== 0 && activeSlot !== 1)) activeSlot = 0;
+  if (activeSlot === 1 && !s1) activeSlot = 0;
+  
+  let swapTimer = Number(loadout.swapTimer);
+  if (!Number.isFinite(swapTimer) || swapTimer < 0) swapTimer = 0;
   
   return {
     slots: s1 ? [s0, s1] : [s0],
-    activeSlot,
-    swapTimer: typeof loadout.swapTimer === "number" ? loadout.swapTimer : 0,
+    activeSlot: activeSlot as 0 | 1,
+    swapTimer,
   };
 }
 
