@@ -21,7 +21,7 @@ import { getWeaponBalanceMetrics, hasWeaponUtility } from "../src/game/WeaponBal
 import {
   FINAL_GLOBAL_STAGE,
   STAGES_PER_CHAPTER,
-  getDifficultyStageIndex,
+  getDifficultyStageIndexFromGlobalStage,
   migrateLegacyGlobalStage,
 } from "../src/game/RunProgress";
 
@@ -41,10 +41,10 @@ Object.defineProperty(globalThis, "localStorage", { value: storage, configurable
 assert.equal(SETTINGS_VERSION, 9);
 assert.equal(STAGES_PER_CHAPTER, 4);
 assert.equal(FINAL_GLOBAL_STAGE, 16);
-assert.equal(getDifficultyStageIndex(4), 5);
-assert.equal(getDifficultyStageIndex(8), 10);
-assert.equal(getDifficultyStageIndex(12), 15);
-assert.equal(getDifficultyStageIndex(16), 20);
+assert.equal(getDifficultyStageIndexFromGlobalStage(4), 5);
+assert.equal(getDifficultyStageIndexFromGlobalStage(8), 10);
+assert.equal(getDifficultyStageIndexFromGlobalStage(12), 15);
+assert.equal(getDifficultyStageIndexFromGlobalStage(16), 20);
 assert.equal(migrateLegacyGlobalStage(5), 4);
 assert.equal(migrateLegacyGlobalStage(6), 5);
 assert.equal(migrateLegacyGlobalStage(20), 16);
@@ -258,8 +258,8 @@ assert.equal(resourcePlayer.weaponLoadout.slots[resourcePlayer.weaponLoadout.act
 assert.equal(WeaponController.formatEnergyCost(0.8), "0.8");
 assert.equal(WeaponController.formatEnergyCost(2), "2");
 assert.equal(ENEMY_ATTACK_RATE_MULTIPLIER, 0.7);
-assert.ok(Math.abs(getStageDifficulty({ globalStageIndex: 1, routeDepth: 1 }).attackCooldownMultiplier - 1 / 0.7) < 1e-9);
-const finalDifficulty = getStageDifficulty({ globalStageIndex: FINAL_GLOBAL_STAGE, routeDepth: 4 });
+assert.ok(Math.abs(getStageDifficulty({ globalStageIndex: 1, routeDepth: 1, stageWithinNode: 1 }).attackCooldownMultiplier - 1 / 0.7) < 1e-9);
+const finalDifficulty = getStageDifficulty({ globalStageIndex: FINAL_GLOBAL_STAGE, routeDepth: 4, stageWithinNode: 4 });
 assert.equal(finalDifficulty.difficultyStageIndex, 20);
 assert.ok(finalDifficulty.healthMultiplier > 3);
 

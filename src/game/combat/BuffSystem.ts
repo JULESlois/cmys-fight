@@ -1,5 +1,5 @@
 import { createSeededRandom, normalizeSeed } from "../Random";
-import { getDifficultyStageIndex } from "../RunProgress";
+import { getDifficultyStageIndex, type RunProgress } from "../RunProgress";
 import { CHARACTERS } from "../data/characters";
 import { MAX_PLAYER_MANA, type Player } from "../entities/Player";
 import type { PowerSeries } from "../PowerSeries";
@@ -177,9 +177,9 @@ export class BuffSystem {
     return player.buffs.includes(id);
   }
 
-  static rollChoices(seed: number, owned: BuffId[], count = 3, globalStageIndex = 1): BuffId[] {
+  static rollChoices(seed: number, owned: BuffId[], count = 3, progress: Pick<RunProgress, "routeDepth" | "stageWithinNode"> = { routeDepth: 1, stageWithinNode: 1 }): BuffId[] {
     const random = createSeededRandom(normalizeSeed(seed));
-    const difficultyStageIndex = getDifficultyStageIndex(globalStageIndex);
+    const difficultyStageIndex = getDifficultyStageIndex(progress);
     const candidates = ALL_BUFF_IDS.filter(id =>
       !owned.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex
     );

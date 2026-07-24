@@ -113,12 +113,12 @@ for (const series of ["vanguard", "aether", "phoenix"] as const) {
   assert.equal(seriesBuffs.filter(buff => buff.series === series).length, 3);
 }
 for (let seed = 1; seed <= 80; seed++) {
-  const early = BuffSystem.rollChoices(seed, [], 3, 5);
+  const early = BuffSystem.rollChoices(seed, [], 3, { routeDepth: 2, stageWithinNode: 1 });
   assert.equal(early.some(id => BUFFS[id].series !== undefined), false);
 }
 const latePool = new Set<BuffId>();
 for (let seed = 1; seed <= 800; seed++) {
-  for (const id of BuffSystem.rollChoices(seed, [], 3, FINAL_GLOBAL_STAGE)) latePool.add(id);
+  for (const id of BuffSystem.rollChoices(seed, [], 3, { routeDepth: 4, stageWithinNode: 4 })) latePool.add(id);
 }
 for (const buff of seriesBuffs) assert.ok(latePool.has(buff.id));
 

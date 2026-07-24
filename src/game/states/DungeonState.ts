@@ -702,7 +702,7 @@ export class DungeonState extends GameState {
       return;
     }
     const seed = hashSeed(floor.seed, `buff:${currentRoom.id}:${this.player.buffs.join(",")}`);
-    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3, floor.globalStageIndex);
+    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3, floor);
     if (options.length === 0) {
       floor.buffChoiceCompleted = true;
       return;
@@ -724,7 +724,7 @@ export class DungeonState extends GameState {
       const roomId = floor.buffChoiceRoomId ?? "unknown";
       const excluded = [...this.player.buffs, ...this.buffSelection];
       const seed = hashSeed(floor.seed, `buff-reroll:${roomId}:${rerollCount}:${this.player.buffs.join(",")}`);
-      const options = BuffSystem.rollChoices(seed, excluded, 3, floor.globalStageIndex);
+      const options = BuffSystem.rollChoices(seed, excluded, 3, floor);
       if (options.length > 0) {
         this.player.buffRerollsRemaining--;
         floor.buffChoiceRerollCount = rerollCount;

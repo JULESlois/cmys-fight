@@ -43,7 +43,7 @@ export class EnvironmentSystem {
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? stage.seed, `environment:${type}`));
     const walkableTiles = mapData.filter(tile => !isSolid(tile)).length;
     const walkableRatio = walkableTiles / Math.max(1, mapData.length);
-    const stageGroups = 2 + Math.min(2, Math.floor(getDifficultyStageIndex(stage.globalStageIndex) / 6));
+    const stageGroups = 2 + Math.min(2, Math.floor(getDifficultyStageIndex(stage) / 6));
     const groupCount = room.type === "boss"
       ? 4
       : walkableRatio < 0.5 ? 1

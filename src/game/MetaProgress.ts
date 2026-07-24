@@ -2,7 +2,7 @@ import { createDefaultMetaUpgrades, normalizeMetaUpgrades, type MetaUpgradeLevel
 import { createDefaultCodex, normalizeCodex, type CodexProgress } from "./Codex";
 import { isAchievementId, type AchievementId } from "./AchievementSystem";
 import { isChallengeId, type ChallengeId } from "./ChallengeSystem";
-import { getDifficultyStageIndex, migrateLegacyGlobalStage } from "./RunProgress";
+import { getDifficultyStageIndex, getDifficultyStageIndexFromGlobalStage, migrateLegacyGlobalStage } from "./RunProgress";
 import { createDefaultHubProgress, normalizeHubProgress, type HubProgress } from "./hub/HubProgress";
 
 export interface MetaProgress {
@@ -129,7 +129,7 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
   unlock(meta.unlockedCharacters, "nanally", "Nanally");
   unlock(meta.unlockedStarterWeapons, "colucci_claws", "Collins Heavy Fists");
 
-  const difficultyStage = getDifficultyStageIndex(meta.highestStage);
+  const difficultyStage = getDifficultyStageIndexFromGlobalStage(meta.highestStage);
   if (difficultyStage >= 5 || meta.currency >= 30) {
     unlock(meta.unlockedStarterWeapons, "shotgun", "Rusty Shotgun");
   }

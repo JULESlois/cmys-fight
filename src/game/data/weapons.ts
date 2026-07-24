@@ -2,7 +2,7 @@ import { getWeaponArtOffsets } from "./weaponArt";
 
 import type { StatusEffectId } from "../combat/StatusEffectSystem";
 import type { PowerSeries } from "../PowerSeries";
-import { getDifficultyStageIndex } from "../RunProgress";
+import { getDifficultyStageIndex, getDifficultyStageIndexFromGlobalStage } from "../RunProgress";
 
 export type WeaponCategory = "sidearm" | "shotgun" | "energy" | "rifle" | "smg" | "launcher" | "special" | "sword" | "yoyo" | "magic" | "summon";
 export type WeaponRarity = "common" | "uncommon" | "rare" | "legendary" | "myth";
@@ -703,7 +703,7 @@ export function rollAvailableWeapon(
   const fallback = available[0] ?? WEAPONS.pistol;
   if (pool.length === 0) return fallback;
 
-  const stage = getDifficultyStageIndex(globalStageIndex);
+  const stage = getDifficultyStageIndexFromGlobalStage(globalStageIndex);
   const weights = pool.map(weapon => {
     const base = WEAPON_ROLL_WEIGHTS[context][weapon.rarity];
     if (weapon.rarity === "myth") return base * (1 + Math.max(0, stage - 12) * 0.1);

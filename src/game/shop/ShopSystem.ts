@@ -4,7 +4,7 @@ import type { Player } from "../entities/Player";
 import type { Room, StageData } from "../FloorGenerator";
 import { createSeededRandom, hashSeed, normalizeSeed } from "../Random";
 import { WeaponController } from "../combat/WeaponController";
-import { getDifficultyStageIndex } from "../RunProgress";
+import { getDifficultyStageIndex, getDifficultyStageIndexFromGlobalStage } from "../RunProgress";
 
 export type ShopItemKind = "weapon" | "buff";
 
@@ -60,7 +60,7 @@ const SHOP_BUFF_RARITY_WEIGHT: Record<BuffRarity, number> = {
 };
 
 function stagePrice(base: number, stage: StageData, discount = 0): number {
-  const multiplier = 1 + Math.max(0, getDifficultyStageIndex(stage.globalStageIndex) - 1) * 0.07;
+  const multiplier = 1 + Math.max(0, getDifficultyStageIndexFromGlobalStage(stage.globalStageIndex) - 1) * 0.07;
   const safeDiscount = Math.max(0, Math.min(0.5, discount));
   return Math.max(1, Math.round(base * multiplier * (1 - safeDiscount)));
 }
@@ -131,7 +131,7 @@ export class ShopSystem {
     const random = createSeededRandom(seed);
 
     const availableBuffSlots = Math.max(0, BuffSystem.MAX_BUFFS - player.buffs.length);
-    const difficultyStageIndex = getDifficultyStageIndex(stage.globalStageIndex);
+    const difficultyStageIndex = getDifficultyStageIndexFromGlobalStage(stage.globalStageIndex);
     const buffPool = (Object.keys(BUFFS) as BuffId[]).filter(id =>
       !player.buffs.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex
     );

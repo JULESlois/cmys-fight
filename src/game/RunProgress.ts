@@ -145,6 +145,12 @@ export function getDifficultyStageIndex(progress: Pick<RunProgress, "routeDepth"
   return (progress.routeDepth - 1) * 5 + [1, 2, 4, 5][Math.max(0, Math.min(3, progress.stageWithinNode - 1))];
 }
 
+export function getDifficultyStageIndexFromGlobalStage(globalStageIndex: number): number {
+  const chapterIndex = Math.floor((globalStageIndex - 1) / STAGES_PER_CHAPTER) + 1;
+  const stageIndex = ((globalStageIndex - 1) % STAGES_PER_CHAPTER) + 1;
+  return getDifficultyStageIndex({ routeDepth: chapterIndex, stageWithinNode: stageIndex });
+}
+
 export function isBossStage(progress: Pick<RunProgress, "stageWithinNode">): boolean {
   return progress.stageWithinNode === STAGES_PER_CHAPTER;
 }
