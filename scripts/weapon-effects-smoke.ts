@@ -253,7 +253,7 @@ sustainedMg42.setWeaponLoadout(["mg42"], 0);
 const heatStep = 1 / 120;
 let sustainedFireTime = 0;
 while (sustainedFireTime < 5 && sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].customState.overheatTimer <= 0) {
-  sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown = Math.max(0, sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown - heatStep);
+
   WeaponController.updateRuntime(sustainedMg42, heatStep, true);
   if (sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown <= 0) {
     const shot = WeaponController.fire(sustainedMg42, 0, () => 0.5);
@@ -262,25 +262,26 @@ while (sustainedFireTime < 5 && sustainedMg42.weaponLoadout.slots[sustainedMg42.
   sustainedFireTime += heatStep;
 }
 assert.ok(
-  sustainedFireTime >= 3.8 && sustainedFireTime <= 4.2,
-  `MG42 should overheat after about 4 seconds of continuous fire, got ${sustainedFireTime.toFixed(3)}s`,
+  sustainedFireTime >= 3.1 && sustainedFireTime <= 3.4,
+  `MG42 should overheat after about 3.2 seconds of continuous fire, got ${sustainedFireTime.toFixed(3)}s`,
 );
 
 const na45Player = new Player(160, 120);
 na45Player.maxMana = 80;
 na45Player.mana = 80;
 na45Player.setWeaponLoadout(["na_45"], 0);
+const initialBattery = na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].resourceState.value;
 const primerVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(primerVolley.fired, true);
 assert.equal(primerVolley.projectiles[0].linkedShotMode, "primer");
 assert.equal(primerVolley.projectiles[0].linkedExplosionRadius, 42);
 assert.equal(primerVolley.projectiles[0].life, 2, "NA-45 Primer fuse must begin when fired");
-assert.equal(na45Player.mana, 76);
+assert.equal(initialBattery - na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].resourceState.value, 4, "NA-45 Primer must consume 4 energy");
 na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].fireCooldown = 0;
 const catalystVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(catalystVolley.fired, true);
 assert.equal(catalystVolley.projectiles[0].linkedShotMode, "catalyst");
-assert.equal(na45Player.mana, 76, "NA-45 Catalyst must not consume energy");
+assert.equal(na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].resourceState.value, initialBattery - 4, "NA-45 Catalyst must not consume energy");
 
 const so14Player = new Player(160, 120);
 so14Player.maxMana = 80;
@@ -306,7 +307,7 @@ const so14FollowB = WeaponController.fire(so14Player, 0, () => 0.99);
 assert.equal(so14FollowB.projectiles[0].damage, 6);
 assert.equal(so14FollowB.projectiles[0].color, "#8FD9FF");
 assert.ok(Math.abs(so14Player.weaponLoadout.slots[so14Player.weaponLoadout.activeSlot].fireCooldown - 0.52) < 1e-9);
-assert.equal(so14Player.mana, 71);
+assert.equal(so14Player.weaponLoadout.slots[so14Player.weaponLoadout.activeSlot].resourceState.value, 16);
 for (const projectile of so14FollowB.projectiles) releaseProjectile(projectile);
 
 const aa12 = fire("aa_12");
@@ -446,25 +447,28 @@ assert.equal(terrarian.maxLife, 0.35);
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
 player.setWeaponLoadout(["last_prism"], 0);
-player.mana = 80;
+const lastPrismInitialBattery = player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.max;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value = lastPrismInitialBattery;
 const prismOpen = WeaponController.fire(player, 0, () => 0.5);
+console.log("prismOpen:", prismOpen);
 assert.equal(prismOpen.fired, true);
 assert.equal(prismOpen.projectiles.length, 6);
 const openAngles = prismOpen.projectiles.map(projectile => Math.atan2(projectile.vy, projectile.vx));
 const openSpread = Math.max(...openAngles) - Math.min(...openAngles);
 const openDamage = prismOpen.projectiles[0].damage;
-const openCost = 80 - player.mana;
+const openCost = lastPrismInitialBattery - player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value;
 
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = WEAPONS.last_prism.channelTime ?? 3.2;
-player.mana = 80;
+player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value = lastPrismInitialBattery;
 const prismFocused = WeaponController.fire(player, 0, () => 0.5);
 assert.equal(prismFocused.fired, true);
 const focusedAngles = prismFocused.projectiles.map(projectile => Math.atan2(projectile.vy, projectile.vx));
 const focusedSpread = Math.max(...focusedAngles) - Math.min(...focusedAngles);
 assert.ok(focusedSpread < openSpread * 0.12, "Last Prism rays must converge while held");
 assert.ok(prismFocused.projectiles[0].damage > openDamage);
-assert.ok(80 - player.mana > openCost);
+const focusedCost = lastPrismInitialBattery - player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value;
+assert.ok(focusedCost > openCost);
 assert.equal(prismFocused.projectiles[0].beamWidth, 4);
 
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;

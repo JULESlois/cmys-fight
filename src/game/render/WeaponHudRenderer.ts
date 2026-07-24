@@ -140,7 +140,8 @@ export class WeaponHudRenderer {
     const resourceVal = activeSlotData?.resourceState.value ?? 0;
     const resourceMax = activeSlotData?.resourceState.max ?? 0;
     
-    ctx.fillStyle = activeSlotData && ResourceStrategies[activeSlotData.resourceType] && !ResourceStrategies[activeSlotData.resourceType].canFire(activeSlotData, activeWeapon, player) 
+    const energyCost = WeaponController.getEnergyCost(player, activeWeapon.id);
+    ctx.fillStyle = activeSlotData && ResourceStrategies[activeSlotData.resourceType] && !ResourceStrategies[activeSlotData.resourceType].canFire(activeSlotData, activeWeapon, player, energyCost) 
       ? UI_COLORS.red 
       : UI_COLORS.white;
       

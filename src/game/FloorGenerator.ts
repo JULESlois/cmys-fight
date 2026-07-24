@@ -14,6 +14,25 @@ import { createRandomSeed, createSeededRandom, hashSeed, type RandomSource } fro
 import type { BuffId } from "./combat/BuffSystem";
 import type { ActiveStatusEffect } from "./combat/StatusEffectSystem";
 import type { ShopItem } from "./shop/ShopSystem";
+import type { WorldExitDefinition } from "./world/WorldNodes";
+
+export interface ExitRequirement {
+  type: "fragments" | "corruption" | "no_hit";
+  value: number;
+}
+
+export interface ExitDestination {
+  worldNodeId: string;
+  kind: "normal" | "hidden" | "challenge" | "performance";
+  state: "hidden" | "locked" | "available" | "chosen" | "skipped";
+  requirement?: ExitRequirement;
+  preview: {
+    threat: number;
+    enemyTags: string[];
+    hazardTags: string[];
+    rewardTags: string[];
+  };
+}
 
 export type ThemeId = "forest" | "dungeon" | "snow" | "lava";
 
@@ -29,7 +48,7 @@ export interface Room {
   rewardGenerated?: boolean;
   interactionCompleted?: boolean;
   hiddenDiscovered?: boolean;
-  exitDestinations?: { worldNodeId: string; kind: string }[];
+  exitDestination?: ExitDestination;
   weaponChest?: {
     kind: "treasure" | "boss";
     x: number;
@@ -82,6 +101,7 @@ export interface StageData {
   globalStageIndex: number;
   isBossStage: boolean;
   hardMode: boolean;
+  worldNodeId?: string;
   challengeId?: import("./ChallengeSystem").ChallengeId;
   challengeKey?: string;
   seed: number;
@@ -205,6 +225,21 @@ function assignTemplates(stage: StageData, random: RandomSource): void {
   }
 }
 
+function buildExitDestination(exitDef: WorldExitDefinition): ExitDestination {
+  const destNode = WORLD_NODES[exitDef.worldNodeId];
+  return {
+    worldNodeId: exitDef.worldNodeId,
+    kind: exitDef.kind as "normal" | "hidden" | "challenge" | "performance",
+    state: "available",
+    preview: {
+      threat: 3, // Default threat level
+      enemyTags: destNode?.enemyTags || [],
+      hazardTags: destNode?.hazardTags || [],
+      rewardTags: destNode?.rewardBiases || [],
+    }
+  };
+}
+
 function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, random: RandomSource): StageData {
   const start = createRoom(0, 0, "start");
   const preparation = createRoom(1, 0, "treasure");
@@ -220,18 +255,18 @@ function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, ra
   const node = WORLD_NODES[progress.worldNodeId];
   const exits = node?.exits ?? [];
   if (exits.length >= 2) {
-    const exitA = createRoom(3, -1, "exit");
-    exitA.exitDestinations = [{ worldNodeId: exits[0].worldNodeId, kind: exits[0].kind }];
+    const exitA = createRoom(3, 0, "exit");
+    exitA.exitDestination = buildExitDestination(exits[0]);
     exitA.cleared = true;
-    const exitB = createRoom(3, 1, "exit");
-    exitB.exitDestinations = [{ worldNodeId: exits[1].worldNodeId, kind: exits[1].kind }];
+    const exitB = createRoom(2, 1, "exit");
+    exitB.exitDestination = buildExitDestination(exits[1]);
     exitB.cleared = true;
     rooms.push(exitA, exitB);
     mapGrid[exitA.id] = exitA;
     mapGrid[exitB.id] = exitB;
   } else if (exits.length === 1) {
     const exitRoom = createRoom(3, 0, "exit");
-    exitRoom.exitDestinations = [{ worldNodeId: exits[0].worldNodeId, kind: exits[0].kind }];
+    exitRoom.exitDestination = buildExitDestination(exits[0]);
     exitRoom.cleared = true;
     rooms.push(exitRoom);
     mapGrid[exitRoom.id] = exitRoom;
@@ -249,6 +284,7 @@ function createBossStage(progress: RunProgress, theme: ThemeId, seed: number, ra
     routeDepth: progress.routeDepth,
     stageWithinNode: progress.stageWithinNode,
     globalStageIndex: getGlobalStageIndex(progress.routeDepth, progress.stageWithinNode),
+    worldNodeId: progress.worldNodeId,
     isBossStage: true,
     hardMode: progress.hardMode,
     challengeId: progress.challengeId,
@@ -315,10 +351,13 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
   const deadEnds = rooms.filter(room => room.type !== "start" && getDoorCount(room) === 1);
   const endpointPool = deadEnds.length > 0 ? deadEnds : rooms.filter(room => room.type !== "start");
   const maxDistance = Math.max(...endpointPool.map(room => distances[room.id] ?? 0));
+  const node = WORLD_NODES[progress.worldNodeId];
+  const exits = node?.exits ?? [];
   const furthest = endpointPool.filter(room => (distances[room.id] ?? 0) === maxDistance);
   const exitRoom = choose(furthest, random);
   exitRoom.type = "exit";
   exitRoom.cleared = true;
+  connectDoors(rooms, mapGrid);
 
   const specialDeadEnds = deadEnds.filter(room => room !== exitRoom);
   const remainingCombat = rooms.filter(room => room.type === "combat");
@@ -357,6 +396,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
     routeDepth: progress.routeDepth,
     stageWithinNode: progress.stageWithinNode,
     globalStageIndex: getGlobalStageIndex(progress.routeDepth, progress.stageWithinNode),
+    worldNodeId: progress.worldNodeId,
     isBossStage: false,
     hardMode: progress.hardMode,
     challengeId: progress.challengeId,

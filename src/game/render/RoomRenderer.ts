@@ -165,8 +165,90 @@ function drawLavaStructureTile(ctx: CanvasRenderingContext2D, mapData: number[],
   }
 }
 
+function drawCoolingCanalStructureTile(ctx: CanvasRenderingContext2D, mapData: number[], x: number, y: number, hash: number): void {
+  const tx = x * TILE_SIZE;
+  const ty = y * TILE_SIZE;
+  const left = isTile(mapData, x - 1, y, TILE_STRUCTURE);
+  const right = isTile(mapData, x + 1, y, TILE_STRUCTURE);
+  ctx.fillStyle = "#263B46";
+  ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+  ctx.fillStyle = "#486270";
+  ctx.fillRect(tx + (left ? 0 : 1), ty + 2, TILE_SIZE - (left ? 0 : 1) - (right ? 0 : 1), 13);
+  ctx.fillStyle = "#6B8A99";
+  ctx.fillRect(tx + (left ? 0 : 2), ty + 2, TILE_SIZE - (left ? 0 : 2) - (right ? 0 : 2), 3);
+  ctx.fillStyle = "#1E2A32";
+  ctx.fillRect(tx + 3, ty + 6, 10, 7);
+  ctx.fillStyle = "#8F5C43";
+  ctx.fillRect(tx + 4, ty + 7, 3, 5);
+  ctx.fillRect(tx + 9, ty + 7, 3, 5);
+  ctx.fillStyle = "#B37050";
+  ctx.fillRect(tx + 4, ty + 7, 1, 5);
+  ctx.fillRect(tx + 9, ty + 7, 1, 5);
+  if (Math.floor(hash) % 4 === 0) {
+    ctx.fillStyle = "#A8E5FF";
+    ctx.fillRect(tx + 2, ty + 2, 4, 2);
+    ctx.fillRect(tx + 10, ty + 3, 2, 1);
+  }
+}
+
+function drawForgeCoreStructureTile(ctx: CanvasRenderingContext2D, mapData: number[], x: number, y: number, hash: number): void {
+  const tx = x * TILE_SIZE;
+  const ty = y * TILE_SIZE;
+  const left = isTile(mapData, x - 1, y, TILE_STRUCTURE);
+  const right = isTile(mapData, x + 1, y, TILE_STRUCTURE);
+  ctx.fillStyle = "#120202";
+  ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+  ctx.fillStyle = "#2D1010";
+  ctx.fillRect(tx + (left ? 0 : 1), ty + 2, TILE_SIZE - (left ? 0 : 1) - (right ? 0 : 1), 13);
+  ctx.fillStyle = "#4A2222";
+  ctx.fillRect(tx + (left ? 0 : 2), ty + 2, TILE_SIZE - (left ? 0 : 2) - (right ? 0 : 2), 3);
+  ctx.fillStyle = "#0A0101";
+  ctx.fillRect(tx + 3, ty + 6, 10, 7);
+  ctx.fillStyle = "#9C2200";
+  ctx.fillRect(tx + 5, ty + 8, 6, 3);
+  ctx.fillStyle = "#FF5500";
+  ctx.fillRect(tx + 6, ty + 9, 4, 1);
+  ctx.fillStyle = "#FFD500";
+  ctx.fillRect(tx + 7, ty + 9, 2, 1);
+  if (Math.floor(hash) % 3 === 0) {
+    ctx.fillStyle = "#220808";
+    ctx.fillRect(tx + 1, ty + 12, 14, 2);
+  }
+}
+
 function drawBreakableTile(ctx: CanvasRenderingContext2D, theme: string, tx: number, ty: number): void {
-  if (theme === "forest") {
+  const baseTheme = getBaseTheme(theme);
+  
+  if (theme === "sealed_library") {
+    // Stacked magic books
+    ctx.fillStyle = "#32254C";
+    ctx.fillRect(tx + 2, ty + 10, 12, 4);
+    ctx.fillStyle = "#D17CFF";
+    ctx.fillRect(tx + 3, ty + 11, 2, 2);
+    ctx.fillRect(tx + 7, ty + 12, 5, 1);
+    ctx.fillStyle = "#1E142F";
+    ctx.fillRect(tx + 3, ty + 6, 9, 4);
+    ctx.fillStyle = "#8F5C43";
+    ctx.fillRect(tx + 4, ty + 7, 7, 2);
+    ctx.fillStyle = "#100918";
+    ctx.fillRect(tx + 4, ty + 3, 10, 3);
+    ctx.fillStyle = "#782A9C";
+    ctx.fillRect(tx + 5, ty + 4, 3, 1);
+  } else if (theme === "ash_catacombs") {
+    // Pile of bones
+    ctx.fillStyle = "#8297A6";
+    ctx.fillRect(tx + 4, ty + 10, 8, 4);
+    ctx.fillStyle = "#AFAFB9";
+    ctx.fillRect(tx + 5, ty + 11, 3, 2);
+    ctx.fillRect(tx + 9, ty + 8, 4, 2);
+    ctx.fillStyle = "#52525A";
+    ctx.fillRect(tx + 6, ty + 6, 5, 5);
+    ctx.fillStyle = "#DDE5ED"; // Skull
+    ctx.fillRect(tx + 7, ty + 5, 4, 4);
+    ctx.fillStyle = "#26262B"; // Eyes
+    ctx.fillRect(tx + 8, ty + 6, 1, 1);
+    ctx.fillRect(tx + 10, ty + 6, 1, 1);
+  } else if (baseTheme === "forest") {
     ctx.fillStyle = "#243027";
     ctx.fillRect(tx + 2, ty + 4, 13, 12);
     ctx.fillStyle = "#6B4B31";
@@ -178,7 +260,7 @@ function drawBreakableTile(ctx: CanvasRenderingContext2D, theme: string, tx: num
     ctx.fillRect(tx + 7, ty + 5, 2, 10);
     ctx.fillStyle = "#78A35B";
     ctx.fillRect(tx + 2, ty + 3, 5, 3);
-  } else if (theme === "dungeon") {
+  } else if (baseTheme === "dungeon") {
     ctx.fillStyle = "#111722";
     ctx.fillRect(tx + 3, ty + 3, 11, 13);
     ctx.fillStyle = "#4A5260";
@@ -190,7 +272,7 @@ function drawBreakableTile(ctx: CanvasRenderingContext2D, theme: string, tx: num
     ctx.fillStyle = "#C4C8C3";
     ctx.fillRect(tx + 7, ty + 8, 3, 2);
     ctx.fillRect(tx + 7, ty + 11, 3, 1);
-  } else if (theme === "snow") {
+  } else if (baseTheme === "snow") {
     ctx.fillStyle = "#183442";
     ctx.fillRect(tx + 2, ty + 4, 13, 12);
     ctx.fillStyle = "#76919B";
@@ -232,7 +314,6 @@ function drawForestFloorTile(
   ctx.fillStyle = variant === 0 ? "#566C50" : variant === 1 ? "#5B7053" : variant === 2 ? "#607458" : "#586D51";
   ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
 
-  // Large, readable material patches replace per-tile pepper noise.
   if (variant === 0) {
     ctx.fillStyle = "#455D43";
     ctx.fillRect(tx + 1, ty + 10, 7, 4);
@@ -256,7 +337,6 @@ function drawForestFloorTile(
     ctx.fillRect(tx + 2, ty + 12, 7, 2);
   }
 
-  // Grass clumps are sparse and directional, not random single-pixel static.
   if (Math.floor(hash) % 7 === 0) {
     ctx.fillStyle = "#86A95B";
     ctx.fillRect(tx + 4, ty + 7, 1, 5);
@@ -272,8 +352,6 @@ function drawForestFloorTile(
     ctx.fillRect(tx + 4, ty + 5, 1, 1);
   }
 
-  // Only a minority of tiles keep a faint seam. A full border around every
-  // cell made the clearing look like a checkerboard rather than soil.
   if (variant === 2) {
     ctx.fillStyle = "rgba(21, 37, 27, 0.11)";
     ctx.fillRect(tx + 3, ty + 15, 10, 1);
@@ -303,7 +381,6 @@ function drawForestStreamTile(
   ctx.fillStyle = "#8DD5C5";
   ctx.fillRect(tx + ((drift + 3) % 13), ty + 4, 2, 1);
 
-  // Bank pixels respond to neighbouring land, so water reads as a stream.
   ctx.fillStyle = "#3E543B";
   if (!isTile(mapData, tileX - 1, tileY, 3)) ctx.fillRect(tx, ty, 3, 16);
   if (!isTile(mapData, tileX + 1, tileY, 3)) ctx.fillRect(tx + 13, ty, 3, 16);
@@ -337,7 +414,6 @@ function drawForestWallTile(
   ctx.fillStyle = "#1B3026";
   ctx.fillRect(tx + 11, ty + 3, 3, 12);
 
-  // Vertical bark seams and roots create a continuous hedge/tree wall.
   ctx.fillStyle = "#5D4631";
   ctx.fillRect(tx + 5, ty + 4, 2, 12);
   if (Math.floor(hash) % 3 === 0) ctx.fillRect(tx + 10, ty + 7, 2, 9);
@@ -393,7 +469,6 @@ function drawDungeonFloorTile(
   ctx.fillStyle = bases[variant];
   ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
 
-  // Large crypt slabs replace the old per-cell dotted grid.
   ctx.fillStyle = variant % 2 === 0 ? "#414E64" : "#435066";
   if (variant === 0) {
     ctx.fillRect(tx + 1, ty + 2, 14, 5);
@@ -424,7 +499,6 @@ function drawDungeonFloorTile(
     ctx.fillRect(tx + 7, ty + 8, 2, 6);
   }
 
-  // Sparse bones, rivets and faded runes identify the material without noise.
   if (Math.floor(hash) % 13 === 0) {
     ctx.fillStyle = "#8F9A99";
     ctx.fillRect(tx + 4, ty + 11, 7, 2);
@@ -465,7 +539,6 @@ function drawDungeonAbyssTile(
   ctx.fillStyle = "#C584EC";
   ctx.fillRect(tx + ((drift + 2) % 13), ty + 5, 2, 1);
 
-  // Stone lips appear only on exposed edges, joining adjacent void cells.
   ctx.fillStyle = "#2D384A";
   if (!isTile(mapData, tileX - 1, tileY, 3)) ctx.fillRect(tx, ty, 3, 16);
   if (!isTile(mapData, tileX + 1, tileY, 3)) ctx.fillRect(tx + 13, ty, 3, 16);
@@ -547,7 +620,6 @@ function drawDungeonWallTile(
     ctx.fillRect(tx + 13, ty + 3, 1, 10);
   }
 
-  // Occasional iron bars break up long masonry runs.
   if (Math.floor(hash) % 19 === 0 && exposedTop) {
     ctx.fillStyle = "#121922";
     ctx.fillRect(tx + 4, ty + 3, 8, 12);
@@ -570,7 +642,6 @@ function drawSnowFloorTile(
   ctx.fillStyle = bases[variant];
   ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
 
-  // Broad wind-packed snow shelves replace the old bright speckled checkerboard.
   ctx.fillStyle = variant % 2 === 0 ? "#A7C2CB" : "#AEC7CE";
   if (variant === 0) {
     ctx.fillRect(tx + 1, ty + 1, 9, 4);
@@ -589,7 +660,6 @@ function drawSnowFloorTile(
     ctx.fillRect(tx + 1, ty + 10, 5, 4);
   }
 
-  // Blue ice breaks through only in a minority of tiles and follows stepped cracks.
   ctx.fillStyle = "#6D9FB5";
   if (variant === 0 || variant === 3) {
     ctx.fillRect(tx + 2, ty + 11, 9, 3);
@@ -604,7 +674,6 @@ function drawSnowFloorTile(
   }
 
   if (Math.floor(hash) % 13 === 0) {
-    // Paired boot prints establish scale and direction without noisy single pixels.
     ctx.fillStyle = "#789EAE";
     ctx.fillRect(tx + 4, ty + 4, 3, 5);
     ctx.fillRect(tx + 9, ty + 9, 3, 5);
@@ -612,7 +681,6 @@ function drawSnowFloorTile(
     ctx.fillRect(tx + 5, ty + 4, 1, 2);
     ctx.fillRect(tx + 10, ty + 9, 1, 2);
   } else if ((Math.floor(hash) + tx * 3 + ty * 5) % 43 === 0) {
-    // A buried quarantine marker ties the glacier to the sampler faction.
     ctx.fillStyle = "#557F91";
     ctx.fillRect(tx + 4, ty + 6, 8, 5);
     ctx.fillStyle = "#BFD7DC";
@@ -645,7 +713,6 @@ function drawSnowCrevasseTile(
   ctx.fillStyle = "#D8F6FA";
   ctx.fillRect(tx + ((drift + 2) % 13), ty + 4, 2, 1);
 
-  // Snow shelves and fractured ice appear only on exposed crevasse edges.
   const openLeft = isTile(mapData, tileX - 1, tileY, 3);
   const openRight = isTile(mapData, tileX + 1, tileY, 3);
   const openUp = isTile(mapData, tileX, tileY - 1, 3);
@@ -752,7 +819,6 @@ function drawLavaFloorTile(
   ctx.fillStyle = bases[variant];
   ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
 
-  // Broad basalt plates replace the legacy dotted checkerboard.
   ctx.fillStyle = variant % 2 === 0 ? "#4B3D48" : "#51404B";
   if (variant === 0) {
     ctx.fillRect(tx + 1, ty + 1, 10, 6);
@@ -771,7 +837,6 @@ function drawLavaFloorTile(
     ctx.fillRect(tx + 9, ty + 1, 6, 7);
   }
 
-  // Deep seams stay broad and stepped so the floor reads as cooled rock.
   ctx.fillStyle = "#251D27";
   if (variant === 0 || variant === 3) {
     ctx.fillRect(tx + 2, ty + 7, 11, 2);
@@ -784,7 +849,6 @@ function drawLavaFloorTile(
     ctx.fillRect(tx + 7, ty + 8, 2, 6);
   }
 
-  // Only a minority of seams retain heat; constant orange lines made enemies disappear.
   if (Math.floor(hash) % 9 === 0) {
     ctx.fillStyle = "#8E3427";
     ctx.fillRect(tx + 5, ty + 8, 2, 5);
@@ -793,7 +857,6 @@ function drawLavaFloorTile(
     ctx.fillRect(tx + 6, ty + 9, 1, 3);
     ctx.fillRect(tx + 7, ty + 12, 3, 1);
   } else if (Math.floor(hash) % 17 === 0) {
-    // Sparse forge rivets and slag chips imply an industrial volcanic complex.
     ctx.fillStyle = "#76636A";
     ctx.fillRect(tx + 4, ty + 4, 3, 3);
     ctx.fillRect(tx + 11, ty + 10, 2, 2);
@@ -803,6 +866,7 @@ function drawLavaFloorTile(
 }
 
 function drawLavaFlowTile(
+  // Riveted iron grating spans molten channels
   ctx: CanvasRenderingContext2D,
   mapData: number[],
   tileX: number,
@@ -830,7 +894,6 @@ function drawLavaFlowTile(
   const connectedUp = isTile(mapData, tileX, tileY - 1, 3);
   const connectedDown = isTile(mapData, tileX, tileY + 1, 3);
 
-  // Cooled slag lips appear only on exposed edges, joining lava cells into one river.
   ctx.fillStyle = "#2B222A";
   if (!connectedLeft) ctx.fillRect(tx, ty, 4, 16);
   if (!connectedRight) ctx.fillRect(tx + 12, ty, 4, 16);
@@ -895,7 +958,6 @@ function drawLavaWallTile(
     ctx.fillRect(tx + 2, ty, 3, 1);
     ctx.fillRect(tx + 10, ty, 3, 1);
     if (Math.floor(hash) % 3 === 0) {
-      // Clinker teeth make exposed tops feel heat-fractured, not snow-capped.
       ctx.fillStyle = "#2C2028";
       ctx.fillRect(tx + 4, ty + 3, 3, 5);
       ctx.fillRect(tx + 11, ty + 3, 2, 3);
@@ -923,7 +985,6 @@ function drawLavaWallTile(
     ctx.fillRect(tx + 13, ty + 3, 1, 10);
   }
 
-  // Occasional iron clamps tie long basalt walls to the foundry theme.
   if (Math.floor(hash) % 19 === 0 && exposedTop) {
     ctx.fillStyle = "#1B171D";
     ctx.fillRect(tx + 4, ty + 3, 8, 12);
@@ -933,6 +994,46 @@ function drawLavaWallTile(
     ctx.fillStyle = "#A1AAA7";
     ctx.fillRect(tx + 5, ty + 4, 1, 5);
   }
+}
+
+function drawCoolingCanalFloorTile(ctx: CanvasRenderingContext2D, x: number, y: number, hash: number): void {
+  ctx.fillStyle = "#7A95A3";
+  ctx.fillRect(x + 1, y + 1, 14, 14);
+  ctx.fillStyle = "#658292";
+  ctx.fillRect(x + 2, y + 2, 12, 12);
+  ctx.fillStyle = "#95B1C0";
+  ctx.fillRect(x + 3, y + 3, 8, 1);
+  ctx.fillRect(x + 3, y + 5, 6, 1);
+  if (Math.floor(hash) % 3 === 0) {
+    ctx.fillStyle = "#B0CBD8";
+    ctx.fillRect(x + 4, y + 4, 2, 1);
+  }
+}
+
+function drawForgeCoreFloorTile(ctx: CanvasRenderingContext2D, x: number, y: number, hash: number): void {
+  ctx.fillStyle = "#4A1A1A";
+  ctx.fillRect(x + 1, y + 1, 14, 14);
+  ctx.fillStyle = "#300D0D";
+  ctx.fillRect(x + 2, y + 2, 12, 12);
+  ctx.fillStyle = "#230808";
+  ctx.fillRect(x + 14, y + 1, 1, 14);
+  ctx.fillRect(x + 1, y + 14, 14, 1);
+  if (Math.floor(hash) % 2 === 0) {
+    ctx.fillStyle = "#D94200";
+    ctx.fillRect(x + 3, y + 3, 2, 1);
+    ctx.fillRect(x + 4, y + 4, 4, 1);
+    ctx.fillRect(x + 8, y + 5, 2, 2);
+    ctx.fillStyle = "#FFB300";
+    ctx.fillRect(x + 5, y + 4, 2, 1);
+  }
+}
+
+function getBaseTheme(theme: string): string {
+  if (theme === "overgrown_archive") return "forest";
+  if (theme === "sealed_library" || theme === "sealed_armory" || theme === "ash_catacombs" || theme === "deep_prison" || theme === "deep_archive") return "dungeon";
+  if (theme === "cooling_canal" || theme === "observatory") return "snow";
+  if (theme === "forge_core") return "lava";
+  return theme;
 }
 
 export class RoomRenderer {
@@ -983,8 +1084,8 @@ export class RoomRenderer {
   public drawBackground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string) {
     const mapData = getMapData(currentRoom, theme);
 
-    // 1. DRAW BASE FLOOR
-    const p = PALETTES[theme] || PALETTES["forest"];
+    const baseTheme = getBaseTheme(theme);
+    const p = PALETTES[theme] || PALETTES[baseTheme] || PALETTES["forest"];
     ctx.fillStyle = p.bg;
     ctx.fillRect(0, 0, 320, 240);
 
@@ -996,13 +1097,17 @@ export class RoomRenderer {
 
         if (tileId === 0 || tileId === 2 || tileId === TILE_PROP || tileId === TILE_BREAKABLE || tileId === TILE_STRUCTURE) {
           const hash = tileHash(x, y);
-          if (theme === "forest") {
+          if (theme === "cooling_canal") {
+            drawCoolingCanalFloorTile(ctx, tx, ty, hash);
+          } else if (theme === "forge_core") {
+            drawForgeCoreFloorTile(ctx, tx, ty, hash);
+          } else if (baseTheme === "forest") {
             drawForestFloorTile(ctx, tx, ty, hash);
-          } else if (theme === "dungeon") {
+          } else if (baseTheme === "dungeon") {
             drawDungeonFloorTile(ctx, tx, ty, hash);
-          } else if (theme === "snow") {
+          } else if (baseTheme === "snow") {
             drawSnowFloorTile(ctx, tx, ty, hash);
-          } else if (theme === "lava") {
+          } else if (baseTheme === "lava") {
             drawLavaFloorTile(ctx, tx, ty, hash);
           } else {
             ctx.fillStyle = p.floor;
@@ -1031,6 +1136,7 @@ export class RoomRenderer {
                 ctx.fillRect(tx + 4, ty + 8, 7, 1);
               }
             } else if (theme === "lava") {
+        // ruptured foundry crucible
               ctx.fillStyle = "rgba(12, 8, 20, 0.42)";
               ctx.fillRect(tx + 2, ty + 7, 5, 1);
               ctx.fillRect(tx + 6, ty + 7, 1, 5);
@@ -1050,21 +1156,22 @@ export class RoomRenderer {
           if (theme === "forest") {
             drawForestStreamTile(ctx, mapData, x, y, this.windTime);
           } else if (theme === "snow") {
+        // ruptured glacier containment seal
             drawSnowCrevasseTile(ctx, mapData, x, y, this.windTime);
           } else if (theme === "dungeon") {
+        // broken ossuary seal
             drawDungeonAbyssTile(ctx, mapData, x, y, this.windTime);
           } else if (theme === "lava") {
+        // ruptured foundry crucible
             drawLavaFlowTile(ctx, mapData, x, y, this.windTime);
           }
         }
       }
     }
 
-    // Room identity decals make special rooms readable without relying on the HUD.
     if (currentRoom?.type === "boss") {
       if (theme === "forest") {
-        // A root-ring altar gives the forest bosses a physical arena rather
-        // than the same abstract square decal used by every chapter.
+        // Root veins curve around the hollow center
         ctx.fillStyle = "#33442F";
         ctx.fillRect(144, 84, 32, 4);
         ctx.fillRect(132, 88, 56, 8);
@@ -1087,8 +1194,6 @@ export class RoomRenderer {
         ctx.fillRect(151, 111, 18, 18);
         ctx.fillStyle = "#42523A";
         ctx.fillRect(154, 114, 12, 12);
-        // Root veins curve around the hollow center. Avoid a literal cross,
-        // which visually merged with the guardian's exposed core.
         ctx.fillStyle = "#725136";
         ctx.fillRect(143, 108, 14, 4);
         ctx.fillRect(153, 104, 7, 8);
@@ -1134,8 +1239,7 @@ export class RoomRenderer {
         ctx.fillRect(138, 100, 1, 1);
         ctx.fillRect(186, 137, 1, 1);
       } else if (theme === "dungeon") {
-        // A broken ossuary seal anchors the crypt bosses without reusing the
-        // generic square arena decal from the other chapters.
+        // broken ossuary seal
         ctx.fillStyle = "#141C2A";
         ctx.fillRect(144, 82, 32, 4);
         ctx.fillRect(132, 86, 56, 6);
@@ -1153,7 +1257,6 @@ export class RoomRenderer {
         ctx.fillRect(136, 142, 48, 7);
         ctx.fillRect(148, 149, 24, 4);
 
-        // The center is an offset burial well, not a literal cross.
         ctx.fillStyle = "#0E141E";
         ctx.fillRect(145, 103, 30, 4);
         ctx.fillRect(138, 107, 44, 8);
@@ -1177,7 +1280,6 @@ export class RoomRenderer {
         ctx.fillRect(153, 120, 14, 2);
         ctx.fillRect(157, 124, 6, 2);
 
-        // Sarcophagus fragments radiate around the seal at uneven angles.
         const coffins = [
           [151, 88, 18, 7], [181, 98, 8, 18], [183, 132, 7, 16], [153, 145, 16, 7],
           [130, 135, 8, 16], [126, 104, 7, 17],
@@ -1192,7 +1294,6 @@ export class RoomRenderer {
           else ctx.fillRect(x + 1, y + 2, 2, h - 4);
         }
 
-        // Broken chains arc around the burial well and leave its center open.
         const chainLinks = [
           [140, 100, 6, 3], [134, 106, 3, 6], [132, 128, 6, 3], [139, 139, 6, 3],
           [175, 99, 6, 3], [184, 112, 3, 6], [180, 136, 6, 3], [173, 142, 6, 3],
@@ -1206,7 +1307,6 @@ export class RoomRenderer {
           ctx.fillRect(x + 1, y + 1, Math.max(1, w - 2), Math.max(1, h - 2));
         }
 
-        // Bone piles and candles make the space read as an ossuary altar.
         ctx.fillStyle = "#A8B0AC";
         for (const [x, y] of [[123, 99], [193, 123], [126, 145], [188, 151], [143, 154]] as const) {
           ctx.fillRect(x, y, 7, 2);
@@ -1222,8 +1322,7 @@ export class RoomRenderer {
           ctx.fillRect(x + 1, y - 3, 1, 2);
         }
       } else if (theme === "snow") {
-        // A ruptured glacier containment seal anchors both the titan and the
-        // sampler faction without competing with their pale silhouettes.
+        // ruptured glacier containment seal
         ctx.fillStyle = "#355C70";
         ctx.fillRect(146, 82, 28, 4);
         ctx.fillRect(132, 86, 56, 6);
@@ -1245,7 +1344,6 @@ export class RoomRenderer {
         ctx.fillRect(127, 112, 66, 5);
         ctx.fillRect(133, 135, 54, 4);
 
-        // Offset frozen chamber keeps the center readable beneath a large boss.
         ctx.fillStyle = "#23485E";
         ctx.fillRect(146, 104, 30, 4);
         ctx.fillRect(139, 108, 44, 8);
@@ -1267,7 +1365,6 @@ export class RoomRenderer {
         ctx.fillRect(157, 116, 7, 2);
         ctx.fillRect(153, 120, 14, 2);
 
-        // Broken quarantine bands and sample canisters ring the seal.
         ctx.fillStyle = "#B8CED3";
         for (const [x, y, w, h] of [[150, 88, 20, 6], [183, 101, 7, 17], [180, 137, 8, 14], [151, 145, 18, 6], [129, 134, 7, 15], [126, 105, 7, 16]] as const) {
           ctx.fillRect(x, y, w, h);
@@ -1287,7 +1384,6 @@ export class RoomRenderer {
           ctx.fillRect(x + 2, y + 1, 2, 3);
         }
 
-        // Jagged ice fractures radiate out, avoiding a generic cross-shaped rune.
         ctx.fillStyle = "#D9F2F5";
         ctx.fillRect(142, 109, 9, 2);
         ctx.fillRect(139, 106, 4, 5);
@@ -1298,8 +1394,7 @@ export class RoomRenderer {
         ctx.fillRect(171, 133, 9, 2);
         ctx.fillRect(179, 135, 3, 5);
       } else if (theme === "lava") {
-        // A ruptured foundry crucible anchors both the inferno reactor and the
-        // vat-horse production line without hiding their dark silhouettes.
+        // ruptured foundry crucible
         ctx.fillStyle = "#20181F";
         ctx.fillRect(146, 82, 28, 4);
         ctx.fillRect(132, 86, 56, 6);
@@ -1321,7 +1416,6 @@ export class RoomRenderer {
         ctx.fillRect(127, 112, 66, 5);
         ctx.fillRect(133, 135, 54, 4);
 
-        // Offset crucible well keeps the center readable under either large boss.
         ctx.fillStyle = "#3E1918";
         ctx.fillRect(146, 104, 30, 4);
         ctx.fillRect(139, 108, 44, 8);
@@ -1345,7 +1439,6 @@ export class RoomRenderer {
         ctx.fillStyle = "#FFE268";
         ctx.fillRect(159, 116, 3, 1);
 
-        // Broken smelting rails and vat terminals ring the crucible.
         for (const [x, y, w, h] of [[150, 88, 20, 6], [183, 101, 7, 17], [180, 137, 8, 14], [151, 145, 18, 6], [129, 134, 7, 15], [126, 105, 7, 16]] as const) {
           ctx.fillStyle = "#171318";
           ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
@@ -1366,7 +1459,6 @@ export class RoomRenderer {
           ctx.fillRect(x + 2, y + 5, 2, 2);
         }
 
-        // Jagged heat fractures radiate around, avoiding a generic cross rune.
         ctx.fillStyle = "#9E3320";
         ctx.fillRect(142, 109, 9, 2);
         ctx.fillRect(139, 106, 4, 5);
@@ -1419,7 +1511,6 @@ export class RoomRenderer {
       ctx.stroke();
     }
 
-    // Chapter materials continue across mandatory hazard crossings.
     for (let x = 0; x < MAP_WIDTH; x++) {
       const tileIdY10 = mapData[10 * MAP_WIDTH + x];
       if (tileIdY10 === 3 && (x === 9 || x === 10)) {
@@ -1438,7 +1529,7 @@ export class RoomRenderer {
           ctx.fillStyle = "#DFF1F3";
           ctx.fillRect(tx + 5, ty + 2, 5, 1);
         } else if (theme === "lava") {
-          // Riveted iron grating spans molten channels without looking like a wooden bridge.
+        // ruptured foundry crucible
           ctx.fillStyle = "#171319";
           ctx.fillRect(tx, ty - 1, TILE_SIZE, TILE_SIZE + 2);
           ctx.fillStyle = "#4C4F55";
@@ -1471,8 +1562,8 @@ export class RoomRenderer {
   public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, isLocked: boolean = false) {
     const mapData = getMapData(currentRoom, theme);
     const p = PALETTES[theme] || PALETTES["forest"];
+    const baseTheme = getBaseTheme(theme);
 
-    // 2. DRAW SHADOWS
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     for (let y = 0; y < MAP_HEIGHT; y++) {
       for (let x = 0; x < MAP_WIDTH; x++) {
@@ -1489,7 +1580,6 @@ export class RoomRenderer {
       }
     }
 
-    // 3. DRAW ENVIRONMENT & OBJECTS
     for (let y = 0; y < MAP_HEIGHT; y++) {
       for (let x = 0; x < MAP_WIDTH; x++) {
         const tileId = mapData[y * MAP_WIDTH + x];
@@ -1501,10 +1591,13 @@ export class RoomRenderer {
           if (theme === "forest") {
             drawForestWallTile(ctx, mapData, x, y, hash);
           } else if (theme === "dungeon") {
+        // broken ossuary seal
             drawDungeonWallTile(ctx, mapData, x, y, hash);
           } else if (theme === "snow") {
+        // ruptured glacier containment seal
             drawSnowWallTile(ctx, mapData, x, y, hash);
           } else if (theme === "lava") {
+        // ruptured foundry crucible
             drawLavaWallTile(ctx, mapData, x, y, hash);
           } else {
             ctx.fillStyle = p.wall;
@@ -1523,6 +1616,7 @@ export class RoomRenderer {
                 ctx.fillRect(tx + 10, ty + 4, 2, 2);
               }
             } else if (theme === "lava") {
+        // ruptured foundry crucible
               ctx.fillStyle = "rgba(0,0,0,0.5)";
               if (hash % 10 > 5) {
                 ctx.fillRect(tx + 4, ty, 2, 12);
@@ -1534,16 +1628,37 @@ export class RoomRenderer {
               }
             }
           }
-        } else if (tileId === TILE_STRUCTURE) {
+        } else if (isTile(mapData, x, y, TILE_STRUCTURE)) {
           const hash = tileHash(x, y);
-          if (theme === "forest") drawForestStructureTile(ctx, mapData, x, y, hash);
-          else if (theme === "dungeon") drawDungeonStructureTile(ctx, mapData, x, y, hash);
-          else if (theme === "snow") drawSnowStructureTile(ctx, mapData, x, y, hash);
-          else drawLavaStructureTile(ctx, mapData, x, y, hash);
+          if (theme === "cooling_canal") drawCoolingCanalStructureTile(ctx, mapData, x, y, hash);
+          else if (theme === "forge_core") drawForgeCoreStructureTile(ctx, mapData, x, y, hash);
+          else if (baseTheme === "lava") drawLavaStructureTile(ctx, mapData, x, y, hash);
+          else if (baseTheme === "snow") drawSnowStructureTile(ctx, mapData, x, y, hash);
+          else if (baseTheme === "dungeon") drawDungeonStructureTile(ctx, mapData, x, y, hash);
+          else drawForestStructureTile(ctx, mapData, x, y, hash);
         } else if (tileId === TILE_BREAKABLE) {
           drawBreakableTile(ctx, theme, tx, ty);
         } else if (tileId === TILE_PROP) {
-          if (theme === "forest") {
+          if (theme === "sealed_library") {
+            // Sealed stone pillar
+            ctx.fillStyle = "#221932";
+            ctx.fillRect(tx + 4, ty + 2, 8, 14);
+            ctx.fillStyle = "#362852";
+            ctx.fillRect(tx + 5, ty + 3, 6, 12);
+            ctx.fillStyle = "#782A9C";
+            ctx.fillRect(tx + 6, ty + 6, 4, 4);
+            ctx.fillStyle = "#E0A8FF";
+            ctx.fillRect(tx + 7, ty + 7, 2, 2);
+          } else if (theme === "ash_catacombs") {
+            // Tombstone
+            ctx.fillStyle = "#26262B";
+            ctx.fillRect(tx + 4, ty + 3, 8, 13);
+            ctx.fillStyle = "#3B3B42";
+            ctx.fillRect(tx + 5, ty + 4, 6, 12);
+          ctx.fillStyle = "#AFAFB9";
+            ctx.fillRect(tx + 7, ty + 6, 2, 4);
+            ctx.fillRect(tx + 6, ty + 7, 4, 2);
+          } else if (baseTheme === "forest") {
             // A small carved spirit lantern replaces the generic metal post.
             ctx.fillStyle = "#17271F";
             ctx.fillRect(tx + 4, ty + 5, 9, 11);
@@ -1560,7 +1675,7 @@ export class RoomRenderer {
             ctx.fillRect(tx + 7, ty + 8, 3, 4);
             ctx.fillStyle = "#FFF3A6";
             ctx.fillRect(tx + 8, ty + 8, 1, 2);
-          } else if (theme === "dungeon") {
+          } else if (baseTheme === "dungeon") {
             // Iron reliquary brazier with a contained violet soul flame.
             ctx.fillStyle = "#111824";
             ctx.fillRect(tx + 3, ty + 4, 11, 12);
@@ -1583,7 +1698,7 @@ export class RoomRenderer {
             ctx.fillRect(tx + 2, ty + 2, 13, 3);
             ctx.fillStyle = "#66737D";
             ctx.fillRect(tx + 4, ty + 3, 9, 1);
-          } else if (theme === "snow") {
+          } else if (baseTheme === "snow") {
             // Survey beacon: a steel tripod cages a cold cyan signal core.
             ctx.fillStyle = "#29495A";
             ctx.fillRect(tx + 4, ty + 4, 9, 12);
@@ -1606,6 +1721,7 @@ export class RoomRenderer {
             ctx.fillRect(tx + 4, ty + 2, 9, 2);
             ctx.fillRect(tx + 6, ty + 1, 5, 2);
           } else if (theme === "lava") {
+        // ruptured foundry crucible
             // Pressure vent: an iron cage contains a pulsing furnace core.
             ctx.fillStyle = "#171219";
             ctx.fillRect(tx + 3, ty + 4, 11, 12);
@@ -1691,13 +1807,16 @@ export class RoomRenderer {
           ctx.fillStyle = "rgba(232, 130, 164, 0.8)";
           ctx.fillRect(-Math.max(1, Math.round(p.size)), -1, Math.max(2, Math.round(p.size * 2)), 2);
         } else if (theme === "snow") {
+        // ruptured glacier containment seal
           ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
           const flake = Math.max(1, Math.round(p.size));
           ctx.fillRect(-Math.floor(flake / 2), -Math.floor(flake / 2), flake, flake);
         } else if (theme === "lava") {
+        // ruptured foundry crucible
           ctx.fillStyle = "rgba(243, 156, 18, 0.8)";
           ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
         } else if (theme === "dungeon") {
+        // broken ossuary seal
           // Slow rectangular dust and soul motes suit the still crypt air.
           const mote = Math.max(1, Math.round(p.size / 2));
           ctx.fillStyle = "rgba(164, 101, 199, 0.45)";

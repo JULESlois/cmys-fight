@@ -71,8 +71,8 @@ export function normalizeRunStats(value: unknown, progress: RunProgress): RunSta
     kills: Math.max(0, Math.floor(Number(raw.kills) || 0)),
     eliteKills: Math.max(0, Math.floor(Number(raw.eliteKills) || 0)),
     bossKills: Math.max(0, Math.floor(Number(raw.bossKills) || 0)),
-    highestStage: Math.max(1, Math.floor(Number(raw.highestStage) || progress.globalStageIndex)),
-    stagesCleared: Math.max(0, Math.floor(Number(raw.stagesCleared) || progress.stagesCleared)),
+    highestStage: Math.max(1, Math.floor(Number(raw.highestStage) || 1)),
+    stagesCleared: Math.max(0, Math.floor(Number(raw.stagesCleared) || 0)),
     weaponsUsed: Array.isArray(raw.weaponsUsed)
       ? [...new Set(raw.weaponsUsed.filter(value => typeof value === "string"))]
       : [],

@@ -12,7 +12,7 @@ import { getMapData, getRoomTemplate, isSolid, MAP_HEIGHT, MAP_WIDTH } from "../
 import { EncounterFactory } from "../src/game/EncounterFactory";
 
 const themes: EnemyTheme[] = ["forest", "dungeon", "snow", "lava"];
-assert.equal(Object.keys(ENEMIES).length, 36);
+assert.equal(Object.keys(ENEMIES).length, 66);
 for (const theme of themes) {
   assert.equal(getEnemyPool(theme, undefined, 1).length, 3, `${theme} stage 1 pool`);
   assert.equal(getEnemyPool(theme, undefined, 2).length, 5, `${theme} stage 2 pool`);
@@ -153,7 +153,9 @@ for (let globalStage = 1; globalStage <= FINAL_GLOBAL_STAGE; globalStage++) {
 for (const theme of themes) {
   const chapterIndex = themes.indexOf(theme) + 1;
   for (let sample = 1; sample <= 120; sample++) {
-    const stage = generateStage(createRunProgressFromGlobalStage((chapterIndex - 1) * STAGES_PER_CHAPTER + 3), seeded(sample * 37 + chapterIndex));
+    const progress = createRunProgressFromGlobalStage((chapterIndex - 1) * STAGES_PER_CHAPTER + 3);
+    progress.worldNodeId = theme;
+    const stage = generateStage(progress, seeded(sample * 37 + chapterIndex));
     const room = stage.rooms.find(candidate => candidate.type === "combat");
     if (!room) continue;
     room.encounterSeed = sample * 7919;
@@ -164,7 +166,9 @@ for (const theme of themes) {
 
   const bossStageIndex = chapterIndex * STAGES_PER_CHAPTER;
   for (let sample = 1; sample <= 80; sample++) {
-    const stage = generateStage(createRunProgressFromGlobalStage(bossStageIndex), seeded(sample * 101 + chapterIndex));
+    const progress = createRunProgressFromGlobalStage(bossStageIndex);
+    progress.worldNodeId = theme;
+    const stage = generateStage(progress, seeded(sample * 101 + chapterIndex));
     const room = stage.rooms.find(candidate => candidate.type === "boss")!;
     room.encounterSeed = sample * 104729 + chapterIndex;
     const first = EncounterFactory.create({ stage, room, template: getRoomTemplate(room) });

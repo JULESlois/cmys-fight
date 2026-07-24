@@ -1,5 +1,7 @@
 import { PALETTES } from "../data/palettes";
 import { PORTAL_FRAME_COLLISION_GEOMETRY } from "../dungeon/RoomObjectCollision";
+import { WORLD_NODES } from "../world/WorldNodes";
+import type { ExitDestination } from "../FloorGenerator";
 
 export type PortalState = "spawning" | "idle" | "hovered" | "activating";
 export type PortalRenderPart = "energy" | "supports";
@@ -150,13 +152,20 @@ function stateParameters(portal: { state: PortalState; timer: number }, time: nu
 export class PortalRenderer {
   static drawPortalPart(
     ctx: CanvasRenderingContext2D,
-    portal: { x: number; y: number; state: PortalState; timer: number },
+    portal: { x: number; y: number; state: PortalState; timer: number; destination?: ExitDestination },
     time: number,
     theme: string,
     part: PortalRenderPart,
   ): void {
     if (!portal) return;
-    const energyColor = PALETTES[theme]?.portal ?? "#00FFFF";
+    let actualTheme = theme;
+    if (portal.destination) {
+      const node = WORLD_NODES[portal.destination.worldNodeId];
+      if (node && node.theme) {
+        actualTheme = node.theme;
+      }
+    }
+    const energyColor = PALETTES[actualTheme]?.portal ?? "#00FFFF";
     const highlight = portal.state === "hovered" || portal.state === "activating" ? "#FFFFFF" : "#D8FFFF";
     const params = stateParameters(portal, time);
     const phase = Math.floor(time * params.speed);
@@ -184,7 +193,7 @@ export class PortalRenderer {
 
   static drawPortal(
     ctx: CanvasRenderingContext2D,
-    portal: { x: number; y: number; state: PortalState; timer: number },
+    portal: { x: number; y: number; state: PortalState; timer: number; destination?: ExitDestination },
     time: number,
     theme: string,
   ): void {

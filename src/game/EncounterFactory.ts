@@ -94,7 +94,8 @@ export class EncounterFactory {
     const difficulty = getStageDifficulty(stage);
     const seed = room.encounterSeed ?? hashSeed(stage.seed, room.id);
     const random = createSeededRandom(seed);
-    const theme = getThemeForChapter(stage.routeDepth);
+    const baseTheme = getThemeForChapter(stage.routeDepth);
+    const theme = (stage.worldNodeId as any) ?? baseTheme;
 
     if (room.type === "boss") {
       const point = template.enemySpawnPoints[0] ?? { x: 10, y: 6 };

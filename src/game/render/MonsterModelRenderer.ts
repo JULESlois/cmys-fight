@@ -56,6 +56,37 @@ const NATIVE_PIXEL_MODELS = new Set([
   "heat_smith_drone",
   "inferno_core",
   "vat_horse_prime",
+  // Phase 5
+  "cursed_tome",
+  "arcane_guard",
+  "ink_summoner",
+  "glyph_sniper",
+  "tome_lord",
+  "forge_mech",
+  "slag_crawler",
+  "anvil_guard",
+  "forge_prime",
+  "crystal_drifter",
+  "canal_warden",
+  "cryo_lancer",
+  "glacier_director",
+  "iron_sentinel",
+  "siege_mortar",
+  "armory_commander",
+  "war_engine",
+  "void_moth",
+  "star_caster",
+  "astral_shade",
+  "star_sentinel",
+  "ashen_revenant",
+  "ash_lobber",
+  "bone_sovereign",
+  "chain_specter",
+  "prison_brute",
+  "warden_alpha",
+  "archive_construct",
+  "void_cultist",
+  "echo_mind",
 ]);
 
 export function usesNativeMonsterArt(enemyId: string): boolean {
@@ -385,6 +416,189 @@ function drawAuthoredMonsterDetail(
       if (bossPhase >= 2) drawDetailPixels(ctx, "#D35836", [[-34, -38 + bob], [-29, -18 + bob], [17, -18 + bob]]);
       if (bossPhase >= 3) drawDetailPixels(ctx, "#FFF0A0", [[-5, -52 + bob], [-22, -4 + bob], [18, -6 + bob]]);
       break;
+
+    // === PHASE 5 MONSTER DETAILS ===
+
+    case "cursed_tome":
+      drawDetailPixels(ctx, "#F0D8FF", [[-5, -18 + bob, 3, 1], [4, -17 + bob, 2, 1], [-7, -9 + bob], [6, -8 + bob]]);
+      drawDetailPixels(ctx, "#9B59B6", [[-8, -14 + bob, 1, 7], [7, -13 + bob, 1, 6], [-3, -24 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#D17CFF", [[-1, -16 + bob, 3, 3], [-11, -5 + bob], [10, -4 + bob]]);
+      break;
+    case "arcane_guard":
+      drawDetailPixels(ctx, "#C4A0D8", [[-10, -15 + bob, 4, 1], [3, -16 + bob, 5, 1], [-9, -30 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#782A9C", [[-7, -9 + bob, 1, 7], [5, -8 + bob, 1, 6]]);
+      drawDetailPixels(ctx, "#E8D0F5", [[-3, -22 + bob], [3, -21 + bob], [13, -28 + bob]]);
+      break;
+    case "ink_summoner":
+      drawDetailPixels(ctx, "#9B59B6", [[-7, -14 + bob, 1, 9], [5, -12 + bob, 1, 8], [-5, -28 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#E0D0F0", [[9, -24 + bob, 7, 1], [12, -19 + bob], [14, -8 + bob, 1, 5]]);
+      drawDetailPixels(ctx, "#C39BD3", [[-2, -20 + bob], [3, -20 + bob], [13, -22 + bob]]);
+      break;
+    case "glyph_sniper":
+      drawDetailPixels(ctx, "#D7BDE2", [[-7, -26 + bob, 5, 1], [5, -24 + bob, 3, 1], [19, -17 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#7D3C98", [[-9, -14 + bob, 1, 9], [6, -13 + bob, 1, 8], [12, -15 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#F0C3F7", [[-3, -20 + bob], [3, -20 + bob], [24, -15 + bob]]);
+      break;
+    case "tome_lord":
+      drawDetailPixels(ctx, "#7D3C98", [[-19, -35 + bob, 2, 16], [16, -34 + bob, 2, 14], [-17, -57 + bob, 8, 1]]);
+      drawDetailPixels(ctx, "#F0D0FF", [[-14, -50 + bob, 4, 1], [8, -49 + bob, 4, 1], [-4, -38 + bob, 8, 1]]);
+      drawDetailPixels(ctx, "#E8B8FF", [[-2, -15 + bob, 4, 6], [-10, -44 + bob], [11, -44 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#C39BD3", [[-31, -48 + bob], [28, -45 + bob], [-27, -9 + bob], [28, -7 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFFFFF", [[-4, -72 + bob, 8, 1], [-44, -16 + bob], [44, -14 + bob]]);
+      break;
+
+    case "forge_mech":
+      drawDetailPixels(ctx, "#C75A3A", [[-11, -14 + bob, 4, 1], [5, -15 + bob, 4, 1], [-10, -27 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#8E8A85", [[-8, -23 + bob, 3, 1], [8, -20 + bob, 3, 1], [15, -12 + bob]]);
+      drawDetailPixels(ctx, "#FFE46B", [[-2, -7 + bob], [15, -10 + bob], [24, -5 + bob]]);
+      break;
+    case "slag_crawler":
+      drawDetailPixels(ctx, "#FF6B20", [[-9, -10 + bob, 3, 1], [-1, -13 + bob], [5, -8 + bob, 2, 1], [11, -11 + bob]]);
+      drawDetailPixels(ctx, "#3A1A1A", [[-10, -4 + bob, 4, 1], [2, -4 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#FFE36B", [[-2, -5 + bob], [14, -12 + bob], [21, -5 + bob]]);
+      break;
+    case "anvil_guard":
+      drawDetailPixels(ctx, "#A03028", [[-12, -14 + bob, 5, 1], [4, -15 + bob, 5, 1], [-8, -30 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#7A7575", [[-10, -22 + bob, 3, 1], [9, -20 + bob, 3, 1], [18, -25 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#FFE36A", [[-1, -8 + bob], [20, -26 + bob], [25, -21 + bob]]);
+      break;
+    case "forge_prime":
+      drawDetailPixels(ctx, "#A83428", [[-22, -36 + bob, 8, 1], [13, -32 + bob, 7, 1], [-20, -8 + bob, 6, 1], [16, -4 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#7A7776", [[-24, -19 + bob], [23, -16 + bob], [-12, -50 + bob], [13, -48 + bob]]);
+      drawDetailPixels(ctx, "#FFE46C", [[-9, -21 + bob], [8, -18 + bob], [-22, -9 + bob], [20, -34 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#D05A32", [[-34, -40 + bob], [33, -39 + bob], [-30, 9 + bob], [29, 8 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFF3A2", [[-16, -31 + bob], [14, -8 + bob], [-3, -55 + bob, 6, 1]]);
+      break;
+
+    case "crystal_drifter": {
+      const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+      drawDetailPixels(ctx, "#D8F4FF", [[-5, -20 + hover], [4, -21 + hover], [-2, -27 + hover], [3, -7 + hover]]);
+      drawDetailPixels(ctx, "#5EA8C1", [[-7, -16 + hover, 1, 5], [7, -15 + hover, 1, 4]]);
+      drawDetailPixels(ctx, "#AEE6FF", [[0, -16 + hover, 2, 1], [-8, -4 + hover], [8, -3 + hover]]);
+      break;
+    }
+    case "canal_warden":
+      drawDetailPixels(ctx, "#A0D4E8", [[-10, -15 + bob, 4, 1], [3, -16 + bob, 5, 1], [-9, -29 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#2B6A82", [[-7, -9 + bob, 1, 7], [5, -8 + bob, 1, 6]]);
+      drawDetailPixels(ctx, "#D9F5FF", [[-3, -22 + bob], [3, -21 + bob], [13, -28 + bob]]);
+      break;
+    case "cryo_lancer":
+      drawDetailPixels(ctx, "#C5E8F5", [[-7, -27 + bob, 5, 1], [5, -25 + bob, 3, 1], [19, -17 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#3A7A90", [[-9, -14 + bob, 1, 9], [6, -13 + bob, 1, 8], [12, -16 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#85E5F2", [[-3, -21 + bob], [3, -21 + bob], [24, -16 + bob]]);
+      break;
+    case "glacier_director":
+      drawDetailPixels(ctx, "#C4E8F8", [[-18, -32 + bob, 2, 12], [15, -31 + bob, 2, 11], [-15, -53 + bob, 6, 1], [7, -51 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#1F6E8C", [[-22, -20 + bob, 4, 1], [11, -15 + bob, 4, 1], [-12, -4 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#E9FDFF", [[-6, -45 + bob], [6, -45 + bob], [-2, -18 + bob, 4, 1]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#AEE6FF", [[-29, -51 + bob], [25, -49 + bob], [-27, -26 + bob], [25, -24 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFFFFF", [[-4, -72 + bob, 7, 1], [-43, 8 + bob], [43, 6 + bob]]);
+      break;
+
+    case "iron_sentinel":
+      drawDetailPixels(ctx, "#C8D0D2", [[-11, -15 + bob, 5, 1], [4, -16 + bob, 5, 1], [-10, -30 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#5A6770", [[-8, -8 + bob, 1, 7], [6, -7 + bob, 1, 6]]);
+      drawDetailPixels(ctx, "#E2EAE9", [[-3, -21 + bob], [4, -22 + bob], [13, -28 + bob]]);
+      break;
+    case "siege_mortar":
+      drawDetailPixels(ctx, "#9DA5A6", [[-12, -14 + bob, 5, 1], [5, -13 + bob, 5, 1], [-10, -25 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#596366", [[-10, -20 + bob, 3, 1], [10, -18 + bob, 3, 1], [18, -24 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#D5D8D8", [[-2, -8 + bob], [20, -27 + bob], [26, -22 + bob]]);
+      break;
+    case "armory_commander":
+      drawDetailPixels(ctx, "#AABFC9", [[-8, -18 + bob, 4, 1], [4, -16 + bob, 4, 1], [-10, -10 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#6F8490", [[-11, -12 + bob, 1, 7], [8, -11 + bob, 1, 6], [-4, -7 + bob, 8, 1]]);
+      drawDetailPixels(ctx, "#C8E0E9", [[-6, -13 + bob, 4, 2], [5, -11 + bob, 3, 1], [14, -15 + bob], [-16, -14 + bob]]);
+      break;
+    case "war_engine":
+      drawDetailPixels(ctx, "#A0ADB0", [[-21, -37 + bob, 8, 1], [13, -33 + bob, 7, 1], [-22, -8 + bob, 6, 1], [17, -4 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#6F797A", [[-24, -20 + bob], [22, -16 + bob], [-14, -51 + bob], [15, -49 + bob]]);
+      drawDetailPixels(ctx, "#D8E2E2", [[-10, -22 + bob], [9, -18 + bob], [-21, -10 + bob], [20, -36 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#758387", [[-34, -41 + bob], [33, -40 + bob], [-32, 8 + bob], [30, 9 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#EAEEEE", [[-16, -32 + bob], [14, -9 + bob], [-4, -56 + bob, 7, 1]]);
+      break;
+
+    case "void_moth": {
+      const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+      drawDetailPixels(ctx, "#F0DCF8", [[-14, -22 + hover, 4, 1], [12, -21 + hover, 4, 1], [-12, -10 + hover, 3, 1], [11, -9 + hover, 3, 1]]);
+      drawDetailPixels(ctx, "#8B6499", [[-9, -17 + hover], [8, -16 + hover], [-2, -27 + hover, 4, 1]]);
+      drawDetailPixels(ctx, "#D2B4DE", [[-1, -18 + hover, 2, 2], [-17, -15 + hover], [17, -14 + hover]]);
+      break;
+    }
+    case "star_caster":
+      drawDetailPixels(ctx, "#BAD4E8", [[-8, -17 + bob, 4, 1], [4, -15 + bob, 2, 1], [-8, -36 + bob], [-3, -39 + bob], [4, -38 + bob]]);
+      drawDetailPixels(ctx, "#5B8FAB", [[-6, -11 + bob, 1, 8], [4, -10 + bob, 1, 7]]);
+      drawDetailPixels(ctx, "#E8F4FF", [[-2, -22 + bob], [3, -22 + bob], [13, -32 + bob]]);
+      break;
+    case "astral_shade": {
+      const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
+      drawDetailPixels(ctx, "#D0E8F5", [[-5, -21 + hover], [4, -22 + hover], [-2, -28 + hover], [3, -8 + hover]]);
+      drawDetailPixels(ctx, "#4478A0", [[-7, -17 + hover, 1, 5], [7, -16 + hover, 1, 4]]);
+      drawDetailPixels(ctx, "#8AC8E8", [[0, -17 + hover, 2, 1], [-8, -5 + hover], [8, -4 + hover]]);
+      break;
+    }
+    case "star_sentinel":
+      drawDetailPixels(ctx, "#7BBAD4", [[-18, -31 + bob, 2, 11], [14, -30 + bob, 2, 10], [-14, -52 + bob, 5, 1], [7, -50 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#1A5E80", [[-21, -19 + bob, 4, 1], [10, -14 + bob, 4, 1], [-11, -3 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#C8E8FF", [[-5, -44 + bob], [5, -44 + bob], [-1, -17 + bob, 3, 1]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#5DADE2", [[-28, -50 + bob], [24, -48 + bob], [-26, -25 + bob], [24, -23 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#FFFFFF", [[-3, -71 + bob, 6, 1], [-42, 7 + bob], [42, 5 + bob]]);
+      break;
+
+    case "ashen_revenant":
+      drawDetailPixels(ctx, "#A0ACAD", [[-9, -12 + bob, 5, 1], [-1, -10 + bob, 1, 4], [8, -15 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#B0BBBB", [[-7, -16 + bob], [1, -16 + bob], [15, -11 + bob], [19, -11 + bob]]);
+      drawDetailPixels(ctx, "#D0D8D8", [[-10, -8 + bob], [5, -8 + bob], [0, -7 + bob]]);
+      break;
+    case "ash_lobber":
+      drawDetailPixels(ctx, "#7E8D90", [[-11, -18 + bob, 1, 12], [8, -17 + bob, 1, 10], [-8, -29 + bob, 7, 1]]);
+      drawDetailPixels(ctx, "#9EABAC", [[-6, -25 + bob, 3, 1], [4, -24 + bob, 3, 1], [17, -15 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#C0CAC9", [[-1, -12 + bob, 3, 3], [21, -9 + bob], [-14, -7 + bob]]);
+      break;
+    case "bone_sovereign":
+      drawDetailPixels(ctx, "#8A9898", [[-21, -37 + bob, 7, 1], [13, -33 + bob, 6, 1], [-19, -8 + bob, 5, 1], [13, -4 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#C0CECE", [[-24, -20 + bob], [22, -16 + bob], [-13, -50 + bob], [11, -48 + bob]]);
+      drawDetailPixels(ctx, "#E2ECEC", [[-10, -23 + bob], [8, -20 + bob], [-22, -11 + bob], [19, -36 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#A8B8B8", [[-34, -41 + bob], [33, -40 + bob], [-30, 8 + bob], [28, 7 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#F4FFFF", [[-15, -33 + bob], [12, -10 + bob], [-2, -55 + bob, 5, 1]]);
+      break;
+
+    case "chain_specter":
+      drawDetailPixels(ctx, "#CFE8F5", [[-5, -25 + bob, 3, 1], [4, -24 + bob, 2, 1], [-8, -11 + bob], [8, -10 + bob]]);
+      drawDetailPixels(ctx, "#4A7A91", [[-9, -17 + bob, 1, 8], [8, -16 + bob, 1, 7], [-3, -31 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#9FD9F5", [[-1, -18 + bob, 3, 3], [-14, -5 + bob], [13, -4 + bob]]);
+      break;
+    case "prison_brute":
+      drawDetailPixels(ctx, "#6E7E85", [[-10, -14 + bob, 5, 1], [3, -15 + bob, 4, 1], [-9, -27 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#3A4C56", [[-8, -8 + bob, 1, 7], [5, -8 + bob, 1, 6]]);
+      drawDetailPixels(ctx, "#8D9EA4", [[-3, -20 + bob], [4, -21 + bob], [13, -27 + bob]]);
+      break;
+    case "warden_alpha":
+      drawDetailPixels(ctx, "#2A3C46", [[-22, -36 + bob, 8, 1], [13, -32 + bob, 7, 1], [-20, -9 + bob, 5, 1], [15, -5 + bob, 4, 1]]);
+      drawDetailPixels(ctx, "#4F6570", [[-24, -19 + bob], [22, -15 + bob], [-13, -50 + bob], [12, -48 + bob]]);
+      drawDetailPixels(ctx, "#8AB0C0", [[-10, -21 + bob], [8, -18 + bob], [-20, -10 + bob], [19, -35 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#3A5566", [[-34, -41 + bob], [33, -40 + bob], [-30, 9 + bob], [29, 8 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#CBDCE5", [[-16, -31 + bob], [13, -9 + bob], [-3, -55 + bob, 6, 1]]);
+      break;
+
+    case "archive_construct":
+      drawDetailPixels(ctx, "#B09BC5", [[-11, -15 + bob, 5, 1], [4, -16 + bob, 5, 1], [-10, -29 + bob, 6, 1]]);
+      drawDetailPixels(ctx, "#7D5E9B", [[-8, -8 + bob, 1, 7], [5, -8 + bob, 1, 6]]);
+      drawDetailPixels(ctx, "#D8C8E8", [[-3, -21 + bob], [4, -22 + bob], [13, -28 + bob]]);
+      break;
+    case "void_cultist":
+      drawDetailPixels(ctx, "#9B68B2", [[-6, -8 + bob, 1, 8], [4, -7 + bob, 1, 6], [-6, -25 + bob, 3, 1]]);
+      drawDetailPixels(ctx, "#E8C8F8", [[-2, -20 + bob], [3, -20 + bob], [-1, -5 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#C878E3", [[-8, -12 + bob], [6, -10 + bob], [0, 2 + bob]]);
+      break;
+    case "echo_mind":
+      drawDetailPixels(ctx, "#6C3483", [[-22, -37 + bob, 8, 1], [14, -33 + bob, 8, 1], [-20, -9 + bob, 6, 1], [16, -5 + bob, 5, 1]]);
+      drawDetailPixels(ctx, "#9B59B6", [[-26, -21 + bob], [24, -17 + bob], [-14, -52 + bob], [14, -50 + bob]]);
+      drawDetailPixels(ctx, "#D7BDE2", [[-10, -23 + bob], [9, -19 + bob], [-23, -11 + bob], [21, -37 + bob]]);
+      if (bossPhase >= 2) drawDetailPixels(ctx, "#8E44AD", [[-36, -43 + bob], [35, -42 + bob], [-32, 9 + bob], [31, 8 + bob]]);
+      if (bossPhase >= 3) drawDetailPixels(ctx, "#F0E0FF", [[-17, -34 + bob], [15, -10 + bob], [-3, -58 + bob, 7, 1]]);
+      break;
+
   }
 }
 
@@ -2335,6 +2549,327 @@ const models: Record<string, ModelDraw> = {
       rect(ctx, "#FF7A20", 17, -8 + bob, 5, 10);
       rect(ctx, "#FFE36C", 18, -7 + bob, 2, 6);
     }
+  },
+
+  // === PHASE 5 MODELS ===
+
+  cursed_tome(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    rect(ctx, p.ink, -6, -12 + bob, 12, 14);
+    rect(ctx, p.dark, -5, -11 + bob, 10, 12);
+    rect(ctx, p.base, -4, -10 + bob, 8, 10);
+    rect(ctx, p.light, -2, -8 + bob, 4, 6);
+    drawAttackFrame(ctx, p, "orbit", stateFrame);
+  },
+  arcane_guard(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -6, 2, -2, _limbFrame);
+    rect(ctx, p.ink, -8, -18 + bob, 16, 16);
+    rect(ctx, p.dark, -7, -17 + bob, 14, 14);
+    rect(ctx, p.base, -6, -16 + bob, 12, 12);
+    eye(ctx, p, -2, -12 + bob);
+    drawAttackFrame(ctx, p, "charge", stateFrame);
+  },
+  ink_summoner(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -20 + bob, 14, 18);
+    rect(ctx, p.dark, -6, -19 + bob, 12, 16);
+    rect(ctx, p.base, -5, -18 + bob, 10, 14);
+    eye(ctx, p, -1, -14 + bob);
+    drawAttackFrame(ctx, p, "summon", stateFrame);
+  },
+  glyph_sniper(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -4, 0, -2, _limbFrame);
+    rect(ctx, p.ink, -6, -16 + bob, 12, 14);
+    rect(ctx, p.dark, -5, -15 + bob, 10, 12);
+    rect(ctx, p.base, -4, -14 + bob, 8, 10);
+    eye(ctx, p, 0, -10 + bob);
+    drawAttackFrame(ctx, p, "sniper", stateFrame);
+  },
+  tome_lord(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -18, -32 + bob, 36, 32);
+    rect(ctx, p.dark, -16, -30 + bob, 32, 28);
+    rect(ctx, p.base, -14, -28 + bob, 28, 24);
+    rect(ctx, p.light, -8, -20 + bob, 16, 8);
+    eye(ctx, p, -4, -18 + bob);
+    eye(ctx, p, 2, -18 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  forge_mech(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -7, 3, -2, _limbFrame);
+    rect(ctx, p.ink, -9, -20 + bob, 18, 18);
+    rect(ctx, p.dark, -8, -19 + bob, 16, 16);
+    rect(ctx, p.base, -7, -18 + bob, 14, 14);
+    eye(ctx, p, -3, -12 + bob);
+    drawAttackFrame(ctx, p, "melee", stateFrame);
+  },
+  slag_crawler(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    rect(ctx, p.ink, -8, -10 + bob, 16, 10);
+    rect(ctx, p.dark, -7, -9 + bob, 14, 8);
+    rect(ctx, p.base, -6, -8 + bob, 12, 6);
+    eye(ctx, p, -2, -6 + bob);
+    drawAttackFrame(ctx, p, "area", stateFrame);
+  },
+  anvil_guard(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -6, 2, -2, _limbFrame);
+    rect(ctx, p.ink, -9, -19 + bob, 18, 17);
+    rect(ctx, p.dark, -8, -18 + bob, 16, 15);
+    rect(ctx, p.base, -7, -17 + bob, 14, 13);
+    eye(ctx, p, -2, -12 + bob);
+    drawAttackFrame(ctx, p, "charge", stateFrame);
+  },
+  forge_prime(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -20, -34 + bob, 40, 34);
+    rect(ctx, p.dark, -18, -32 + bob, 36, 30);
+    rect(ctx, p.base, -16, -30 + bob, 32, 26);
+    rect(ctx, p.light, -10, -20 + bob, 20, 10);
+    eye(ctx, p, -5, -18 + bob);
+    eye(ctx, p, 3, -18 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  crystal_drifter(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    rect(ctx, p.ink, -5, -12 + bob, 10, 10);
+    rect(ctx, p.dark, -4, -11 + bob, 8, 8);
+    rect(ctx, p.base, -3, -10 + bob, 6, 6);
+    eye(ctx, p, -1, -8 + bob);
+    drawAttackFrame(ctx, p, "scatter", stateFrame);
+  },
+  canal_warden(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -16 + bob, 14, 14);
+    rect(ctx, p.dark, -6, -15 + bob, 12, 12);
+    rect(ctx, p.base, -5, -14 + bob, 10, 10);
+    eye(ctx, p, -1, -10 + bob);
+    drawAttackFrame(ctx, p, "melee", stateFrame);
+  },
+  cryo_lancer(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -4, 0, -2, _limbFrame);
+    rect(ctx, p.ink, -6, -18 + bob, 12, 16);
+    rect(ctx, p.dark, -5, -17 + bob, 10, 14);
+    rect(ctx, p.base, -4, -16 + bob, 8, 12);
+    eye(ctx, p, 0, -12 + bob);
+    drawAttackFrame(ctx, p, "sniper", stateFrame);
+  },
+  glacier_director(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -18, -32 + bob, 36, 32);
+    rect(ctx, p.dark, -16, -30 + bob, 32, 28);
+    rect(ctx, p.base, -14, -28 + bob, 28, 24);
+    rect(ctx, p.light, -8, -22 + bob, 16, 12);
+    eye(ctx, p, -4, -18 + bob);
+    eye(ctx, p, 2, -18 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  iron_sentinel(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -6, 2, -2, _limbFrame);
+    rect(ctx, p.ink, -8, -19 + bob, 16, 17);
+    rect(ctx, p.dark, -7, -18 + bob, 14, 15);
+    rect(ctx, p.base, -6, -17 + bob, 12, 13);
+    eye(ctx, p, -2, -12 + bob);
+    drawAttackFrame(ctx, p, "melee", stateFrame);
+  },
+  siege_mortar(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -16 + bob, 14, 14);
+    rect(ctx, p.dark, -6, -15 + bob, 12, 12);
+    rect(ctx, p.base, -5, -14 + bob, 10, 10);
+    eye(ctx, p, -1, -10 + bob);
+    drawAttackFrame(ctx, p, "lob", stateFrame);
+  },
+  armory_commander(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -18 + bob, 14, 16);
+    rect(ctx, p.dark, -6, -17 + bob, 12, 14);
+    rect(ctx, p.base, -5, -16 + bob, 10, 12);
+    eye(ctx, p, -1, -12 + bob);
+    drawAttackFrame(ctx, p, "support", stateFrame);
+  },
+  war_engine(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -22, -34 + bob, 44, 34);
+    rect(ctx, p.dark, -20, -32 + bob, 40, 30);
+    rect(ctx, p.base, -18, -30 + bob, 36, 26);
+    rect(ctx, p.light, -12, -22 + bob, 24, 12);
+    eye(ctx, p, -6, -18 + bob);
+    eye(ctx, p, 4, -18 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  void_moth(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    rect(ctx, p.ink, -5, -10 + bob, 10, 8);
+    rect(ctx, p.dark, -4, -9 + bob, 8, 6);
+    rect(ctx, p.base, -3, -8 + bob, 6, 4);
+    eye(ctx, p, -1, -7 + bob);
+    drawAttackFrame(ctx, p, "orbit", stateFrame);
+  },
+  star_caster(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -20 + bob, 14, 18);
+    rect(ctx, p.dark, -6, -19 + bob, 12, 16);
+    rect(ctx, p.base, -5, -18 + bob, 10, 14);
+    eye(ctx, p, -1, -14 + bob);
+    drawAttackFrame(ctx, p, "area", stateFrame);
+  },
+  astral_shade(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    rect(ctx, p.ink, -6, -14 + bob, 12, 12);
+    rect(ctx, p.dark, -5, -13 + bob, 10, 10);
+    rect(ctx, p.base, -4, -12 + bob, 8, 8);
+    eye(ctx, p, -2, -9 + bob);
+    drawAttackFrame(ctx, p, "charge", stateFrame);
+  },
+  star_sentinel(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -18, -30 + bob, 36, 30);
+    rect(ctx, p.dark, -16, -28 + bob, 32, 26);
+    rect(ctx, p.base, -14, -26 + bob, 28, 22);
+    rect(ctx, p.light, -8, -18 + bob, 16, 8);
+    eye(ctx, p, -4, -16 + bob);
+    eye(ctx, p, 2, -16 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  ashen_revenant(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -16 + bob, 14, 14);
+    rect(ctx, p.dark, -6, -15 + bob, 12, 12);
+    rect(ctx, p.base, -5, -14 + bob, 10, 10);
+    eye(ctx, p, -1, -10 + bob);
+    drawAttackFrame(ctx, p, "charge", stateFrame);
+  },
+  ash_lobber(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -16 + bob, 14, 14);
+    rect(ctx, p.dark, -6, -15 + bob, 12, 12);
+    rect(ctx, p.base, -5, -14 + bob, 10, 10);
+    eye(ctx, p, -1, -10 + bob);
+    drawAttackFrame(ctx, p, "lob", stateFrame);
+  },
+  bone_sovereign(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -18, -32 + bob, 36, 32);
+    rect(ctx, p.dark, -16, -30 + bob, 32, 28);
+    rect(ctx, p.base, -14, -28 + bob, 28, 24);
+    rect(ctx, p.light, -8, -20 + bob, 16, 8);
+    eye(ctx, p, -4, -18 + bob);
+    eye(ctx, p, 2, -18 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  chain_specter(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    rect(ctx, p.ink, -6, -16 + bob, 12, 14);
+    rect(ctx, p.dark, -5, -15 + bob, 10, 12);
+    rect(ctx, p.base, -4, -14 + bob, 8, 10);
+    eye(ctx, p, -2, -10 + bob);
+    drawAttackFrame(ctx, p, "area", stateFrame);
+  },
+  prison_brute(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -7, 3, -2, _limbFrame);
+    rect(ctx, p.ink, -9, -18 + bob, 18, 16);
+    rect(ctx, p.dark, -8, -17 + bob, 16, 14);
+    rect(ctx, p.base, -7, -16 + bob, 14, 12);
+    eye(ctx, p, -3, -12 + bob);
+    drawAttackFrame(ctx, p, "melee", stateFrame);
+  },
+  warden_alpha(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -20, -34 + bob, 40, 34);
+    rect(ctx, p.dark, -18, -32 + bob, 36, 30);
+    rect(ctx, p.base, -16, -30 + bob, 32, 26);
+    rect(ctx, p.light, -10, -20 + bob, 20, 10);
+    eye(ctx, p, -5, -18 + bob);
+    eye(ctx, p, 3, -18 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
+  },
+  archive_construct(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -6, 2, -2, _limbFrame);
+    rect(ctx, p.ink, -8, -19 + bob, 16, 17);
+    rect(ctx, p.dark, -7, -18 + bob, 14, 15);
+    rect(ctx, p.base, -6, -17 + bob, 12, 13);
+    eye(ctx, p, -2, -12 + bob);
+    drawAttackFrame(ctx, p, "melee", stateFrame);
+  },
+  void_cultist(ctx, p, _limbFrame, state, stateFrame) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const stride = state === "walk" ? [-1, 0, 1, 0][phase] : 0;
+    legs(ctx, p, -5, 1, -2, _limbFrame);
+    rect(ctx, p.ink, -7, -18 + bob, 14, 16);
+    rect(ctx, p.dark, -6, -17 + bob, 12, 14);
+    rect(ctx, p.base, -5, -16 + bob, 10, 12);
+    eye(ctx, p, -1, -12 + bob);
+    drawAttackFrame(ctx, p, "scatter", stateFrame);
+  },
+  echo_mind(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
+    const phase = phaseOf(state, stateFrame);
+    const bob = state === "walk" ? [0, 2, 0, -2][phase] : state === "idle" ? [0, -2][phase] : 0;
+    rect(ctx, p.ink, -22, -36 + bob, 44, 36);
+    rect(ctx, p.dark, -20, -34 + bob, 40, 32);
+    rect(ctx, p.base, -18, -32 + bob, 36, 28);
+    rect(ctx, p.light, -10, -22 + bob, 20, 12);
+    eye(ctx, p, -5, -20 + bob);
+    eye(ctx, p, 3, -20 + bob);
+    drawAttackFrame(ctx, p, "boss", stateFrame);
   },
 };
 

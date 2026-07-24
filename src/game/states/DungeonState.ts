@@ -174,9 +174,7 @@ export class DungeonState extends GameState {
   
   private chest: WeaponChest | null = null;
   
-  private portal?: { x: number, y: number, state: PortalState, timer: number };
-  private exitChoices: { worldNodeId: string; kind: string }[] | null = null;
-  private exitChoiceIndex = 0;
+  private portal?: { x: number, y: number, state: PortalState, timer: number, destination?: Room["exitDestination"] };
   
   private transitionState: "none" | "fade_in" | "fade_out" = "fade_in";
   private transitionAlpha: number = 1.0;
@@ -468,7 +466,6 @@ export class DungeonState extends GameState {
     this.lightningArcs = [];
     this.portal = undefined;
     this.chest = null;
-    
     this.shopFailure = undefined;
     
     this.environmentHazards = [];
@@ -523,6 +520,7 @@ export class DungeonState extends GameState {
         y: portalPoint.y * 16 + 8,
         state: "idle",
         timer: 0,
+        destination: currentRoom.exitDestination,
       };
       this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
@@ -554,7 +552,8 @@ export class DungeonState extends GameState {
             x: template.portalSpawnPoint.x * 16 + 8,
             y: template.portalSpawnPoint.y * 16 + 8,
             state: "idle",
-            timer: 0
+            timer: 0,
+            destination: currentRoom.exitDestination,
           };
           if (!currentRoom.interactionCompleted || currentRoom.weaponChest) {
             this.chest = this.createOrRestoreWeaponChest(currentRoom, "boss");
@@ -1001,17 +1000,6 @@ export class DungeonState extends GameState {
     } else if (this.portal && this.portal.state === "activating") {
        this.portal.timer -= dt;
        if (this.portal.timer <= 0) {
-          // Check for dual-exit choice
-          const floor = this.engine.data.data.floor;
-          const currentRoom = floor?.rooms?.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
-          const destinations = currentRoom?.exitDestinations;
-          if (destinations && destinations.length >= 2) {
-            this.exitChoices = destinations;
-            this.exitChoiceIndex = 0;
-            this.portal.state = "idle";
-            return;
-          }
-
           this.transitionState = "fade_out";
           this.transitionAlpha = 0;
           this.pendingTransition = () => {
@@ -1022,7 +1010,9 @@ export class DungeonState extends GameState {
                return;
              }
              // Use chosen destination if available, otherwise default advance
-             const dest = destinations?.[0]?.worldNodeId;
+             const floor = this.engine.data.data.floor;
+             const currentRoom = floor?.rooms?.find((r: any) => r.x === floor.currentRoomX && r.y === floor.currentRoomY);
+             const dest = currentRoom?.exitDestination?.worldNodeId;
              const transition = dest
                ? this.engine.data.advanceToNode(dest)
                : this.engine.data.advanceStage();
@@ -1042,38 +1032,6 @@ export class DungeonState extends GameState {
        }
     }
 
-    // Exit choice navigation
-    if (this.exitChoices) {
-      if (this.engine.input.wasUiPressed("up")) {
-        this.exitChoiceIndex = (this.exitChoiceIndex - 1 + this.exitChoices.length) % this.exitChoices.length;
-      } else if (this.engine.input.wasUiPressed("down")) {
-        this.exitChoiceIndex = (this.exitChoiceIndex + 1) % this.exitChoices.length;
-      } else if (this.engine.input.wasUiPressed("confirm")) {
-        const chosen = this.exitChoices[this.exitChoiceIndex];
-        this.exitChoices = null;
-        this.transitionState = "fade_out";
-        this.transitionAlpha = 0;
-        this.pendingTransition = () => {
-          this.syncPlayerState();
-          this.syncRoomState();
-          const transition = this.engine.data.advanceToNode(chosen.worldNodeId);
-          if (transition.chapterChanged) {
-            const chapter = Math.max(1, Math.min(4, transition.current.routeDepth));
-            this.engine.worldNotices.showRegion(
-              t(this.engine.data.settings.language, `notice.chapter.${chapter}.title` as Parameters<typeof t>[1]),
-              t(this.engine.data.settings.language, `notice.chapter.${chapter}.name` as Parameters<typeof t>[1]),
-              3.6,
-            );
-          }
-          this.player.x = 160;
-          this.player.y = 120;
-          this.engine.input.suppressUntilReleased();
-          this.loadRoom();
-        };
-      } else if (this.engine.input.wasUiPressed("cancel")) {
-        this.exitChoices = null;
-      }
-    }
   }
 
   private finishRun(outcome: Exclude<RunOutcome, "active">) {
@@ -1769,7 +1727,6 @@ export class DungeonState extends GameState {
       }
     }
 
-    
 
     if (this.portal && this.portal.state !== "spawning" && this.portal.state !== "activating") {
       if (this.canInteractWithFootprint("portal:", 30)) {
@@ -2845,6 +2802,153 @@ export class DungeonState extends GameState {
       return;
     }
 
+    // === PHASE 5 BOSS PATTERNS ===
+
+    // Tome Lord (Sealed Library)
+    if (pattern === "tome_lord") {
+      if (enemy.bossPhase === 1) {
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 1.0);
+        if (enemy.attackSequence % 2 === 1) fan(3, 0.28, 0.95);
+      } else if (enemy.bossPhase === 2) {
+        radial(6, enemy.attackSequence * 0.18, 1.05);
+        fan(4, 0.22, 1.1);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(8, enemy.attackSequence * 0.24, 1.15);
+        radial(8, -enemy.attackSequence * 0.24 + Math.PI / 8, 0.82);
+        if (enemy.attackSequence % 3 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    // Forge Prime (Forge Core)
+    if (pattern === "forge_prime") {
+      if (enemy.bossPhase === 1) {
+        fan(4, 0.2, 1.1);
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 0.88);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.28, 1.18);
+        fan(3, 0.14, 1.22);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(12, enemy.attackSequence * 0.3, 1.25);
+        fan(5, 0.12, 1.35);
+        if (enemy.attackSequence % 2 === 1) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    // Glacier Director (Cooling Canal)
+    if (pattern === "glacier_director") {
+      if (enemy.bossPhase === 1) {
+        radial(5, enemy.attackSequence % 2 ? Math.PI / 5 : 0, 1.05);
+        this.spawnEnemyProjectile(enemy, enemy.attackAngle, 4, 4);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.15, 1.1);
+        fan(4, 0.2, 1.05);
+        if (enemy.attackSequence % 3 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(10, enemy.attackSequence * 0.18, 1.2);
+        radial(6, -enemy.attackSequence * 0.18 + Math.PI / 6, 0.85);
+        fan(3, 0.16, 1.28);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    // War Engine (Sealed Armory)
+    if (pattern === "war_engine") {
+      if (enemy.bossPhase === 1) {
+        fan(3, 0.24, 1.12);
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 0.9);
+      } else if (enemy.bossPhase === 2) {
+        fan(5, 0.2, 1.18);
+        radial(6, enemy.attackSequence * 0.22, 0.95);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(10, enemy.attackSequence * 0.26, 1.25);
+        fan(7, 0.16, 1.3);
+        if (enemy.attackSequence % 2 === 1) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    // Star Sentinel (Observatory)
+    if (pattern === "star_sentinel") {
+      if (enemy.bossPhase === 1) {
+        radial(6, enemy.attackSequence * 0.2, 1.0);
+        if (enemy.attackSequence % 3 === 0) fan(3, 0.26, 1.0);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.22, 1.1);
+        radial(4, -enemy.attackSequence * 0.22 + Math.PI / 4, 0.88);
+        if (enemy.attackSequence % 3 === 1) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(10, enemy.attackSequence * 0.24, 1.2);
+        radial(10, -enemy.attackSequence * 0.18 + Math.PI / 10, 0.78);
+        fan(4, 0.14, 1.3);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    // Bone Sovereign (Ash Catacombs)
+    if (pattern === "bone_sovereign") {
+      if (enemy.bossPhase === 1) {
+        radial(5, enemy.attackSequence * 0.14, 1.05);
+        fan(3, 0.26, 0.95);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.2, 1.12);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(10, enemy.attackSequence * 0.26, 1.22);
+        fan(5, 0.18, 1.18);
+        if (enemy.attackSequence % 2 === 1) {
+          radial(4, enemy.attackSequence * 0.26 + Math.PI / 4, 0.85);
+          this.spawnSummonedEnemy(enemy);
+        }
+      }
+      return;
+    }
+
+    // Warden Alpha (Deep Prison)
+    if (pattern === "warden_alpha") {
+      if (enemy.bossPhase === 1) {
+        fan(4, 0.22, 1.08);
+        radial(4, enemy.attackSequence % 2 === 0 ? 0 : Math.PI / 4, 0.92);
+      } else if (enemy.bossPhase === 2) {
+        radial(8, enemy.attackSequence * 0.24, 1.15);
+        fan(5, 0.18, 1.12);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(12, enemy.attackSequence * 0.28, 1.3);
+        fan(6, 0.14, 1.35);
+        if (enemy.attackSequence % 2 === 1) this.spawnSummonedEnemy(enemy);
+      }
+      return;
+    }
+
+    // Echo Mind (Deep Archive - Final Boss)
+    if (pattern === "echo_mind") {
+      if (enemy.bossPhase === 1) {
+        radial(6, enemy.attackSequence * 0.18, 1.05);
+        fan(4, 0.24, 1.1);
+        if (enemy.attackSequence % 3 === 2) this.spawnSummonedEnemy(enemy);
+      } else if (enemy.bossPhase === 2) {
+        radial(10, enemy.attackSequence * 0.22, 1.18);
+        radial(6, -enemy.attackSequence * 0.22 + Math.PI / 6, 0.9);
+        fan(5, 0.18, 1.2);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+      } else {
+        radial(12, enemy.attackSequence * 0.26, 1.3);
+        radial(12, -enemy.attackSequence * 0.2 + Math.PI / 12, 0.85);
+        fan(7, 0.12, 1.4);
+        if (enemy.attackSequence % 2 === 0) this.spawnSummonedEnemy(enemy);
+        if (enemy.attackSequence % 3 === 0) radial(6, enemy.attackSequence * 0.26 + Math.PI / 6, 0.75);
+      }
+      return;
+    }
+
+
     if (enemy.bossPhase === 1) radial(enemy.projectileCount, enemy.attackSequence * 0.12);
     else if (enemy.bossPhase === 2) {
       radial(enemy.projectileCount + 2, enemy.attackSequence * 0.2, 1.08);
@@ -3502,11 +3606,19 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     
-    this.roomRenderer.drawBackground(ctx, currentRoom, floor.theme || "forest");
+    let displayTheme: string = floor.theme || "forest";
+    if (currentRoom?.exitDestination?.worldNodeId) {
+      displayTheme = currentRoom.exitDestination.worldNodeId;
+    } else if (this.engine.data.data.run.worldNodeId) {
+      displayTheme = this.engine.data.data.run.worldNodeId;
+    }
+
+    this.roomRenderer.drawBackground(ctx, currentRoom, displayTheme);
     const time = this.qaPresentationTime ?? Date.now() / 1000;
     EnvironmentSystem.draw(ctx, this.environmentHazards, this.environmentTime);
     const doorLocked = this.areRoomDoorsLocked();
-    this.roomRenderer.drawForeground(ctx, currentRoom, floor.theme || "forest", doorLocked);
+    
+    this.roomRenderer.drawForeground(ctx, currentRoom, displayTheme, doorLocked);
     
     // Pixel-grid enemy arrival telegraphs.
     for (const t of this.encounterCtrl.telegraphs) {
@@ -3676,7 +3788,13 @@ export class DungeonState extends GameState {
 
 
     MinimapRenderer.draw(ctx, floor);
-    PromptRenderer.draw(ctx, this.getInteractTarget(), time, this.engine.input.getPrompt("interact"), this.engine.data.settings.language);
+    const interactTarget = this.getInteractTarget();
+    if (interactTarget?.type === "portal" && (interactTarget as any).destination) {
+       PromptRenderer.drawRoutePreview(ctx, interactTarget.x, interactTarget.y, (interactTarget as any).destination, this.engine.data.settings.language, time);
+       PromptRenderer.draw(ctx, interactTarget, time, this.engine.input.getPrompt("interact"), this.engine.data.settings.language);
+    } else {
+       PromptRenderer.draw(ctx, interactTarget, time, this.engine.input.getPrompt("interact"), this.engine.data.settings.language);
+    }
 
     if (this.buffSelection) {
       BuffSelectionRenderer.draw(

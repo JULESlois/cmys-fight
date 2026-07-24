@@ -12,6 +12,7 @@ import {
   migrateLegacyGlobalStage,
   migrateLegacyRunProgress,
   normalizeRunProgress,
+  getGlobalStageIndex,
   type RunProgress,
 } from "./RunProgress";
 import {
@@ -293,14 +294,14 @@ export class GameData {
         : createRunProgressFromGlobalStage(
           loadedVersion < 24 ? migrateLegacyGlobalStage(legacyGlobalStage) : legacyGlobalStage,
         );
-      if (loadedVersion < 12 && this.data.run.globalStageIndex > FINAL_GLOBAL_STAGE) {
+      if (loadedVersion < 12 && getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode) > FINAL_GLOBAL_STAGE) {
         this.data.run = createRunProgressFromGlobalStage(FINAL_GLOBAL_STAGE);
       }
       const runStatsSource = loadedVersion < 24 && parsed.runStats
         ? {
           ...parsed.runStats,
           highestStage: migrateLegacyGlobalStage(Number(parsed.runStats.highestStage) || legacyGlobalStage),
-          stagesCleared: Math.max(0, this.data.run.globalStageIndex - 1),
+          stagesCleared: Math.max(0, getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode) - 1),
         }
         : parsed.runStats;
       this.data.runStats = normalizeRunStats(runStatsSource, this.data.run);
@@ -429,11 +430,11 @@ export class GameData {
     this.data.run = advanceRunProgress(this.data.run);
     this.data.runStats.stagesCleared = Math.max(
       this.data.runStats.stagesCleared,
-      this.data.run.stagesCleared,
+      getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode) - 1,
     );
     this.data.runStats.highestStage = Math.max(
       this.data.runStats.highestStage,
-      this.data.run.globalStageIndex,
+      getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode),
     );
     this.data.player.x = 160;
     this.data.player.y = 120;
@@ -458,11 +459,11 @@ export class GameData {
     this.data.run = next;
     this.data.runStats.stagesCleared = Math.max(
       this.data.runStats.stagesCleared,
-      this.data.run.stagesCleared,
+      getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode) - 1,
     );
     this.data.runStats.highestStage = Math.max(
       this.data.runStats.highestStage,
-      this.data.run.globalStageIndex,
+      getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode),
     );
     this.data.player.x = 160;
     this.data.player.y = 120;
@@ -692,10 +693,10 @@ export class GameData {
     const resolvedOutcome = (stats.settled || alreadyClaimed) && stats.outcome !== "active"
       ? stats.outcome
       : outcome;
-    stats.highestStage = Math.max(stats.highestStage, this.data.run.globalStageIndex);
+    stats.highestStage = Math.max(stats.highestStage, getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode));
     stats.stagesCleared = Math.max(
       stats.stagesCleared,
-      this.data.run.stagesCleared + (resolvedOutcome === "victory" && isFinalStage(this.data.run) ? 1 : 0),
+      getGlobalStageIndex(this.data.run.routeDepth, this.data.run.stageWithinNode) - 1 + (resolvedOutcome === "victory" && isFinalStage(this.data.run) ? 1 : 0),
     );
     stats.outcome = resolvedOutcome;
     stats.settled = true;
@@ -1043,10 +1044,10 @@ export class GameData {
       this.data.floor = generateStage(run);
       return;
     }
-    stage.depth = run.globalStageIndex;
+    stage.depth = getGlobalStageIndex(run.routeDepth, run.stageWithinNode);
     stage.routeDepth = run.routeDepth;
     stage.stageWithinNode = run.stageWithinNode;
-    stage.globalStageIndex = run.globalStageIndex;
+    stage.globalStageIndex = getGlobalStageIndex(run.routeDepth, run.stageWithinNode);
     stage.isBossStage = isBossStage(run);
     stage.hardMode = run.hardMode;
     stage.challengeId = run.challengeId;
@@ -1070,7 +1071,7 @@ export class GameData {
       .sort()
       .join("|");
     stage.seed = normalizeSeed(
-      Number(stage.seed) || hashSeed(0xC0FFEE, `${run.globalStageIndex}:${roomSignature}`),
+      Number(stage.seed) || hashSeed(0xC0FFEE, `${getGlobalStageIndex(run.routeDepth, run.stageWithinNode)}:${roomSignature}`),
     );
 
     if (false) {
@@ -1096,17 +1097,17 @@ export class GameData {
   }
 
   private isStageCompatible(stage: any, run: RunProgress): boolean {
-    if (!stage || !Array.isArray(stage.rooms) || stage.rooms.length === 0) return false;
-    if (stage.routeDepth !== run.routeDepth || stage.stageWithinNode !== run.stageWithinNode) return false;
-    if (stage.globalStageIndex !== run.globalStageIndex) return false;
-    if ((stage.hardMode === true) !== run.hardMode) return false;
-    if (stage.challengeId !== run.challengeId) return false;
-    if (stage.challengeKey !== run.challengeKey) return false;
+    if (!stage || !Array.isArray(stage.rooms) || stage.rooms.length === 0) { console.log("isStageCompatible failed: no rooms"); return false; }
+    if (stage.routeDepth !== run.routeDepth || stage.stageWithinNode !== run.stageWithinNode) { console.log("isStageCompatible failed: depth mismatch", stage.routeDepth, run.routeDepth, stage.stageWithinNode, run.stageWithinNode); return false; }
+    if (stage.globalStageIndex !== getGlobalStageIndex(run.routeDepth, run.stageWithinNode)) { console.log("isStageCompatible failed: globalStageIndex mismatch"); return false; }
+    if ((stage.hardMode === true) !== run.hardMode) { console.log("isStageCompatible failed: hardMode mismatch"); return false; }
+    if (stage.challengeId !== run.challengeId) { console.log("isStageCompatible failed: challengeId mismatch", stage.challengeId, run.challengeId); return false; }
+    if (stage.challengeKey !== run.challengeKey) { console.log("isStageCompatible failed: challengeKey mismatch"); return false; }
 
     const bossRooms = stage.rooms.filter((room: any) => room.type === "boss").length;
     const exitRooms = stage.rooms.filter((room: any) => room.type === "exit").length;
     return isBossStage(run)
-      ? stage.isBossStage === true && bossRooms === 1 && exitRooms === 0
+      ? stage.isBossStage === true && bossRooms === 1 && exitRooms >= 1
       : stage.isBossStage === false && bossRooms === 0 && exitRooms === 1;
   }
 

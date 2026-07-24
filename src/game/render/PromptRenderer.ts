@@ -1,5 +1,6 @@
 import { t, uiFont, type Language } from "../i18n";
-import { drawPixelPanel, UI_COLORS } from "./PixelUi";
+import { drawPixelPanel, UI_COLORS, toneColor, drawSectionLabel } from "./PixelUi";
+import type { ExitDestination } from "../FloorGenerator";
 
 export class PromptRenderer {
   static draw(ctx: CanvasRenderingContext2D, target: any, time: number, interactPrompt = "K", language: Language = "en") {
@@ -54,6 +55,68 @@ export class PromptRenderer {
     ctx.lineTo(pointerX + 3, yBase + 8);
     ctx.lineTo(pointerX, yBase + 11);
     ctx.fill();
+    ctx.restore();
+  }
+
+  static drawRoutePreview(
+    ctx: CanvasRenderingContext2D,
+    screenX: number,
+    screenY: number,
+    destination: ExitDestination,
+    language: Language,
+    time: number,
+  ): void {
+    ctx.save();
+    const floatY = Math.round(Math.sin(time * 3));
+    const yBase = Math.round(screenY + floatY) - 58;
+    const width = 110;
+    const height = 50;
+    const x = Math.round(Math.max(4, Math.min(316 - width, screenX - width / 2)));
+    const pointerX = Math.max(x + 12, Math.min(x + width - 12, screenX));
+    
+    // Choose tone based on destination kind
+    let tone: "cyan" | "red" | "purple" | "yellow" = "cyan";
+    if (destination.kind === "performance") tone = "red";
+    else if (destination.kind === "hidden") tone = "purple";
+    else if (destination.kind === "challenge") tone = "yellow";
+
+    drawPixelPanel(ctx, x, yBase, width, height, tone, true);
+
+    const accent = toneColor(tone);
+    
+    // Node Name
+    ctx.fillStyle = UI_COLORS.white;
+    ctx.font = uiFont(language, 8, true);
+    ctx.textAlign = "left";
+    // We assume i18n has `node.${worldNodeId}.name`, fallback to id
+    const title = t(language, `node.${destination.worldNodeId}.name` as any) || destination.worldNodeId;
+    ctx.fillText(title, x + 6, yBase + 12);
+    
+    // Threat level (Stars/Skulls)
+    ctx.fillStyle = UI_COLORS.red;
+    ctx.font = uiFont(language, 6, true);
+    let threatStars = "";
+    for(let i = 0; i < (destination.preview.threat || 3); i++) threatStars += "★";
+    ctx.fillText("Threat: " + threatStars, x + 6, yBase + 24);
+
+    // Tags
+    ctx.fillStyle = UI_COLORS.text;
+    ctx.font = uiFont(language, 6, true);
+    const tags = [...destination.preview.enemyTags, ...destination.preview.hazardTags, ...destination.preview.rewardTags];
+    if (tags.length > 0) {
+       ctx.fillText("Tags: " + tags.join(", "), x + 6, yBase + 36);
+    } else {
+       ctx.fillText("Tags: Unknown", x + 6, yBase + 36);
+    }
+
+    // Pointer down to portal
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.moveTo(pointerX - 4, yBase + height - 3);
+    ctx.lineTo(pointerX + 4, yBase + height - 3);
+    ctx.lineTo(pointerX, yBase + height + 3);
+    ctx.fill();
+
     ctx.restore();
   }
 }

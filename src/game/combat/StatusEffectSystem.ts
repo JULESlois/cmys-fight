@@ -3,7 +3,7 @@ import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 import { DamageSystem } from "./DamageSystem";
 
-export type StatusEffectId = "poison" | "burn" | "slow" | "root";
+export type StatusEffectId = "poison" | "burn" | "slow" | "root" | "silence";
 
 export interface ActiveStatusEffect {
   id: StatusEffectId;
@@ -12,7 +12,7 @@ export interface ActiveStatusEffect {
   stacks: number;
 }
 
-const STATUS_IDS: StatusEffectId[] = ["poison", "burn", "slow", "root"];
+const STATUS_IDS: StatusEffectId[] = ["poison", "burn", "slow", "root", "silence"];
 const MAX_SLOW_DURATION = 1.5;
 const MAX_ROOT_DURATION = 0.65;
 

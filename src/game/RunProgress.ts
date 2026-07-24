@@ -72,25 +72,29 @@ export function createInitialRunProgress(
   };
 }
 
-export function advanceRunProgress(progress: RunProgress): RunProgress {
-  // In the future, this should take the selected exit destination.
-  // For now, if we reach the end of the node, we just advance to the next node manually.
-  
+export function advanceRunProgress(progress: RunProgress, chosenDestination?: { worldNodeId: string }): RunProgress {
   const next = { ...progress };
   
-  if (next.stageWithinNode >= STAGES_PER_CHAPTER) {
-    next.stageWithinNode = 1;
-    next.routeDepth += 1;
+  if (chosenDestination) {
     next.routeHistory.push(next.worldNodeId);
-    
-    // Default advancement if no exit chosen (temporary)
-    if (next.worldNodeId === "overgrown_archive") {
-      next.worldNodeId = "cooling_canal";
-    } else {
-      next.worldNodeId = "sealed_armory";
-    }
+    next.worldNodeId = chosenDestination.worldNodeId;
+    next.routeDepth += 1;
+    next.stageWithinNode = 1;
   } else {
-    next.stageWithinNode += 1;
+    if (next.stageWithinNode >= STAGES_PER_CHAPTER) {
+      next.stageWithinNode = 1;
+      next.routeDepth += 1;
+      next.routeHistory.push(next.worldNodeId);
+      
+      // Default advancement if no exit chosen (temporary)
+      if (next.worldNodeId === "overgrown_archive") {
+        next.worldNodeId = "cooling_canal";
+      } else {
+        next.worldNodeId = "sealed_armory";
+      }
+    } else {
+      next.stageWithinNode += 1;
+    }
   }
   
   return next;

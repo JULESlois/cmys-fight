@@ -45,7 +45,7 @@ export class SpecialRoomRenderer {
 
   static drawWishFountain(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, theme: string, completed: boolean): void {
     if (typeof x !== "number" || typeof y !== "number" || Number.isNaN(x) || Number.isNaN(y)) return;
-    drawRitualSpring(ctx, { x, y, scale: DUNGEON_RITUAL_SPRING_SCALE, time, theme: theme as EnemyTheme, completed });
+    drawRitualSpring(ctx, { x, y, scale: DUNGEON_RITUAL_SPRING_SCALE, time, theme: theme as any, completed });
   }
 
   static drawBroadcastTerminal(

@@ -65,10 +65,11 @@ michele.characterId = "michele";
 michele.maxMana = 42;
 michele.mana = 42;
 assert.equal(WeaponController.equipWeapon(michele, "inspector").consumed, true);
+const initialBattery = michele.weaponLoadout.slots[michele.weaponLoadout.activeSlot].resourceState.value;
 const inspectorShot = WeaponController.fire(michele, 0, () => 0.99);
 assert.equal(inspectorShot.fired, true);
 assert.equal(inspectorShot.projectiles[0].weaponId, "inspector");
-assert.equal(michele.mana, 41);
+assert.equal(michele.weaponLoadout.slots[michele.weaponLoadout.activeSlot].resourceState.value, initialBattery - 1);
 for (const projectile of inspectorShot.projectiles) releaseProjectile(projectile);
 
 const skillUser = new Player(80, 90);

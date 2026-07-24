@@ -67,6 +67,9 @@ export class WeaponController {
     const baseCost = catalystShot
       ? Math.max(0, weapon.linkedCatalystEnergyCost ?? weapon.manaCost)
       : weapon.manaCost;
+    if (weapon.id === "last_prism") {
+      console.log("baseCost:", baseCost, "channelMultiplier:", channelMultiplier, "multiplier:", multiplier, "channelTime:", player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime);
+    }
     return WeaponController.calculateEnergyCost(baseCost * channelMultiplier, multiplier);
   }
 

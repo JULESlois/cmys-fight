@@ -24,6 +24,8 @@ const DOOR_SCENES = [
   { scene: "lava_up_locked", theme: "lava", label: "door-lava-h-locked" },
   { scene: "lava_right_open", theme: "lava", label: "door-lava-v-open" },
   { scene: "lava_right_locked", theme: "lava", label: "door-lava-v-locked" },
+  { scene: "sealed_library_up_locked", theme: "sealed_library", label: "door-library-h-locked" },
+  { scene: "forge_core_up_locked", theme: "forge_core", label: "door-forge-h-locked" },
 ];
 
 const CHEST_SCENES = [
@@ -33,7 +35,14 @@ const CHEST_SCENES = [
   { scene: "treasure_open_with_multiple_loot", theme: "dungeon", label: "chest-treasure-multi-loot" },
 ];
 
-const ALL_SCENES = [...DOOR_SCENES, ...CHEST_SCENES];
+const ROOM_SCENES = [
+  { scene: "combat", theme: "cooling_canal", label: "room-cooling-canal" },
+  { scene: "combat", theme: "forge_core", label: "room-forge-core" },
+  { scene: "combat", theme: "sealed_library", label: "room-sealed-library" },
+  { scene: "combat", theme: "ash_catacombs", label: "room-ash-catacombs" },
+];
+
+const ALL_SCENES = [...DOOR_SCENES, ...CHEST_SCENES, ...ROOM_SCENES];
 
 async function captureScene(browser, scene) {
   const url = `${BASE_URL}/?qa=1&qaScene=${scene.scene}&qaTheme=${scene.theme}&qaCapture=1`;

@@ -115,7 +115,7 @@ assert.equal(imported.settings.masterVolume, recovered.settings.masterVolume);
 
 // Debug stage navigation and loadout.
 jumpToStage(imported, 7);
-assert.equal(imported.data.run.globalStageIndex, 7);
+assert.equal(imported.data.floor.globalStageIndex, 7);
 grantDebugLoadout(imported);
 assert.equal(imported.data.player.coins, 999);
 assert.deepEqual(imported.data.player.weaponLoadout.slots.map(s=>s?.weaponId), ["void_rail", "dragon_breath"]);

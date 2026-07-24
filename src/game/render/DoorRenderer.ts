@@ -432,6 +432,102 @@ function drawSideDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, theme: DoorTh
 // PUBLIC API
 // ============================================================
 
+// ============================================================
+// UNIQUE WORLD NODE DOORS
+// ============================================================
+
+function drawTopLibraryDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean): void {
+  const cx = vb.x + vb.width / 2;
+  const baseY = vb.y + 3;
+
+  fill(ctx, locked ? "rgba(42,30,64,0.7)" : "rgba(30,22,48,0.22)", cx - 20, baseY + 4, 40, 34);
+
+  // Outer stone archive pillars
+  fill(ctx, "#181422", cx - 21, baseY + 2, 10, 38);
+  fill(ctx, "#181422", cx + 11, baseY + 2, 10, 38);
+  fill(ctx, "#181422", cx - 23, baseY, 46, 8);
+
+  // Magic purple runes on the pillars
+  fill(ctx, "#782A9C", cx - 18, baseY + 10, 4, 2);
+  fill(ctx, "#9B4EE0", cx - 17, baseY + 11, 2, 4);
+  fill(ctx, "#782A9C", cx + 14, baseY + 24, 4, 2);
+  fill(ctx, "#9B4EE0", cx + 15, baseY + 25, 2, 4);
+
+  // Lintel book/scroll reliefs
+  fill(ctx, "#2F2540", cx - 12, baseY + 2, 24, 4);
+  fill(ctx, "#44345E", cx - 8, baseY + 3, 16, 2);
+
+  if (locked) {
+    fill(ctx, "#4B326D", cx - 14, baseY + 8, 28, 28);
+    fill(ctx, "#291544", cx - 12, baseY + 10, 24, 24);
+    // Glowing seal
+    fill(ctx, "#AF46FF", cx - 4, baseY + 18, 8, 8);
+    fill(ctx, "#E0A8FF", cx - 2, baseY + 20, 4, 4);
+  } else {
+    fill(ctx, "#221932", cx - 16, baseY + 6, 6, 30);
+    fill(ctx, "#221932", cx + 10, baseY + 6, 6, 30);
+    fill(ctx, "#362852", cx - 14, baseY + 7, 2, 28);
+    fill(ctx, "#362852", cx + 12, baseY + 7, 2, 28);
+    fill(ctx, "#0E0A17", cx - 10, baseY + 10, 20, 24);
+  }
+
+  fill(ctx, "rgba(0,0,0,0.4)", cx - 23, baseY + 38, 46, 3);
+}
+
+function drawTopForgeCoreDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean): void {
+  const cx = vb.x + vb.width / 2;
+  const baseY = vb.y + 3;
+
+  fill(ctx, locked ? "rgba(74,20,10,0.6)" : "rgba(35,10,5,0.2)", cx - 20, baseY + 4, 40, 34);
+
+  // Heavy metal vault posts
+  fill(ctx, "#100604", cx - 24, baseY + 2, 14, 38);
+  fill(ctx, "#100604", cx + 10, baseY + 2, 14, 38);
+  fill(ctx, "#180907", cx - 26, baseY, 52, 12);
+
+  // Rivets and orange vents
+  fill(ctx, "#3D130E", cx - 18, baseY + 12, 2, 24);
+  fill(ctx, "#3D130E", cx + 16, baseY + 12, 2, 24);
+  
+  if (Math.floor(Date.now() / 200) % 3 === 0) {
+    fill(ctx, "#FF5500", cx - 21, baseY + 20, 4, 2);
+    fill(ctx, "#FF5500", cx + 17, baseY + 20, 4, 2);
+  }
+
+  // Warning stripes on lintel
+  for (let i = cx - 20; i < cx + 16; i += 8) {
+    fill(ctx, "#260D0A", i, baseY + 2, 4, 8);
+    fill(ctx, "#D99311", i + 4, baseY + 2, 4, 8);
+  }
+
+  if (locked) {
+    fill(ctx, "#290A06", cx - 14, baseY + 12, 28, 28);
+    fill(ctx, "#1A0604", cx - 12, baseY + 14, 24, 24);
+    // Huge valve wheel
+    fill(ctx, "#5E180E", cx - 8, baseY + 18, 16, 16);
+    fill(ctx, "#FF4000", cx - 6, baseY + 20, 12, 12);
+    fill(ctx, "#942516", cx - 2, baseY + 16, 4, 20);
+    fill(ctx, "#942516", cx - 10, baseY + 24, 20, 4);
+    fill(ctx, "#FF8800", cx - 2, baseY + 24, 4, 4);
+  } else {
+    fill(ctx, "#1C0805", cx - 16, baseY + 12, 8, 28);
+    fill(ctx, "#1C0805", cx + 8, baseY + 12, 8, 28);
+    fill(ctx, "#FF2200", cx - 12, baseY + 14, 2, 24);
+    fill(ctx, "#FF2200", cx + 10, baseY + 14, 2, 24);
+    fill(ctx, "#050100", cx - 8, baseY + 14, 16, 26);
+  }
+
+  fill(ctx, "rgba(0,0,0,0.5)", cx - 26, baseY + 40, 52, 4);
+}
+
+function getBaseTheme(theme: string): string {
+  if (theme === "overgrown_archive") return "forest";
+  if (theme === "sealed_library" || theme === "sealed_armory" || theme === "ash_catacombs" || theme === "deep_prison" || theme === "deep_archive") return "dungeon";
+  if (theme === "cooling_canal" || theme === "observatory") return "snow";
+  if (theme === "forge_core") return "lava";
+  return theme;
+}
+
 export class DoorRenderer {
   public static draw(
     ctx: CanvasRenderingContext2D,
@@ -461,24 +557,28 @@ export class DoorRenderer {
     }
     ctx.clip();
 
+    const baseTheme = getBaseTheme(theme);
+
     switch (geometry.direction) {
       case "up":
-        if (theme === "forest") drawTopForestDoor(ctx, vb, locked);
-        else if (theme === "dungeon") drawTopDungeonDoor(ctx, vb, locked);
-        else if (theme === "snow") drawTopSnowDoor(ctx, vb, locked);
+        if (theme === "sealed_library") drawTopLibraryDoor(ctx, vb, locked);
+        else if (theme === "forge_core") drawTopForgeCoreDoor(ctx, vb, locked);
+        else if (baseTheme === "forest") drawTopForestDoor(ctx, vb, locked);
+        else if (baseTheme === "dungeon") drawTopDungeonDoor(ctx, vb, locked);
+        else if (baseTheme === "snow") drawTopSnowDoor(ctx, vb, locked);
         else drawTopLavaDoor(ctx, vb, locked);
         break;
       case "down":
-        if (theme === "forest") drawBottomForestDoor(ctx, vb, locked);
-        else if (theme === "dungeon") drawBottomDungeonDoor(ctx, vb, locked);
-        else if (theme === "snow") drawBottomSnowDoor(ctx, vb, locked);
+        if (baseTheme === "forest") drawBottomForestDoor(ctx, vb, locked);
+        else if (baseTheme === "dungeon") drawBottomDungeonDoor(ctx, vb, locked);
+        else if (baseTheme === "snow") drawBottomSnowDoor(ctx, vb, locked);
         else drawBottomLavaDoor(ctx, vb, locked);
         break;
       case "left":
-        drawSideDoor(ctx, vb, theme, locked, "left");
+        drawSideDoor(ctx, vb, baseTheme, locked, "left");
         break;
       case "right":
-        drawSideDoor(ctx, vb, theme, locked, "right");
+        drawSideDoor(ctx, vb, baseTheme, locked, "right");
         break;
     }
 
