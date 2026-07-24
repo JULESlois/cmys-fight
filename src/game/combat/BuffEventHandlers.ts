@@ -21,16 +21,13 @@ export function initBuffEventHandlers(): void {
   CombatEventDispatcher.on("player_kill_enemy", (payload) => {
     const restore = BuffSystem.getKillEnergyRestore(payload.player);
     if (restore > 0) {
-      const now = performance.now() / 1000;
-      const lastReset = getState(payload.player, "entropyLastReset", 0);
-      let count = getState(payload.player, "entropyCountThisSecond", 0);
-      if (now - lastReset >= 1.0) {
-        setState(payload.player, "entropyLastReset", now);
-        count = 0;
-      }
-      if (count < 4) {
+      const remainingQuota = getState(payload.player, "entropyQuota", 4);
+      if (remainingQuota > 0) {
         restoreMana(payload.player, restore);
-        setState(payload.player, "entropyCountThisSecond", count + 1);
+        setState(payload.player, "entropyQuota", remainingQuota - 1);
+        if (getState(payload.player, "entropyTimer", 0) <= 0) {
+          setState(payload.player, "entropyTimer", 1.0);
+        }
       }
     }
   });
@@ -74,15 +71,16 @@ export function initBuffEventHandlers(): void {
   // alternating_current: track alternating weapon hits
   CombatEventDispatcher.on("player_hit_enemy", (payload) => {
     if (!BuffSystem.has(payload.player, "alternating_current")) return;
-    const lastWeapon = getState(payload.player, "altCurrentLastWeapon", "");
-    const currentWeapon = payload.sourceWeaponId || payload.player.currentWeaponId;
-    const syncStacks = getState(payload.player, "altCurrentStacks", 0);
-    const lastHitTime = getState(payload.player, "altCurrentLastHitTime", 0);
-    const now = performance.now() / 1000;
+    const source = payload.source;
+    if (source.kind !== "primary" || !source.weaponId) return;
 
-    if (now - lastHitTime > 2.0) {
-      setState(payload.player, "altCurrentStacks", 0);
-    }
+    const lastWeapon = getState(payload.player, "altCurrentLastWeapon", "");
+    const currentWeapon = source.weaponId;
+    const lastAttackId = getState(payload.player, "altCurrentLastAttackId", "");
+
+    // 1 attackId = 1 count max
+    if (source.attackId && lastAttackId === source.attackId) return;
+    setState(payload.player, "altCurrentLastAttackId", source.attackId || "");
 
     if (lastWeapon !== "" && lastWeapon !== currentWeapon) {
       const newStacks = getState(payload.player, "altCurrentStacks", 0) + 1;
@@ -92,11 +90,13 @@ export function initBuffEventHandlers(): void {
       } else {
         setState(payload.player, "altCurrentStacks", newStacks);
       }
+      setState(payload.player, "altCurrentTimer", 2.0);
     } else if (lastWeapon === currentWeapon) {
-      // Don't reset on same weapon hit within the window, just let them swap
+      // 连续命中同一把武器则重置
+      setState(payload.player, "altCurrentStacks", 0);
+      setState(payload.player, "altCurrentTimer", 0);
     }
     setState(payload.player, "altCurrentLastWeapon", currentWeapon);
-    setState(payload.player, "altCurrentLastHitTime", now);
   });
 
   // graze_relay: near-miss dodges accumulate

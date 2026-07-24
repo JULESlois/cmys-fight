@@ -211,6 +211,36 @@ export class BuffSystem {
     return choices;
   }
 
+  static update(player: Player, dt: number): void {
+    if (player.buffState["entropyTimer"] > 0) {
+      player.buffState["entropyTimer"] -= dt;
+      if (player.buffState["entropyTimer"] <= 0) {
+        player.buffState["entropyQuota"] = 4;
+      }
+    }
+    
+    if (player.buffState["crossSwapCooldown"] > 0) {
+      player.buffState["crossSwapCooldown"] -= dt;
+    }
+    if (player.buffState["crossSwapActive"] > 0) {
+      player.buffState["crossSwapActive"] -= dt;
+    }
+    
+    if (player.buffState["chainDirectiveTimeout"] > 0) {
+      player.buffState["chainDirectiveTimeout"] -= dt;
+      if (player.buffState["chainDirectiveTimeout"] <= 0) {
+        player.buffState["chainDirectiveReady"] = false;
+      }
+    }
+    
+    if (player.buffState["altCurrentTimer"] > 0) {
+      player.buffState["altCurrentTimer"] -= dt;
+      if (player.buffState["altCurrentTimer"] <= 0) {
+        player.buffState["altCurrentStacks"] = 0;
+      }
+    }
+  }
+
   static acquire(player: Player, id: BuffId): boolean {
     if (!(id in BUFFS) || player.buffs.includes(id) || player.buffs.length >= BuffSystem.MAX_BUFFS) return false;
     const previousMaxMana = player.maxMana;

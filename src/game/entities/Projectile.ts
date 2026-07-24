@@ -28,6 +28,7 @@ export class Projectile {
   public sourceEnemyId = -1;
   public targetsMicheleTurret = false;
   public hitEnemyIds: Set<number> = new Set();
+  public source?: import("../combat/CombatEvents").CombatSource;
   public weaponId = "";
   public style: ProjectileStyle = "bullet";
   public trailLength = 6;
@@ -137,6 +138,14 @@ export class Projectile {
     this.weaponId = profile?.weaponId ?? "";
     this.style = profile?.style ?? "bullet";
     this.trailLength = profile?.trailLength ?? 6;
+    this.hitEnemyIds.clear();
+    this.source = undefined;
+    
+    // Clear legacy fields
+    this.sourceWeaponId = null;
+    this.sourceSlot = null;
+    this.sourceAttackId = null;
+    this.canTriggerSynergy = true;
     this.beamWidth = profile?.beamWidth ?? 1;
     this.explosionRadius = profile?.explosionRadius ?? 0;
     this.explosionDamageMultiplier = profile?.explosionDamageMultiplier ?? 0.75;

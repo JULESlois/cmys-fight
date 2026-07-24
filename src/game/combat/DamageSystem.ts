@@ -103,7 +103,7 @@ export class DamageSystem {
     };
   }
 
-  static damageEnemy(enemy: Enemy, amount: number, player?: Player, isCrit?: boolean, sourceWeaponId?: string): DamageResult {
+  static damageEnemy(enemy: Enemy, amount: number, player?: Player, isCrit?: boolean, source?: import("./CombatEvents").CombatSource): DamageResult {
     const damage = Math.max(0, amount);
     if (damage <= 0 || enemy.hp <= 0) {
       return { ...NO_DAMAGE, killed: enemy.hp <= 0 };
@@ -120,9 +120,10 @@ export class DamageSystem {
       killed: enemy.hp <= 0,
     };
     if (player && result.hpDamage > 0) {
-      CombatEventDispatcher.emit("player_hit_enemy", { player, enemy, damage: result.hpDamage, isCrit: isCrit ?? false, sourceWeaponId });
+      const finalSource = source ?? { kind: "environment", canTriggerBuffs: true, canTriggerSynergies: true };
+      CombatEventDispatcher.emit("player_hit_enemy", { player, enemy, damage: result.hpDamage, isCrit: isCrit ?? false, source: finalSource });
       if (result.killed) {
-        CombatEventDispatcher.emit("player_kill_enemy", { player, enemy, sourceWeaponId });
+        CombatEventDispatcher.emit("player_kill_enemy", { player, enemy, source: finalSource });
       }
     }
     return result;

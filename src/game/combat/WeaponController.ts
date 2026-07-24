@@ -24,6 +24,7 @@ export interface FireWeaponResult {
 }
 
 export class WeaponController {
+  static nextAttackIdCounter = 1;
   static readonly SHOTGUN_VOLLEY_KNOCKBACK_MULTIPLIER = 0.6;
 
   static getPerProjectileKnockback(
@@ -259,7 +260,7 @@ export class WeaponController {
     player.facingLeft = player.facing === "left";
 
     const muzzle = player.getPlayerMuzzlePosition(aimAngle);
-    const attackId = "atk_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+    const attackId = "atk_" + (WeaponController.nextAttackIdCounter++);
     const projectiles: Projectile[] = [];
     const projectileProfile = {
       ...getProjectileProfile(weapon),
@@ -375,6 +376,16 @@ export class WeaponController {
         projectile.anchorX = player.x;
         projectile.anchorY = player.y;
         projectile.linkedShotMode = linkedShotMode;
+        projectile.source = {
+          kind: "primary",
+          weaponId: player.currentWeaponId,
+          slot: player.weaponLoadout.activeSlot as 0 | 1,
+          attackId,
+          canTriggerBuffs: true,
+          canTriggerSynergies: true,
+        };
+        
+        // Legacy fields
         projectile.sourceWeaponId = player.currentWeaponId;
         projectile.sourceSlot = player.weaponLoadout.activeSlot;
         projectile.sourceAttackId = attackId;

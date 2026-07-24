@@ -885,6 +885,7 @@ export class DungeonState extends GameState {
     this.player.perfectDodgeWindow = Math.max(0, this.player.perfectDodgeWindow - dt);
     this.player.justPerfectDodged = false;
 
+    BuffSystem.update(this.player, dt);
     SkillController.update(this.player, dt);
     CharacterResourceController.update(dt, {
       player: this.player,
@@ -3044,7 +3045,7 @@ export class DungeonState extends GameState {
           ) {
             directDamage *= Math.max(1, weapon.markedTargetDamageMultiplier ?? 1);
           }
-          const result = DamageSystem.damageEnemy(e, directDamage, this.player, p.critical, p.sourceWeaponId ?? undefined);
+          const result = DamageSystem.damageEnemy(e, directDamage, this.player, p.critical, p.source);
           p.hitEnemyIds.add(e.id);
           directEnemyId = e.id;
           if (result.applied) {
@@ -3317,7 +3318,10 @@ export class DungeonState extends GameState {
         life: 0.18,
         maxLife: 0.18,
       });
-      const result = DamageSystem.damageEnemy(target, damage, this.player, false, projectile.sourceWeaponId ?? undefined);
+      const source: import("../combat/CombatEvents").CombatSource = projectile.source 
+        ? { ...projectile.source, kind: "chain", canTriggerBuffs: false, canTriggerSynergies: false } 
+        : { kind: "chain", canTriggerBuffs: false, canTriggerSynergies: false };
+      const result = DamageSystem.damageEnemy(target, damage, this.player, false, source);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(target, projectile.statusEffect, projectile.statusDuration);
@@ -3393,7 +3397,10 @@ export class DungeonState extends GameState {
         distance,
         radius,
       );
-      const result = DamageSystem.damageEnemy(enemy, damage, this.player, false, projectile.sourceWeaponId ?? undefined);
+      const source: import("../combat/CombatEvents").CombatSource = projectile.source 
+        ? { ...projectile.source, kind: "explosion", canTriggerBuffs: false, canTriggerSynergies: false } 
+        : { kind: "explosion", canTriggerBuffs: false, canTriggerSynergies: false };
+      const result = DamageSystem.damageEnemy(enemy, damage, this.player, false, source);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration);
