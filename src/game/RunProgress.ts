@@ -30,7 +30,7 @@ export function migrateLegacyRunProgress(value: any): RunProgress {
       worldNodeId: value.worldNodeId,
       routeDepth: Number(value.routeDepth) || 1,
       stageWithinNode: Number(value.stageWithinNode) || 1,
-      routeHistory: Array.isArray(value.routeHistory) ? value.routeHistory : [],
+      routeHistory: Array.isArray(value.routeHistory) ? [...value.routeHistory] : [],
       hardMode: value.hardMode === true,
       challengeId: isChallengeId(value.challengeId) ? value.challengeId : undefined,
       challengeKey: typeof value.challengeKey === "string" ? value.challengeKey : undefined,
@@ -73,7 +73,7 @@ export function createInitialRunProgress(
 }
 
 export function advanceRunProgress(progress: RunProgress, chosenDestination?: { worldNodeId: string }): RunProgress {
-  const next = { ...progress };
+  const next = { ...progress, routeHistory: [...progress.routeHistory] };
   
   if (chosenDestination) {
     next.routeHistory.push(next.worldNodeId);
@@ -141,8 +141,7 @@ export function createRunProgressFromGlobalStage(
   };
 }
 
-export function getDifficultyStageIndex(globalStageIndex: number): number {
-  const progress = createRunProgressFromGlobalStage(globalStageIndex);
+export function getDifficultyStageIndex(progress: Pick<RunProgress, "routeDepth" | "stageWithinNode">): number {
   return (progress.routeDepth - 1) * 5 + [1, 2, 4, 5][Math.max(0, Math.min(3, progress.stageWithinNode - 1))];
 }
 

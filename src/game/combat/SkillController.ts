@@ -225,16 +225,13 @@ export class SkillController {
         player.skillCooldown = cooldown;
       }
     };
-    const restoreEnergy = () => {
-      player.mana = Math.min(player.maxMana, player.mana + BuffSystem.getSkillEnergyRestore(player));
-    };
 
     CombatEventDispatcher.emit("skill_activated", { player, skillId: config.id });
 
     if (config.id === "dual_fire") {
       player.skillActiveTimer = config.duration;
       applyCooldown();
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -246,7 +243,7 @@ export class SkillController {
       player.micheleTurretFireCooldown = 0;
       player.micheleTurretActive = true;
       player.micheleTurretHitsRemaining = 6;
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -259,7 +256,7 @@ export class SkillController {
       player.kanamiBeaconVy = Math.sin(aimAngle) * SkillController.KANAMI_BEACON_SPEED;
       player.kanamiBeaconFlightTimer = SkillController.KANAMI_BEACON_FLIGHT_TIME;
       player.kanamiBeaconDeployed = false;
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -271,7 +268,7 @@ export class SkillController {
         SkillController.CELESTIA_TEMPORARY_ARMOR,
       );
       player.celestiaTemporaryArmorTimer = SkillController.CELESTIA_TEMPORARY_ARMOR_DURATION;
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -279,7 +276,7 @@ export class SkillController {
       player.skillActiveTimer = config.duration;
       applyCooldown();
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.25);
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -287,7 +284,7 @@ export class SkillController {
       player.skillActiveTimer = config.duration;
       applyCooldown();
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.15);
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -296,7 +293,7 @@ export class SkillController {
       applyCooldown();
       player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, 0.35);
       player.manaRechargeTimer = Math.max(player.manaRechargeTimer, config.duration);
-      restoreEnergy();
+      
       return { activated: true, killedEnemyIds: [], lightningArcs: [] };
     }
 
@@ -309,7 +306,7 @@ export class SkillController {
     player.skillActiveTimer = config.duration;
     applyCooldown();
     player.invulnerabilityTimer = Math.max(player.invulnerabilityTimer, config.duration + 0.08);
-    restoreEnergy();
+    
     return { activated: true, killedEnemyIds: [], lightningArcs: [] };
   }
 }

@@ -45,6 +45,7 @@ import { EncounterController } from "../EncounterController";
 import { EncounterFactory } from "../EncounterFactory";
 import { DamageSystem } from "../combat/DamageSystem";
 import { WeaponController } from "../combat/WeaponController";
+import { cloneWeaponLoadoutRuntime } from "../combat/WeaponRuntimeState";
 import { segmentCircleHit } from "../combat/Collision";
 import {
   calculateChainDamage,
@@ -226,7 +227,11 @@ export class DungeonState extends GameState {
     player.manaRechargeDelay = savedP.manaRechargeDelay ?? 1.35;
     player.manaRechargeRate = savedP.manaRechargeRate ?? 9;
     player.speed = savedP.speed;
-    player.setWeaponLoadout(savedP.weaponLoadout.slots.map(s => s?.weaponId) as any, savedP.weaponLoadout.activeSlot);
+    if (savedP.weaponLoadout) {
+      player.setWeaponLoadoutRuntime(cloneWeaponLoadoutRuntime(savedP.weaponLoadout));
+    } else {
+      player.setWeaponLoadout(["pistol"], 0);
+    }
     player.skillCooldown = savedP.skillCooldown ?? 0;
     player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia"
       ? 0
@@ -773,6 +778,11 @@ export class DungeonState extends GameState {
     if (this.qaFrozen) {
       if (this.qaPresentationTime !== null) this.roomRenderer.setPresentationTime(this.qaPresentationTime);
       return;
+    }
+    
+    while (this.player.pendingPickups.length > 0) {
+      const p = this.player.pendingPickups.pop()!;
+      this.pickups.push(acquirePickup(p.x, p.y, p.type === "energy" ? "mana" : "coin", p.type === "energy" ? 15 : 20));
     }
     
     this.roomRenderer.update(dt);
@@ -1878,6 +1888,9 @@ export class DungeonState extends GameState {
       currentRoom.destroyedPropTiles ??= [];
       if (!currentRoom.destroyedPropTiles.includes(index)) currentRoom.destroyedPropTiles.push(index);
     }
+    const tileX = (index % 20) * 16 + 8;
+    const tileY = Math.floor(index / 20) * 16 + 8;
+    CombatEventDispatcher.emit("prop_destroyed", { player: this.player, x: tileX, y: tileY });
     this.engine.triggerScreenShake(0.6, 0.06);
     return true;
   }
@@ -3031,7 +3044,7 @@ export class DungeonState extends GameState {
           ) {
             directDamage *= Math.max(1, weapon.markedTargetDamageMultiplier ?? 1);
           }
-          const result = DamageSystem.damageEnemy(e, directDamage, this.player);
+          const result = DamageSystem.damageEnemy(e, directDamage, this.player, p.critical, p.sourceWeaponId ?? undefined);
           p.hitEnemyIds.add(e.id);
           directEnemyId = e.id;
           if (result.applied) {
@@ -3116,6 +3129,17 @@ export class DungeonState extends GameState {
               audio.playHurt();
             }
             entityHit = true;
+          } else if (!entityHit && !p.hitEnemyIds.has(-2) && this.player.dodgeTimer > 0) {
+            // Only check graze while dodging (since it says "near-miss dodges")
+            const grazeRadius = p.radius + this.player.radius + 16;
+            const grazeHit = segmentCircleHit(
+              p.previousX, p.previousY, p.x, p.y,
+              this.player.x, this.player.y, grazeRadius,
+            );
+            if (grazeHit && (environmentHitT === null || grazeHit.t <= environmentHitT)) {
+              p.hitEnemyIds.add(-2);
+              CombatEventDispatcher.emit("player_graze_projectile", { player: this.player });
+            }
           }
         }
       }
@@ -3293,7 +3317,7 @@ export class DungeonState extends GameState {
         life: 0.18,
         maxLife: 0.18,
       });
-      const result = DamageSystem.damageEnemy(target, damage, this.player, false);
+      const result = DamageSystem.damageEnemy(target, damage, this.player, false, projectile.sourceWeaponId ?? undefined);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(target, projectile.statusEffect, projectile.statusDuration);
@@ -3369,7 +3393,7 @@ export class DungeonState extends GameState {
         distance,
         radius,
       );
-      const result = DamageSystem.damageEnemy(enemy, damage, this.player);
+      const result = DamageSystem.damageEnemy(enemy, damage, this.player, false, projectile.sourceWeaponId ?? undefined);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
           StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration);

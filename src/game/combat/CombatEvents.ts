@@ -16,12 +16,16 @@ export type CombatEventType =
   | "battery_full"
   | "weapon_overheated"
   | "charge_restored"
-  | "skill_activated";
+  | "skill_activated"
+  | "player_graze_projectile"
+  | "prop_destroyed";
 
 export interface CombatEventPayloads {
   "player_perfect_dodge": { player: Player };
-  "player_hit_enemy": { player: Player, enemy: Enemy, damage: number, isCrit: boolean };
-  "player_kill_enemy": { player: Player, enemy: Enemy };
+  "player_graze_projectile": { player: Player };
+  "prop_destroyed": { player: Player, x: number, y: number };
+  "player_hit_enemy": { player: Player, enemy: Enemy, damage: number, isCrit: boolean, sourceWeaponId?: string };
+  "player_kill_enemy": { player: Player, enemy: Enemy, sourceWeaponId?: string };
   "player_damaged": { player: Player, damage: number };
   "player_weapon_swapped": { player: Player, previousWeaponId: string, newWeaponId: string };
   "player_room_cleared": { player: Player, noDamageTaken: boolean };

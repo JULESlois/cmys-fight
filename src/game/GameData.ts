@@ -1,4 +1,4 @@
-import { WeaponLoadoutRuntime, createWeaponRuntimeState } from "./combat/WeaponRuntimeState";
+import { WeaponLoadoutRuntime, createWeaponRuntimeState, normalizeWeaponLoadoutRuntime } from "./combat/WeaponRuntimeState";
 import { generateStage, type FloorData } from "./FloorGenerator";
 import { CHARACTERS } from "./data/characters";
 import { normalizeRoomState } from "./RoomState";
@@ -261,7 +261,6 @@ export class GameData {
       this.data.player = { ...defaultSave.player, ...(parsed.player || {}) };
       
       if (!parsed.player?.weaponLoadout) {
-        const { createWeaponRuntimeState } = require("./combat/WeaponRuntimeState");
         const legacyWeapon = isWeaponId(parsed.player?.currentWeaponId)
           ? parsed.player.currentWeaponId
           : "pistol";
@@ -912,7 +911,6 @@ export class GameData {
     const fallback = isWeaponId(player.currentWeaponId) ? player.currentWeaponId : "pistol";
     
     if (!player.weaponLoadout) {
-      const { createWeaponRuntimeState } = require("./combat/WeaponRuntimeState");
       const w1 = Array.isArray((player as any).weaponSlots) ? (player as any).weaponSlots[0] : fallback;
       const w2 = Array.isArray((player as any).weaponSlots) ? (player as any).weaponSlots[1] : undefined;
       player.weaponLoadout = {
@@ -922,17 +920,15 @@ export class GameData {
       };
       if (w2) player.weaponLoadout.slots[1] = createWeaponRuntimeState(w2);
     }
-
+    
+    player.weaponLoadout = normalizeWeaponLoadoutRuntime(player.weaponLoadout);
     
     const eligibleSlots = player.weaponLoadout.slots.filter(s => s && isWeaponAvailableForCharacter(WEAPONS[s.weaponId], player.characterId));
     const characterStarter = CHARACTERS[player.characterId]?.starterWeapon ?? "pistol";
     if (eligibleSlots.length === 0) { player.weaponLoadout.slots = [createWeaponRuntimeState(characterStarter)]; } else { player.weaponLoadout.slots = eligibleSlots as any; }
     
     player.weaponLoadout.activeSlot = player.weaponLoadout.activeSlot === 1 && player.weaponLoadout.slots[1] ? 1 : 0;
-
-    
     player.currentWeaponId = player.weaponLoadout.slots[player.weaponLoadout.activeSlot]?.weaponId ?? player.weaponLoadout.slots[0].weaponId;
-
   }
 
   private resetSkillState(characterId: string) {

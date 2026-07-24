@@ -16,50 +16,56 @@ export interface SynergyDefinition {
   description: string;
   shortCode: string;
   requiredBuffs: [BuffId, BuffId];
+  experimental?: boolean;
 }
 
 export const SYNERGIES: Record<SynergyId, SynergyDefinition> = {
   scorching_refraction: {
     id: "scorching_refraction",
     name: "SCORCHING REFRACTION",
-    description: "Bounced projectiles leave a brief burn trail. First bounce spawns 3 weak embers.",
+    description: "[EXPERIMENTAL] Bounced projectiles leave a brief burn trail.",
     shortCode: "SCR",
     requiredBuffs: ["rebound_rounds", "elemental_rounds"],
+    experimental: true,
   },
   mirror_pierce: {
     id: "mirror_pierce",
     name: "MIRROR PIERCE",
-    description: "Pierce-then-bounce or bounce-then-hit deals +25% damage and retains remaining pierce/bounce.",
+    description: "[EXPERIMENTAL] Pierce-then-bounce deals +25% damage.",
     shortCode: "MRP",
     requiredBuffs: ["piercing_shots", "rebound_rounds"],
+    experimental: true,
   },
   afterimage_volley: {
     id: "afterimage_volley",
     name: "AFTERIMAGE VOLLEY",
-    description: "Perfect dodge afterimage copies your counter attack at 40% damage. No new afterimage.",
+    description: "[EXPERIMENTAL] Perfect dodge afterimage copies counter attack.",
     shortCode: "AFV",
     requiredBuffs: ["afterimage_capture", "counter_strike"],
+    experimental: true,
   },
   cross_current: {
     id: "cross_current",
     name: "CROSS CURRENT",
-    description: "Weapon swap grants 2 sync stacks. Chain arc restores energy to both weapons.",
+    description: "Weapon swap grants 2 sync stacks.",
     shortCode: "XCR",
     requiredBuffs: ["cross_swap", "alternating_current"],
   },
   bulwark_loop: {
     id: "bulwark_loop",
     name: "BULWARK LOOP",
-    description: "Completing armor recharge near structure clears a small cone of enemy projectiles. 6s cooldown.",
+    description: "[EXPERIMENTAL] Completing armor recharge clears nearby projectiles.",
     shortCode: "BWL",
     requiredBuffs: ["bulwark_memory", "fast_recharge"],
+    experimental: true,
   },
   phoenix_ember: {
     id: "phoenix_ember",
     name: "PHOENIX EMBER",
-    description: "Emergency barrier ignition: burns nearby enemies, restores 2 armor, leaves ember zone.",
+    description: "[EXPERIMENTAL] Emergency barrier ignition restores 2 armor.",
     shortCode: "PHE",
     requiredBuffs: ["emergency_barrier", "elemental_rounds"],
+    experimental: true,
   },
 };
 

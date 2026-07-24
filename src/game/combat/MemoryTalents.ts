@@ -21,6 +21,7 @@ export interface MemoryTalentDefinition {
   name: string;
   description: string;
   shortCode: string;
+  experimental?: boolean;
 }
 
 export const MEMORY_TALENTS: Record<MemoryTalentId, MemoryTalentDefinition> = {
@@ -29,48 +30,72 @@ export const MEMORY_TALENTS: Record<MemoryTalentId, MemoryTalentDefinition> = {
     name: "BALLISTIC MEMORY",
     description: "First buff choice includes a Vanguard protocol. First non-starter weapon gains +10% speed until chapter end.",
     shortCode: "BAL",
+    experimental: true,
+
+
   },
   echo_memory: {
     id: "echo_memory",
     name: "ECHO MEMORY",
     description: "Start with one Archive Pulse. First perfect dodge restores 25% dodge cooldown.",
     shortCode: "ECH",
+    experimental: true,
+
+
   },
   phoenix_memory: {
     id: "phoenix_memory",
     name: "PHOENIX MEMORY",
     description: "First armor break per chapter clears nearby projectiles. If no armor, triggers at half HP.",
     shortCode: "PHX",
+    experimental: true,
+
+
   },
   starmap_memory: {
     id: "starmap_memory",
     name: "STARMAP MEMORY",
     description: "Route choice fully reveals one exit (enemy/env/reward/threat). Other exit shows partial info.",
     shortCode: "STM",
+    experimental: true,
+
+
   },
   arsenal_memory: {
     id: "arsenal_memory",
     name: "ARSENAL MEMORY",
     description: "Choose a weapon family at Armory. First weapon reward strongly favors that family.",
     shortCode: "ARS",
+    experimental: true,
+
+
   },
   salvage_memory: {
     id: "salvage_memory",
     name: "SALVAGE MEMORY",
     description: "First 5 props destroyed per chapter add extra scrap. First scrap completion drops energy + coins.",
     shortCode: "SLV",
+    experimental: true,
+
+
   },
   secretpath_memory: {
     id: "secretpath_memory",
     name: "SECRETPATH MEMORY",
     description: "First room with hidden connection per chapter plays a faint directional hint.",
     shortCode: "SCP",
+    experimental: true,
+
+
   },
   forbidden_memory: {
     id: "forbidden_memory",
     name: "FORBIDDEN MEMORY",
     description: "Start with +15 corruption. First hidden room or anomaly altar reward quality +1.",
     shortCode: "FBD",
+    experimental: true,
+
+
   },
 };
 

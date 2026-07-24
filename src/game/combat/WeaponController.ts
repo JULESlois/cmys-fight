@@ -153,7 +153,7 @@ export class WeaponController {
     }
 
     const droppedWeaponId = player.currentWeaponId;
-    player.weaponLoadout.slots.map(s => s?.weaponId)[player.weaponLoadout.activeSlot] = weaponId;
+    player.weaponLoadout.slots[player.weaponLoadout.activeSlot] = createWeaponRuntimeState(weaponId);
     player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
     WeaponController.resetWeaponRuntime(player);
     return {
@@ -259,6 +259,7 @@ export class WeaponController {
     player.facingLeft = player.facing === "left";
 
     const muzzle = player.getPlayerMuzzlePosition(aimAngle);
+    const attackId = "atk_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
     const projectiles: Projectile[] = [];
     const projectileProfile = {
       ...getProjectileProfile(weapon),
@@ -374,6 +375,10 @@ export class WeaponController {
         projectile.anchorX = player.x;
         projectile.anchorY = player.y;
         projectile.linkedShotMode = linkedShotMode;
+        projectile.sourceWeaponId = player.currentWeaponId;
+        projectile.sourceSlot = player.weaponLoadout.activeSlot;
+        projectile.sourceAttackId = attackId;
+        
         if (linkedShotMode === "primer" && projectile.linkedMarkerLife > 0) {
           projectile.life = Math.min(projectile.life, projectile.linkedMarkerLife);
           projectile.maxLife = projectile.life;

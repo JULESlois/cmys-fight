@@ -126,6 +126,7 @@ export class Player {
   public buffRerollsRemaining: number = 0;
   public shopDiscount: number = 0;
   public supplyDropBonus: number = 0;
+  public pendingPickups: Array<{ x: number, y: number, type: "energy" | "coin" }> = [];
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -150,6 +151,10 @@ export class Player {
   public setWeaponLoadout(slots: WeaponSlots, activeSlot: 0 | 1): void {
     this.weaponLoadout.slots = slots[1] ? [createWeaponRuntimeState(slots[0]), createWeaponRuntimeState(slots[1])] : [createWeaponRuntimeState(slots[0])];
     this.weaponLoadout.activeSlot = activeSlot === 1 && this.weaponLoadout.slots[1] ? 1 : 0;
+  }
+
+  public setWeaponLoadoutRuntime(loadout: WeaponLoadoutRuntime): void {
+    this.weaponLoadout = loadout;
   }
 
   public get weaponHandOffsetY(): number {

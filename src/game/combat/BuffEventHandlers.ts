@@ -21,16 +21,29 @@ export function initBuffEventHandlers(): void {
   CombatEventDispatcher.on("player_kill_enemy", (payload) => {
     const restore = BuffSystem.getKillEnergyRestore(payload.player);
     if (restore > 0) {
-      const now = getState(payload.player, "entropyLastReset", 0);
-      const count = getState(payload.player, "entropyCountThisSecond", 0);
+      const now = performance.now() / 1000;
+      const lastReset = getState(payload.player, "entropyLastReset", 0);
+      let count = getState(payload.player, "entropyCountThisSecond", 0);
+      if (now - lastReset >= 1.0) {
+        setState(payload.player, "entropyLastReset", now);
+        count = 0;
+      }
       if (count < 4) {
         restoreMana(payload.player, restore);
         setState(payload.player, "entropyCountThisSecond", count + 1);
       }
     }
-    // execution_window: kill marked enemy restores 1 energy
-    if (BuffSystem.has(payload.player, "execution_window")) {
-      restoreMana(payload.player, 1);
+  });
+
+  // execution_window: kill marked enemy restores 1 energy
+  CombatEventDispatcher.on("player_hit_enemy", (payload) => {
+    if (BuffSystem.has(payload.player, "execution_window") && payload.damage > 0) {
+      const threshold = payload.enemy.type === "boss" ? 0.15 : 0.25;
+      const hpBefore = payload.enemy.hp + payload.damage;
+      const wasMarked = hpBefore <= payload.enemy.maxHp * threshold;
+      if (wasMarked && payload.enemy.hp <= 0) {
+        restoreMana(payload.player, 1);
+      }
     }
   });
 
@@ -62,12 +75,17 @@ export function initBuffEventHandlers(): void {
   CombatEventDispatcher.on("player_hit_enemy", (payload) => {
     if (!BuffSystem.has(payload.player, "alternating_current")) return;
     const lastWeapon = getState(payload.player, "altCurrentLastWeapon", "");
-    const currentWeapon = payload.player.currentWeaponId;
+    const currentWeapon = payload.sourceWeaponId || payload.player.currentWeaponId;
     const syncStacks = getState(payload.player, "altCurrentStacks", 0);
     const lastHitTime = getState(payload.player, "altCurrentLastHitTime", 0);
+    const now = performance.now() / 1000;
+
+    if (now - lastHitTime > 2.0) {
+      setState(payload.player, "altCurrentStacks", 0);
+    }
 
     if (lastWeapon !== "" && lastWeapon !== currentWeapon) {
-      const newStacks = syncStacks + 1;
+      const newStacks = getState(payload.player, "altCurrentStacks", 0) + 1;
       if (newStacks >= 4) {
         setState(payload.player, "altCurrentStacks", 0);
         setState(payload.player, "altCurrentArcReady", true);
@@ -75,13 +93,14 @@ export function initBuffEventHandlers(): void {
         setState(payload.player, "altCurrentStacks", newStacks);
       }
     } else if (lastWeapon === currentWeapon) {
-      setState(payload.player, "altCurrentStacks", 0);
+      // Don't reset on same weapon hit within the window, just let them swap
     }
     setState(payload.player, "altCurrentLastWeapon", currentWeapon);
+    setState(payload.player, "altCurrentLastHitTime", now);
   });
 
   // graze_relay: near-miss dodges accumulate
-  CombatEventDispatcher.on("player_perfect_dodge", (payload) => {
+  CombatEventDispatcher.on("player_graze_projectile", (payload) => {
     if (!BuffSystem.has(payload.player, "graze_relay")) return;
     const grazes = getState(payload.player, "grazeCount", 0) + 1;
     if (grazes >= 5) {
@@ -112,14 +131,24 @@ export function initBuffEventHandlers(): void {
   // === Salvage protocol handlers ===
 
   // battlefield_salvage: every 5 props destroyed spawns supply
-  CombatEventDispatcher.on("player_hit_enemy", (payload) => {
-    // Reset entropy counter each second
-    const now = getState(payload.player, "entropyLastReset", 0);
-    setState(payload.player, "entropyLastReset", now + 1);
-    if (getState(payload.player, "entropyLastReset", 0) > 60) {
-      setState(payload.player, "entropyLastReset", 0);
-      setState(payload.player, "entropyCountThisSecond", 0);
+  CombatEventDispatcher.on("prop_destroyed", (payload) => {
+    if (!BuffSystem.has(payload.player, "battlefield_salvage")) return;
+    const roomCount = getState(payload.player, "salvageRoomCount", 0);
+    if (roomCount >= 2) return; // Max 2/room
+
+    const propsDestroyed = getState(payload.player, "salvagePropsDestroyed", 0) + 1;
+    if (propsDestroyed >= 5) {
+      setState(payload.player, "salvagePropsDestroyed", 0);
+      setState(payload.player, "salvageRoomCount", roomCount + 1);
+      payload.player.pendingPickups.push({ x: payload.x, y: payload.y, type: Math.random() < 0.5 ? "energy" : "coin" });
+    } else {
+      setState(payload.player, "salvagePropsDestroyed", propsDestroyed);
     }
+  });
+
+  // reset salvage room count on room enter
+  CombatEventDispatcher.on("player_room_entered", (payload) => {
+    setState(payload.player, "salvageRoomCount", 0);
   });
 
   // === Survey protocol handlers ===

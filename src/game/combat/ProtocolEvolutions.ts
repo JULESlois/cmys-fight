@@ -21,6 +21,7 @@ export interface EvolutionDefinition {
   shortCode: string;
   requiredFamily: BuffFamily;
   requiredCount: number;
+  experimental?: boolean;
 }
 
 export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
@@ -31,6 +32,9 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "OVR",
     requiredFamily: "vanguard",
     requiredCount: 3,
+    experimental: true,
+
+
   },
   ghost_loop_evo: {
     id: "ghost_loop_evo",
@@ -39,6 +43,9 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "GHL",
     requiredFamily: "echo",
     requiredCount: 3,
+    experimental: true,
+
+
   },
   aegis_foundry_evo: {
     id: "aegis_foundry_evo",
@@ -47,6 +54,9 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "AEG",
     requiredFamily: "phoenix",
     requiredCount: 3,
+    experimental: true,
+
+
   },
   skill_loop_evo: {
     id: "skill_loop_evo",
@@ -55,6 +65,9 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "SKL",
     requiredFamily: "aether",
     requiredCount: 3,
+    experimental: true,
+
+
   },
   living_dungeon_evo: {
     id: "living_dungeon_evo",
@@ -63,6 +76,9 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "LVD",
     requiredFamily: "salvage",
     requiredCount: 3,
+    experimental: true,
+
+
   },
   astral_atlas_evo: {
     id: "astral_atlas_evo",
@@ -71,6 +87,9 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "AST",
     requiredFamily: "survey",
     requiredCount: 3,
+    experimental: true,
+
+
   },
 };
 
