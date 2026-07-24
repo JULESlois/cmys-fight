@@ -123,7 +123,12 @@ export function setMemoryTalent(player: Player, id: MemoryTalentId): void {
 // Memory talent event handlers
 // ============================================================
 
+let memoryTalentsInitialized = false;
+
 export function initMemoryTalentHandlers(): void {
+  if (memoryTalentsInitialized) return;
+  memoryTalentsInitialized = true;
+
   // echo_memory: first perfect dodge restores 25% dodge cooldown
   CombatEventDispatcher.on("player_perfect_dodge", (payload) => {
     if (getActiveMemoryTalent(payload.player) !== "echo_memory") return;

@@ -137,7 +137,12 @@ export function activateEvolution(player: Player, id: EvolutionId): boolean {
 // Evolution event handlers
 // ============================================================
 
+let evolutionHandlersInitialized = false;
+
 export function initEvolutionHandlers(): void {
+  if (evolutionHandlersInitialized) return;
+  evolutionHandlersInitialized = true;
+
   // overclock_core_evo: track consecutive hits
   CombatEventDispatcher.on("player_hit_enemy", (payload) => {
     if (getActiveEvolution(payload.player) !== "overclock_core_evo") return;
