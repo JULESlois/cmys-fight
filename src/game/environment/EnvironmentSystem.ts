@@ -1,3 +1,4 @@
+import { WORLD_NODES } from "../world/WorldNodes";
 import type { Room, StageData } from "../FloorGenerator";
 import { isSolid, MAP_HEIGHT, MAP_WIDTH, TILE_SIZE } from "../MapData";
 import { createSeededRandom, hashSeed } from "../Random";
@@ -39,7 +40,15 @@ function isDoorSpine(tileX: number, tileY: number): boolean {
 export class EnvironmentSystem {
   static generate(stage: StageData, room: Room, mapData: number[]): EnvironmentHazard[] {
     if (room.type !== "combat" && room.type !== "boss") return [];
-    const type = typeForChapter(stage.routeDepth);
+    
+    let type: EnvironmentHazardType;
+    if (stage.worldNodeId && WORLD_NODES[stage.worldNodeId]) {
+      type = WORLD_NODES[stage.worldNodeId].hazardType;
+    } else {
+      console.warn(`[EnvironmentSystem] Invalid or missing worldNodeId '${stage.worldNodeId}' for hazards, using fallback.`);
+      type = typeForChapter(stage.routeDepth);
+    }
+    
     const random = createSeededRandom(hashSeed(room.encounterSeed ?? stage.seed, `environment:${type}`));
     const walkableTiles = mapData.filter(tile => !isSolid(tile)).length;
     const walkableRatio = walkableTiles / Math.max(1, mapData.length);

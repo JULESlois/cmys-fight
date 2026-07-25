@@ -63,6 +63,7 @@ export interface ProjectileProfile {
 }
 
 export interface WeaponData {
+  experimental?: boolean;
   id: string;
   name: string;
   category: WeaponCategory;
@@ -607,7 +608,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     impactEffect: "plasma", recoil: 0.15,
   },
   last_prism: {
-    id: "last_prism", name: "Last Prism", category: "magic", rarity: "legendary",
+    id: "last_prism", experimental: true, name: "Last Prism", category: "magic", rarity: "legendary",
     damage: 1, fireRate: 4, bulletSpeed: 360, manaCost: 1.5, spread: 0.52,
     resourceType: "battery", batteryCapacity: 24, batteryRechargeRate: 6, batteryRechargeDelay: 0.5,
     pelletCount: 6, knockback: 2, critChance: 0.12, color: "#FFFFFF",
@@ -674,7 +675,7 @@ export function isWeaponAvailableForCharacter(weapon: WeaponData, characterId?: 
 }
 
 export function getAvailableWeapons(_globalStageIndex = 1, characterId?: string): WeaponData[] {
-  return Object.values(WEAPONS).filter(weapon => isWeaponAvailableForCharacter(weapon, characterId));
+  return Object.values(WEAPONS).filter(weapon => isWeaponAvailableForCharacter(weapon, characterId) && !weapon.experimental);
 }
 
 export type WeaponRollContext = "shop" | "treasure" | "boss";

@@ -1,15 +1,14 @@
 import type { Player } from "../entities/Player";
 import { WEAPONS, type WeaponData } from "../data/weapons";
 import type { WeaponRuntimeState } from "./WeaponRuntimeState";
-import { CombatEventDispatcher } from "./CombatEvents";
 
 export interface WeaponResourceStrategy {
   type: "magazine" | "battery" | "heat" | "charge" | "action";
   init(runtime: WeaponRuntimeState, weapon: WeaponData): void;
-  canFire(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, energyCost: number): boolean;
+  canFire(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player): boolean;
   getFailReason?(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player): "energy" | "overheated" | "reloading";
-  consume(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, energyCost: number): void;
-  update(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, dt: number, isActive: boolean, fireHeld?: boolean): void;
+  consume(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player): void;
+  update(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, dt: number, isActive: boolean): void;
   getRatio(runtime: WeaponRuntimeState, weapon: WeaponData): number;
 }
 
@@ -20,23 +19,21 @@ export const MagazineStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.reloadTimer = 0;
   },
-  canFire(runtime, weapon, player, energyCost) {
-    return runtime.resourceState.value >= 1 && runtime.customState.reloadTimer <= 0;
+  canFire(runtime, weapon, player) {
+    return runtime.resourceState.value > 0 && runtime.customState.reloadTimer <= 0;
   },
   getFailReason(runtime, weapon, player) {
     return runtime.customState.reloadTimer > 0 ? "reloading" : "energy";
   },
-  consume(runtime, weapon, player, energyCost) {
+  consume(runtime, weapon, player) {
     runtime.resourceState.value -= 1;
     if (runtime.resourceState.value <= 0) {
       runtime.customState.reloadTimer = weapon.reloadTime ?? 1.5;
-      CombatEventDispatcher.emit("reload_started", { player, weaponId: runtime.weaponId });
     }
   },
   update(runtime, weapon, player, dt, isActive) {
     if (runtime.resourceState.value <= 0 || runtime.customState.reloadTimer > 0) {
-      let reloadSpeed = isActive ? 1.0 : 1.5; // faster reload when stowed!
-      if (runtime.customState.tacticalReloadActive) reloadSpeed *= 1.25;
+      const reloadSpeed = isActive ? 1.0 : 1.5; // faster reload when stowed!
       if (runtime.customState.reloadTimer === undefined) {
         runtime.customState.reloadTimer = weapon.reloadTime ?? 1.5;
       }
@@ -44,7 +41,6 @@ export const MagazineStrategy: WeaponResourceStrategy = {
       if (runtime.customState.reloadTimer <= 0) {
         runtime.resourceState.value = runtime.resourceState.max;
         runtime.customState.reloadTimer = 0;
-        CombatEventDispatcher.emit("reload_completed", { player, weaponId: runtime.weaponId });
       }
     }
   },
@@ -64,17 +60,14 @@ export const BatteryStrategy: WeaponResourceStrategy = {
     runtime.customState.rechargeDelayTimer = 0;
     runtime.customState.isEmpowered = false;
   },
-  canFire(runtime, weapon, player, energyCost) {
-    return runtime.resourceState.value >= energyCost;
+  canFire(runtime, weapon, player) {
+    return runtime.resourceState.value >= (weapon.manaCost || 1);
   },
   getFailReason() { return "energy"; },
-  consume(runtime, weapon, player, energyCost) {
-    runtime.resourceState.value -= energyCost;
+  consume(runtime, weapon, player) {
+    runtime.resourceState.value -= (weapon.manaCost || 1);
     runtime.customState.rechargeDelayTimer = weapon.batteryRechargeDelay ?? 1.0;
     runtime.customState.isEmpowered = false;
-    if (runtime.resourceState.value <= 0) {
-      CombatEventDispatcher.emit("battery_depleted", { player, weaponId: runtime.weaponId });
-    }
   },
   update(runtime, weapon, player, dt, isActive) {
     if (runtime.customState.rechargeDelayTimer > 0) {
@@ -84,7 +77,6 @@ export const BatteryStrategy: WeaponResourceStrategy = {
       runtime.resourceState.value = Math.min(runtime.resourceState.max, runtime.resourceState.value + rechargeRate * dt);
       if (runtime.resourceState.value >= runtime.resourceState.max) {
         runtime.customState.isEmpowered = true; // Empowered when naturally recovered to full
-        CombatEventDispatcher.emit("battery_full", { player, weaponId: runtime.weaponId });
       }
     }
   },
@@ -100,26 +92,25 @@ export const HeatStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = 0;
     runtime.customState.overheatTimer = 0;
   },
-  canFire(runtime, weapon, player, energyCost) {
+  canFire(runtime, weapon, player) {
     return runtime.customState.overheatTimer <= 0 && runtime.resourceState.value < runtime.resourceState.max;
   },
   getFailReason() { return "overheated"; },
-  consume(runtime, weapon, player, energyCost) {
+  consume(runtime, weapon, player) {
     runtime.resourceState.value += (weapon.heatPerShot ?? 10);
     if (runtime.resourceState.value >= runtime.resourceState.max) {
       runtime.customState.overheatTimer = weapon.overheatLockout ?? 2.0;
-      CombatEventDispatcher.emit("weapon_overheated", { player, weaponId: runtime.weaponId });
     }
   },
-  update(runtime, weapon, player, dt, isActive, fireHeld = false) {
+  update(runtime, weapon, player, dt, isActive) {
     if (runtime.customState.overheatTimer > 0) {
       runtime.customState.overheatTimer -= dt;
       if (runtime.customState.overheatTimer <= 0) {
         runtime.resourceState.value = 0; // instantly cool down after lockout
       }
-    } else if (!fireHeld || !isActive) {
+    } else {
       const decay = weapon.heatDecayRate ?? 25;
-      const decayMultiplier = isActive ? 1.0 : 1.5;
+      const decayMultiplier = isActive ? 1.0 : 1.5; // faster cool down when stowed
       runtime.resourceState.value = Math.max(0, runtime.resourceState.value - decay * decayMultiplier * dt);
     }
   },
@@ -135,11 +126,11 @@ export const ChargeStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.chargeTimer = 0;
   },
-  canFire(runtime, weapon, player, energyCost) {
-    return runtime.resourceState.value >= 1;
+  canFire(runtime, weapon, player) {
+    return runtime.resourceState.value > 0;
   },
   getFailReason() { return "energy"; },
-  consume(runtime, weapon, player, energyCost) {
+  consume(runtime, weapon, player) {
     runtime.resourceState.value -= 1;
   },
   update(runtime, weapon, player, dt, isActive) {
@@ -150,7 +141,6 @@ export const ChargeStrategy: WeaponResourceStrategy = {
       if (runtime.customState.chargeTimer >= chargeTime) {
         runtime.customState.chargeTimer -= chargeTime;
         runtime.resourceState.value += 1;
-        CombatEventDispatcher.emit("charge_restored", { player, weaponId: runtime.weaponId });
       }
     } else {
       runtime.customState.chargeTimer = 0;
@@ -169,8 +159,8 @@ export const ActionStrategy: WeaponResourceStrategy = {
     runtime.resourceState.max = 1;
     runtime.resourceState.value = 1;
   },
-  canFire(runtime, weapon, player, energyCost) { return true; },
-  consume(runtime, weapon, player, energyCost) { },
+  canFire(runtime, weapon, player) { return true; },
+  consume(runtime, weapon, player) { },
   update(runtime, weapon, player, dt, isActive) { },
   getRatio(runtime, weapon) { return 1; }
 };

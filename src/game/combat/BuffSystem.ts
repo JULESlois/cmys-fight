@@ -52,6 +52,7 @@ export type BuffId = "counter_strike" | "scattershot" | "rapid_fire" | "heavy_ro
   | "blood_pact_engine" | "cursed_compass" | "hollow_armor";
 
 export interface BuffDefinition {
+  experimental?: boolean;
   id: BuffId;
   name: string;
   description: string;
@@ -147,9 +148,16 @@ import { CombatEventDispatcher } from "./CombatEvents";
 import { initBuffEventHandlers } from "./BuffEventHandlers";
 import { initWeaponModuleHandlers } from "./WeaponModules";
 import { initSynergyHandlers } from "./SynergySystem";
+import { initMemoryTalentHandlers } from "./MemoryTalents";
+import { initEvolutionHandlers } from "./ProtocolEvolutions";
+
+let buffSystemInitialized = false;
 
 export class BuffSystem {
   static init() {
+    if (buffSystemInitialized) return;
+    buffSystemInitialized = true;
+
     CombatEventDispatcher.on("player_perfect_dodge", (payload) => {
       if (BuffSystem.has(payload.player, "counter_strike")) {
         payload.player.buffState.counterStrikeReady = true;
@@ -158,6 +166,8 @@ export class BuffSystem {
     initBuffEventHandlers();
     initWeaponModuleHandlers();
     initSynergyHandlers();
+    initMemoryTalentHandlers();
+    initEvolutionHandlers();
   }
 
   static readonly MAX_BUFFS = 12;
@@ -181,7 +191,7 @@ export class BuffSystem {
     const random = createSeededRandom(normalizeSeed(seed));
     const difficultyStageIndex = getDifficultyStageIndex(progress);
     const candidates = ALL_BUFF_IDS.filter(id =>
-      !owned.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex
+      !owned.includes(id) && !BUFFS[id].experimental && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex
     );
 
     // Build protection: boost weights for buffs matching owned families
@@ -237,6 +247,8 @@ export class BuffSystem {
       player.buffState["altCurrentTimer"] -= dt;
       if (player.buffState["altCurrentTimer"] <= 0) {
         player.buffState["altCurrentStacks"] = 0;
+        player.buffState["altCurrentLastWeapon"] = "";
+        player.buffState["altCurrentLastAttackId"] = "";
       }
     }
   }

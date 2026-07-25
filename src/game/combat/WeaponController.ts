@@ -189,9 +189,6 @@ export class WeaponController {
     const channelRatio = WeaponController.getChannelRatio(player, weapon.id);
     const energyCost = WeaponController.getEnergyCost(player, weapon.id);
     
-    if (weapon.id === "last_prism") {
-      console.log("last_prism energyCost:", energyCost, "battery:", slot.resourceState.value, "canFire:", strategy.canFire(slot, weapon, player, energyCost));
-    }
     if (!ignoreCost && strategy && !strategy.canFire(slot, weapon, player, energyCost)) {
       const reason = strategy.getFailReason ? strategy.getFailReason(slot, weapon, player) : "energy";
       return { fired: false, projectiles: [], recoil: 0, reason };
@@ -385,10 +382,6 @@ export class WeaponController {
           canTriggerSynergies: true,
         };
         
-        // Legacy fields
-        projectile.sourceWeaponId = player.currentWeaponId;
-        projectile.sourceSlot = player.weaponLoadout.activeSlot;
-        projectile.sourceAttackId = attackId;
         
         if (linkedShotMode === "primer" && projectile.linkedMarkerLife > 0) {
           projectile.life = Math.min(projectile.life, projectile.linkedMarkerLife);

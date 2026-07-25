@@ -1,5 +1,5 @@
 import type { Player } from "../entities/Player";
-import { CombatEventDispatcher } from "./CombatEvents";
+import { CombatEventDispatcher, canSourceTriggerBuffs } from "./CombatEvents";
 import { BUFFS, BuffSystem, type BuffId, type BuffFamily } from "./BuffSystem";
 
 // ============================================================
@@ -145,6 +145,7 @@ export function initEvolutionHandlers(): void {
 
   // overclock_core_evo: track consecutive hits
   CombatEventDispatcher.on("player_hit_enemy", (payload) => {
+    if (!canSourceTriggerBuffs(payload.source)) return;
     if (getActiveEvolution(payload.player) !== "overclock_core_evo") return;
     const hits = (payload.player.buffState["overclockHits"] ?? 0) + 1;
     payload.player.buffState["overclockHits"] = hits;
@@ -160,6 +161,7 @@ export function initEvolutionHandlers(): void {
 
   // overclock_core_evo: 3 rapid kills also triggers
   CombatEventDispatcher.on("player_kill_enemy", (payload) => {
+    if (!canSourceTriggerBuffs(payload.source)) return;
     if (getActiveEvolution(payload.player) !== "overclock_core_evo") return;
     const kills = (payload.player.buffState["overclockRapidKills"] ?? 0) + 1;
     payload.player.buffState["overclockRapidKills"] = kills;

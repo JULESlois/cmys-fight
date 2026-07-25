@@ -88,8 +88,7 @@ export function normalizeWeaponRuntimeState(state: any): WeaponRuntimeState {
   let fireCooldown = Number(state.fireCooldown);
   if (!Number.isFinite(fireCooldown) || fireCooldown < 0) fireCooldown = 0;
   
-  let max = Number(state.resourceState?.max);
-  if (!Number.isFinite(max) || max <= 0) max = defaultState.resourceState.max;
+  const max = defaultState.resourceState.max;
   
   let value = Number(state.resourceState?.value);
   if (!Number.isFinite(value) || value < 0) value = defaultState.resourceState.value;
@@ -118,7 +117,11 @@ export function normalizeWeaponLoadoutRuntime(loadout: any): WeaponLoadoutRuntim
   }
   
   const s0 = normalizeWeaponRuntimeState(slots[0]);
-  let s1 = slots[1] ? normalizeWeaponRuntimeState(slots[1]) : undefined;
+  
+  let s1: WeaponRuntimeState | undefined = undefined;
+  if (slots[1] && typeof slots[1] === "object" && typeof slots[1].weaponId === "string" && WEAPONS[slots[1].weaponId]) {
+    s1 = normalizeWeaponRuntimeState(slots[1]);
+  }
   
   let activeSlot = Number(loadout.activeSlot);
   if (!Number.isFinite(activeSlot) || (activeSlot !== 0 && activeSlot !== 1)) activeSlot = 0;

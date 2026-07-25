@@ -20,7 +20,7 @@
     "test:qa": "node --import tsx scripts/browser-qa-smoke.ts",
     "test:feedback": "node --import tsx scripts/feedback-fixes-smoke.ts",
     "test:content": "node --import tsx scripts/content-variety-smoke.ts",
-    "test:runtime": "node --import tsx scripts/combat-runtime-smoke.ts",
+    "test:runtime": "node --import tsx scripts/combat-runtime-smoke.ts && node --import tsx scripts/combat-source-smoke.ts && node --import tsx scripts/route-identity-smoke.ts",
     "test:weapons": "node --import tsx scripts/weapon-effects-smoke.ts",
     "test:mobile": "node --import tsx scripts/mobile-layout-smoke.ts",
     "test:monsters": "node --import tsx scripts/monster-model-smoke.ts",

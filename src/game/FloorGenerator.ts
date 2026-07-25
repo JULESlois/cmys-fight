@@ -415,10 +415,21 @@ export function generateStage(progressValue: RunProgress, random: RandomSource =
   const progress = normalizeRunProgress(progressValue);
   const seed = createRandomSeed(random);
   const seededRandom = createSeededRandom(seed);
-  const theme = THEMES[(progress.routeDepth - 1) % THEMES.length];
+  
+  let nodeDef = WORLD_NODES[progress.worldNodeId];
+  let theme: ThemeId;
+  if (!nodeDef) {
+    console.warn(`[StageGen] Invalid worldNodeId '${progress.worldNodeId}', using fallback.`);
+    theme = THEMES[(progress.routeDepth - 1) % THEMES.length];
+  } else {
+    theme = nodeDef.theme as ThemeId;
+  }
+  
   const stage = isBossStage(progress)
     ? createBossStage(progress, theme, seed, seededRandom)
     : createNormalStage(progress, theme, seed, seededRandom);
+    
+  stage.worldNodeId = progress.worldNodeId;
 
   console.log(
     `[StageGen] Generated ${getStageLabel(progress)} with ${stage.rooms.length} rooms (${stage.isBossStage ? "boss" : "normal"}).`,

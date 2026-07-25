@@ -1,5 +1,5 @@
 import type { Player } from "../entities/Player";
-import { CombatEventDispatcher } from "./CombatEvents";
+import { CombatEventDispatcher, canSourceTriggerBuffs } from "./CombatEvents";
 import { BuffSystem } from "./BuffSystem";
 
 function restoreMana(player: Player, amount: number): void {
@@ -16,9 +16,9 @@ function setState(player: Player, key: string, value: any): void {
 
 export function initBuffEventHandlers(): void {
   // === Existing handlers ===
-
   // entropy_engine: kills restore 2 energy (max 8/s)
   CombatEventDispatcher.on("player_kill_enemy", (payload) => {
+    if (!canSourceTriggerBuffs(payload.source)) return;
     const restore = BuffSystem.getKillEnergyRestore(payload.player);
     if (restore > 0) {
       const remainingQuota = getState(payload.player, "entropyQuota", 4);
@@ -34,6 +34,7 @@ export function initBuffEventHandlers(): void {
 
   // execution_window: kill marked enemy restores 1 energy
   CombatEventDispatcher.on("player_hit_enemy", (payload) => {
+    if (!canSourceTriggerBuffs(payload.source)) return;
     if (BuffSystem.has(payload.player, "execution_window") && payload.damage > 0) {
       const threshold = payload.enemy.type === "boss" ? 0.15 : 0.25;
       const hpBefore = payload.enemy.hp + payload.damage;
@@ -57,7 +58,6 @@ export function initBuffEventHandlers(): void {
   });
 
   // === Echo protocol handlers ===
-
   // cross_swap: weapon swap grants attack speed + energy refund
   CombatEventDispatcher.on("player_weapon_swapped", (payload) => {
     if (!BuffSystem.has(payload.player, "cross_swap")) return;
@@ -70,7 +70,9 @@ export function initBuffEventHandlers(): void {
 
   // alternating_current: track alternating weapon hits
   CombatEventDispatcher.on("player_hit_enemy", (payload) => {
+    if (!canSourceTriggerBuffs(payload.source)) return;
     if (!BuffSystem.has(payload.player, "alternating_current")) return;
+    
     const source = payload.source;
     if (source.kind !== "primary" || !source.weaponId) return;
 

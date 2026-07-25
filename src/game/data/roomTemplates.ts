@@ -1,4 +1,4 @@
-export type RoomType = "start" | "combat" | "treasure" | "boss" | "exit" | "npc" | "hidden";
+export type RoomType = "start" | "combat" | "treasure" | "boss" | "exit" | "npc";
 
 export interface DoorMask {
   up: boolean;

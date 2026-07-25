@@ -1,6 +1,6 @@
 import type { Player } from "../entities/Player";
 import type { WeaponRuntimeState } from "./WeaponRuntimeState";
-import { CombatEventDispatcher } from "./CombatEvents";
+import { CombatEventDispatcher, canSourceTriggerBuffs } from "./CombatEvents";
 import { WEAPONS } from "../data/weapons";
 
 export type WeaponModuleId =
@@ -117,6 +117,7 @@ export function initWeaponModuleHandlers(): void {
 
   // charge_elite_restore: on elite kill, restore 1 charge
   CombatEventDispatcher.on("player_kill_enemy", (payload) => {
+    if (!canSourceTriggerBuffs(payload.source)) return;
     if (!payload.enemy.isElite) return;
     const slot = findActiveSlot(payload.player);
     if (slot && slot.resourceType === "charge" && hasModule(slot, "charge_elite_restore")) {

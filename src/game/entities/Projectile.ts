@@ -69,10 +69,6 @@ export class Projectile {
   public closeRangeDamageMultiplier = 1;
   public closeRangeFalloffDistance = 0;
 
-  public sourceWeaponId: string | null = null;
-  public sourceSlot: 0 | 1 | null = null;
-  public sourceAttackId: string | null = null;
-  public canTriggerSynergy = true;
 
   private static nextId = 0;
 
@@ -142,10 +138,6 @@ export class Projectile {
     this.source = undefined;
     
     // Clear legacy fields
-    this.sourceWeaponId = null;
-    this.sourceSlot = null;
-    this.sourceAttackId = null;
-    this.canTriggerSynergy = true;
     this.beamWidth = profile?.beamWidth ?? 1;
     this.explosionRadius = profile?.explosionRadius ?? 0;
     this.explosionDamageMultiplier = profile?.explosionDamageMultiplier ?? 0.75;
@@ -182,10 +174,6 @@ export class Projectile {
     this.closeRangeDamageMultiplier = profile?.closeRangeDamageMultiplier ?? 1;
     this.closeRangeFalloffDistance = profile?.closeRangeFalloffDistance ?? 0;
     this.hitEnemyIds.clear();
-    this.sourceWeaponId = null;
-    this.sourceSlot = null;
-    this.sourceAttackId = null;
-    this.canTriggerSynergy = true;
     return this;
   }
 

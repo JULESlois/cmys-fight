@@ -24,9 +24,19 @@ export interface CombatSource {
   weaponId?: string;
   slot?: 0 | 1;
   attackId?: string;
-  kind: "primary" | "chain" | "explosion" | "status" | "environment";
+  kind: "primary" | "chain" | "explosion" | "status" | "environment" | "unknown";
   canTriggerBuffs: boolean;
   canTriggerSynergies: boolean;
+}
+
+export function canSourceTriggerBuffs(source?: CombatSource): boolean {
+  if (!source) return false;
+  return source.canTriggerBuffs === true;
+}
+
+export function canSourceTriggerSynergies(source?: CombatSource): boolean {
+  if (!source) return false;
+  return source.canTriggerSynergies === true;
 }
 
 export interface CombatEventPayloads {

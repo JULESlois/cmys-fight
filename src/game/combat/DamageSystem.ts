@@ -120,7 +120,7 @@ export class DamageSystem {
       killed: enemy.hp <= 0,
     };
     if (player && result.hpDamage > 0) {
-      const finalSource = source ?? { kind: "environment", canTriggerBuffs: true, canTriggerSynergies: true };
+      const finalSource = source ?? { kind: "unknown", canTriggerBuffs: false, canTriggerSynergies: false };
       CombatEventDispatcher.emit("player_hit_enemy", { player, enemy, damage: result.hpDamage, isCrit: isCrit ?? false, source: finalSource });
       if (result.killed) {
         CombatEventDispatcher.emit("player_kill_enemy", { player, enemy, source: finalSource });

@@ -448,10 +448,36 @@ export class GameData {
     };
   }
 
-  advanceToNode(worldNodeId: string): { previous: RunProgress; current: RunProgress; chapterChanged: boolean } {
+  advanceToNode(worldNodeId: string): { previous: RunProgress; current: RunProgress; chapterChanged: boolean } | null {
+    const floor = this.data.floor;
+    if (!floor) return null;
+
+    let targetExitRoom = undefined;
+    for (const room of floor.rooms) {
+      if (room.type === "exit" && room.exitDestination?.worldNodeId === worldNodeId) {
+        targetExitRoom = room;
+        break;
+      }
+    }
+    
+    if (!targetExitRoom || targetExitRoom.exitDestination?.state !== "available") {
+      console.warn(`Cannot advance to ${worldNodeId}. Invalid or unavailable exit.`);
+      return null;
+    }
+
+    for (const room of floor.rooms) {
+      if (room.type === "exit" && room.exitDestination) {
+        if (room.exitDestination.worldNodeId === worldNodeId) {
+          room.exitDestination.state = "chosen";
+        } else if (room.exitDestination.state === "available") {
+          room.exitDestination.state = "skipped";
+        }
+      }
+    }
+
     const previous = { ...this.data.run };
     const next = { ...this.data.run };
-    next.routeHistory.push(next.worldNodeId);
+    next.routeHistory = [...next.routeHistory, next.worldNodeId];
     next.worldNodeId = worldNodeId;
     next.routeDepth += 1;
     next.stageWithinNode = 1;
@@ -1043,44 +1069,21 @@ export class GameData {
     stage.depth = getGlobalStageIndex(run.routeDepth, run.stageWithinNode);
     stage.routeDepth = run.routeDepth;
     stage.stageWithinNode = run.stageWithinNode;
+    stage.worldNodeId = run.worldNodeId;
     stage.globalStageIndex = getGlobalStageIndex(run.routeDepth, run.stageWithinNode);
     stage.isBossStage = isBossStage(run);
     stage.hardMode = run.hardMode;
     stage.challengeId = run.challengeId;
     stage.challengeKey = run.challengeKey;
     stage.buffChoiceRerollCount = Math.max(0, Math.floor(Number(stage.buffChoiceRerollCount) || 0));
-    for (const room of stage.rooms) {
-      if (false) {
-        room.type = "combat";
-        room.templateId = "legacy_room";
-        room.interactionCompleted = false;
-        room.rewardGenerated = false;
-      } else if (false) {
-        room.type = "combat";
-        room.templateId = "legacy_room";
-        room.interactionCompleted = false;
-        room.rewardGenerated = false;
-      }
-    }
+
     const roomSignature = stage.rooms
       .map(room => `${room.id}:${room.type}`)
       .sort()
       .join("|");
     stage.seed = normalizeSeed(
-      Number(stage.seed) || hashSeed(0xC0FFEE, `${getGlobalStageIndex(run.routeDepth, run.stageWithinNode)}:${roomSignature}`),
+      Number(stage.seed) || hashSeed(0xC0FFEE, `${stage.worldNodeId}:${getGlobalStageIndex(run.routeDepth, run.stageWithinNode)}:${roomSignature}`),
     );
-
-    if (false) {
-      const preparation = stage.rooms.find(room => room.type === "treasure");
-      if (preparation) {
-        
-        preparation.templateId = "horizontal_corridor";
-        preparation.interactionCompleted = false;
-        preparation.rewardGenerated = false;
-        preparation.pickups = [];
-        preparation.shopStock = undefined;
-      }
-    }
 
     for (const room of stage.rooms) {
       room.encounterSeed = normalizeSeed(
@@ -1089,11 +1092,12 @@ export class GameData {
       for (const enemy of room.enemies ?? []) {
         enemy.statusEffects = StatusEffectSystem.normalize(enemy.statusEffects);
       }
-          }
+    }
   }
 
   private isStageCompatible(stage: any, run: RunProgress): boolean {
     if (!stage || !Array.isArray(stage.rooms) || stage.rooms.length === 0) { console.log("isStageCompatible failed: no rooms"); return false; }
+    if (stage.worldNodeId !== run.worldNodeId) { console.log("isStageCompatible failed: worldNodeId mismatch"); return false; }
     if (stage.routeDepth !== run.routeDepth || stage.stageWithinNode !== run.stageWithinNode) { console.log("isStageCompatible failed: depth mismatch", stage.routeDepth, run.routeDepth, stage.stageWithinNode, run.stageWithinNode); return false; }
     if (stage.globalStageIndex !== getGlobalStageIndex(run.routeDepth, run.stageWithinNode)) { console.log("isStageCompatible failed: globalStageIndex mismatch"); return false; }
     if ((stage.hardMode === true) !== run.hardMode) { console.log("isStageCompatible failed: hardMode mismatch"); return false; }

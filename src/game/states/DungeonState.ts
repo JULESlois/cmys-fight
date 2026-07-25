@@ -937,7 +937,7 @@ export class DungeonState extends GameState {
         const dx = enemy.x - this.player.x;
         const dy = enemy.y - this.player.y;
         if (dx * dx + dy * dy <= ventRadius * ventRadius) {
-          DamageSystem.damageEnemy(enemy, ventDamage, this.player, false);
+          DamageSystem.damageEnemy(enemy, ventDamage, this.player, false, { kind: "explosion", canTriggerBuffs: false, canTriggerSynergies: false });
         }
       }
     }
