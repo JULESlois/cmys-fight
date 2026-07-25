@@ -149,12 +149,16 @@ export class HubState extends GameState {
     if (this.introPhase !== "none") {
       this.introTimer += dt;
       if (this.introPhase === "crystal") {
-        if (this.introTimer >= 2.0 && !this.introImpactTriggered) {
+        if (this.introTimer < 3.5 && this.engine.input.wasAnyPressed()) {
+          this.introTimer = 3.5;
+        }
+
+        if (this.introTimer >= 5.2 && !this.introImpactTriggered) {
           this.introImpactTriggered = true;
           // Play impact sound if audio system is available (assume audio.play() exists or just skip if none is directly accessible)
           this.spawnIntroSplash();
         }
-        if (this.introTimer >= 2.5) {
+        if (this.introTimer >= 5.7) {
           this.introPhase = "particles";
           this.introTimer = 0;
           this.initIntroParticles();
@@ -634,7 +638,7 @@ export class HubState extends GameState {
   }
 
   public draw(ctx: CanvasRenderingContext2D): void {
-    if (this.introPhase === "crystal" && this.introTimer < 2.0) {
+    if (this.introPhase === "crystal" && this.introTimer < 5.2) {
       ctx.fillStyle = "#000000";
     } else {
       ctx.fillStyle = "#101A15";
@@ -643,7 +647,7 @@ export class HubState extends GameState {
 
     const prevAlpha = ctx.globalAlpha;
     if (this.introPhase === "crystal") {
-      ctx.globalAlpha = Math.max(0, Math.min(1, (this.introTimer - 1.5) / 0.5));
+      ctx.globalAlpha = Math.max(0, Math.min(1, (this.introTimer - 4.5) / 0.7));
     }
 
     this.camera.begin(ctx);
@@ -829,8 +833,8 @@ export class HubState extends GameState {
   }
 
   private drawCrystal(ctx: CanvasRenderingContext2D): void {
-    const spinDuration = 1.5;
-    const fallDuration = 0.5;
+    const spinDuration = 4.5;
+    const fallDuration = 0.7;
     const sinkDuration = 0.5;
     
     const fallProgress = Math.max(0, Math.min(1, (this.introTimer - spinDuration) / fallDuration));
@@ -859,15 +863,20 @@ export class HubState extends GameState {
     
     // Continuous rotation that slows down
     let angle = 0;
-    const V = (8 * Math.PI) / 1.85;
+    const V = (14 * Math.PI) / 3.55;
     const t_sec = this.introTimer;
     if (t_sec <= 0.3) {
-      angle = 0.5 * t_sec * (t_sec / 0.3 * V);
-    } else if (t_sec <= 1.5) {
-      angle = 0.15 * V + (t_sec - 0.3) * V;
+      angle = 0;
+    } else if (t_sec <= 0.6) {
+      const dt_sec = t_sec - 0.3;
+      angle = 0.5 * dt_sec * (dt_sec / 0.3 * V);
+    } else if (t_sec <= 3.5) {
+      angle = 0.15 * V + (t_sec - 0.6) * V;
+    } else if (t_sec <= 4.5) {
+      const dt_sec = t_sec - 3.5;
+      angle = 0.15 * V + 2.9 * V + (V * dt_sec - 0.5 * V * dt_sec * dt_sec / 1.0);
     } else {
-      const dt_sec = Math.min(1.0, t_sec - 1.5);
-      angle = 0.15 * V + 1.2 * V + (V * dt_sec - 0.5 * V * dt_sec * dt_sec / 1.0);
+      angle = 3.55 * V;
     }
     
     const halfWidths = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1];
@@ -941,7 +950,7 @@ export class HubState extends GameState {
 
   private drawIntroText(ctx: CanvasRenderingContext2D): void {
     const t = this.introTimer;
-    if (t > 1.5) return;
+    if (t > 3.5) return;
 
     // Text position relative to screen center
     const textX = this.player.x;
@@ -955,8 +964,8 @@ export class HubState extends GameState {
 
     if (t < 0.3) {
       alpha = t / 0.3; // fade in
-    } else if (t >= 1.0) {
-      const exitProgress = (t - 1.0) / 0.5; // 0 to 1
+    } else if (t >= 3.0) {
+      const exitProgress = (t - 3.0) / 0.5; // 0 to 1
       alpha = 1 - exitProgress * exitProgress; // nonlinear fade
       shrink = exitProgress * 15; // move up slightly and shrink
       showCyan = true;
