@@ -3638,9 +3638,7 @@ export class DungeonState extends GameState {
     const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     
     let displayTheme: string = floor.theme || "forest";
-    if (currentRoom?.exitDestination?.worldNodeId) {
-      displayTheme = currentRoom.exitDestination.worldNodeId;
-    } else if (this.engine.data.data.run.worldNodeId) {
+    if (this.engine.data.data.run.worldNodeId) {
       displayTheme = this.engine.data.data.run.worldNodeId;
     }
 

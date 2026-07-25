@@ -400,10 +400,10 @@ function drawForestWallTile(
 ): void {
   const tx = tileX * TILE_SIZE;
   const ty = tileY * TILE_SIZE;
-  const exposedTop = !isTile(mapData, tileX, tileY - 1, 1);
-  const exposedBottom = !isTile(mapData, tileX, tileY + 1, 1);
-  const exposedLeft = !isTile(mapData, tileX - 1, tileY, 1);
-  const exposedRight = !isTile(mapData, tileX + 1, tileY, 1);
+  const exposedTop = !(isTile(mapData, tileX, tileY - 1, 1) || isTile(mapData, tileX, tileY - 1, TILE_STRUCTURE));
+  const exposedBottom = !(isTile(mapData, tileX, tileY + 1, 1) || isTile(mapData, tileX, tileY + 1, TILE_STRUCTURE));
+  const exposedLeft = !(isTile(mapData, tileX - 1, tileY, 1) || isTile(mapData, tileX - 1, tileY, TILE_STRUCTURE));
+  const exposedRight = !(isTile(mapData, tileX + 1, tileY, 1) || isTile(mapData, tileX + 1, tileY, TILE_STRUCTURE));
 
   ctx.fillStyle = "#243B2D";
   ctx.fillRect(tx, ty, 16, 16);
@@ -560,10 +560,10 @@ function drawDungeonWallTile(
 ): void {
   const tx = tileX * TILE_SIZE;
   const ty = tileY * TILE_SIZE;
-  const exposedTop = !isTile(mapData, tileX, tileY - 1, 1);
-  const exposedBottom = !isTile(mapData, tileX, tileY + 1, 1);
-  const exposedLeft = !isTile(mapData, tileX - 1, tileY, 1);
-  const exposedRight = !isTile(mapData, tileX + 1, tileY, 1);
+  const exposedTop = !(isTile(mapData, tileX, tileY - 1, 1) || isTile(mapData, tileX, tileY - 1, TILE_STRUCTURE));
+  const exposedBottom = !(isTile(mapData, tileX, tileY + 1, 1) || isTile(mapData, tileX, tileY + 1, TILE_STRUCTURE));
+  const exposedLeft = !(isTile(mapData, tileX - 1, tileY, 1) || isTile(mapData, tileX - 1, tileY, TILE_STRUCTURE));
+  const exposedRight = !(isTile(mapData, tileX + 1, tileY, 1) || isTile(mapData, tileX + 1, tileY, TILE_STRUCTURE));
 
   ctx.fillStyle = "#182131";
   ctx.fillRect(tx, ty, 16, 16);
@@ -741,10 +741,10 @@ function drawSnowWallTile(
 ): void {
   const tx = tileX * TILE_SIZE;
   const ty = tileY * TILE_SIZE;
-  const exposedTop = !isTile(mapData, tileX, tileY - 1, 1);
-  const exposedBottom = !isTile(mapData, tileX, tileY + 1, 1);
-  const exposedLeft = !isTile(mapData, tileX - 1, tileY, 1);
-  const exposedRight = !isTile(mapData, tileX + 1, tileY, 1);
+  const exposedTop = !(isTile(mapData, tileX, tileY - 1, 1) || isTile(mapData, tileX, tileY - 1, TILE_STRUCTURE));
+  const exposedBottom = !(isTile(mapData, tileX, tileY + 1, 1) || isTile(mapData, tileX, tileY + 1, TILE_STRUCTURE));
+  const exposedLeft = !(isTile(mapData, tileX - 1, tileY, 1) || isTile(mapData, tileX - 1, tileY, TILE_STRUCTURE));
+  const exposedRight = !(isTile(mapData, tileX + 1, tileY, 1) || isTile(mapData, tileX + 1, tileY, TILE_STRUCTURE));
 
   ctx.fillStyle = "#365B70";
   ctx.fillRect(tx, ty, 16, 16);
@@ -918,10 +918,10 @@ function drawLavaWallTile(
 ): void {
   const tx = tileX * TILE_SIZE;
   const ty = tileY * TILE_SIZE;
-  const exposedTop = !isTile(mapData, tileX, tileY - 1, 1);
-  const exposedBottom = !isTile(mapData, tileX, tileY + 1, 1);
-  const exposedLeft = !isTile(mapData, tileX - 1, tileY, 1);
-  const exposedRight = !isTile(mapData, tileX + 1, tileY, 1);
+  const exposedTop = !(isTile(mapData, tileX, tileY - 1, 1) || isTile(mapData, tileX, tileY - 1, TILE_STRUCTURE));
+  const exposedBottom = !(isTile(mapData, tileX, tileY + 1, 1) || isTile(mapData, tileX, tileY + 1, TILE_STRUCTURE));
+  const exposedLeft = !(isTile(mapData, tileX - 1, tileY, 1) || isTile(mapData, tileX - 1, tileY, TILE_STRUCTURE));
+  const exposedRight = !(isTile(mapData, tileX + 1, tileY, 1) || isTile(mapData, tileX + 1, tileY, TILE_STRUCTURE));
 
   ctx.fillStyle = "#211A22";
   ctx.fillRect(tx, ty, 16, 16);
@@ -1028,7 +1028,7 @@ function drawForgeCoreFloorTile(ctx: CanvasRenderingContext2D, x: number, y: num
   }
 }
 
-function getBaseTheme(theme: string): string {
+export function getBaseTheme(theme: string): string {
   if (theme === "overgrown_archive") return "forest";
   if (theme === "sealed_library" || theme === "sealed_armory" || theme === "ash_catacombs" || theme === "deep_prison" || theme === "deep_archive") return "dungeon";
   if (theme === "cooling_canal" || theme === "observatory") return "snow";
@@ -1561,8 +1561,8 @@ export class RoomRenderer {
 
   public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, isLocked: boolean = false) {
     const mapData = getMapData(currentRoom, theme);
-    const p = PALETTES[theme] || PALETTES["forest"];
     const baseTheme = getBaseTheme(theme);
+    const p = PALETTES[theme] ?? PALETTES[baseTheme] ?? PALETTES["forest"];
 
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     for (let y = 0; y < MAP_HEIGHT; y++) {
@@ -1588,15 +1588,15 @@ export class RoomRenderer {
 
         if (tileId === 1) {
           const hash = tileHash(x, y);
-          if (theme === "forest") {
+          if (baseTheme === "forest") {
             drawForestWallTile(ctx, mapData, x, y, hash);
-          } else if (theme === "dungeon") {
+          } else if (baseTheme === "dungeon") {
         // broken ossuary seal
             drawDungeonWallTile(ctx, mapData, x, y, hash);
-          } else if (theme === "snow") {
+          } else if (baseTheme === "snow") {
         // ruptured glacier containment seal
             drawSnowWallTile(ctx, mapData, x, y, hash);
-          } else if (theme === "lava") {
+          } else if (baseTheme === "lava") {
         // ruptured foundry crucible
             drawLavaWallTile(ctx, mapData, x, y, hash);
           } else {
@@ -1608,14 +1608,14 @@ export class RoomRenderer {
             ctx.fillRect(tx, ty + TILE_SIZE - 2, TILE_SIZE, 2);
             ctx.fillRect(tx + TILE_SIZE - 2, ty, 2, TILE_SIZE);
 
-            if (theme === "snow") {
+            if (baseTheme === "snow") {
               ctx.fillStyle = "#FFF";
               ctx.fillRect(tx, ty, TILE_SIZE, 4);
               if (hash % 10 > 5) {
                 ctx.fillRect(tx + 4, ty + 4, 2, 4);
                 ctx.fillRect(tx + 10, ty + 4, 2, 2);
               }
-            } else if (theme === "lava") {
+            } else if (baseTheme === "lava") {
         // ruptured foundry crucible
               ctx.fillStyle = "rgba(0,0,0,0.5)";
               if (hash % 10 > 5) {

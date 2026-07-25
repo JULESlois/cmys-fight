@@ -41,7 +41,8 @@
     "test:weapon-hud": "node --import tsx scripts/weapon-hud-smoke.ts",
     "test:chests": "node --import tsx scripts/chest-geometry-smoke.ts",
     "test:hub-prompts": "node --import tsx scripts/hub-prompt-smoke.ts",
-    "test:hub-art": "node --import tsx scripts/hub-art-smoke.ts"
+    "test:hub-art": "node --import tsx scripts/hub-art-smoke.ts",
+    "test:wall-rendering": "node --import tsx scripts/wall-rendering-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
