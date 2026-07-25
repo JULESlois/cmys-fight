@@ -69,7 +69,15 @@ export class HubState extends GameState {
 
   private introPhase: "none" | "crystal" | "particles" = "none";
   private introTimer = 0;
-  private introParticles: { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; delay: number }[] = [];
+  private introImpactTriggered = false;
+  private introParticles: {
+    type: "splash" | "soul" | "shard" | "ripple" | "light";
+    x: number; y: number; vx: number; vy: number;
+    life: number; maxLife: number; delay: number;
+    angle?: number;
+    speed?: number;
+    radius?: number;
+  }[] = [];
 
   public enter(params?: HubEnterParams): void {
     this.engine.data.loadMeta();
@@ -116,6 +124,7 @@ export class HubState extends GameState {
     if (params?.fromSplash) {
       this.introPhase = "crystal";
       this.introTimer = 0;
+      this.introImpactTriggered = false;
       this.introParticles = [];
     } else {
       this.introPhase = "none";
@@ -140,6 +149,11 @@ export class HubState extends GameState {
     if (this.introPhase !== "none") {
       this.introTimer += dt;
       if (this.introPhase === "crystal") {
+        if (this.introTimer >= 2.0 && !this.introImpactTriggered) {
+          this.introImpactTriggered = true;
+          // Play impact sound if audio system is available (assume audio.play() exists or just skip if none is directly accessible)
+          this.spawnIntroSplash();
+        }
         if (this.introTimer >= 2.5) {
           this.introPhase = "particles";
           this.introTimer = 0;
@@ -657,8 +671,26 @@ export class HubState extends GameState {
         sortY: this.player.y + 8,
         draw: () => {
           ctx.save();
-          ctx.globalAlpha = Math.min(1, this.introTimer / 1.5);
-          HubPlayerRenderer.draw(ctx, this.player, this.engine.data.settings.reducedFlashing);
+          const progress = Math.min(1, this.introTimer / 1.5);
+          
+          // Draw shadow
+          ctx.fillStyle = `rgba(0,0,0,${0.3 * progress})`;
+          ctx.beginPath();
+          ctx.ellipse(this.player.x, this.player.y, 8, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (progress > 0) {
+            ctx.save();
+            const height = 40;
+            const revealY = this.player.y - (progress * height);
+            ctx.beginPath();
+            ctx.rect(this.player.x - 30, revealY, 60, height + 10);
+            ctx.clip();
+            
+            HubPlayerRenderer.draw(ctx, this.player, this.engine.data.settings.reducedFlashing);
+            
+            ctx.restore();
+          }
           ctx.restore();
         },
       });
@@ -704,21 +736,51 @@ export class HubState extends GameState {
     ctx.fillText(`${this.engine.data.meta.currency} ${t(this.language, "common.shards")}`, 13, 27);
   }
 
-  private initIntroParticles() {
-    this.introParticles = [];
+  private spawnIntroSplash() {
     const poolX = this.player.x;
     const poolY = this.player.y - 60; // Center of pool
-    for (let i = 0; i < 60; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 5 + Math.random() * 20;
+    
+    // Ripples
+    for (let i = 0; i < 3; i++) {
       this.introParticles.push({
+        type: "ripple",
+        x: poolX, y: poolY, vx: 0, vy: 0,
+        life: 0, maxLife: 0.8 + i * 0.2, delay: i * 0.1,
+        radius: 0
+      });
+    }
+
+    // Splash drops
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 80;
+      this.introParticles.push({
+        type: "splash",
+        x: poolX + Math.cos(angle) * 5,
+        y: poolY + Math.sin(angle) * 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed * 0.5 - (80 + Math.random() * 60),
+        life: 0, maxLife: 1.0 + Math.random() * 0.5, delay: 0
+      });
+    }
+  }
+
+  private initIntroParticles() {
+    const poolX = this.player.x;
+    const poolY = this.player.y - 60; // Center of pool
+    
+    // Soul motes
+    for (let i = 0; i < 45; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 10 + Math.random() * 30;
+      this.introParticles.push({
+        type: "soul",
         x: poolX + Math.cos(angle) * dist,
         y: poolY + Math.sin(angle) * dist * 0.5,
         vx: Math.cos(angle) * (20 + Math.random() * 40),
-        vy: Math.sin(angle) * (10 + Math.random() * 20) - 30, // upward splash
-        life: 0,
-        maxLife: 1.5 + Math.random() * 0.5,
-        delay: Math.random() * 0.1
+        vy: Math.sin(angle) * (10 + Math.random() * 20) - 30,
+        life: 0, maxLife: 1.5 + Math.random() * 0.5, delay: Math.random() * 0.2,
+        angle: angle
       });
     }
   }
@@ -732,25 +794,36 @@ export class HubState extends GameState {
       p.life += dt;
       
       const lifeRatio = p.life / p.maxLife;
+      const friction = Math.pow(0.92, dt * 60);
       
-      const targetX = this.player.x;
-      const targetY = this.player.y - 8;
-      
-      const dx = targetX - p.x;
-      const dy = targetY - p.y;
-      
-      if (lifeRatio > 0.3) {
-        p.vx += dx * dt * 8.0;
-        p.vy += dy * dt * 8.0;
-      } else {
-        p.vy += 80 * dt; // gravity
+      if (p.type === "splash") {
+        p.vy += 450 * dt; // gravity
+        p.vx *= friction;
+        p.vy *= friction;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.y > this.player.y - 60 && p.vy > 0) {
+          p.vy *= -0.3; // bounce on water
+        }
+      } else if (p.type === "ripple") {
+        p.radius = (p.radius || 0) + 60 * dt;
+      } else if (p.type === "soul") {
+        const targetX = this.player.x;
+        const targetY = this.player.y - 8;
+        const dx = targetX - p.x;
+        const dy = targetY - p.y;
+        
+        if (lifeRatio > 0.3) {
+          p.vx += dx * dt * 15.0;
+          p.vy += dy * dt * 15.0;
+        } else {
+          p.vy += 80 * dt; // gravity before homing
+        }
+        p.vx *= friction;
+        p.vy *= friction;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
       }
-      
-      p.vx *= 0.92;
-      p.vy *= 0.92;
-      
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
     }
   }
 
@@ -768,6 +841,12 @@ export class HubState extends GameState {
     const currentY = startY + (targetY - startY) * (fallProgress * fallProgress) + (sinkProgress * 12);
     
     ctx.save();
+    
+    // Mask to water surface (pool center + slight offset) so crystal sinks "into" it
+    ctx.beginPath();
+    ctx.rect(this.player.x - 50, targetY - 150, 100, 150 + 2);
+    ctx.clip();
+    
     ctx.translate(this.player.x, currentY);
     
     // Tilt like a top losing energy
@@ -777,19 +856,16 @@ export class HubState extends GameState {
       ctx.rotate(tilt + wobble);
     }
     
-    let angle = 0;
-    if (this.introTimer < spinDuration) {
-      const t = this.introTimer / spinDuration;
-      const ease = 1 - Math.pow(1 - t, 3);
-      angle = ease * Math.PI * 4;
-    } else {
-      angle = Math.PI * 4;
-    }
+    // Continuous rotation that slows down
+    const t = Math.min(1, this.introTimer / 2.5);
+    const ease = 1 - Math.pow(1 - t, 2.5);
+    const angle = ease * Math.PI * 8; // spins 4 times total
     
     const halfWidths = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1];
     const h = halfWidths.length;
     
-    ctx.globalAlpha *= (1 - sinkProgress);
+    // Fade out as it sinks
+    ctx.globalAlpha *= (1 - sinkProgress * 0.8);
 
     const angles = [angle, angle + Math.PI/2, angle + Math.PI, angle + Math.PI * 1.5];
     const points = angles.map(a => ({ x: Math.cos(a), z: Math.sin(a) }));
@@ -849,24 +925,35 @@ export class HubState extends GameState {
       if (alpha <= 0) continue;
       
       const currentAlpha = Math.min(1, lifeRatio * 5) * alpha;
-      
       ctx.globalAlpha = currentAlpha;
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 2, 2);
       
-      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (speed > 10) {
-        const nx = p.vx / speed;
-        const ny = p.vy / speed;
+      if (p.type === "splash") {
+        ctx.fillStyle = "#8DF6FF";
+        ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 2, 2);
+      } else if (p.type === "ripple") {
+        ctx.strokeStyle = `rgba(141, 246, 255, ${currentAlpha * 0.8})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(Math.round(p.x), Math.round(p.y), p.radius || 1, (p.radius || 1) * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === "soul") {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 2, 2);
         
-        ctx.fillStyle = "#00F2FE";
-        ctx.fillRect(Math.round(p.x - nx * 3) - 1, Math.round(p.y - ny * 3) - 1, 2, 2);
-        
-        ctx.fillStyle = "#0083B0";
-        ctx.fillRect(Math.round(p.x - nx * 6), Math.round(p.y - ny * 6), 1, 1);
-        
-        ctx.fillStyle = "rgba(0, 131, 176, 0.5)";
-        ctx.fillRect(Math.round(p.x - nx * 9), Math.round(p.y - ny * 9), 1, 1);
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (speed > 10) {
+          const nx = p.vx / speed;
+          const ny = p.vy / speed;
+          
+          ctx.fillStyle = "#00F2FE";
+          ctx.fillRect(Math.round(p.x - nx * 3) - 1, Math.round(p.y - ny * 3) - 1, 2, 2);
+          
+          ctx.fillStyle = "#0083B0";
+          ctx.fillRect(Math.round(p.x - nx * 6), Math.round(p.y - ny * 6), 1, 1);
+          
+          ctx.fillStyle = `rgba(0, 131, 176, ${currentAlpha * 0.5})`;
+          ctx.fillRect(Math.round(p.x - nx * 9), Math.round(p.y - ny * 9), 1, 1);
+        }
       }
     }
     ctx.globalAlpha = 1;
