@@ -634,7 +634,7 @@ export class HubState extends GameState {
   }
 
   public draw(ctx: CanvasRenderingContext2D): void {
-    if (this.introPhase === "crystal" && this.introTimer < 2.0) {
+    if (this.introPhase === "crystal" && this.introTimer < 1.7) {
       ctx.fillStyle = "#000000";
     } else {
       ctx.fillStyle = "#101A15";
@@ -643,7 +643,7 @@ export class HubState extends GameState {
 
     const prevAlpha = ctx.globalAlpha;
     if (this.introPhase === "crystal") {
-      ctx.globalAlpha = Math.max(0, Math.min(1, (this.introTimer - 1.5) / 0.5));
+      ctx.globalAlpha = Math.max(0, Math.min(1, (this.introTimer - 1.2) / 0.5));
     }
 
     this.camera.begin(ctx);
@@ -709,6 +709,7 @@ export class HubState extends GameState {
     ctx.globalAlpha = prevAlpha;
     if (this.introPhase === "crystal") {
       this.drawCrystal(ctx);
+      this.drawIntroText(ctx);
     } else if (this.introPhase === "particles") {
       this.drawParticles(ctx);
     }
@@ -857,15 +858,22 @@ export class HubState extends GameState {
     }
     
     // Continuous rotation that slows down
-    const t = Math.min(1, this.introTimer / 2.5);
-    const ease = 1 - Math.pow(1 - t, 2.5);
-    const angle = ease * Math.PI * 8; // spins 4 times total
+    let angle = 0;
+    const V = (8 * Math.PI) / 1.85;
+    const t_sec = this.introTimer;
+    if (t_sec <= 0.3) {
+      angle = 0.5 * t_sec * (t_sec / 0.3 * V);
+    } else if (t_sec <= 1.5) {
+      angle = 0.15 * V + (t_sec - 0.3) * V;
+    } else {
+      const dt_sec = Math.min(1.0, t_sec - 1.5);
+      angle = 0.15 * V + 1.2 * V + (V * dt_sec - 0.5 * V * dt_sec * dt_sec / 1.0);
+    }
     
     const halfWidths = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1];
     const h = halfWidths.length;
     
-    // Fade out as it sinks
-    ctx.globalAlpha *= (1 - sinkProgress * 0.8);
+    const baseAlpha = 1 - sinkProgress * 0.8;
 
     const angles = [angle, angle + Math.PI/2, angle + Math.PI, angle + Math.PI * 1.5];
     const points = angles.map(a => ({ x: Math.cos(a), z: Math.sin(a) }));
@@ -894,6 +902,8 @@ export class HubState extends GameState {
       }
     }
 
+    const appearProgress = Math.min(1, this.introTimer / 0.3);
+
     for (let py = 0; py < h; py++) {
       const pw = halfWidths[py];
       
@@ -903,16 +913,78 @@ export class HubState extends GameState {
         const drawW = rx - lx;
         if (drawW > 0) {
           ctx.fillStyle = face.color;
-          ctx.fillRect(lx, py - h / 2, drawW, 1);
+          if (appearProgress < 1) {
+            ctx.globalAlpha = baseAlpha;
+            ctx.fillRect(lx, py - h / 2, 1, 1);
+            if (drawW > 1) ctx.fillRect(rx - 1, py - h / 2, 1, 1);
+            if (appearProgress > 0.1 && drawW > 2) {
+              ctx.globalAlpha = baseAlpha * Math.max(0, (appearProgress - 0.1) / 0.9);
+              ctx.fillRect(lx + 1, py - h / 2, drawW - 2, 1);
+            }
+          } else {
+            ctx.globalAlpha = baseAlpha;
+            ctx.fillRect(lx, py - h / 2, drawW, 1);
+          }
         }
       }
 
+      ctx.globalAlpha = baseAlpha;
       if (maxZ > 0.5 && pw > 1) {
         const hx = Math.round(maxZ_X * pw);
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(hx, py - h / 2, 1, 1);
       }
     }
+    
+    ctx.restore();
+  }
+
+  private drawIntroText(ctx: CanvasRenderingContext2D): void {
+    const t = this.introTimer;
+    if (t < 0.3 || t > 1.7) return;
+
+    // Text position relative to screen center
+    const textX = this.player.x;
+    const textY = this.player.y - 15;
+
+    ctx.save();
+    
+    let alpha = 1;
+    let shrink = 0;
+    let showCyan = false;
+
+    if (t < 0.6) {
+      alpha = (t - 0.3) / 0.3; // fade in
+    } else if (t >= 1.2) {
+      const exitProgress = (t - 1.2) / 0.5; // 0 to 1
+      alpha = 1 - exitProgress * exitProgress; // nonlinear fade
+      shrink = exitProgress * 15; // move up slightly and shrink
+      showCyan = true;
+    }
+
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const drawText = (offsetX: number, offsetY: number, color: string) => {
+      ctx.fillStyle = color;
+      ctx.font = `bold ${11 - shrink * 0.4}px Arial`;
+      ctx.fillText("DRAGON EDUCATION", textX + offsetX, textY - shrink + offsetY);
+      ctx.font = `normal ${6 - shrink * 0.2}px Arial`;
+      // fake letter spacing by adding spaces
+      ctx.fillText("P  R  E  S  E  N  T  S", textX + offsetX, textY + 14 - shrink * 1.5 + offsetY);
+    };
+
+    if (showCyan) {
+      // cyan trailing shadows
+      ctx.globalAlpha = alpha * 0.8;
+      drawText(-shrink * 0.5, 0, "#00F2FE");
+      drawText(shrink * 0.5, 0, "#00F2FE");
+      ctx.globalAlpha = alpha;
+    }
+
+    // Main text
+    drawText(0, 0, showCyan ? "#E0F7FA" : "#FFFFFF");
     
     ctx.restore();
   }
