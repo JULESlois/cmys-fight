@@ -109,6 +109,10 @@ export function getActiveMemoryTalent(player: Player): MemoryTalentId | null {
   return (player.buffState["memoryTalent"] as MemoryTalentId) ?? null;
 }
 
+export function getAvailableMemoryTalents(): MemoryTalentId[] {
+  return ALL_MEMORY_TALENT_IDS.filter(id => !MEMORY_TALENTS[id].experimental);
+}
+
 export function setMemoryTalent(player: Player, id: MemoryTalentId): void {
   player.buffState["memoryTalent"] = id;
   if (id === "echo_memory") {

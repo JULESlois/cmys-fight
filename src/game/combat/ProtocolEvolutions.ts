@@ -110,6 +110,7 @@ export function getAvailableEvolutions(player: Player): EvolutionId[] {
   const available: EvolutionId[] = [];
   for (const id of ALL_EVOLUTION_IDS) {
     const def = EVOLUTIONS[id];
+    if (def.experimental) continue;
     if (countFamilyBuffs(player, def.requiredFamily) >= def.requiredCount) {
       available.push(id);
     }
@@ -124,6 +125,7 @@ export function getActiveEvolution(player: Player): EvolutionId | null {
 export function activateEvolution(player: Player, id: EvolutionId): boolean {
   if (player.buffState["activeEvolution"]) return false;
   const def = EVOLUTIONS[id];
+  if (def.experimental) return false;
   if (countFamilyBuffs(player, def.requiredFamily) < def.requiredCount) return false;
   player.buffState["activeEvolution"] = id;
   if (id === "aegis_foundry_evo") {

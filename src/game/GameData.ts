@@ -465,12 +465,18 @@ export class GameData {
       return null;
     }
 
+    let chosen = "";
+    const skipped: string[] = [];
     for (const room of floor.rooms) {
       if (room.type === "exit" && room.exitDestination) {
         if (room.exitDestination.worldNodeId === worldNodeId) {
           room.exitDestination.state = "chosen";
+          chosen = worldNodeId;
         } else if (room.exitDestination.state === "available") {
           room.exitDestination.state = "skipped";
+          if (room.exitDestination.worldNodeId) {
+            skipped.push(room.exitDestination.worldNodeId);
+          }
         }
       }
     }
@@ -478,6 +484,7 @@ export class GameData {
     const previous = { ...this.data.run };
     const next = { ...this.data.run };
     next.routeHistory = [...next.routeHistory, next.worldNodeId];
+    next.routeChoices = [...(next.routeChoices || []), { chosen, skipped }];
     next.worldNodeId = worldNodeId;
     next.routeDepth += 1;
     next.stageWithinNode = 1;

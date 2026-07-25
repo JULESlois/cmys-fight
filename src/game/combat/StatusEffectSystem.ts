@@ -10,6 +10,7 @@ export interface ActiveStatusEffect {
   duration: number;
   tickTimer: number;
   stacks: number;
+  source?: import("./CombatEvents").CombatSource;
 }
 
 const STATUS_IDS: StatusEffectId[] = ["poison", "burn", "slow", "root"];
@@ -41,6 +42,7 @@ function normalizeOne(value: unknown): ActiveStatusEffect | null {
     duration,
     tickTimer: Number.isFinite(rawTickTimer) ? Math.max(0, rawTickTimer) : tickInterval(id),
     stacks: Math.max(1, Math.min(3, Math.floor(Number(raw.stacks) || 1))),
+    source: raw.source,
   };
 }
 
@@ -63,16 +65,16 @@ export class StatusEffectSystem {
     return result;
   }
 
-  static applyPlayer(player: Player, id: StatusEffectId, duration: number): void {
+  static applyPlayer(player: Player, id: StatusEffectId, duration: number, source?: import("./CombatEvents").CombatSource): void {
     const adjusted = Math.max(0, duration * BuffSystem.getStatusDurationMultiplier(player));
-    StatusEffectSystem.apply(player.statusEffects, id, adjusted);
+    StatusEffectSystem.apply(player.statusEffects, id, adjusted, source);
   }
 
-  static applyEnemy(enemy: Enemy, id: StatusEffectId, duration: number): void {
-    StatusEffectSystem.apply(enemy.statusEffects, id, duration);
+  static applyEnemy(enemy: Enemy, id: StatusEffectId, duration: number, source?: import("./CombatEvents").CombatSource): void {
+    StatusEffectSystem.apply(enemy.statusEffects, id, duration, source);
   }
 
-  private static apply(list: ActiveStatusEffect[], id: StatusEffectId, duration: number): void {
+  private static apply(list: ActiveStatusEffect[], id: StatusEffectId, duration: number, source?: import("./CombatEvents").CombatSource): void {
     const cappedDuration = capControlDuration(id, duration);
     if (cappedDuration <= 0) return;
     const existing = list.find(status => status.id === id);
@@ -93,20 +95,20 @@ export class StatusEffectSystem {
       }
       return;
     }
-    list.push({ id, duration: cappedDuration, tickTimer: tickInterval(id), stacks: 1 });
+    list.push({ id, duration: cappedDuration, tickTimer: tickInterval(id), stacks: 1, source });
   }
 
   static updatePlayer(player: Player, dt: number): void {
     StatusEffectSystem.updateDurations(player.statusEffects, dt, status => {
       if (status.id !== "poison" && status.id !== "burn") return;
-      DamageSystem.damagePlayer(player, status.stacks, 0.12);
+      DamageSystem.damagePlayer(player, status.stacks, 0.12, status.source);
     });
   }
 
-  static updateEnemy(enemy: Enemy, dt: number): boolean {
+  static updateEnemy(enemy: Enemy, dt: number, player?: Player): boolean {
     StatusEffectSystem.updateDurations(enemy.statusEffects, dt, status => {
       if (status.id !== "poison" && status.id !== "burn") return;
-      DamageSystem.damageEnemy(enemy, status.stacks);
+      DamageSystem.damageEnemy(enemy, status.stacks, player, false, status.source);
     });
     return enemy.hp <= 0;
   }

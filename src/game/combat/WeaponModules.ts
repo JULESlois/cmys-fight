@@ -119,7 +119,8 @@ export function initWeaponModuleHandlers(): void {
   CombatEventDispatcher.on("player_kill_enemy", (payload) => {
     if (!canSourceTriggerBuffs(payload.source)) return;
     if (!payload.enemy.isElite) return;
-    const slot = findActiveSlot(payload.player);
+    const slotIndex = payload.source?.slot ?? payload.player.weaponLoadout.activeSlot;
+    const slot = payload.player.weaponLoadout.slots[slotIndex];
     if (slot && slot.resourceType === "charge" && hasModule(slot, "charge_elite_restore")) {
       slot.resourceState.value = Math.min(slot.resourceState.max, slot.resourceState.value + 1);
     }

@@ -299,15 +299,27 @@ export function getEnemyRenderScale(definition: EnemyDefinition, isElite = false
   return base;
 }
 
+export function getBaseTheme(theme: string): EnemyTheme {
+  if (theme === "overgrown_archive") return "forest";
+  if (theme === "sealed_library" || theme === "sealed_armory" || theme === "ash_catacombs" || theme === "deep_prison" || theme === "deep_archive") return "dungeon";
+  if (theme === "cooling_canal" || theme === "observatory") return "snow";
+  if (theme === "forge_core") return "lava";
+  return theme as EnemyTheme;
+}
+
 export function getEnemyPool(theme: EnemyTheme, role?: EnemyRole, stageIndex = 5): EnemyDefinition[] {
-  const pool = (CHAPTER_POOLS[theme] ?? CHAPTER_POOLS.forest)
+  const baseTheme = getBaseTheme(theme);
+  const poolIds = CHAPTER_POOLS[theme] ?? CHAPTER_POOLS[baseTheme] ?? CHAPTER_POOLS.forest;
+  const pool = poolIds
     .map(id => ENEMIES[id])
     .filter(definition => (definition.introducedAtStage ?? 1) <= stageIndex);
   return role ? pool.filter(definition => definition.role === role) : pool;
 }
 
 export function getBossPool(theme: EnemyTheme): EnemyDefinition[] {
-  return (CHAPTER_BOSSES[theme] ?? CHAPTER_BOSSES.forest).map(id => ENEMIES[id]);
+  const baseTheme = getBaseTheme(theme);
+  const poolIds = CHAPTER_BOSSES[theme] ?? CHAPTER_BOSSES[baseTheme] ?? CHAPTER_BOSSES.forest;
+  return poolIds.map(id => ENEMIES[id]);
 }
 
 export function getBossDefinition(theme: EnemyTheme): EnemyDefinition {

@@ -9,6 +9,7 @@ export interface RunProgress {
   routeDepth: number;
   stageWithinNode: number;
   routeHistory: string[];
+  routeChoices?: { chosen: string; skipped: string[] }[];
 
   hardMode: boolean;
   challengeId?: ChallengeId;
@@ -31,6 +32,7 @@ export function migrateLegacyRunProgress(value: any): RunProgress {
       routeDepth: Number(value.routeDepth) || 1,
       stageWithinNode: Number(value.stageWithinNode) || 1,
       routeHistory: Array.isArray(value.routeHistory) ? [...value.routeHistory] : [],
+      routeChoices: Array.isArray(value.routeChoices) ? [...value.routeChoices] : [],
       hardMode: value.hardMode === true,
       challengeId: isChallengeId(value.challengeId) ? value.challengeId : undefined,
       challengeKey: typeof value.challengeKey === "string" ? value.challengeKey : undefined,
@@ -50,6 +52,7 @@ export function migrateLegacyRunProgress(value: any): RunProgress {
     routeDepth: chapterIndex,
     stageWithinNode: stageIndex,
     routeHistory: [],
+    routeChoices: [],
     hardMode: value.hardMode === true,
     challengeId: isChallengeId(value.challengeId) ? value.challengeId : undefined,
     challengeKey: typeof value.challengeKey === "string" ? value.challengeKey : undefined,
@@ -66,6 +69,7 @@ export function createInitialRunProgress(
     routeDepth: 1,
     stageWithinNode: 1,
     routeHistory: [],
+    routeChoices: [],
     hardMode,
     challengeId: hardMode ? challengeId : undefined,
     challengeKey: hardMode && challengeId ? challengeKey : undefined,

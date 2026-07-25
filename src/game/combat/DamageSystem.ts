@@ -43,7 +43,7 @@ export class DamageSystem {
     }
   }
 
-  static damagePlayer(player: Player, amount: number, invulnerabilityDuration = 0.55): DamageResult {
+  static damagePlayer(player: Player, amount: number, invulnerabilityDuration = 0.55, source?: import("./CombatEvents").CombatSource): DamageResult {
     let damage = Math.max(0, amount);
     if (damage <= 0 || player.hp <= 0) {
       return { ...NO_DAMAGE, killed: player.hp <= 0 };
@@ -92,7 +92,7 @@ export class DamageSystem {
 
     const totalDamage = armorDamage + actualHpDamage;
     if (totalDamage > 0) {
-      CombatEventDispatcher.emit("player_damaged", { player, damage: totalDamage });
+      CombatEventDispatcher.emit("player_damaged", { player, damage: totalDamage, source });
     }
 
     return {

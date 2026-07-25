@@ -45,7 +45,7 @@ export interface CombatEventPayloads {
   "prop_destroyed": { player: Player, x: number, y: number };
   "player_hit_enemy": { player: Player, enemy: Enemy, damage: number, isCrit: boolean, source: CombatSource };
   "player_kill_enemy": { player: Player, enemy: Enemy, source: CombatSource };
-  "player_damaged": { player: Player, damage: number };
+  "player_damaged": { player: Player, damage: number, source?: CombatSource };
   "player_weapon_swapped": { player: Player, previousWeaponId: string, newWeaponId: string };
   "player_room_cleared": { player: Player, noDamageTaken: boolean };
   "player_room_entered": { player: Player };

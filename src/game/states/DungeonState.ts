@@ -1229,7 +1229,7 @@ export class DungeonState extends GameState {
   private updateEnemyStatuses(dt: number) {
     for (let index = this.enemies.length - 1; index >= 0; index--) {
       const enemy = this.enemies[index];
-      if (!StatusEffectSystem.updateEnemy(enemy, dt)) continue;
+      if (!StatusEffectSystem.updateEnemy(enemy, dt, this.player)) continue;
       this.handleEnemyKilled(enemy);
       this.enemies.splice(index, 1);
       releaseEnemy(enemy);
@@ -3051,7 +3051,7 @@ export class DungeonState extends GameState {
           if (result.applied) {
             this.applyProjectileKnockback(e, p);
             if (p.statusEffect && p.statusDuration > 0) {
-              StatusEffectSystem.applyEnemy(e, p.statusEffect, p.statusDuration);
+              StatusEffectSystem.applyEnemy(e, p.statusEffect, p.statusDuration, p.source);
             }
             audio.playHit();
             this.fx.emitProjectileImpact(p, p.critical, this.engine.isPerformanceDegraded());
@@ -3324,7 +3324,7 @@ export class DungeonState extends GameState {
       const result = DamageSystem.damageEnemy(target, damage, this.player, false, source);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
-          StatusEffectSystem.applyEnemy(target, projectile.statusEffect, projectile.statusDuration);
+          StatusEffectSystem.applyEnemy(target, projectile.statusEffect, projectile.statusDuration, projectile.source);
         }
         this.fx.emitImpact(targetX, targetY, "#8DF6FF", false, this.engine.isPerformanceDegraded());
       }
@@ -3403,7 +3403,7 @@ export class DungeonState extends GameState {
       const result = DamageSystem.damageEnemy(enemy, damage, this.player, false, source);
       if (result.applied) {
         if (projectile.statusEffect && projectile.statusDuration > 0) {
-          StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration);
+          StatusEffectSystem.applyEnemy(enemy, projectile.statusEffect, projectile.statusDuration, projectile.source);
         }
         if (enemy.type !== "boss" && centerDistance > 0) {
           const push = projectile.knockback * falloff;
@@ -3637,10 +3637,7 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     
-    let displayTheme: string = floor.theme || "forest";
-    if (this.engine.data.data.run.worldNodeId) {
-      displayTheme = this.engine.data.data.run.worldNodeId;
-    }
+    const displayTheme: string = floor.theme || "forest";
 
     this.roomRenderer.drawBackground(ctx, currentRoom, displayTheme);
     const time = this.qaPresentationTime ?? Date.now() / 1000;

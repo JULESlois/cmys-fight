@@ -5,10 +5,10 @@ import type { WeaponRuntimeState } from "./WeaponRuntimeState";
 export interface WeaponResourceStrategy {
   type: "magazine" | "battery" | "heat" | "charge" | "action";
   init(runtime: WeaponRuntimeState, weapon: WeaponData): void;
-  canFire(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player): boolean;
+  canFire(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, energyCost: number): boolean;
   getFailReason?(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player): "energy" | "overheated" | "reloading";
-  consume(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player): void;
-  update(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, dt: number, isActive: boolean): void;
+  consume(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, energyCost: number): void;
+  update(runtime: WeaponRuntimeState, weapon: WeaponData, player: Player, dt: number, isActive: boolean, fireHeld?: boolean): void;
   getRatio(runtime: WeaponRuntimeState, weapon: WeaponData): number;
 }
 
@@ -19,19 +19,19 @@ export const MagazineStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.reloadTimer = 0;
   },
-  canFire(runtime, weapon, player) {
-    return runtime.resourceState.value > 0 && runtime.customState.reloadTimer <= 0;
+  canFire(runtime, weapon, player, energyCost) {
+    return runtime.resourceState.value >= energyCost && runtime.customState.reloadTimer <= 0;
   },
   getFailReason(runtime, weapon, player) {
     return runtime.customState.reloadTimer > 0 ? "reloading" : "energy";
   },
-  consume(runtime, weapon, player) {
-    runtime.resourceState.value -= 1;
+  consume(runtime, weapon, player, energyCost) {
+    runtime.resourceState.value -= energyCost;
     if (runtime.resourceState.value <= 0) {
       runtime.customState.reloadTimer = weapon.reloadTime ?? 1.5;
     }
   },
-  update(runtime, weapon, player, dt, isActive) {
+  update(runtime, weapon, player, dt, isActive, fireHeld) {
     if (runtime.resourceState.value <= 0 || runtime.customState.reloadTimer > 0) {
       const reloadSpeed = isActive ? 1.0 : 1.5; // faster reload when stowed!
       if (runtime.customState.reloadTimer === undefined) {
@@ -126,14 +126,15 @@ export const ChargeStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.chargeTimer = 0;
   },
-  canFire(runtime, weapon, player) {
-    return runtime.resourceState.value > 0;
+  canFire(runtime, weapon, player, energyCost) {
+    return runtime.resourceState.value >= energyCost;
   },
   getFailReason() { return "energy"; },
-  consume(runtime, weapon, player) {
-    runtime.resourceState.value -= 1;
+  consume(runtime, weapon, player, energyCost) {
+    runtime.resourceState.value -= energyCost;
+    runtime.customState.rechargeDelayTimer = 0.5;
   },
-  update(runtime, weapon, player, dt, isActive) {
+  update(runtime, weapon, player, dt, isActive, fireHeld) {
     if (runtime.resourceState.value < runtime.resourceState.max) {
       const chargeTime = weapon.chargeTime ?? 2.5;
       const chargeSpeed = isActive ? 1.0 : 1.25; 

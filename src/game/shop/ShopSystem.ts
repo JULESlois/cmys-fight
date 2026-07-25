@@ -133,7 +133,7 @@ export class ShopSystem {
     const availableBuffSlots = Math.max(0, BuffSystem.MAX_BUFFS - player.buffs.length);
     const difficultyStageIndex = getDifficultyStageIndexFromGlobalStage(stage.globalStageIndex);
     const buffPool = (Object.keys(BUFFS) as BuffId[]).filter(id =>
-      !player.buffs.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex
+      !player.buffs.includes(id) && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex && !(BUFFS[id] as any).experimental
     );
     const desiredBuffCount = Math.min(BASE_BUFF_SLOTS, availableBuffSlots, buffPool.length);
     const desiredWeaponCount = SHOP_STOCK_SIZE - desiredBuffCount;

@@ -111,7 +111,36 @@ assert.ok(player.buffState["altCurrentTimer"] <= 0); // could be negative or 0
 assert.equal(player.buffState["altCurrentStacks"], 0);
 assert.equal(player.buffState["altCurrentLastWeapon"], "", "Last weapon should be cleared");
 
-// Secondary arcs cannot trigger recursively
-// Tested by the fact that DungeonState / arc generator should provide `kind: "chain"` with `canTriggerBuffs: false`.
+// Test StatusEffect Source Attribution
+import { StatusEffectSystem } from "../src/game/combat/StatusEffectSystem";
+const testEnemy = new Enemy(0, 0, "melee");
+const sourceObj = { kind: "primary" as const, weaponId: "weapon_X", canTriggerBuffs: true, canTriggerSynergies: false };
+StatusEffectSystem.applyEnemy(testEnemy, "burn", 5.0, sourceObj);
+
+let capturedSource: any = null;
+CombatEventDispatcher.on("player_hit_enemy", (payload) => {
+  if (payload.enemy === testEnemy && payload.damage > 0) {
+    capturedSource = payload.source;
+  }
+});
+
+StatusEffectSystem.updateEnemy(testEnemy, 1.0, player); // burn tick
+assert.ok(capturedSource !== null, "Status damage should emit player_hit_enemy with source");
+assert.equal(capturedSource.weaponId, "weapon_X");
+assert.equal(capturedSource.kind, "primary");
+
+// Test Player StatusEffect Source Attribution
+let playerDamagedSource: any = null;
+CombatEventDispatcher.on("player_damaged", (payload) => {
+  if (payload.player === player && payload.damage > 0) {
+    playerDamagedSource = payload.source;
+  }
+});
+
+const enemySourceObj = { kind: "status" as const, canTriggerBuffs: false, canTriggerSynergies: false };
+StatusEffectSystem.applyPlayer(player, "poison", 5.0, enemySourceObj);
+StatusEffectSystem.updatePlayer(player, 1.0); // poison tick
+assert.ok(playerDamagedSource !== null, "Status damage to player should emit player_damaged with source");
+assert.equal(playerDamagedSource.kind, "status");
 
 console.log("combat-source-smoke tests passed.");

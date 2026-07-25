@@ -75,6 +75,7 @@ export function detectActiveSynergies(player: Player): SynergyId[] {
   const active: SynergyId[] = [];
   for (const id of ALL_SYNERGY_IDS) {
     const def = SYNERGIES[id];
+    if (def.experimental) continue;
     const [a, b] = def.requiredBuffs;
     if (BuffSystem.has(player, a) && BuffSystem.has(player, b)) {
       active.push(id);

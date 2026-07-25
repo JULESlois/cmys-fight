@@ -413,7 +413,7 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
 
 export function generateStage(progressValue: RunProgress, random: RandomSource = Math.random): StageData {
   const progress = normalizeRunProgress(progressValue);
-  const seed = createRandomSeed(random);
+  const seed = hashSeed(createRandomSeed(random), progress.worldNodeId);
   const seededRandom = createSeededRandom(seed);
   
   let nodeDef = WORLD_NODES[progress.worldNodeId];
