@@ -634,7 +634,7 @@ export class HubState extends GameState {
   }
 
   public draw(ctx: CanvasRenderingContext2D): void {
-    if (this.introPhase === "crystal" && this.introTimer < 1.7) {
+    if (this.introPhase === "crystal" && this.introTimer < 2.0) {
       ctx.fillStyle = "#000000";
     } else {
       ctx.fillStyle = "#101A15";
@@ -643,7 +643,7 @@ export class HubState extends GameState {
 
     const prevAlpha = ctx.globalAlpha;
     if (this.introPhase === "crystal") {
-      ctx.globalAlpha = Math.max(0, Math.min(1, (this.introTimer - 1.2) / 0.5));
+      ctx.globalAlpha = Math.max(0, Math.min(1, (this.introTimer - 1.5) / 0.5));
     }
 
     this.camera.begin(ctx);
@@ -902,7 +902,7 @@ export class HubState extends GameState {
       }
     }
 
-    const appearProgress = Math.min(1, this.introTimer / 0.3);
+    const appearProgress = Math.max(0, Math.min(1, (this.introTimer - 0.3) / 0.3));
 
     for (let py = 0; py < h; py++) {
       const pw = halfWidths[py];
@@ -941,7 +941,7 @@ export class HubState extends GameState {
 
   private drawIntroText(ctx: CanvasRenderingContext2D): void {
     const t = this.introTimer;
-    if (t < 0.3 || t > 1.7) return;
+    if (t > 1.5) return;
 
     // Text position relative to screen center
     const textX = this.player.x;
@@ -953,10 +953,10 @@ export class HubState extends GameState {
     let shrink = 0;
     let showCyan = false;
 
-    if (t < 0.6) {
-      alpha = (t - 0.3) / 0.3; // fade in
-    } else if (t >= 1.2) {
-      const exitProgress = (t - 1.2) / 0.5; // 0 to 1
+    if (t < 0.3) {
+      alpha = t / 0.3; // fade in
+    } else if (t >= 1.0) {
+      const exitProgress = (t - 1.0) / 0.5; // 0 to 1
       alpha = 1 - exitProgress * exitProgress; // nonlinear fade
       shrink = exitProgress * 15; // move up slightly and shrink
       showCyan = true;

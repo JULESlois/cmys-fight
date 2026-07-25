@@ -8,7 +8,7 @@ import { LegacyDialogState } from "./states/LegacyDialogState";
 import { MenuState } from "./states/MenuState";
 import { DungeonState, type DungeonQaScene } from "./states/DungeonState";
 import { TitleState } from "./states/TitleState";
-import { SplashState } from "./states/SplashState";
+
 import { RebirthLoadoutState } from "./states/RebirthLoadoutState";
 import { SettingsState } from "./states/SettingsState";
 import { RunResultState } from "./states/RunResultState";
@@ -28,7 +28,7 @@ export class Engine {
   public input: Input;
   public data: GameData;
   public states: { [key: string]: GameState } = {};
-  public currentState: string = "splash";
+  public currentState: string = "hub";
   public isPaused: boolean = false;
   public readonly performanceMonitor = new PerformanceMonitor();
   public readonly debugMode = isDebugMode();
@@ -63,7 +63,6 @@ export class Engine {
 
     for (let i = 0; i < 300; i++) this.transitionOrder.push(i);
     this.states = {
-      splash: new SplashState(this),
       title: new TitleState(this),
       rebirth_loadout: new RebirthLoadoutState(this),
       settings: new SettingsState(this),
@@ -101,7 +100,7 @@ export class Engine {
     }
     
     this.lastTime = performance.now();
-    this.states[this.currentState].enter();
+    this.states[this.currentState].enter({ spawnAnchor: "rebirth_spring", fromSplash: true });
     this.syncStateMusic();
     this.loop(this.lastTime);
   }
@@ -125,10 +124,7 @@ export class Engine {
       this.openMenu();
       return;
     }
-    if (this.currentState === "splash" && (newState === "title" || newState === "hub")) {
-      this.doSwitchState(newState, params);
-      return;
-    }
+
     if (this.transitionTimer > 0) return;
     
     // Shuffle transition order
@@ -151,7 +147,7 @@ export class Engine {
     this.states[this.currentState].exit();
     this.input.suppressUntilReleased();
     this.currentState = newState;
-    if (["splash", "title", "rebirth_loadout", "settings", "run_result", "hub", "records"].includes(newState)) {
+    if (["title", "rebirth_loadout", "settings", "run_result", "hub", "records"].includes(newState)) {
        this.isPaused = false;
     }
     this.states[this.currentState].enter(params);
@@ -285,7 +281,6 @@ export class Engine {
   private syncStateMusic(params?: any) {
     if (this.currentState === "dungeon") return;
     const stateScenes: Record<string, MusicScene> = {
-      splash: "title",
       title: "title",
       rebirth_loadout: "hub",
       hub: "hub",
