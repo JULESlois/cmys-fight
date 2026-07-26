@@ -128,6 +128,52 @@ export const SOULS: Record<string, SoulDefinition> = {
   soul_heat_smith_drone: { id: "soul_heat_smith_drone", enemyId: "heat_smith_drone", type: "enchant", name: "SMITH CACHE", dropRate: 0.06, manaCost: 0, power: 6, effect: "heart_capacity" },
   soul_inferno_core: { id: "soul_inferno_core", enemyId: "inferno_core", type: "ability", name: "INFERNO WARD", dropRate: 1, manaCost: 0, power: 1, ability: "heat_ward", effect: "traversal" },
   soul_vat_horse_prime: { id: "soul_vat_horse_prime", enemyId: "vat_horse_prime", type: "guardian", name: "PRIME REGEN", dropRate: 1, manaCost: 8, power: 1.5, effect: "aura_regen" },
+
+  // ---- sealed library (route depth 2) ----------------------------------
+  soul_cursed_tome: { id: "soul_cursed_tome", enemyId: "cursed_tome", type: "bullet", name: "PAGE STORM", dropRate: 0.07, manaCost: 9, power: 5, effect: "projectile_homing" },
+  soul_arcane_guard: { id: "soul_arcane_guard", enemyId: "arcane_guard", type: "enchant", name: "ARCANE PLATE", dropRate: 0.08, manaCost: 0, power: 0.08, effect: "damage_reduction" },
+  soul_ink_summoner: { id: "soul_ink_summoner", enemyId: "ink_summoner", type: "bullet", name: "INK CALL", dropRate: 0.05, manaCost: 17, power: 4, effect: "summon_familiar" },
+  soul_glyph_sniper: { id: "soul_glyph_sniper", enemyId: "glyph_sniper", type: "bullet", name: "GLYPH BOLT", dropRate: 0.07, manaCost: 10, power: 7, effect: "projectile_pierce" },
+  soul_tome_lord: { id: "soul_tome_lord", enemyId: "tome_lord", type: "enchant", name: "LEXICON MIND", dropRate: 1, manaCost: 0, power: 4, effect: "mana_regen" },
+
+  // ---- cooling canal (route depth 2) ------------------------------------
+  soul_canal_warden: { id: "soul_canal_warden", enemyId: "canal_warden", type: "enchant", name: "CANAL GUARD", dropRate: 0.08, manaCost: 0, power: 2, effect: "stat_constitution" },
+  soul_crystal_drifter: { id: "soul_crystal_drifter", enemyId: "crystal_drifter", type: "bullet", name: "CRYSTAL SHARDS", dropRate: 0.07, manaCost: 7, power: 4, effect: "projectile_spread" },
+  soul_cryo_lancer: { id: "soul_cryo_lancer", enemyId: "cryo_lancer", type: "bullet", name: "CRYO LANCE", dropRate: 0.07, manaCost: 11, power: 8, effect: "projectile_pierce" },
+  soul_glacier_director: { id: "soul_glacier_director", enemyId: "glacier_director", type: "guardian", name: "GLACIER FIELD", dropRate: 1, manaCost: 6, power: 4, effect: "aura_slow" },
+
+  // ---- sealed armory (route depth 3) ------------------------------------
+  soul_iron_sentinel: { id: "soul_iron_sentinel", enemyId: "iron_sentinel", type: "enchant", name: "IRON PLATE", dropRate: 0.08, manaCost: 0, power: 0.09, effect: "damage_reduction" },
+  soul_siege_mortar: { id: "soul_siege_mortar", enemyId: "siege_mortar", type: "bullet", name: "SIEGE SHELL", dropRate: 0.07, manaCost: 13, power: 11, effect: "projectile_heavy" },
+  soul_armory_commander: { id: "soul_armory_commander", enemyId: "armory_commander", type: "enchant", name: "COMMANDER CACHE", dropRate: 0.06, manaCost: 0, power: 6, effect: "heart_capacity" },
+  soul_war_engine: { id: "soul_war_engine", enemyId: "war_engine", type: "guardian", name: "WAR AURA", dropRate: 1, manaCost: 7, power: 5, effect: "aura_damage" },
+
+  // ---- observatory (route depth 3) ---------------------------------------
+  soul_void_moth: { id: "soul_void_moth", enemyId: "void_moth", type: "ability", name: "VOID DRIFT", dropRate: 0.05, manaCost: 6, power: 1, ability: "double_jump", effect: "traversal" },
+  soul_star_caster: { id: "soul_star_caster", enemyId: "star_caster", type: "guardian", name: "STARFIELD", dropRate: 0.06, manaCost: 5, power: 3, effect: "aura_slow" },
+  soul_astral_shade: { id: "soul_astral_shade", enemyId: "astral_shade", type: "enchant", name: "ASTRAL STEP", dropRate: 0.07, manaCost: 0, power: 0.12, effect: "move_speed" },
+  soul_star_sentinel: { id: "soul_star_sentinel", enemyId: "star_sentinel", type: "enchant", name: "STAR FAVOR", dropRate: 1, manaCost: 0, power: 4, effect: "stat_luck" },
+
+  // ---- forge core (route depth 3) ----------------------------------------
+  soul_forge_mech: { id: "soul_forge_mech", enemyId: "forge_mech", type: "enchant", name: "FORGE ARMS", dropRate: 0.08, manaCost: 0, power: 3, effect: "stat_strength" },
+  soul_slag_crawler: { id: "soul_slag_crawler", enemyId: "slag_crawler", type: "guardian", name: "SLAG HALO", dropRate: 0.06, manaCost: 6, power: 3, effect: "aura_damage" },
+  soul_anvil_guard: { id: "soul_anvil_guard", enemyId: "anvil_guard", type: "enchant", name: "ANVIL TITHE", dropRate: 0.06, manaCost: 0, power: 0.25, effect: "heart_greed" },
+  soul_forge_prime: { id: "soul_forge_prime", enemyId: "forge_prime", type: "enchant", name: "PRIME FORGE", dropRate: 1, manaCost: 0, power: 5, effect: "stat_strength" },
+
+  // ---- ash catacombs (route depth 4) -------------------------------------
+  soul_ashen_revenant: { id: "soul_ashen_revenant", enemyId: "ashen_revenant", type: "enchant", name: "ASHEN EDGE", dropRate: 0.07, manaCost: 0, power: 0.05, effect: "crit_chance" },
+  soul_ash_lobber: { id: "soul_ash_lobber", enemyId: "ash_lobber", type: "bullet", name: "ASH BOMB", dropRate: 0.07, manaCost: 12, power: 10, effect: "projectile_heavy" },
+  soul_bone_sovereign: { id: "soul_bone_sovereign", enemyId: "bone_sovereign", type: "bullet", name: "SOVEREIGN CALL", dropRate: 1, manaCost: 16, power: 6, effect: "summon_familiar" },
+
+  // ---- deep prison (route depth 4) ---------------------------------------
+  soul_chain_specter: { id: "soul_chain_specter", enemyId: "chain_specter", type: "guardian", name: "SPECTER CHAINS", dropRate: 0.05, manaCost: 4, power: 2, effect: "aura_slow" },
+  soul_prison_brute: { id: "soul_prison_brute", enemyId: "prison_brute", type: "enchant", name: "BRUTE HIDE", dropRate: 0.08, manaCost: 0, power: 3, effect: "stat_constitution" },
+  soul_warden_alpha: { id: "soul_warden_alpha", enemyId: "warden_alpha", type: "guardian", name: "ALPHA AEGIS", dropRate: 1, manaCost: 7, power: 4, effect: "aura_shield" },
+
+  // ---- deep archive (final route node) ------------------------------------
+  soul_archive_construct: { id: "soul_archive_construct", enemyId: "archive_construct", type: "enchant", name: "CONSTRUCT SHELL", dropRate: 0.07, manaCost: 0, power: 0.1, effect: "damage_reduction" },
+  soul_void_cultist: { id: "soul_void_cultist", enemyId: "void_cultist", type: "bullet", name: "VOID VOLLEY", dropRate: 0.07, manaCost: 8, power: 4, effect: "projectile_spread" },
+  soul_echo_mind: { id: "soul_echo_mind", enemyId: "echo_mind", type: "enchant", name: "ECHO RESONANCE", dropRate: 1, manaCost: 0, power: 0.35, effect: "soul_greed" },
 };
 
 export const SOUL_IDS = Object.keys(SOULS);
