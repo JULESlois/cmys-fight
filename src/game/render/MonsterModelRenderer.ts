@@ -2204,42 +2204,47 @@ const models: Record<string, ModelDraw> = {
   },
   lantern_wraith(ctx, p, _limbFrame, state, stateFrame) {
     const phase = phaseOf(state, stateFrame);
-    const hover = state === "walk" ? [0, -2, 0, 2][phase] : state === "idle" ? [0, -1][phase] : 0;
-    const open = state === "attack" ? [0, 2, 4, 2][phase] : 0;
+    const hover = state === "walk" ? [0, -2, 0, 1][phase] : state === "idle" ? [0, -1][phase] : 0;
+    const trail = state === "walk" ? [3, 5, 3, 1][phase] : 0;
+    const charge = state === "attack" ? [0, 1, 3, 2][phase] : 0;
+    const core = state === "attack" && phase >= 2 ? "#F3FFF8" : "#89FFF1";
 
-    // Ragged robe tails and crescent sleeves establish a hovering spirit.
-    rect(ctx, p.ink, -11, -22 + hover, 22, 24);
-    rect(ctx, "#44334F", -10, -21 + hover, 20, 22);
-    rect(ctx, "#6D4B7E", -7, -20 + hover, 14, 19);
-    for (const [x, h] of [[-9, 10], [-4, 14], [2, 12], [7, 9]] as const) {
-      rect(ctx, p.ink, x, -2 + hover, 5, h);
-      rect(ctx, "#563D65", x + 1, -1 + hover, 3, h - 2);
-    }
-    for (const side of [-1, 1] as const) {
-      const x = side < 0 ? -18 - open : 10 + open;
-      rect(ctx, p.ink, x, -22 + hover, 9, 18);
-      rect(ctx, "#5A3E69", x + 1, -21 + hover, 7, 16);
-      rect(ctx, "#9D6FAD", x + (side < 0 ? 5 : 1), -18 + hover, 2, 9);
+    // Layer 1: delayed, asymmetric cloak keeps the ground readable beneath it.
+    rect(ctx, "#171421", -12 - trail, -22 + hover, 24 + trail, 24);
+    rect(ctx, "#3C2E58", -11 - trail, -21 + hover, 22 + trail, 22);
+    rect(ctx, "#7650B0", -7 - Math.floor(trail / 2), -19 + hover, 14 + Math.floor(trail / 2), 17);
+    for (const [x, h] of [[-10, 8], [-5, 13], [1, 10], [6, 6]] as const) {
+      rect(ctx, "#171421", x - trail, -2 + hover, 5, h);
+      rect(ctx, "#493665", x + 1 - trail, -1 + hover, 3, Math.max(2, h - 2));
     }
 
-    // Hood, face void and caged soul lantern.
-    rect(ctx, p.ink, -9, -34 + hover, 18, 14);
-    rect(ctx, "#593E67", -8, -33 + hover, 16, 12);
-    rect(ctx, "#16141C", -5, -30 + hover, 10, 8);
-    drawPixelEye(ctx, p, -3, -27 + hover, "#C8FFB1");
-    drawPixelEye(ctx, p, 2, -27 + hover, "#C8FFB1");
-    rect(ctx, p.ink, -6, -18 + hover, 12, 14);
-    rect(ctx, "#53405B", -5, -17 + hover, 10, 12);
-    rect(ctx, "#A66BC2", -3, -15 + hover, 6, 8);
-    rect(ctx, "#D8FFB6", -1, -13 + hover, 3, 4);
-    rect(ctx, "#F0FFDA", 0, -12 + hover, 1, 2);
-    for (const x of [-5, 0, 5]) rect(ctx, "#25202C", x, -17 + hover, 1, 12);
+    // Layer 2: tall brass lantern crown remains stable while the cloak trails.
+    rect(ctx, "#171421", -8, -39 + hover, 16, 20);
+    rect(ctx, "#6E6048", -7, -38 + hover, 14, 18);
+    rect(ctx, "#A58A55", -5, -37 + hover, 10, 3);
+    rect(ctx, "#3C2E58", -5, -33 + hover, 10, 11);
+    rect(ctx, "#171421", -10, -40 + hover, 20, 3);
+    rect(ctx, "#8D7548", -7, -43 + hover, 14, 3);
+    for (const x of [-5, 0, 5]) rect(ctx, "#171421", x, -37 + hover, 1, 15);
 
-    if (state === "attack" && phase >= 2) {
-      for (const [x, y] of [[-22, -20], [19, -18], [-16, 2], [15, 3]] as const) {
-        rect(ctx, p.ink, x - 1, y - 1 + hover, 6, 6);
-        rect(ctx, "#B879D0", x, y + hover, 4, 4);
-        rect(ctx, "#E5FFC9", x + 1, y + 1 + hover, 2, 2);
+    // Layer 3: deterministic soul flame communicates life and attack windup.
+    rect(ctx, "#58CFD4", -4 - charge, -31 - charge + hover, 8 + charge * 2, 8 + charge * 2);
+    rect(ctx, core, -2 - charge, -29 - charge + hover, 4 + charge * 2, 5 + charge * 2);
+    rect(ctx, "#FFFFFF", 0, -28 - charge + hover, 1, 3 + charge);
+    rect(ctx, "#58CFD4", -2, -36 - charge + hover, 4, 4 + charge);
+
+    // Layer 4: orbit slots appear before the projectiles, then fill from the core outward.
+    if (state === "attack" && phase >= 1) {
+      for (const [x, y] of [[-22, -24], [19, -22], [-17, -3], [14, -2]] as const) {
+        rect(ctx, "#171421", x - 1, y - 1 + hover, 7, 7);
+        rect(ctx, "#7650B0", x, y + hover, 5, 5);
+        if (phase >= 2) {
+          rect(ctx, "#58CFD4", x + 1, y + 1 + hover, 3, 3);
+          rect(ctx, "#89FFF1", x + 2, y + 2 + hover, 1, 1);
+          const linkX = x < 0 ? -7 : 6;
+          const linkWidth = Math.max(2, Math.abs(x - linkX) - 3);
+          rect(ctx, "#58CFD4", Math.min(x + 4, linkX), y + 2 + hover, linkWidth, 1);
+        }
       }
     }
   },

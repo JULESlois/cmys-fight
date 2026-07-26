@@ -193,7 +193,11 @@ assert.match(source, /vat_horse_prime[\s\S]*#405259/, "vat-horse mechanical vat"
 assert.match(source, /root_lancer[\s\S]*root lance telescopes/, "root lancer authors a telescoping sniper weapon");
 assert.match(source, /petal_moth[\s\S]*Four independently offset petal wings/, "petal moth authors a four-wing orbit silhouette");
 assert.match(source, /coffin_lobber[\s\S]*Mortar throat tilts backward/, "coffin lobber authors a heavy artillery body");
-assert.match(source, /lantern_wraith[\s\S]*caged soul lantern/, "lantern wraith authors its orbiting soul identity");
+assert.match(source, /lantern_wraith[\s\S]*tall brass lantern crown/, "lantern wraith authors a tall lantern silhouette");
+assert.match(source, /lantern_wraith[\s\S]*#171421[\s\S]*#3C2E58[\s\S]*#7650B0/, "lantern wraith uses the proposed dark cloak palette");
+assert.match(source, /lantern_wraith[\s\S]*#58CFD4[\s\S]*#89FFF1/, "lantern wraith reserves cyan-white values for soul-fire readability");
+assert.match(source, /lantern_wraith[\s\S]*orbit slots appear before the projectiles/, "lantern wraith previews all four orbit positions before release");
+assert.match(source, /lantern_wraith[\s\S]*state === "attack" && phase >= 1[\s\S]*phase >= 2/, "lantern wraith attack telegraph has distinct preview and release stages");
 assert.match(source, /icicle_sniper[\s\S]*Long cryo rifle recoils/, "icicle sniper authors a long-range rifle silhouette");
 assert.match(source, /lab_servitor[\s\S]*repair emitters unfold/, "lab servitor authors a support-device attack pose");
 assert.match(source, /magma_mortar[\s\S]*Elevated mortar tube recoils/, "magma mortar authors a foundry artillery chassis");
