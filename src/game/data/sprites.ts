@@ -188,6 +188,42 @@ export const SPRITES: Record<string, SpriteData> = {
     "................",
     "................"
   ],
+  pickup_heart: [
+    "................",
+    "................",
+    "................",
+    "....11...11.....",
+    "...1281.1881....",
+    "..12888188881...",
+    "..128888888881..",
+    "..188888888881..",
+    "...1888888881...",
+    "....18888881....",
+    ".....188881.....",
+    "......1881......",
+    ".......11.......",
+    "................",
+    "................",
+    "................"
+  ],
+  pickup_soul: [
+    "................",
+    "................",
+    "......161.......",
+    ".....1691.......",
+    "....16991.......",
+    "....169961......",
+    "...16999661.....",
+    "...169999961....",
+    "...169999961....",
+    "....1699961.....",
+    ".....16661......",
+    "......111.......",
+    "................",
+    "................",
+    "................",
+    "................"
+  ],
   pickup_pistol: [
     "................",
     "................",
@@ -290,6 +326,21 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
   ...Object.fromEntries(
     Object.entries(WEAPON_PALETTES).map(([weaponId, palette]) => [`weapon_${weaponId}`, palette]),
   ),
+  // Castlevania-layer pickups: heart (sub-weapon ammo) and soul drops. Tinted
+  // to match PixelFxSystem.emitPickup's burst colors so the drop and its
+  // sparkle read as one object.
+  pickup_heart: {
+    ".": "transparent",
+    "1": "#1a1c2c",
+    "2": "#FFA3B1",
+    "8": "#FF5D73",
+  },
+  pickup_soul: {
+    ".": "transparent",
+    "1": "#1a1c2c",
+    "6": "#39D9E8",
+    "9": "#D8FBFF",
+  },
   ...Object.fromEntries(
     Object.keys(MICHELE_CHARACTER_SPRITES).map(spriteName => [spriteName, MICHELE_CHARACTER_PALETTE]),
   ),

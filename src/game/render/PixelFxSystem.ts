@@ -201,7 +201,9 @@ export class PixelFxSystem {
     const color = pickup.type === "coin" ? "#F1C40F"
       : pickup.type === "hp" ? "#FF5D73"
         : pickup.type === "mana" ? "#45B7FF"
-          : "#C77DFF";
+          : pickup.type === "heart" ? "#FF5D73"
+            : pickup.type === "soul" ? "#39D9E8"
+              : "#C77DFF";
     this.emit(pickup.x, pickup.y, lowFx ? 5 : 12, color, 52, 0.45, { gravity: -18, glow: true, size: 2 });
   }
 

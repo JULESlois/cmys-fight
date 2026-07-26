@@ -72,13 +72,30 @@ assert.equal(resetCalls, 1);
 assert.equal(rebuildTarget, "hub");
 assert.deepEqual(rebuildParams, { spawnAnchor: "rebirth_spring" });
 
-assert.equal(SETTINGS_VERSION, 9);
+assert.equal(SETTINGS_VERSION, 10);
 const defaults = createDefaultSettings() as unknown as Record<string, unknown>;
 assert.equal("crtFilter" in defaults, false, "GameSettings no longer contains crtFilter");
+assert.equal(createDefaultSettings().keyBindings.subWeapon, "u", "sub-weapon defaults to U");
+assert.equal(createDefaultSettings().keyBindings.crush, "o", "item crush defaults to O");
 const migrated = normalizeSettings({ version: 7, crtFilter: true, masterVolume: 70 }) as unknown as Record<string, unknown>;
-assert.equal(migrated.version, 9);
+assert.equal(migrated.version, 10);
 assert.equal(migrated.masterVolume, 70);
 assert.equal("crtFilter" in migrated, false, "legacy crtFilter is ignored during migration");
+
+// v10 migration: pre-v10 saves gain the two Castlevania bindings while every
+// existing rebind survives untouched.
+const v9Rebound = normalizeSettings({
+  version: 9,
+  keyBindings: {
+    moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
+    fire: "r", skill: "l", interact: "k", swapWeapon: "i", pause: "escape", dodge: " ",
+  },
+});
+assert.equal(v9Rebound.version, 10);
+assert.equal(v9Rebound.keyBindings.subWeapon, "u", "v9 saves receive the sub-weapon default binding");
+assert.equal(v9Rebound.keyBindings.crush, "o", "v9 saves receive the item-crush default binding");
+assert.equal(v9Rebound.keyBindings.fire, "r", "migration preserves user rebinds");
+assert.equal(v9Rebound.keyBindings.skill, "l", "migration leaves untouched v9 bindings alone");
 
 const engineSource = fs.readFileSync("src/game/Engine.ts", "utf8");
 const menuSource = fs.readFileSync("src/game/states/MenuState.ts", "utf8");
@@ -124,4 +141,5 @@ console.log(JSON.stringify({
   settingsVersion: SETTINGS_VERSION,
   crtFilter: "removed-and-v7-field-ignored",
   scanlines: "engine-combat-title-removed",
+  castlevaniaBindings: "subWeapon-U-crush-O-injected-for-pre-v10",
 }));
