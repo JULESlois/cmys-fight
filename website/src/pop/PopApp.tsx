@@ -104,6 +104,9 @@ export default function PopApp() {
           <a className="pnav-pixel" href="./index.html" title="切换到复古像素版">
             ▦ 像素版
           </a>
+          <a className="pnav-pixel pnav-world" href="./world.html" title="切换到双世界版">
+            ◈ 双世界版
+          </a>
           <a className="pnav-play" href={GAME_URL}>
             ▶ PLAY
           </a>

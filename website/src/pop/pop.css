@@ -144,6 +144,11 @@ a {
   border-bottom: 3px dashed var(--purple) !important;
 }
 
+.pnav-world {
+  color: var(--teal) !important;
+  border-bottom-color: var(--teal) !important;
+}
+
 .pnav-play {
   font-family: var(--display);
   font-size: 13px !important;

@@ -6,7 +6,10 @@ import { dirname, resolve } from "node:path";
 const root = dirname(fileURLToPath(import.meta.url));
 
 // base: "./" 让构建产物可以部署到任意子路径(或直接双击打开 dist/index.html)
-// 双入口:index.html 复古像素版 / pop.html 几何波普版
+// 三入口:
+//   index.html  复古像素版
+//   pop.html    几何波普版
+//   world.html  双世界版(卡拉彼丘 × 异环)
 export default defineConfig({
   base: "./",
   plugins: [react()],
@@ -18,6 +21,7 @@ export default defineConfig({
       input: {
         main: resolve(root, "index.html"),
         pop: resolve(root, "pop.html"),
+        world: resolve(root, "world.html"),
       },
     },
   },

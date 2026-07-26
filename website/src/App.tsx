@@ -94,6 +94,9 @@ export default function App() {
           <a className="nav-alt-style" href="./pop.html" title="切换到几何波普风版本">
             ◧ 波普版
           </a>
+          <a className="nav-alt-style world" href="./world.html" title="切换到双世界版">
+            ◈ 双世界版
+          </a>
           <a className="nav-play" href={GAME_URL}>
             ▶ 开始游戏
           </a>

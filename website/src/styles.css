@@ -199,6 +199,16 @@ a {
   border-bottom-color: var(--yellow);
 }
 
+.nav-alt-style.world {
+  color: var(--cyan) !important;
+  border-bottom-color: var(--cyan);
+}
+
+.nav-alt-style.world:hover {
+  color: var(--yellow) !important;
+  border-bottom-color: var(--yellow);
+}
+
 .nav-play {
   font-family: var(--px-font);
   font-size: 10px !important;
