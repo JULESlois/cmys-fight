@@ -15,6 +15,7 @@ import {
   CHAPTER_CUTSCENES,
   ENDINGS,
   STORY_NODES,
+  isEndingId,
   isStoryFlag,
   isStoryNodeId,
   type EndingId,
@@ -28,6 +29,10 @@ export interface StoryProgress {
   flags: StoryFlag[];
   /** Nodes already seen, so cutscenes do not replay. */
   seenNodes: string[];
+  /** Endings the player has reached, for the completion readout. Optional —
+   * and omitted entirely while empty — so older saves and existing
+   * `{ flags, seenNodes }` literals keep their exact shape. */
+  endingsSeen?: EndingId[];
 }
 
 export function createDefaultStoryProgress(): StoryProgress {
@@ -38,11 +43,15 @@ export function normalizeStoryProgress(value: unknown): StoryProgress {
   const fallback = createDefaultStoryProgress();
   if (!value || typeof value !== "object") return fallback;
   const raw = value as Partial<StoryProgress>;
+  const endingsSeen = Array.isArray(raw.endingsSeen)
+    ? [...new Set(raw.endingsSeen.filter(isEndingId))]
+    : [];
   return {
     flags: Array.isArray(raw.flags) ? [...new Set(raw.flags.filter(isStoryFlag))] : [],
     seenNodes: Array.isArray(raw.seenNodes)
       ? [...new Set(raw.seenNodes.filter(isStoryNodeId))]
       : [],
+    ...(endingsSeen.length > 0 ? { endingsSeen } : {}),
   };
 }
 
@@ -69,15 +78,21 @@ export interface StoryView {
 export class StorySystem {
   private flags: Set<StoryFlag>;
   private seen: Set<string>;
+  private endings: Set<EndingId>;
   private cursor: string | null = null;
 
   constructor(progress: StoryProgress = createDefaultStoryProgress()) {
     this.flags = new Set(progress.flags);
     this.seen = new Set(progress.seenNodes);
+    this.endings = new Set(progress.endingsSeen ?? []);
   }
 
   public toProgress(): StoryProgress {
-    return { flags: [...this.flags], seenNodes: [...this.seen] };
+    return {
+      flags: [...this.flags],
+      seenNodes: [...this.seen],
+      ...(this.endings.size > 0 ? { endingsSeen: [...this.endings] } : {}),
+    };
   }
 
   public hasFlag(flag: StoryFlag): boolean {
@@ -186,6 +201,19 @@ export class StorySystem {
         && !(ending.excludes ?? []).some(flag => this.flags.has(flag)))
       .sort((a, b) => b.priority - a.priority);
     return qualified[0]?.id ?? "ending_default";
+  }
+
+  /** Marks an ending as reached so it persists into meta progress. */
+  public recordEnding(id: EndingId): void {
+    this.endings.add(id);
+  }
+
+  public getEndingsSeen(): EndingId[] {
+    return [...this.endings];
+  }
+
+  public hasSeenEnding(id: EndingId): boolean {
+    return this.endings.has(id);
   }
 
   /** Fraction of all flags collected, for a completion readout. */
