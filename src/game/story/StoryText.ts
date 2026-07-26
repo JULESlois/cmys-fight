@@ -95,6 +95,25 @@ const EN: StoryStrings = {
   "final_seal.line1": "Breaking it ends the archive. Leaving it ends you.",
   "final_seal.choice0": "Break the seal.",
   "final_seal.choice1": "Let it hold.",
+
+  // ---- ending epilogues -------------------------------------------------
+  "ending_true.line0": "The seal breaks around your name, and the archive exhales.",
+  "ending_true.line1": "Every version of you walks out of the stacks at once.",
+  "ending_true.line2": "For the first time, the index has nothing left to say.",
+
+  "ending_mercy.line0": "You leave the deep floor lighter than you found it.",
+  "ending_mercy.line1": "Somewhere behind you, a rooster and a horse learn the way out.",
+  "ending_mercy.line2": "The archive keeps no record of kindness. It remembers anyway.",
+
+  "ending_ascent.line0": "The relic is heavier than the whole descent.",
+  "ending_ascent.line1": "You carry someone else's version of you into the light.",
+  "ending_ascent.line2": "It fits better than you want it to.",
+
+  "ending_archive.line0": "The Archivist files your run under 'resolved'.",
+  "ending_archive.line1": "It is not a happy ending. It is a tidy one.",
+
+  "ending_default.line0": "You surface with no name, no relic, and no record.",
+  "ending_default.line1": "The archive does not notice you leaving. That was the trick.",
 };
 
 const ZH: StoryStrings = {
@@ -177,6 +196,25 @@ const ZH: StoryStrings = {
   "final_seal.line1": "打破它，档案馆终结。不打破，终结的是你。",
   "final_seal.choice0": "打破封印。",
   "final_seal.choice1": "让它继续封着。",
+
+  // ---- 结局尾声 --------------------------------------------------------
+  "ending_true.line0": "封印在你的名字周围碎裂，档案馆呼出一口气。",
+  "ending_true.line1": "所有版本的你同时走出书库。",
+  "ending_true.line2": "索引第一次无话可说。",
+
+  "ending_mercy.line0": "你离开深层时，比来时更轻。",
+  "ending_mercy.line1": "在你身后，雄鸡和马各自找到了出路。",
+  "ending_mercy.line2": "档案馆不记录善意。但它记得。",
+
+  "ending_ascent.line0": "遗物比整段下行都要沉。",
+  "ending_ascent.line1": "你带着别人版本的自己走向光亮。",
+  "ending_ascent.line2": "它比你希望的更合身。",
+
+  "ending_archive.line0": "档案管理员把你的这一程归入「已决」。",
+  "ending_archive.line1": "这不是圆满的结局，只是整齐的结局。",
+
+  "ending_default.line0": "你浮出地表，没有名字，没有遗物，也没有记录。",
+  "ending_default.line1": "档案馆没有察觉你的离开。这正是诀窍所在。",
 };
 
 /**
