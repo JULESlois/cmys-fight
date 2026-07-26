@@ -42,7 +42,8 @@
     "test:chests": "node --import tsx scripts/chest-geometry-smoke.ts",
     "test:hub-prompts": "node --import tsx scripts/hub-prompt-smoke.ts",
     "test:hub-art": "node --import tsx scripts/hub-art-smoke.ts",
-    "test:wall-rendering": "node --import tsx scripts/wall-rendering-smoke.ts"
+    "test:wall-rendering": "node --import tsx scripts/wall-rendering-smoke.ts",
+    "test:arcane-art": "tsx scripts/arcane-form-art-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

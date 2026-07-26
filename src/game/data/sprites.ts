@@ -1,4 +1,5 @@
 import { WEAPON_PALETTES, WEAPON_SPRITES } from "./weaponArt";
+import { ARCANE_CHARACTER_PALETTE, ARCANE_CHARACTER_SPRITES } from "./arcaneCharacterArt";
 import {
   CELESTIA_CHARACTER_PALETTE,
   CELESTIA_CHARACTER_SPRITES,
@@ -74,6 +75,7 @@ export const SPRITES: Record<string, SpriteData> = {
     "................"
   ],
 
+  ...ARCANE_CHARACTER_SPRITES,
   ...MICHELE_CHARACTER_SPRITES,
   ...KANAMI_CHARACTER_SPRITES,
   ...CELESTIA_CHARACTER_SPRITES,
@@ -330,3 +332,5 @@ export const PLAYER_PALETTE: Record<string, string> = {
   "8": "#111827",
   "9": "#ffffff"
 };
+
+export const ARCANE_PLAYER_PALETTE = ARCANE_CHARACTER_PALETTE;
