@@ -234,6 +234,12 @@ export const ENDINGS: EndingDefinition[] = [
   { id: "ending_default", requires: [], priority: 0 },
 ];
 
+export const ENDING_IDS: EndingId[] = ENDINGS.map(ending => ending.id);
+
+export function isEndingId(value: unknown): value is EndingId {
+  return typeof value === "string" && (ENDING_IDS as string[]).includes(value);
+}
+
 export function isStoryFlag(value: unknown): value is StoryFlag {
   return typeof value === "string" && (STORY_FLAGS as string[]).includes(value);
 }
