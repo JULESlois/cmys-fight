@@ -3,6 +3,10 @@ import { WEAPONS, type WeaponSlots } from "../data/weapons";
 import { usesDetailedCharacterArt } from "../data/characters";
 import type { BuffId } from "../combat/BuffSystem";
 import type { ActiveStatusEffect } from "../combat/StatusEffectSystem";
+import { createEmptySoulEffects, type SoulEffects } from "../combat/SoulSystem";
+import { MAX_HEARTS, type SubWeaponId } from "../data/subweapons";
+import { createBaseStats, deriveStats, type DerivedStats, type StatBlock } from "../data/equipment";
+import type { SoulAbility } from "../data/souls";
 
 export const PLAYER_WEAPON_OFFSET_X = 10;
 export const PLAYER_WEAPON_OFFSET_Y = -2;
@@ -118,6 +122,23 @@ export class Player {
   public kanamiBeaconDeployed: boolean = false;
   public celestiaTemporaryArmor: number = 0;
   public celestiaTemporaryArmorTimer: number = 0;
+  // --- Castlevania layer -------------------------------------------------
+  /** Hearts fuel sub-weapon throws and Item Crush. Refilled by pickups only. */
+  public hearts: number = 0;
+  public maxHearts: number = MAX_HEARTS;
+  /** Undefined until the player picks a sub-weapon up. */
+  public subWeaponId?: SubWeaponId;
+  public subWeaponCooldown: number = 0;
+  /** Equipment-derived multipliers, refreshed when the loadout changes. */
+  public subWeaponCostMultiplier: number = 1;
+  public crushCostMultiplier: number = 1;
+  /** Traversal powers held via ability souls, used by the map gates. */
+  public abilities: SoulAbility[] = [];
+  /** Resolved once per loadout change rather than recomputed per frame. */
+  public soulEffects: SoulEffects = createEmptySoulEffects();
+  public stats: StatBlock = createBaseStats();
+  public derivedStats: DerivedStats = deriveStats(createBaseStats());
+
   public buffs: BuffId[] = [];
   public buffState: Record<string, any> = {};
   public emergencyBarrierReady: boolean = false;

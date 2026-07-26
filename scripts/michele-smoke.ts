@@ -180,7 +180,7 @@ passiveDungeon.projectiles = [markedShot];
 passiveDungeon.updateProjectiles(0.1);
 assert.ok(Math.abs(attacker.hp - 15.95) < 0.001, `marked Inspector damage ${attacker.hp}`);
 
-assert.equal(META_SAVE_VERSION, 8);
+assert.equal(META_SAVE_VERSION, 9);
 const meta = createDefaultMetaProgress();
 assert.ok(meta.unlockedCharacters.includes("michele"));
 assert.ok(meta.unlockedStarterWeapons.includes("inspector"));
