@@ -38,7 +38,7 @@ class MemoryStorage implements Storage {
 const storage = new MemoryStorage();
 Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
 
-assert.equal(SETTINGS_VERSION, 9);
+assert.equal(SETTINGS_VERSION, 10);
 assert.equal(STAGES_PER_CHAPTER, 4);
 assert.equal(FINAL_GLOBAL_STAGE, 16);
 assert.equal(getDifficultyStageIndexFromGlobalStage(4), 5);
@@ -51,6 +51,7 @@ assert.equal(migrateLegacyGlobalStage(20), 16);
 assert.deepEqual(DEFAULT_KEY_BINDINGS, {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
   fire: "j", skill: "l", interact: "k", swapWeapon: "i", pause: "escape", dodge: " ",
+  subWeapon: "u", crush: "o",
 });
 const v6Defaults = {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",

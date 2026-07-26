@@ -499,10 +499,12 @@ export class SettingsState extends GameState {
     const settings = this.engine.data.settings;
     const language = settings.language;
     INPUT_ACTIONS.forEach((action, index) => {
-      const y = 51 + index * 16;
+      // 14px rows from y=45 keep all 12 actions (v10 added subWeapon/crush)
+      // above the message line at 204 and the footer at 228.
+      const y = 45 + index * 14;
       const selected = index === this.controlIndex;
       ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
-      if (selected) ctx.fillRect(34, y - 10, 252, 14);
+      if (selected) ctx.fillRect(34, y - 9, 252, 12);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
       ctx.font = uiFont(language, 7, true);

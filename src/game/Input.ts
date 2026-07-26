@@ -22,6 +22,8 @@ const GAMEPAD_BUTTONS: Partial<Record<InputAction, number[]>> = {
   swapWeapon: [3],
   pause: [9],
   dodge: [1],
+  subWeapon: [6],
+  crush: [8],
 };
 
 const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
@@ -31,6 +33,8 @@ const GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   swapWeapon: "Y",
   pause: "START",
   dodge: "B",
+  subWeapon: "LT",
+  crush: "SELECT",
   moveUp: "L-STICK",
   moveDown: "L-STICK",
   moveLeft: "L-STICK",
@@ -44,6 +48,8 @@ const TOUCH_GAMEPAD_PROMPTS: Partial<Record<InputAction, string>> = {
   swapWeapon: "Y",
   pause: "START",
   dodge: "B",
+  subWeapon: "LT",
+  crush: "SELECT",
   moveUp: "D-PAD",
   moveDown: "D-PAD",
   moveLeft: "D-PAD",
