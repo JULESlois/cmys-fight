@@ -19,14 +19,18 @@ export const MagazineStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.reloadTimer = 0;
   },
-  canFire(runtime, weapon, player, energyCost) {
-    return runtime.resourceState.value >= energyCost && runtime.customState.reloadTimer <= 0;
+  // Magazine weapons spend exactly one round per shot; `energyCost` (derived from
+  // manaCost) is the weapon's energy/display cost, not the magazine drain. Several
+  // magazine weapons have manaCost > magazineSize (e.g. vat_horse_cannon 4 > 3) or
+  // manaCost 0 (pistol), so tying rounds to energyCost breaks them.
+  canFire(runtime, weapon, player, _energyCost) {
+    return runtime.resourceState.value >= 1 && runtime.customState.reloadTimer <= 0;
   },
   getFailReason(runtime, weapon, player) {
     return runtime.customState.reloadTimer > 0 ? "reloading" : "energy";
   },
-  consume(runtime, weapon, player, energyCost) {
-    runtime.resourceState.value -= energyCost;
+  consume(runtime, weapon, player, _energyCost) {
+    runtime.resourceState.value -= 1;
     if (runtime.resourceState.value <= 0) {
       runtime.customState.reloadTimer = weapon.reloadTime ?? 1.5;
     }
@@ -126,12 +130,14 @@ export const ChargeStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.chargeTimer = 0;
   },
-  canFire(runtime, weapon, player, energyCost) {
-    return runtime.resourceState.value >= energyCost;
+  // Charge weapons spend exactly one charge slot per shot; `energyCost` is the
+  // energy/display cost only (siege_breaker has manaCost 8 but only 3 slots).
+  canFire(runtime, weapon, player, _energyCost) {
+    return runtime.resourceState.value >= 1;
   },
   getFailReason() { return "energy"; },
-  consume(runtime, weapon, player, energyCost) {
-    runtime.resourceState.value -= energyCost;
+  consume(runtime, weapon, player, _energyCost) {
+    runtime.resourceState.value -= 1;
     runtime.customState.rechargeDelayTimer = 0.5;
   },
   update(runtime, weapon, player, dt, isActive, fireHeld) {
