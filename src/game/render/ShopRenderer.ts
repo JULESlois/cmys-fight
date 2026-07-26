@@ -3,6 +3,7 @@ import { WEAPONS } from "../data/weapons";
 import {
   categoryLabel,
   getBuffText,
+  getEquipmentName,
   getWeaponMechanic,
   rarityLabel,
   seriesLabel,
@@ -49,6 +50,13 @@ function getItemText(item: ShopItem, language: Language): { name: string; descri
       name: weapon.name.toUpperCase(),
       description: `${prefix}${language === "zh-CN" ? "。" : ". "}${getWeaponMechanic(weapon.id, weapon.mechanic, language)}`,
       kind: t(language, "shop.weapon"),
+    };
+  }
+  if (item.kind === "equipment" && item.equipmentId) {
+    return {
+      name: getEquipmentName(item.equipmentId, item.name, language).toUpperCase(),
+      description: item.description,
+      kind: t(language, "shop.equipment"),
     };
   }
   return { name: item.name, description: item.description, kind: item.kind.toUpperCase() };
