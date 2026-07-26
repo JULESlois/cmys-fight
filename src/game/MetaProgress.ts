@@ -4,6 +4,9 @@ import { isAchievementId, type AchievementId } from "./AchievementSystem";
 import { isChallengeId, type ChallengeId } from "./ChallengeSystem";
 import { getDifficultyStageIndex, getDifficultyStageIndexFromGlobalStage, migrateLegacyGlobalStage } from "./RunProgress";
 import { createDefaultHubProgress, normalizeHubProgress, type HubProgress } from "./hub/HubProgress";
+import { createDefaultSoulCollection, normalizeSoulCollection, type SoulCollection } from "./combat/SoulSystem";
+import { createDefaultEquipmentProgress, normalizeEquipmentProgress, type EquipmentProgress } from "./combat/EquipmentSystem";
+import { createDefaultStoryProgress, normalizeStoryProgress, type StoryProgress } from "./story/StorySystem";
 
 export interface MetaProgress {
   version: number;
@@ -28,9 +31,15 @@ export interface MetaProgress {
   claimedAchievementRewards: AchievementId[];
   codex: CodexProgress;
   hubProgress: HubProgress;
+  /** Souls survive death, so the pool widens across runs. */
+  souls: SoulCollection;
+  /** Gear is bought in the Hub and persists. */
+  equipment: EquipmentProgress;
+  /** Narrative flags and seen nodes drive branching and the ending. */
+  story: StoryProgress;
 }
 
-export const META_SAVE_VERSION = 8;
+export const META_SAVE_VERSION = 9;
 
 export function createDefaultMetaProgress(): MetaProgress {
   return {
@@ -56,6 +65,9 @@ export function createDefaultMetaProgress(): MetaProgress {
     claimedAchievementRewards: [],
     codex: createDefaultCodex(),
     hubProgress: createDefaultHubProgress(),
+    souls: createDefaultSoulCollection(),
+    equipment: createDefaultEquipmentProgress(),
+    story: createDefaultStoryProgress(),
   };
 }
 
@@ -101,6 +113,11 @@ export function normalizeMetaProgress(value: unknown): MetaProgress {
     claimedAchievementRewards: uniqueStrings(raw.claimedAchievementRewards).filter(isAchievementId),
     codex: normalizeCodex(raw.codex),
     hubProgress: normalizeHubProgress(raw.hubProgress),
+    // Saves written before version 9 have no Castlevania layer; the
+    // normalizers fall back to a fresh collection rather than failing the load.
+    souls: normalizeSoulCollection(raw.souls),
+    equipment: normalizeEquipmentProgress(raw.equipment),
+    story: normalizeStoryProgress(raw.story),
   };
   if (!meta.unlockedCharacters.includes("knight")) meta.unlockedCharacters.unshift("knight");
   if (!meta.unlockedStarterWeapons.includes("pistol")) meta.unlockedStarterWeapons.unshift("pistol");
