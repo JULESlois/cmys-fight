@@ -15,6 +15,7 @@ import type { BuffId } from "./combat/BuffSystem";
 import type { ActiveStatusEffect } from "./combat/StatusEffectSystem";
 import type { ShopItem } from "./shop/ShopSystem";
 import type { WorldExitDefinition } from "./world/WorldNodes";
+import { pickGateKind, type GateKind } from "./world/AbilityGates";
 
 export interface ExitRequirement {
   type: "fragments" | "corruption" | "no_hit";
@@ -56,6 +57,13 @@ export interface Room {
     weaponId: string;
     opened: boolean;
   };
+  /**
+   * Metroidvania gate on this room's entrances (see AbilityGates). Undefined
+   * means the room was never gated; `gateOpened` records that the matching
+   * ability has already been used on it.
+   */
+  gate?: GateKind;
+  gateOpened?: boolean;
   templateId?: string;
   visited?: boolean;
   doors: { up: boolean; down: boolean; left: boolean; right: boolean };
@@ -84,9 +92,11 @@ export interface Room {
   pickups?: {
     x: number;
     y: number;
-    type: "hp" | "mana" | "coin" | "weapon";
+    type: "hp" | "mana" | "coin" | "weapon" | "heart" | "soul";
     value: number;
     weaponId?: string;
+    /** Which soul a "soul" pickup grants; mirrors weaponId for weapon drops. */
+    soulId?: string;
     blockedUntilPlayerLeaves?: boolean;
   }[];
   /** Generated breakable tile indices already destroyed in this room. */
@@ -385,6 +395,11 @@ function createNormalStage(progress: RunProgress, theme: ThemeId, seed: number, 
         const hiddenRoom = createRoom(origin.x + direction.dx, origin.y + direction.dy, "hidden");
         hiddenRoom.hiddenDiscovered = false;
         hiddenRoom.cleared = true;
+        // Deeper routes seal the bonus room behind an ability gate; chapter 1
+        // keeps it open so the mechanic is met before it starts locking doors.
+        if (progress.routeDepth >= 2) {
+          hiddenRoom.gate = pickGateKind(theme, random());
+        }
         addRoom(hiddenRoom);
         connectDoors(rooms, mapGrid);
       }

@@ -74,7 +74,7 @@ import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
 import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
-import { t, uiFont } from "../i18n";
+import { getSoulName, t, uiFont } from "../i18n";
 import {
   DUNGEON_RITUAL_SPRING_SCALE,
   RoomObjectCollision,
@@ -87,6 +87,21 @@ import {
   type ChestKind,
 } from "../dungeon/ChestGeometry";
 import { moveSweptCircle, type SweptCircleMoveResult } from "../physics/SweptCircleMovement";
+import { ARC_GRAVITY, SubWeaponSystem, type SubWeaponSpawn } from "../combat/SubWeaponSystem";
+import {
+  HEART_PICKUP_LARGE,
+  HEART_PICKUP_SMALL,
+  MAX_HEARTS,
+  SUB_WEAPONS,
+  SUB_WEAPON_IDS,
+  isSubWeaponId,
+  type SubWeaponId,
+} from "../data/subweapons";
+import { SoulSystem } from "../combat/SoulSystem";
+import { EquipmentSystem } from "../combat/EquipmentSystem";
+import { SOULS } from "../data/souls";
+import { canOpenGate } from "../world/AbilityGates";
+import { StoryOverlay } from "../story/StoryOverlay";
 import { drawRitualSpringPart, RITUAL_SPRING_GEOMETRY } from "../render/RitualSpringRenderer";
 import { OcclusionController } from "../world/OcclusionController";
 import type { WorldObjectDefinition, WorldRect } from "../world/WorldMap";
@@ -197,6 +212,13 @@ export class DungeonState extends GameState {
   
   private environmentHazards: EnvironmentHazard[] = [];
   private environmentTime: number = 0;
+  // --- Castlevania layer -------------------------------------------------
+  /** Seconds the stopwatch time-stop field stays active around the player. */
+  private stopwatchFieldTimer = 0;
+  /** Run outcome held back while a story overlay plays out. */
+  private pendingRunOutcome: Exclude<RunOutcome, "active"> | null = null;
+  /** Distinguishes successive soul rolls within one seeded stage. */
+  private soulDropCounter = 0;
   private tutorial = new TutorialSystem();
   private qaPresentationTime: number | null = null;
   private qaFrozen = false;
@@ -254,6 +276,12 @@ export class DungeonState extends GameState {
     player.buffRerollsRemaining = savedP.buffRerollsRemaining ?? 0;
     player.shopDiscount = savedP.shopDiscount ?? 0;
     player.supplyDropBonus = savedP.supplyDropBonus ?? 0;
+    // Castlevania layer: stashed as extra properties on the saved player until
+    // GameSave grows typed fields for them (see syncPlayerState).
+    const savedExtras = savedP as unknown as { hearts?: unknown; subWeaponId?: unknown };
+    player.hearts = Math.max(0, Math.min(MAX_HEARTS * 2, Math.floor(Number(savedExtras.hearts) || 0)));
+    player.subWeaponId = isSubWeaponId(savedExtras.subWeaponId) ? savedExtras.subWeaponId : undefined;
+    player.subWeaponCooldown = 0;
     BuffSystem.applyRuntimeStats(player);
     CharacterResourceController.initForCharacter(player.characterId, player);
     return player;
@@ -264,13 +292,15 @@ export class DungeonState extends GameState {
     this.transitionAlpha = 1.0;
     
     this.player = this.createPlayerFromSave();
+    this.applyMetaLoadout();
     this.tutorial.reset(this.engine.data.settings.tutorialCompleted);
-    
+
     if (!this.engine.data.data.floor || this.engine.data.data.floor.depth === 0) {
       this.engine.data.data.floor = generateStage(this.engine.data.data.run);
     }
-    
+
     this.loadRoom();
+    this.maybeTriggerChapterStory();
     
     if (params && params.fromLegacy && params.result !== "loss") {
        const floor = this.engine.data.data.floor;
@@ -344,7 +374,58 @@ export class DungeonState extends GameState {
     savedP.buffRerollsRemaining = this.player.buffRerollsRemaining;
     savedP.shopDiscount = this.player.shopDiscount;
     savedP.supplyDropBonus = this.player.supplyDropBonus;
+    // Castlevania layer: persisted as extra properties beside the typed save
+    // fields (GameSave is owned elsewhere; see the integration report).
+    (savedP as unknown as { hearts?: number; subWeaponId?: string | null }).hearts = this.player.hearts;
+    (savedP as unknown as { hearts?: number; subWeaponId?: string | null }).subWeaponId = this.player.subWeaponId ?? null;
     this.engine.data.discoverPlayerBuild();
+  }
+
+  /**
+   * Resolves the meta soul/equipment loadout onto the run player. Called at
+   * run entry and again whenever the loadout changes (new soul collected).
+   * Flat max-HP/mana bonuses touch persisted state, so they are applied once
+   * per run and re-diffed against what was already granted.
+   */
+  private applyMetaLoadout(): void {
+    const meta = this.engine.data?.meta;
+    if (!meta?.souls || !meta?.equipment) return;
+    const resolved = EquipmentSystem.applyToPlayer(this.player, meta.souls, meta.equipment);
+
+    const savedP = this.engine.data.data?.player as unknown as {
+      castlevaniaApplied?: { runId?: string; maxHp?: number; maxMana?: number };
+    } | undefined;
+    const runId = this.engine.data.data?.runStats?.runId;
+    if (!savedP || !runId) return;
+    const applied = savedP.castlevaniaApplied?.runId === runId
+      ? savedP.castlevaniaApplied
+      : { runId, maxHp: 0, maxMana: 0 };
+    const deltaHp = resolved.derived.bonusMaxHp - (Number(applied.maxHp) || 0);
+    const deltaMana = resolved.derived.bonusMaxMana - (Number(applied.maxMana) || 0);
+    if (deltaHp > 0) {
+      this.player.maxHp += deltaHp;
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + deltaHp);
+    } else if (deltaHp < 0) {
+      this.player.maxHp = Math.max(1, this.player.maxHp + deltaHp);
+      this.player.hp = Math.max(1, Math.min(this.player.hp, this.player.maxHp));
+    }
+    if (deltaMana !== 0) {
+      this.player.maxMana = Math.max(1, Math.min(MAX_PLAYER_MANA, this.player.maxMana + deltaMana));
+      this.player.mana = Math.max(0, Math.min(this.player.mana, this.player.maxMana));
+    }
+    savedP.castlevaniaApplied = {
+      runId,
+      maxHp: resolved.derived.bonusMaxHp,
+      maxMana: resolved.derived.bonusMaxMana,
+    };
+  }
+
+  private maybeTriggerChapterStory(): void {
+    const floor = this.engine.data.data?.floor;
+    StoryOverlay.maybeTrigger(
+      { kind: "chapter_start", worldNodeId: floor?.worldNodeId, routeDepth: floor?.routeDepth },
+      this.engine.data.meta,
+    );
   }
 
   private addEnemy(enemy: Enemy) {
@@ -364,6 +445,7 @@ export class DungeonState extends GameState {
         type: p.type,
         value: p.value,
         weaponId: p.weaponId,
+        soulId: p.soulId,
         blockedUntilPlayerLeaves: p.blockedUntilPlayerLeaves,
       }));
       if (this.chest) r.weaponChest = { ...this.chest };
@@ -475,8 +557,9 @@ export class DungeonState extends GameState {
     
     this.environmentHazards = [];
     this.environmentTime = 0;
+    this.stopwatchFieldTimer = 0;
     this.encounterCtrl = new EncounterController();
-    
+
     const floor = this.engine.data.data.floor;
     const currentRoom = floor?.rooms?.find((r: Room) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     this.buffSelection = !floor.buffChoiceCompleted && floor.buffChoiceOptions?.length
@@ -501,7 +584,7 @@ export class DungeonState extends GameState {
 
     if (currentRoom && currentRoom.pickups) {
       this.pickups = currentRoom.pickups.map((p: any) => {
-        const pickup = acquirePickup(p.x, p.y, p.type, p.value, p.weaponId);
+        const pickup = acquirePickup(p.x, p.y, p.type, p.value, p.weaponId, p.soulId);
         this.moveToNearestPassable(pickup, 4);
         pickup.blockedUntilPlayerLeaves = p.blockedUntilPlayerLeaves === true;
         if (p.weaponId) this.engine.data.discoverWeapon(p.weaponId);
@@ -533,6 +616,18 @@ export class DungeonState extends GameState {
     }
     
     if (currentRoom.type === "treasure") {
+      if (!currentRoom.interactionCompleted || currentRoom.weaponChest) {
+        this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
+      }
+      this.finalizeRoomObjects(currentRoom);
+      this.setPhase("exploration");
+      return;
+    }
+
+    // Hidden bonus room: reached through a (possibly ability-gated) door and
+    // rewarded with the same chest machinery treasure rooms use.
+    if (currentRoom.type === "hidden") {
+      currentRoom.hiddenDiscovered = true;
       if (!currentRoom.interactionCompleted || currentRoom.weaponChest) {
         this.chest = this.createOrRestoreWeaponChest(currentRoom, "treasure");
       }
@@ -820,6 +915,22 @@ export class DungeonState extends GameState {
       return; 
     }
 
+    // Story overlays gate gameplay exactly like the pause path: nothing under
+    // them advances while they are on screen.
+    if (StoryOverlay.isActive()) {
+      StoryOverlay.update(dt, this.engine.input);
+      if (StoryOverlay.consumeCompleted()) {
+        this.engine.data.saveMeta();
+        const pendingOutcome = this.pendingRunOutcome;
+        this.pendingRunOutcome = null;
+        if (pendingOutcome) {
+          this.settleRun(pendingOutcome);
+          return;
+        }
+      }
+      if (StoryOverlay.isActive()) return;
+    }
+
     if (this.buffSelection) {
       this.updateBuffSelection();
       return;
@@ -910,6 +1021,26 @@ export class DungeonState extends GameState {
       this.engine.input.wasActionPressed("dodge")
     ) {
       this.activateDodge();
+    }
+
+    // Castlevania layer: cooldown tick, stopwatch field decay, throw and crush.
+    SubWeaponSystem.update(this.player, dt);
+    if (this.stopwatchFieldTimer > 0) {
+      this.stopwatchFieldTimer = Math.max(0, this.stopwatchFieldTimer - dt);
+    }
+    if (
+      canUseSkill &&
+      this.transitionState === "none" &&
+      this.engine.input.wasActionPressed("subWeapon")
+    ) {
+      this.activateSubWeapon(false);
+    }
+    if (
+      canUseSkill &&
+      this.transitionState === "none" &&
+      this.engine.input.wasActionPressed("crush")
+    ) {
+      this.activateSubWeapon(true);
     }
 
 
@@ -1039,6 +1170,7 @@ export class DungeonState extends GameState {
              this.player.y = 120;
              this.engine.input.suppressUntilReleased();
              this.loadRoom();
+             this.maybeTriggerChapterStory();
           };
        }
     }
@@ -1046,6 +1178,27 @@ export class DungeonState extends GameState {
   }
 
   private finishRun(outcome: Exclude<RunOutcome, "active">) {
+    if (this.engine.data.data.runStats.settled) return;
+    if (this.pendingRunOutcome) return;
+    // Give the story layer a chance to play its victory/defeat beat before the
+    // result screen; the outcome is held until the overlay completes.
+    const floor = this.engine.data.data.floor;
+    const triggered = StoryOverlay.maybeTrigger(
+      {
+        kind: outcome === "victory" ? "run_victory" : "run_defeat",
+        worldNodeId: floor?.worldNodeId,
+        routeDepth: floor?.routeDepth,
+      },
+      this.engine.data.meta,
+    );
+    if (triggered && StoryOverlay.isActive()) {
+      this.pendingRunOutcome = outcome;
+      return;
+    }
+    this.settleRun(outcome);
+  }
+
+  private settleRun(outcome: Exclude<RunOutcome, "active">) {
     if (this.engine.data.data.runStats.settled) return;
     this.syncPlayerState();
     this.syncRoomState();
@@ -1114,7 +1267,45 @@ export class DungeonState extends GameState {
     }
   }
 
+  /** Soul and heart drops for the Castlevania layer, spawned at the corpse. */
+  private spawnCastlevaniaDrops(enemy: Enemy): void {
+    const floor = this.engine.data.data.floor;
+
+    // Soul roll is seeded from the stage so a replayed stage rolls the same
+    // souls; the counter separates successive kills of the same enemy type.
+    const soulRoll = createSeededRandom(
+      hashSeed(floor?.seed ?? 0, `soul:${enemy.enemyId}:${this.soulDropCounter++}`),
+    )();
+    const soul = SoulSystem.rollDrop(
+      enemy.enemyId,
+      soulRoll,
+      this.player.derivedStats?.dropRateMultiplier ?? 1,
+    );
+    if (soul) {
+      const pickup = acquirePickup(enemy.x, enemy.y - 4, "soul", 0, undefined, soul.id);
+      this.moveToNearestPassable(pickup, 4);
+      this.pickups.push(pickup);
+    }
+
+    // Hearts refill only from drops, kept at the same modest rates as the
+    // hp/mana supply drops around them.
+    const heartChance = (enemy.isElite ? 0.5 : 0.18)
+      * (this.player.soulEffects?.heartDropMultiplier ?? 1);
+    if (Math.random() < Math.min(0.85, heartChance)) {
+      const large = enemy.isElite || Math.random() < 0.12;
+      const pickup = acquirePickup(
+        enemy.x - 8,
+        enemy.y,
+        "heart",
+        large ? HEART_PICKUP_LARGE : HEART_PICKUP_SMALL,
+      );
+      this.moveToNearestPassable(pickup, 4);
+      this.pickups.push(pickup);
+    }
+  }
+
   private spawnEnemyDeathDrop(enemy: Enemy) {
+    this.spawnCastlevaniaDrops(enemy);
     if (enemy.isElite) {
       const difficulty = getStageDifficulty(this.engine.data.data.floor);
       this.pickups.push(acquirePickup(
@@ -1171,9 +1362,11 @@ export class DungeonState extends GameState {
        const inputX = isDashing ? (this.player.dodgeTimer > 0 ? this.player.dodgeDirectionX : this.player.skillDirectionX) : axis.x;
        const inputY = isDashing ? (this.player.dodgeTimer > 0 ? this.player.dodgeDirectionY : this.player.skillDirectionY) : axis.y;
        const dashSpeed = this.player.dodgeTimer > 0 ? 320 : SkillController.ROGUE_DASH_SPEED;
+       // Soul passives (e.g. BOAR RUSH) scale walking speed, never dashes.
+       const soulSpeed = this.player.soulEffects?.moveSpeedMultiplier ?? 1;
        const moveSpeed = (isDashing
          ? dashSpeed * speedMult
-         : this.player.speed * speedMult) * statusMovement;
+         : this.player.speed * speedMult * soulSpeed) * statusMovement;
 
 
        const onIce = !isDashing && this.environmentHazards.some(hazard =>
@@ -1510,6 +1703,7 @@ export class DungeonState extends GameState {
         if (!currentRoom.doors[orientation]) continue;
         const geometry = getDoorGeometry(orientation, this.player.radius);
         if (!isDoorTransitionTriggered(geometry, this.player.x, this.player.y)) continue;
+        if (!this.tryPassAbilityGate(currentRoom, orientation)) continue;
         this.beginDoorTransition(orientation);
         return;
       }
@@ -1517,6 +1711,47 @@ export class DungeonState extends GameState {
 
     this.player.x = Math.max(TILE_SIZE, Math.min(MAP_WIDTH * TILE_SIZE - TILE_SIZE, this.player.x));
     this.player.y = Math.max(TILE_SIZE, Math.min(MAP_HEIGHT * TILE_SIZE - TILE_SIZE, this.player.y));
+  }
+
+  /**
+   * Metroidvania gate on a doorway (see AbilityGates). Returns true when the
+   * player may pass. Without the matching ability soul the door refuses with
+   * the gate's locked hint; with it, the gate opens permanently for the run.
+   */
+  private tryPassAbilityGate(currentRoom: Room, orientation: DoorOrientation): boolean {
+    const floor = this.engine.data.data.floor;
+    const delta: Record<DoorOrientation, { x: number; y: number }> = {
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 },
+      left: { x: -1, y: 0 },
+      right: { x: 1, y: 0 },
+    };
+    const destination = floor?.rooms?.find((room: Room) =>
+      room?.x === currentRoom.x + delta[orientation].x &&
+      room?.y === currentRoom.y + delta[orientation].y
+    );
+    if (!destination?.gate || destination.gateOpened) return true;
+
+    const language = this.engine.data.settings.language;
+    if (!canOpenGate(destination.gate, new Set(this.player.abilities))) {
+      this.engine.worldNotices.showBottom({
+        id: `gate-locked:${destination.id}`,
+        text: t(language, `gate.${destination.gate}.locked` as Parameters<typeof t>[1]),
+        tone: "red",
+        duration: 2.6,
+        dedupe: true,
+        dedupeWindow: 3,
+      });
+      return false;
+    }
+    destination.gateOpened = true;
+    this.engine.worldNotices.showBottom({
+      id: `gate-opened:${destination.id}`,
+      text: t(language, "gate.opened"),
+      tone: "cyan",
+      duration: 2.4,
+    });
+    return true;
   }
 
   private getShopPosition(room: Room): { x: number; y: number } {
@@ -1702,10 +1937,39 @@ export class DungeonState extends GameState {
        }
        this.spawnChestLoot(this.chest, this.getChestLoot(this.chest));
        this.engine.data.discoverWeapon(this.chest.weaponId);
+       this.maybeGrantChestSubWeapon(currentRoom);
        this.syncPlayerState();
        this.syncRoomState();
        this.engine.data.save();
       }
+  }
+
+  /**
+   * Sub-weapons ride along with chests: boss chests always carry one, treasure
+   * and hidden-room chests half the time. The pick is seeded per room so
+   * reopening a save offers the same weapon, and it is granted directly (one
+   * sub-weapon is carried at a time, so a floor pickup would be misleading).
+   */
+  private maybeGrantChestSubWeapon(room: Room | undefined): void {
+    if (!this.chest || !room) return;
+    const floor = this.engine.data.data.floor;
+    const random = createSeededRandom(hashSeed(room.encounterSeed ?? floor.seed, "subweapon-grant"));
+    if (this.chest.kind !== "boss" && random() >= 0.5) return;
+    const pick = SUB_WEAPON_IDS[Math.floor(random() * SUB_WEAPON_IDS.length)];
+    this.grantSubWeapon(pick);
+  }
+
+  private grantSubWeapon(id: SubWeaponId): void {
+    const previous = SubWeaponSystem.equip(this.player, id);
+    if (previous === id) return;
+    const language = this.engine.data.settings.language;
+    const name = t(language, `subweapon.${id}` as Parameters<typeof t>[1]);
+    this.engine.worldNotices.showBottom({
+      id: `subweapon:${id}`,
+      text: t(language, previous ? "subweapon.replaced" : "subweapon.pickup", { name }),
+      tone: "cyan",
+      duration: 2.8,
+    });
   }
   
   private getInteractTarget(): { type: string, x: number, y: number, roomId?: string } | null {
@@ -1892,6 +2156,14 @@ export class DungeonState extends GameState {
     const tileX = (index % 20) * 16 + 8;
     const tileY = Math.floor(index / 20) * 16 + 8;
     CombatEventDispatcher.emit("prop_destroyed", { player: this.player, x: tileX, y: tileY });
+    // Candle-break heart economy: props are the reliable heart source.
+    const heartChance = Math.min(0.9, 0.3 * (this.player.soulEffects?.heartDropMultiplier ?? 1));
+    if (Math.random() < heartChance) {
+      const large = Math.random() < 0.1;
+      const pickup = acquirePickup(tileX, tileY, "heart", large ? HEART_PICKUP_LARGE : HEART_PICKUP_SMALL);
+      this.moveToNearestPassable(pickup, 4);
+      this.pickups.push(pickup);
+    }
     this.engine.triggerScreenShake(0.6, 0.06);
     return true;
   }
@@ -2049,6 +2321,117 @@ export class DungeonState extends GameState {
     }
     this.engine.data.recordWeaponUsed(weaponId);
     audio.playWeaponShot(effectProjectile?.style ?? "bullet", result.recoil);
+  }
+
+  /**
+   * Sub-weapon button handler. SubWeaponSystem owns the heart economy and
+   * cooldown; this method only bridges its spawns into the live projectile
+   * list so DungeonState stays the single owner of that list.
+   */
+  private activateSubWeapon(crush: boolean): void {
+    const multiplier = this.player.derivedStats?.subWeaponMultiplier ?? 1;
+    const result = crush
+      ? SubWeaponSystem.crush(this.player, multiplier)
+      : SubWeaponSystem.throw(this.player, this.player.aimAngle, multiplier);
+    if (!result.ok) return;
+    for (const spawn of result.spawns) this.spawnSubWeaponProjectile(spawn);
+    if (crush) {
+      audio.playSkill();
+      this.engine.triggerScreenShake(1.6, 0.1);
+    } else {
+      audio.playShoot();
+    }
+  }
+
+  /** Adapts one SubWeaponSpawn into the game's pooled projectile layer. */
+  private spawnSubWeaponProjectile(spawn: SubWeaponSpawn): void {
+    if (spawn.motion === "field") {
+      // The stopwatch has no projectile: it freezes enemies near the player.
+      this.stopwatchFieldTimer = Math.max(this.stopwatchFieldTimer, spawn.lifetime);
+      this.fx.emitImpact(spawn.x, spawn.y - 6, spawn.color, true, this.engine.isPerformanceDegraded());
+      return;
+    }
+
+    // maxHits 0 means unlimited in the sub-weapon data.
+    const pierce = spawn.maxHits === 0 ? 9999 : Math.max(0, spawn.maxHits - 1);
+    const projectile = acquireProjectile(
+      spawn.x, spawn.y, spawn.vx, spawn.vy,
+      spawn.radius, spawn.damage, "player",
+      spawn.lifetime, spawn.color,
+      0, false, pierce, 0,
+    );
+    projectile.weaponId = `subweapon:${spawn.subWeaponId}`;
+    projectile.source = {
+      kind: "primary",
+      weaponId: projectile.weaponId,
+      canTriggerBuffs: false,
+      canTriggerSynergies: false,
+    };
+    // Motion tag read back by applySubWeaponMotion each frame. Always written
+    // here, so pooled reuse can never leak a stale motion.
+    (projectile as any).subWeaponMotion = spawn.motion;
+
+    if (spawn.motion === "arc") {
+      projectile.style = "disc";
+      projectile.spinRate = 9;
+    } else if (spawn.motion === "boomerang") {
+      projectile.style = "disc";
+      projectile.spinRate = 11;
+      projectile.repeatHitDelay = 0.35;
+    } else if (spawn.motion === "ground") {
+      projectile.style = "water";
+      projectile.repeatHitDelay = 0.55;
+    } else if (spawn.motion === "orbit") {
+      projectile.style = "prism";
+      projectile.spinRate = SUB_WEAPONS[spawn.subWeaponId].speed;
+      // Crush rings hand each copy a velocity direction; reuse it as the
+      // orbital phase so the ring stays evenly spaced.
+      projectile.spinAngle = Math.atan2(spawn.vy, spawn.vx) || 0;
+      projectile.repeatHitDelay = 0.35;
+      projectile.ignoreWalls = true;
+    } else {
+      projectile.style = "bullet";
+      projectile.trailLength = 8;
+    }
+    this.projectiles.push(projectile);
+    this.fx.emitMuzzle(projectile, this.engine.isPerformanceDegraded());
+  }
+
+  /**
+   * Per-frame motion riders for live sub-weapon projectiles, mirroring
+   * SubWeaponSystem.integrate semantics on top of the pooled Projectile.
+   */
+  private applySubWeaponMotion(p: Projectile, dt: number): void {
+    if (!p.weaponId.startsWith("subweapon:")) return;
+    const motion = (p as any).subWeaponMotion as SubWeaponSpawn["motion"] | undefined;
+    if (motion === "arc") {
+      p.vy += ARC_GRAVITY * dt;
+    } else if (motion === "boomerang") {
+      if (p.age >= p.maxLife * 0.5) {
+        const dx = this.player.x - p.x;
+        const dy = this.player.y - p.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance <= this.player.radius + p.radius + 2) {
+          // Caught on the way back.
+          p.life = Math.min(p.life, 0);
+          return;
+        }
+        const speed = Math.hypot(p.vx, p.vy) || SUB_WEAPONS.cross.speed;
+        p.vx = dx / distance * speed;
+        p.vy = dy / distance * speed;
+      }
+    } else if (motion === "ground") {
+      // The flask flies briefly, then lingers where it lands.
+      if (p.age >= 0.35) {
+        p.vx = 0;
+        p.vy = 0;
+      }
+    } else if (motion === "orbit") {
+      // anchorX/anchorY track the player every frame; spinAngle advances by
+      // spinRate (the weapon's authored angular speed) inside Projectile.update.
+      p.x = p.anchorX + Math.cos(p.spinAngle) * 20;
+      p.y = p.anchorY + Math.sin(p.spinAngle) * 20;
+    }
   }
 
   // TODO: Move to PlayerController
@@ -2219,6 +2602,13 @@ export class DungeonState extends GameState {
     const normalMode = this.engine.data.data.floor?.hardMode !== true;
     
     for (const e of this.enemies) {
+      // Stopwatch field: enemies caught in the radius are frozen in time.
+      if (
+        this.stopwatchFieldTimer > 0 &&
+        Math.hypot(e.x - this.player.x, e.y - this.player.y) <= SUB_WEAPONS.stopwatch.radius
+      ) {
+        continue;
+      }
       const previousX = e.x;
       const previousY = e.y;
       const combatTarget = this.getEnemyCombatTarget();
@@ -2994,6 +3384,7 @@ export class DungeonState extends GameState {
       }
       this.updateProjectileHoming(p, dt);
       p.update(dt);
+      this.applySubWeaponMotion(p, dt);
       if (p.linkedShotMode === "catalyst" && this.triggerLinkedPrimer(p)) {
         this.fx.emitProjectileImpact(p, false, this.engine.isPerformanceDegraded());
         this.projectiles.splice(i, 1);
@@ -3476,11 +3867,17 @@ export class DungeonState extends GameState {
         
         if (pickupDistance < pickupRange) {
            if (p.type === "mana" && this.player.mana >= this.player.maxMana - 1e-9) continue;
+           // A full heart bar leaves the pickup on the floor, like full mana.
+           if (p.type === "heart" && this.player.hearts >= SubWeaponSystem.getHeartCapacity(this.player)) continue;
            let droppedWeapon: Pickup | null = null;
            if (p.type === "mana") {
               this.player.mana = Math.min(this.player.maxMana, this.player.mana + p.value);
            } else if (p.type === "hp") {
               this.player.hp = Math.min(this.player.maxHp, this.player.hp + p.value);
+           } else if (p.type === "heart") {
+              SubWeaponSystem.addHearts(this.player, p.value);
+           } else if (p.type === "soul" && p.soulId) {
+              this.collectSoulPickup(p.soulId);
            } else if (p.type === "weapon" && p.weaponId) {
               const result = WeaponController.equipWeapon(this.player, p.weaponId);
               if (!result.consumed) continue;
@@ -3500,6 +3897,40 @@ export class DungeonState extends GameState {
            if (droppedWeapon) this.pickups.push(droppedWeapon);
         }
      }
+  }
+
+  /**
+   * Banks a soul into meta progress. Souls are permanent (Aria-style): the
+   * collection lives in MetaProgress and survives the run.
+   */
+  private collectSoulPickup(soulId: string): void {
+    const meta = this.engine.data.meta;
+    const soul = SOULS[soulId];
+    if (!meta?.souls || !soul) return;
+    const language = this.engine.data.settings.language;
+    const isNew = SoulSystem.collect(meta.souls, soulId);
+    if (isNew) {
+      // The first soul of each type slots itself so the pickup matters in the
+      // current run; rearranging a full loadout stays a Hub decision.
+      if (!meta.souls.equipped[soul.type]) SoulSystem.equip(meta.souls, soulId);
+      this.applyMetaLoadout();
+      this.engine.worldNotices.showBottom({
+        id: `soul-obtained:${soulId}`,
+        text: t(language, "soul.obtained", { name: getSoulName(soulId, soul.name, language) }),
+        tone: "cyan",
+        duration: 3,
+      });
+    } else {
+      this.engine.worldNotices.showBottom({
+        id: "soul-duplicate",
+        text: t(language, "soul.duplicate"),
+        tone: "neutral",
+        duration: 2.2,
+        dedupe: true,
+        dedupeWindow: 4,
+      });
+    }
+    this.engine.data.saveMeta();
   }
 
   private dungeonOccluder(id: string, projection: WorldRect, sortY: number): WorldObjectDefinition {
@@ -3835,8 +4266,10 @@ export class DungeonState extends GameState {
       );
     }
 
-    
-    
+    if (StoryOverlay.isActive()) {
+      StoryOverlay.draw(ctx, this.engine.data.settings.language);
+    }
+
     if (this.transitionAlpha > 0) {
       ctx.fillStyle = `rgba(0, 0, 0, ${this.transitionAlpha})`;
       ctx.fillRect(0, 0, 320, 240);
