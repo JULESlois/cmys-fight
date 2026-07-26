@@ -1,10 +1,12 @@
+import { SubWeaponSystem } from "../combat/SubWeaponSystem";
 import { WeaponController } from "../combat/WeaponController";
 import { ResourceStrategies } from "../combat/WeaponResourceStrategies";
+import { SUB_WEAPONS } from "../data/subweapons";
 import { WEAPONS, type WeaponData } from "../data/weapons";
 import type { Player } from "../entities/Player";
-import { uiFont, type Language } from "../i18n";
+import { t, uiFont, type Language } from "../i18n";
 import { HUD_LAYOUT, type HudRect } from "./HudLayout";
-import { drawPixelPanel, rarityColor, UI_COLORS } from "./PixelUi";
+import { drawPixelPanel, drawUiIcon, rarityColor, UI_COLORS } from "./PixelUi";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 export interface WeaponHudDrawOptions {
@@ -159,6 +161,80 @@ export class WeaponHudRenderer {
       ctx.textAlign = "left";
       ctx.fillStyle = UI_COLORS.yellow;
       ctx.fillText(`-${activeWeapon.sustainEnergyPerSecond}/S`, trackX, bounds.y + 27);
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Castlevania cluster: heart ammo plus the equipped sub-weapon slot.
+   *
+   * The layer announces itself through the player's own state — a sub-weapon
+   * picked up or at least one heart collected. Until then the method draws
+   * nothing at all, so every screen from before the layer existed stays
+   * pixel-identical. (maxHearts always starts above zero, which is why it
+   * cannot serve as the gate.)
+   */
+  public static drawSubWeaponCluster(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    language: Language,
+    bounds: HudRect = HUD_LAYOUT.rightSubWeapon,
+  ): void {
+    if (!player.subWeaponId && player.hearts <= 0) return;
+    const weapon = player.subWeaponId ? SUB_WEAPONS[player.subWeaponId] : undefined;
+
+    ctx.save();
+    drawPixelPanel(ctx, bounds.x, bounds.y, bounds.width, bounds.height, "neutral", true);
+
+    // Hearts row: glyph plus count. The count reddens once the next throw is
+    // unaffordable, mirroring how the weapon HUD flags an empty resource.
+    drawUiIcon(ctx, "heart", bounds.x + 5, bounds.y + 4, UI_COLORS.red);
+    const capacity = SubWeaponSystem.getHeartCapacity(player);
+    const affordable = !weapon || player.hearts >= SubWeaponSystem.getHeartCost(player, weapon);
+    ctx.font = uiFont(language, 6, true);
+    ctx.textAlign = "left";
+    ctx.fillStyle = affordable ? UI_COLORS.white : UI_COLORS.red;
+    ctx.fillText(`${Math.floor(player.hearts)}/${capacity}`, bounds.x + 16, bounds.y + 11);
+
+    if (SubWeaponSystem.canCrush(player)) {
+      ctx.font = uiFont(language, 5, true);
+      ctx.textAlign = "right";
+      ctx.fillStyle = UI_COLORS.orange;
+      ctx.fillText(t(language, "hud.crush"), bounds.x + bounds.width - 5, bounds.y + 11);
+    }
+
+    // Sub-weapon slot: label, then a box carrying the localized short name.
+    ctx.font = uiFont(language, 5, true);
+    ctx.textAlign = "left";
+    ctx.fillStyle = UI_COLORS.muted;
+    const label = t(language, "hud.subWeapon");
+    ctx.fillText(label, bounds.x + 5, bounds.y + 21);
+    const slotX = bounds.x + 5 + Math.ceil(ctx.measureText(label).width) + 3;
+    const slotY = bounds.y + 14;
+    const slotWidth = bounds.x + bounds.width - 5 - slotX;
+    const slotHeight = 9;
+
+    ctx.fillStyle = UI_COLORS.dark;
+    ctx.fillRect(slotX, slotY, slotWidth, slotHeight);
+    ctx.strokeStyle = weapon ? weapon.color : UI_COLORS.edgeSoft;
+    ctx.strokeRect(slotX, slotY, slotWidth, slotHeight);
+
+    const name = weapon
+      ? t(language, `subweapon.${weapon.id}` as Parameters<typeof t>[1])
+      : t(language, "hud.noSubWeapon");
+    ctx.textAlign = "center";
+    ctx.fillStyle = weapon ? weapon.color : UI_COLORS.muted;
+    ctx.fillText(fitText(ctx, name, slotWidth - 4), slotX + slotWidth / 2, slotY + 7);
+
+    // Cooldown reads as a dimming wipe over the slot that recedes toward zero,
+    // so "ready" is simply the box at full brightness.
+    const cooldownRatio = weapon && weapon.cooldown > 0
+      ? Math.max(0, Math.min(1, player.subWeaponCooldown / weapon.cooldown))
+      : 0;
+    if (cooldownRatio > 0) {
+      ctx.fillStyle = "rgba(7, 11, 18, 0.72)";
+      ctx.fillRect(slotX + 1, slotY + 1, Math.round((slotWidth - 2) * cooldownRatio), slotHeight - 2);
     }
 
     ctx.restore();

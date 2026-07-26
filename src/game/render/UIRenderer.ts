@@ -157,6 +157,9 @@ export class UIRenderer {
     }
 
     WeaponHudRenderer.draw(ctx, player, language, weaponHudOptions);
+    // Castlevania hearts / sub-weapon cluster. The renderer gates itself on the
+    // player's own state, so runs without the layer draw nothing extra.
+    WeaponHudRenderer.drawSubWeaponCluster(ctx, player, language);
 
     ctx.textAlign = "right";
     ctx.fillStyle = UI_COLORS.white;

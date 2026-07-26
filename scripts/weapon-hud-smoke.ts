@@ -126,6 +126,72 @@ assert.equal(HUD_LAYOUT.bottomRightWeapon.y + HUD_LAYOUT.bottomRightWeapon.heigh
 assert.equal(rectsOverlap(HUD_LAYOUT.dungeonBottomNotice, HUD_LAYOUT.bottomRightWeapon), false);
 assert.deepEqual(HUD_LAYOUT.hubBottomNotice, { x: 43, y: 207, width: 234, height: 23 });
 
+// --- Castlevania hearts / sub-weapon cluster --------------------------------
+// The cluster has a reserved slot in the layout map and shares the weapon
+// panel's column under the minimap, clear of both bottom notice strips.
+const cluster = HUD_LAYOUT.rightSubWeapon;
+assert.deepEqual(cluster, { x: 219, y: 99, width: 96, height: 26 });
+assert.ok(cluster.y >= HUD_LAYOUT.topRightMinimap.y + HUD_LAYOUT.topRightMinimap.height);
+assert.equal(rectsOverlap(cluster, HUD_LAYOUT.topRightMinimap), false);
+assert.equal(rectsOverlap(cluster, HUD_LAYOUT.bottomRightWeapon), false);
+assert.equal(rectsOverlap(cluster, HUD_LAYOUT.hubBottomNotice), false);
+assert.equal(rectsOverlap(cluster, HUD_LAYOUT.dungeonBottomNotice), false);
+
+// Hidden-when-inactive: a player with no sub-weapon and no hearts must not
+// draw a single rect or glyph, keeping pre-Castlevania screens pixel-identical.
+{
+  const recorder = createRecordingContext();
+  WeaponHudRenderer.drawSubWeaponCluster(recorder.ctx, createPlayer(["na_45"]), "en");
+  assert.equal(recorder.rects.length, 0, "inactive cluster draws no geometry");
+  assert.equal(recorder.texts.length, 0, "inactive cluster draws no text");
+}
+
+// Hearts collected before any pickup: cluster appears with the empty slot.
+{
+  const player = createPlayer(["na_45"]);
+  player.hearts = 4;
+  const recorder = createRecordingContext();
+  WeaponHudRenderer.drawSubWeaponCluster(recorder.ctx, player, "en");
+  assert.ok(recorder.rects.length > 0, "hearts-only cluster draws geometry");
+  assert.ok(recorder.texts.some(text => text.text === "4/30"), "heart count is shown");
+  assert.ok(recorder.texts.some(text => text.text === "NONE"), "empty slot uses hud.noSubWeapon");
+}
+
+// Equipped sub-weapon: localized name, crush readiness, cooldown wipe, and
+// every rect stays inside the reserved bounds.
+{
+  const player = createPlayer(["na_45"]);
+  player.subWeaponId = "holy_water";
+  player.hearts = 30;
+  player.subWeaponCooldown = 0.3; // holy water cooldown is 0.6s -> half dimmed
+
+  const coolingRecorder = createRecordingContext();
+  WeaponHudRenderer.drawSubWeaponCluster(coolingRecorder.ctx, player, "en");
+  assert.ok(coolingRecorder.texts.some(text => text.text === "30/30"), "heart count is shown");
+  assert.ok(coolingRecorder.texts.some(text => text.text.includes("HOLY WATER")), "sub-weapon short name is shown");
+  assert.ok(coolingRecorder.texts.some(text => text.text === "CRUSH"), "crush readiness is shown at full hearts");
+  assert.ok(
+    coolingRecorder.rects.every(rect => rect.x >= cluster.x
+      && rect.x + rect.width <= cluster.x + cluster.width
+      && rect.y >= cluster.y
+      && rect.y + rect.height <= cluster.y + cluster.height),
+    "cluster geometry stays inside its reserved bounds",
+  );
+
+  player.subWeaponCooldown = 0;
+  const readyRecorder = createRecordingContext();
+  WeaponHudRenderer.drawSubWeaponCluster(readyRecorder.ctx, player, "en");
+  assert.equal(
+    coolingRecorder.rects.length,
+    readyRecorder.rects.length + 1,
+    "an active cooldown adds exactly one dimming wipe rect",
+  );
+
+  const zhRecorder = createRecordingContext();
+  WeaponHudRenderer.drawSubWeaponCluster(zhRecorder.ctx, player, "zh-CN");
+  assert.ok(zhRecorder.texts.some(text => text.text === "圣水"), "sub-weapon name is localized");
+}
+
 const read = (path: string) => fs.readFileSync(path, "utf8");
 const uiSource = read("src/game/render/UIRenderer.ts");
 const hudSource = read("src/game/render/WeaponHudRenderer.ts");
@@ -140,6 +206,13 @@ assert.match(hudSource, /UI_COLORS\.yellow/);
 assert.match(hudSource, /UI_COLORS\.red/);
 assert.match(hudSource, /sustainEnergyPerSecond/);
 assert.match(hudSource, /resourceType === "heat"/);
+assert.match(uiSource, /drawSubWeaponCluster/);
+assert.match(hudSource, /HUD_LAYOUT\.rightSubWeapon/);
+assert.match(hudSource, /hud\.crush/);
+assert.match(hudSource, /hud\.subWeapon/);
+assert.match(hudSource, /hud\.noSubWeapon/);
+assert.match(hudSource, /subWeaponCooldown/);
+assert.match(hudSource, /SubWeaponSystem\.getHeartCapacity/);
 for (const scene of [
   "hud_energy_0", "hud_energy_33", "hud_single_cost", "hud_sustain", "hud_heat",
   "hud_dual", "hud_long_en", "hud_long_zh", "hud_notice",
@@ -153,5 +226,8 @@ console.log(JSON.stringify({
   bottomNoticeOverlap: false,
   hubNoticePosition: "preserved",
   longNames: "ellipsis-clamped-en-and-zh",
+  castlevaniaCluster: HUD_LAYOUT.rightSubWeapon,
+  castlevaniaClusterGate: "subWeaponId-or-hearts",
+  castlevaniaClusterHiddenWhenInactive: true,
 }));
 

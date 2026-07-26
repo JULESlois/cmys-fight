@@ -134,6 +134,8 @@ export class Player {
   public crushCostMultiplier: number = 1;
   /** Traversal powers held via ability souls, used by the map gates. */
   public abilities: SoulAbility[] = [];
+  /** Set by the `no_armor_regen` equipment modifier (Dracula Mantle). */
+  public armorRegenDisabled: boolean = false;
   /** Resolved once per loadout change rather than recomputed per frame. */
   public soulEffects: SoulEffects = createEmptySoulEffects();
   public stats: StatBlock = createBaseStats();

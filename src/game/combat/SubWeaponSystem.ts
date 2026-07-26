@@ -40,8 +40,9 @@ export type ThrowResult =
   | { ok: true; spawns: SubWeaponSpawn[]; heartsSpent: number }
   | { ok: false; reason: "none_equipped" | "cooling_down" | "not_enough_hearts" };
 
-/** Gravity applied to `arc` sub-weapons, in px/s². */
-const ARC_GRAVITY = 320;
+/** Gravity applied to `arc` sub-weapons, in px/s². Exported so the projectile
+ * bridge in DungeonState integrates arcs with the same constant. */
+export const ARC_GRAVITY = 320;
 /** Upward launch component that gives the axe its arc. */
 const ARC_LAUNCH_VY = -140;
 /** Projectiles produced by an Item Crush, spread evenly around the player. */
