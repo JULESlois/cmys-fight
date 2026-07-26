@@ -93,7 +93,9 @@ assert.match(buffSource, /getBuffText/);
 assert.match(shopSource, /getWeaponMechanic/);
 assert.match(shopSource, /myth: UI_COLORS\.purple/);
 assert.match(pixelUiSource, /purple: "#[0-9A-Fa-f]{6}"/);
-assert.match(hudSource, /rarity === "myth"[\s\S]*#D66BFF/);
+// rarityColor is shared from PixelUi so the HUD and the weapon HUD cannot drift.
+assert.match(pixelUiSource, /rarity === "myth"[\s\S]*#D66BFF/);
+assert.match(hudSource, /rarityColor/);
 assert.match(recordsSource, /getAchievementText/);
 assert.match(pauseSource, /projectileLabel/);
 

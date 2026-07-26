@@ -3,43 +3,15 @@ import { SkillController } from "../combat/SkillController";
 import type { Player } from "../entities/Player";
 import type { FloorData } from "../FloorGenerator";
 import { uiFont } from "../i18n";
+import { HUD_LAYOUT, HUD_STATUS_FLOW } from "./HudLayout";
 import { WeaponHudRenderer, type WeaponHudDrawOptions } from "./WeaponHudRenderer";
 import {
-  drawBadge,
   drawMeter,
   drawPixelPanel,
   drawUiIcon,
+  rarityColor,
   UI_COLORS,
-  type UiTone,
 } from "./PixelUi";
-
-function splitWeaponName(name: string): string[] {
-  const normalized = name.toUpperCase();
-  if (normalized.length <= 10) return [normalized];
-  const words = normalized.split(/\s+/).filter(Boolean);
-  if (words.length <= 1) return [normalized];
-
-  let best = [normalized];
-  let bestScore = Infinity;
-  for (let split = 1; split < words.length; split++) {
-    const first = words.slice(0, split).join(" ");
-    const second = words.slice(split).join(" ");
-    const score = Math.max(first.length, second.length) * 10 + Math.abs(first.length - second.length);
-    if (score < bestScore) {
-      best = [first, second];
-      bestScore = score;
-    }
-  }
-  return best;
-}
-
-function rarityColor(rarity: string): string {
-  if (rarity === "myth") return "#D66BFF";
-  if (rarity === "legendary") return UI_COLORS.orange;
-  if (rarity === "rare") return UI_COLORS.cyan;
-  if (rarity === "uncommon") return UI_COLORS.green;
-  return UI_COLORS.muted;
-}
 
 export class UIRenderer {
   private static lastCoinAmount: number = -1;
@@ -56,7 +28,8 @@ export class UIRenderer {
 
     // Compact player status block. Icons carry the meaning so the bars do not
     // rely on color alone.
-    drawPixelPanel(ctx, 5, 5, 80, 42, "cyan", true);
+    const statusPanel = HUD_LAYOUT.topLeftStatus;
+    drawPixelPanel(ctx, statusPanel.x, statusPanel.y, statusPanel.width, statusPanel.height, "cyan", true);
     const statRows = [
       { kind: "heart" as const, y: 11, value: player.hp, max: player.maxHp, color: UI_COLORS.red },
       { kind: "shield" as const, y: 24, value: player.armor, max: Math.max(1, player.maxArmor), color: player.armorRechargeTimer <= 0 ? UI_COLORS.cyan : "#A7B2BC" },
@@ -80,28 +53,59 @@ export class UIRenderer {
     ctx.font = uiFont(language, 5, true);
     ctx.fillText(player.skillCooldown <= 0 ? "READY" : `${player.skillCooldown.toFixed(1)}S`, 80, 43);
 
-    let currentY = 51;
+    // Everything under the status block shares one vertical flow. Each element
+    // advances `currentY`, so a wrapped buff strip pushes the rows below it down
+    // instead of being overdrawn by an absolutely positioned panel.
+    const flow = HUD_STATUS_FLOW;
+    const cell = flow.buffCell;
+    let currentY = flow.startY;
     // Compact buff strip, no pixelui.
     if (player.buffs.length > 0) {
       const visibleBuffCount = Math.min(player.buffs.length, BuffSystem.MAX_BUFFS);
-      const columns = Math.min(6, visibleBuffCount);
+      const columns = Math.min(cell.columns, visibleBuffCount);
       const rows = Math.ceil(visibleBuffCount / columns);
-      const stripX = 5;
+      const stripX = flow.x;
       for (let index = 0; index < visibleBuffCount; index++) {
         const id = player.buffs[index];
         const buff = BUFFS[id];
-        const x = stripX + (index % columns) * 15;
-        const y = currentY + Math.floor(index / columns) * 12;
+        const x = stripX + (index % columns) * cell.strideX;
+        const y = currentY + Math.floor(index / columns) * cell.strideY;
         ctx.fillStyle = UI_COLORS.dark;
-        ctx.fillRect(x, y, 12, 9);
+        ctx.fillRect(x, y, cell.width, cell.height);
         ctx.strokeStyle = rarityColor(buff.rarity);
-        ctx.strokeRect(x, y, 12, 9);
+        ctx.strokeRect(x, y, cell.width, cell.height);
         ctx.fillStyle = rarityColor(buff.rarity);
         ctx.font = uiFont(language, 5, true);
         ctx.textAlign = "center";
-        ctx.fillText(buff.shortCode, x + 6, y + 7);
+        ctx.fillText(buff.shortCode, x + cell.width / 2, y + 7);
       }
-      currentY += rows * 12 + 4;
+      currentY += rows * cell.strideY + flow.rowGap;
+    }
+
+    if (player.statusEffects.length > 0) {
+      const accessible = engine.data.settings.colorblindMode !== "off";
+      const statusColors: Record<string, string> = accessible ? {
+        poison: UI_COLORS.yellow,
+        burn: UI_COLORS.white,
+        slow: UI_COLORS.cyan,
+        root: UI_COLORS.purple,
+      } : {
+        poison: "#8BC34A",
+        burn: "#FF7043",
+        slow: "#81D4FA",
+        root: "#A1887F",
+      };
+      const statusCodes: Record<string, string> = { poison: "PSN", burn: "BRN", slow: "SLW", root: "ROT" };
+      const effects = player.statusEffects.slice(0, 4);
+      drawPixelPanel(ctx, flow.x, currentY, effects.length * 29 + 8, 15, "red");
+      effects.forEach((status, index) => {
+        const x = flow.x + 5 + index * 29;
+        ctx.fillStyle = statusColors[status.id] ?? UI_COLORS.white;
+        ctx.font = uiFont(language, 5, true);
+        ctx.textAlign = "left";
+        ctx.fillText(`${statusCodes[status.id] ?? status.id.toUpperCase()}${status.stacks > 1 ? status.stacks : ""}`, x, currentY + 10);
+      });
+      currentY += 15 + flow.rowGap;
     }
 
     let combatTag = "";
@@ -121,7 +125,7 @@ export class UIRenderer {
       ctx.textAlign = "left";
       ctx.fillStyle = combatTagColor;
       ctx.font = uiFont(language, 5, true);
-      ctx.fillText(combatTag, 5, currentY + 6);
+      ctx.fillText(combatTag, flow.x, currentY + 6);
       currentY += 12;
     }
 
@@ -144,37 +148,12 @@ export class UIRenderer {
       }
       ctx.save();
       ctx.globalAlpha = alpha;
-      drawUiIcon(ctx, "coin", 5, currentY, UI_COLORS.yellow);
+      drawUiIcon(ctx, "coin", flow.x, currentY, UI_COLORS.yellow);
       ctx.textAlign = "left";
       ctx.fillStyle = UI_COLORS.white;
       ctx.font = uiFont(language, 7, true);
-      ctx.fillText(String(currentCoins), 15, currentY + 7);
+      ctx.fillText(String(currentCoins), flow.x + 10, currentY + 7);
       ctx.restore();
-    }
-
-    if (player.statusEffects.length > 0) {
-      const accessible = engine.data.settings.colorblindMode !== "off";
-      const statusColors: Record<string, string> = accessible ? {
-        poison: UI_COLORS.yellow,
-        burn: UI_COLORS.white,
-        slow: UI_COLORS.cyan,
-        root: UI_COLORS.purple,
-      } : {
-        poison: "#8BC34A",
-        burn: "#FF7043",
-        slow: "#81D4FA",
-        root: "#A1887F",
-      };
-      const statusCodes: Record<string, string> = { poison: "PSN", burn: "BRN", slow: "SLW", root: "ROT" };
-      const effects = player.statusEffects.slice(0, 4);
-      drawPixelPanel(ctx, 90, 52, effects.length * 29 + 8, 15, "red");
-      effects.forEach((status, index) => {
-        const x = 95 + index * 29;
-        ctx.fillStyle = statusColors[status.id] ?? UI_COLORS.white;
-        ctx.font = uiFont(language, 5, true);
-        ctx.textAlign = "left";
-        ctx.fillText(`${statusCodes[status.id] ?? status.id.toUpperCase()}${status.stacks > 1 ? status.stacks : ""}`, x, 62);
-      });
     }
 
     WeaponHudRenderer.draw(ctx, player, language, weaponHudOptions);

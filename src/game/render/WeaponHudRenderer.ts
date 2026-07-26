@@ -4,7 +4,7 @@ import { WEAPONS, type WeaponData } from "../data/weapons";
 import type { Player } from "../entities/Player";
 import { uiFont, type Language } from "../i18n";
 import { HUD_LAYOUT, type HudRect } from "./HudLayout";
-import { drawPixelPanel, UI_COLORS } from "./PixelUi";
+import { drawPixelPanel, rarityColor, UI_COLORS } from "./PixelUi";
 import { SpriteRenderer } from "./SpriteRenderer";
 
 export interface WeaponHudDrawOptions {
@@ -13,14 +13,11 @@ export interface WeaponHudDrawOptions {
   standbyNameOverride?: string;
 }
 
-function rarityColor(rarity: string): string {
-  if (rarity === "myth") return "#D66BFF";
-  if (rarity === "legendary") return UI_COLORS.orange;
-  if (rarity === "rare") return UI_COLORS.cyan;
-  if (rarity === "uncommon") return UI_COLORS.green;
-  return UI_COLORS.muted;
-}
-
+/**
+ * Clamps a weapon name to the available width. This runs every frame, so the
+ * fit is found by bisection instead of trimming one character at a time — a
+ * long name costs ~log2(n) measureText calls rather than n.
+ */
 function fitText(
   ctx: CanvasRenderingContext2D,
   value: string,
@@ -28,11 +25,20 @@ function fitText(
 ): string {
   const normalized = value.toUpperCase();
   if (ctx.measureText(normalized).width <= maxWidth) return normalized;
-  let result = normalized;
-  while (result.length > 1 && ctx.measureText(`${result}…`).width > maxWidth) {
-    result = result.slice(0, -1);
+
+  let low = 1;
+  let high = normalized.length - 1;
+  let best = 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (ctx.measureText(`${normalized.slice(0, mid)}…`).width <= maxWidth) {
+      best = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
   }
-  return `${result}…`;
+  return `${normalized.slice(0, best)}…`;
 }
 
 function drawWeaponIcon(
