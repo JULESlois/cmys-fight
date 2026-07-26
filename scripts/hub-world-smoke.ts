@@ -563,7 +563,7 @@ assert.equal(HUB_BUILDING_METRICS.workshop_keep.doorHeight, HUB_ART_METRICS.norm
 const source = (path: string) => fs.readFileSync(path, "utf8");
 const hubMapSource = source("src/game/hub/HubMap.ts");
 const hubState = source("src/game/states/HubState.ts");
-const splashState = source("src/game/states/SplashState.ts");
+const engineSource = source("src/game/Engine.ts");
 const mapData = source("src/game/MapData.ts");
 const metaProgress = source("src/game/MetaProgress.ts");
 const hubRenderer = source("src/game/hub/HubWorldRenderer.ts");
@@ -578,7 +578,11 @@ assert.match(hubState, /HubDebugOverlay\.draw/);
 assert.match(hubState, /wasPressed\("f7"\)/);
 assert.doesNotMatch(hubState, /drawObjects\(ctx, this\.map, this\.camera, "front"/);
 assert.match(hubState, /qaSetPresentation/);
-assert.match(splashState, /switchState\("hub", \{ spawnAnchor: "rebirth_spring"/);
+assert.doesNotMatch(engineSource, /SplashState/, "splash state was removed; boot must not reference it");
+assert.match(engineSource, /currentState: string = "hub"/, "engine must boot directly into the hub state");
+assert.match(engineSource, /enter\(\{ spawnAnchor: "rebirth_spring", fromSplash: true \}\)/, "boot must enter hub at rebirth spring with the intro sequence");
+assert.match(hubState, /fromSplash/, "hub state must honor the boot intro flag");
+assert.match(hubState, /this\.introPhase = "crystal"/, "boot intro must start the crystal hub-intro phase");
 assert.match(hubRenderer, /HubArchitectureRenderer/);
 for (const detailName of [
   "workshopSoot", "trainingScratch", "trainingFootprint", "armoryMetalWear", "gardenFlowers", "gardenSoil", "expeditionRuneCrack",
@@ -594,7 +598,7 @@ assert.doesNotMatch(hubState, /zoneBannerTimer|private message =|drawPixelPanel\
 assert.match(qaSource, /setHubPresentation/);
 assert.match(mapData, /MAP_WIDTH = 20/);
 assert.match(mapData, /MAP_HEIGHT = 15/);
-assert.match(metaProgress, /META_SAVE_VERSION = 8/);
+assert.match(metaProgress, /META_SAVE_VERSION = 9/);
 
 console.log(JSON.stringify({
   map: `${HUB_MAP_WIDTH}x${HUB_MAP_HEIGHT}`,

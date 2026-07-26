@@ -91,8 +91,9 @@ assert.ok(bossRates.highTier >= 0.88, `Boss chest high-tier rate ${bossRates.hig
 assert.ok(bossRates.legendary >= 0.22, `Boss chest legendary rate ${bossRates.legendary}`);
 assert.ok(bossRates.myth >= 0.028 && bossRates.myth <= 0.055, `Boss chest myth rate ${bossRates.myth}`);
 assert.ok(bossRates.highTier > treasureRates.highTier);
-assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
+assert.equal(getAvailableWeapons(1).length, Object.values(WEAPONS).filter(w => !w.experimental).length);
+assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "last_prism"), false, "experimental Last Prism must not be player-available");
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 16);
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 3);
 assert.equal(rollAvailableWeapon(1, () => 0.5, "shop", Object.keys(WEAPONS).filter(id => id !== "vector_9")).id, "vector_9");
 
@@ -252,7 +253,7 @@ const sustainedMg42 = new Player(160, 120);
 sustainedMg42.setWeaponLoadout(["mg42"], 0);
 const heatStep = 1 / 120;
 let sustainedFireTime = 0;
-while (sustainedFireTime < 5 && sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].customState.overheatTimer <= 0) {
+while (sustainedFireTime < 20 && sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].customState.overheatTimer <= 0) {
 
   WeaponController.updateRuntime(sustainedMg42, heatStep, true);
   if (sustainedMg42.weaponLoadout.slots[sustainedMg42.weaponLoadout.activeSlot].fireCooldown <= 0) {
@@ -262,8 +263,8 @@ while (sustainedFireTime < 5 && sustainedMg42.weaponLoadout.slots[sustainedMg42.
   sustainedFireTime += heatStep;
 }
 assert.ok(
-  sustainedFireTime >= 3.1 && sustainedFireTime <= 3.4,
-  `MG42 should overheat after about 3.2 seconds of continuous fire, got ${sustainedFireTime.toFixed(3)}s`,
+  sustainedFireTime >= 14 && sustainedFireTime <= 15.4,
+  `MG42 should overheat after about 14.7 seconds of continuous fire, got ${sustainedFireTime.toFixed(3)}s`,
 );
 
 const na45Player = new Player(160, 120);
@@ -278,10 +279,11 @@ assert.equal(primerVolley.projectiles[0].linkedExplosionRadius, 42);
 assert.equal(primerVolley.projectiles[0].life, 2, "NA-45 Primer fuse must begin when fired");
 assert.equal(initialBattery - na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].resourceState.value, 4, "NA-45 Primer must consume 4 energy");
 na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].fireCooldown = 0;
+assert.equal(WeaponController.getEnergyCost(na45Player), 0, "NA-45 Catalyst must have zero energy cost");
 const catalystVolley = WeaponController.fire(na45Player, 0, () => 0.5);
 assert.equal(catalystVolley.fired, true);
 assert.equal(catalystVolley.projectiles[0].linkedShotMode, "catalyst");
-assert.equal(na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].resourceState.value, initialBattery - 4, "NA-45 Catalyst must not consume energy");
+assert.equal(na45Player.weaponLoadout.slots[na45Player.weaponLoadout.activeSlot].resourceState.value, initialBattery - 8, "NA-45 battery must drain per shot, Catalyst included");
 
 const so14Player = new Player(160, 120);
 so14Player.maxMana = 80;
@@ -449,6 +451,7 @@ player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelT
 player.setWeaponLoadout(["last_prism"], 0);
 const lastPrismInitialBattery = player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.max;
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value = lastPrismInitialBattery;
+const openEnergyCost = WeaponController.getEnergyCost(player);
 const prismOpen = WeaponController.fire(player, 0, () => 0.5);
 console.log("prismOpen:", prismOpen);
 assert.equal(prismOpen.fired, true);
@@ -461,6 +464,7 @@ const openCost = lastPrismInitialBattery - player.weaponLoadout.slots[player.wea
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = WEAPONS.last_prism.channelTime ?? 3.2;
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value = lastPrismInitialBattery;
+const focusedEnergyCost = WeaponController.getEnergyCost(player);
 const prismFocused = WeaponController.fire(player, 0, () => 0.5);
 assert.equal(prismFocused.fired, true);
 const focusedAngles = prismFocused.projectiles.map(projectile => Math.atan2(projectile.vy, projectile.vx));
@@ -468,7 +472,8 @@ const focusedSpread = Math.max(...focusedAngles) - Math.min(...focusedAngles);
 assert.ok(focusedSpread < openSpread * 0.12, "Last Prism rays must converge while held");
 assert.ok(prismFocused.projectiles[0].damage > openDamage);
 const focusedCost = lastPrismInitialBattery - player.weaponLoadout.slots[player.weaponLoadout.activeSlot].resourceState.value;
-assert.ok(focusedCost > openCost);
+assert.ok(focusedEnergyCost > openEnergyCost, "Last Prism focused beam must have a higher energy cost while held");
+assert.equal(focusedCost, openCost, "Last Prism battery drains a flat amount per shot");
 assert.equal(prismFocused.projectiles[0].beamWidth, 4);
 
 player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = 0;
