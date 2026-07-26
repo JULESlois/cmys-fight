@@ -3813,7 +3813,7 @@ export class DungeonState extends GameState {
 
 
 
-    MinimapRenderer.draw(ctx, floor);
+    MinimapRenderer.draw(ctx, floor, this.engine.data.settings.language);
     const interactTarget = this.getInteractTarget();
     if (interactTarget?.type === "portal" && (interactTarget as any).destination) {
        PromptRenderer.drawRoutePreview(ctx, interactTarget.x, interactTarget.y, (interactTarget as any).destination, this.engine.data.settings.language, time);

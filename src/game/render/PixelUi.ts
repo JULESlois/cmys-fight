@@ -31,6 +31,27 @@ export function toneColor(tone: UiTone): string {
   return UI_COLORS.cyan;
 }
 
+const TONE_SELECTED_FILL: Record<UiTone, string> = {
+  cyan: "rgba(57, 217, 232, 0.16)",
+  yellow: "rgba(240, 196, 91, 0.16)",
+  red: "rgba(232, 91, 101, 0.16)",
+  green: "rgba(88, 214, 141, 0.16)",
+  purple: "rgba(195, 136, 245, 0.16)",
+  neutral: "rgba(52, 70, 90, 0.28)",
+};
+
+/**
+ * Single source of truth for rarity accents. Every surface that shows a weapon
+ * or buff rarity reads from here so the tiers stay legible as one scale.
+ */
+export function rarityColor(rarity: string): string {
+  if (rarity === "myth") return "#D66BFF";
+  if (rarity === "legendary") return UI_COLORS.orange;
+  if (rarity === "rare") return UI_COLORS.cyan;
+  if (rarity === "uncommon") return UI_COLORS.green;
+  return UI_COLORS.muted;
+}
+
 function pixelPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, cut = 3): void {
   ctx.beginPath();
   ctx.moveTo(x + cut, y);
@@ -81,13 +102,12 @@ export function drawPixelButton(
   const accent = toneColor(tone);
   ctx.save();
   pixelPath(ctx, x, y, w, h, 2);
-  ctx.fillStyle = selected ? "rgba(57, 217, 232, 0.16)" : UI_COLORS.panelSoft;
+  // The selected fill follows the button tone so a red or yellow row does not
+  // flip to a cyan highlight the moment it gains focus.
+  ctx.fillStyle = selected ? TONE_SELECTED_FILL[tone] : UI_COLORS.panelSoft;
   ctx.fill();
   ctx.strokeStyle = selected ? UI_COLORS.white : tone === "neutral" ? UI_COLORS.edgeSoft : accent;
   ctx.stroke();
-  if (selected) {
-    // Only keeping the background and border highlight, removing left block and underline
-  }
   ctx.restore();
 }
 

@@ -1,4 +1,37 @@
 import { FloorData, type Room } from "../FloorGenerator";
+import { uiFont, type Language } from "../i18n";
+import { HUD_LAYOUT } from "./HudLayout";
+import { drawPixelPanel, UI_COLORS } from "./PixelUi";
+
+/**
+ * Minimap swatches, resolved from the shared UI palette so the map reads as
+ * part of the same HUD rather than a separate widget with its own colors.
+ */
+const MAP_COLORS = {
+  link: "rgba(120, 136, 150, 0.55)",
+  unknownFill: UI_COLORS.dark,
+  unknownGlyph: UI_COLORS.muted,
+  current: UI_COLORS.white,
+  currentCore: UI_COLORS.cyan,
+  bossCleared: "#8A3740",
+  boss: UI_COLORS.red,
+  exit: UI_COLORS.cyan,
+  treasure: UI_COLORS.yellow,
+  treasureDone: UI_COLORS.muted,
+  npc: UI_COLORS.purple,
+  npcDone: UI_COLORS.edge,
+  cleared: UI_COLORS.muted,
+  unclearedRoom: UI_COLORS.edgeSoft,
+} as const;
+
+function roomColor(room: Room, isCurrent: boolean): string {
+  if (isCurrent) return MAP_COLORS.current;
+  if (room.type === "boss") return room.cleared ? MAP_COLORS.bossCleared : MAP_COLORS.boss;
+  if (room.type === "exit") return MAP_COLORS.exit;
+  if (room.type === "treasure") return room.interactionCompleted ? MAP_COLORS.treasureDone : MAP_COLORS.treasure;
+  if (room.type === "npc") return room.interactionCompleted ? MAP_COLORS.npcDone : MAP_COLORS.npc;
+  return room.cleared ? MAP_COLORS.cleared : MAP_COLORS.unclearedRoom;
+}
 
 const roomKey = (room: Pick<Room, "x" | "y">) => `${room.x},${room.y}`;
 
@@ -33,7 +66,7 @@ function getVisibleRooms(floor: FloorData): { visible: Room[]; visited: Set<stri
 }
 
 export class MinimapRenderer {
-  static draw(ctx: CanvasRenderingContext2D, floor: FloorData) {
+  static draw(ctx: CanvasRenderingContext2D, floor: FloorData, language: Language = "en") {
     if (floor.rooms.length === 0) return;
 
     const { visible, visited } = getVisibleRooms(floor);
@@ -53,21 +86,20 @@ export class MinimapRenderer {
 
     const columns = maxX - minX + 1;
     const rows = maxY - minY + 1;
-    const maxPanelWidth = 112;
-    const maxPanelHeight = 78;
+    // The reserved HUD box drives the cell size, so the panel can never grow
+    // past the area the layout has set aside for it.
+    const reserved = HUD_LAYOUT.topRightMinimap;
+    const frame = 4;
     const cellSize = Math.max(6, Math.min(9, Math.floor(Math.min(
-      (maxPanelWidth - 8) / columns,
-      (maxPanelHeight - 8) / rows,
+      (reserved.width - frame * 2) / columns,
+      (reserved.height - frame * 2) / rows,
     ))));
     const mapWidth = columns * cellSize;
     const mapHeight = rows * cellSize;
-    const panelX = 316 - mapWidth - 6;
-    const panelY = 22;
+    const panelX = reserved.x + reserved.width - mapWidth - frame;
+    const panelY = reserved.y + frame;
 
-    ctx.fillStyle = "rgba(5, 9, 17, 0.82)";
-    ctx.fillRect(panelX - 4, panelY - 4, mapWidth + 8, mapHeight + 8);
-    ctx.strokeStyle = "rgba(0, 242, 254, 0.48)";
-    ctx.strokeRect(panelX - 4, panelY - 4, mapWidth + 8, mapHeight + 8);
+    drawPixelPanel(ctx, panelX - frame, panelY - frame, mapWidth + frame * 2, mapHeight + frame * 2, "cyan", true);
 
     const position = (x: number, y: number) => ({
       x: panelX + (x - minX) * cellSize,
@@ -76,7 +108,7 @@ export class MinimapRenderer {
 
     // Only discovered links are drawn. A visible unknown room never reveals
     // rooms beyond itself, so the complete floor shape remains concealed.
-    ctx.fillStyle = "rgba(189, 195, 199, 0.48)";
+    ctx.fillStyle = MAP_COLORS.link;
     for (const room of visible) {
       const point = position(room.x, room.y);
       const centerX = point.x + Math.floor((cellSize - 1) / 2);
@@ -96,25 +128,17 @@ export class MinimapRenderer {
       const isVisited = visited.has(key);
 
       if (!isVisited) {
-        ctx.fillStyle = "#263445";
+        ctx.fillStyle = MAP_COLORS.unknownFill;
         ctx.fillRect(point.x + 1, point.y + 1, Math.max(2, cellSize - 3), Math.max(2, cellSize - 3));
-        ctx.fillStyle = "#BDC3C7";
-        ctx.font = `bold ${Math.max(5, cellSize - 2)}px monospace`;
+        ctx.fillStyle = MAP_COLORS.unknownGlyph;
+        ctx.font = uiFont(language, Math.max(5, cellSize - 2), true);
         ctx.textAlign = "center";
         ctx.fillText("?", point.x + cellSize / 2, point.y + cellSize - 1);
         ctx.textAlign = "left";
         continue;
       }
 
-      if (isCurrent) ctx.fillStyle = "#FFFFFF";
-      else if (room.type === "boss") ctx.fillStyle = room.cleared ? "#922B21" : "#E74C3C";
-      else if (room.type === "exit") ctx.fillStyle = "#00F2FE";
-      
-      else if (room.type === "treasure") ctx.fillStyle = room.interactionCompleted ? "#7F8C8D" : "#F39C12";
-      else if (room.type === "npc") ctx.fillStyle = room.interactionCompleted ? "#566573" : "#D980FA";
-      else if (false) {
-        ctx.fillStyle = room.interactionCompleted ? "#5B3A6E" : "#A569BD";
-      } else ctx.fillStyle = room.cleared ? "#7F8C8D" : "#34495E";
+      ctx.fillStyle = roomColor(room, isCurrent);
 
       const inset = isCurrent ? 0 : 1;
       ctx.fillRect(
@@ -124,7 +148,7 @@ export class MinimapRenderer {
         Math.max(2, cellSize - 1 - inset * 2),
       );
       if (isCurrent) {
-        ctx.fillStyle = "#00F2FE";
+        ctx.fillStyle = MAP_COLORS.currentCore;
         ctx.fillRect(point.x + 2, point.y + 2, Math.max(2, cellSize - 5), Math.max(2, cellSize - 5));
       }
     }
