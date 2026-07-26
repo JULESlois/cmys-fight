@@ -15,11 +15,22 @@ export interface HudLayoutDefinition {
 
 export const HUD_LAYOUT: HudLayoutDefinition = {
   topLeftStatus: { x: 5, y: 5, width: 80, height: 42 },
-  topRightMinimap: { x: 248, y: 18, width: 67, height: 67 },
+  // Worst-case footprint the minimap is allowed to occupy. MinimapRenderer
+  // derives its cell size and right-aligns inside this box, so the reservation
+  // and the drawing cannot drift apart.
+  topRightMinimap: { x: 202, y: 18, width: 112, height: 78 },
   bottomRightWeapon: { x: 219, y: 197, width: 96, height: 38 },
   hubBottomNotice: { x: 43, y: 207, width: 234, height: 23 },
   dungeonBottomNotice: { x: 43, y: 169, width: 234, height: 23 },
 };
+
+/** Vertical flow anchored under the top-left status block. */
+export const HUD_STATUS_FLOW = {
+  x: HUD_LAYOUT.topLeftStatus.x,
+  startY: HUD_LAYOUT.topLeftStatus.y + HUD_LAYOUT.topLeftStatus.height + 4,
+  buffCell: { width: 12, height: 9, strideX: 15, strideY: 12, columns: 6 },
+  rowGap: 4,
+} as const;
 
 export type HudScene = "hub" | "dungeon";
 
