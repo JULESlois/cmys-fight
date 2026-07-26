@@ -31,7 +31,7 @@ for (const art of definitions) {
   assert.deepEqual(art.promptAnchor, structure.interactions[0].promptAnchor, `${art.id} prompt anchor shares structure data`);
 }
 
-for (const art of [REBIRTH_SPRING_ART, EXPEDITION_GATE_ART, TRIAL_ALTAR_ART]) {
+for (const art of definitions) {
   const layers = new Set(art.visualParts.map(part => part.layer));
   for (const required of ["ground", "body", "front", "fx"] as const) {
     assert.ok(layers.has(required), `${art.id} first-priority redraw has ${required} layer`);
@@ -72,7 +72,7 @@ assert.match(engineSource, /height:\s*240|240/);
 console.log(JSON.stringify({
   artModules: definitions.map(definition => definition.id),
   metrics: HUB_ART_METRICS,
-  firstPriorityRedrawn: ["rebirth_spring", "expedition_gate", "trial_altar_structure"],
+  fullRedrawStandard: definitions.map(definition => definition.id),
   trialLegacyDuplicate: "removed",
   virtualCanvas: "320x240-preserved",
 }));

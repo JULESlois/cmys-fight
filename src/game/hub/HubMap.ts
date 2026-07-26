@@ -42,6 +42,17 @@ export const HubGroundDetailTile = {
   gardenFlowers: 11,
   gardenSoil: 12,
   expeditionRuneCrack: 13,
+  // Second-pass visual variants: denser but calm scatter, still seeded-hash placed.
+  mossPatch: 14,
+  pebbleCluster: 15,
+  crackedSlab: 16,
+  springRune: 17,
+  cinderGravel: 18,
+  archiveGlyph: 19,
+  starFleck: 20,
+  armoryShard: 21,
+  voidMote: 22,
+  sandRipple: 23,
 } as const;
 
 function emptyLayer(): number[] {
@@ -100,6 +111,30 @@ for (let y = 2; y < HUB_MAP_HEIGHT - 2; y++) {
     else if (tile === HubGroundTile.armory && hash < 10) setTile(groundDetail, HubGroundDetailTile.armoryMetalWear, x, y);
     else if (tile === HubGroundTile.garden && hash < 14) setTile(groundDetail, hash % 3 === 0 ? HubGroundDetailTile.gardenSoil : HubGroundDetailTile.gardenFlowers, x, y);
     else if (tile === HubGroundTile.expedition && hash < 14) setTile(groundDetail, HubGroundDetailTile.expeditionRuneCrack, x, y);
+  }
+}
+
+// Second seeded pass: extra per-district variant tiles on cells the first pass
+// left empty. Purely visual ground data; a different hash keeps the two
+// scatters from aligning into rows.
+const centralPlaza = { x0: 29, y0: 19, x1: 51, y1: 41 };
+for (let y = 2; y < HUB_MAP_HEIGHT - 2; y++) {
+  for (let x = 2; x < HUB_MAP_WIDTH - 2; x++) {
+    if (groundDetail[y * HUB_MAP_WIDTH + x] !== 0) continue;
+    const hash = (x * 71 + y * 43 + ((x * y) % 13) * 7) % 101;
+    const tile = ground[y * HUB_MAP_WIDTH + x];
+    const inCourt = x >= centralPlaza.x0 && x <= centralPlaza.x1 && y >= centralPlaza.y0 && y <= centralPlaza.y1;
+    if (tile === HubGroundTile.sanctuary && hash < 7) setTile(groundDetail, hash % 2 === 0 ? HubGroundDetailTile.mossPatch : HubGroundDetailTile.pebbleCluster, x, y);
+    else if (tile === HubGroundTile.road && hash < 8) setTile(groundDetail, hash % 2 === 0 ? HubGroundDetailTile.pebbleCluster : HubGroundDetailTile.crackedSlab, x, y);
+    else if (tile === HubGroundTile.plaza && inCourt && hash < 7) setTile(groundDetail, hash % 2 === 0 ? HubGroundDetailTile.springRune : HubGroundDetailTile.crackedSlab, x, y);
+    else if (tile === HubGroundTile.plaza && hash < 6) setTile(groundDetail, HubGroundDetailTile.crackedSlab, x, y);
+    else if (tile === HubGroundTile.workshop && hash < 8) setTile(groundDetail, HubGroundDetailTile.cinderGravel, x, y);
+    else if (tile === HubGroundTile.archive && hash < 7) setTile(groundDetail, HubGroundDetailTile.archiveGlyph, x, y);
+    else if (tile === HubGroundTile.observatory && hash < 9) setTile(groundDetail, HubGroundDetailTile.starFleck, x, y);
+    else if (tile === HubGroundTile.armory && hash < 7) setTile(groundDetail, HubGroundDetailTile.armoryShard, x, y);
+    else if (tile === HubGroundTile.garden && hash < 7) setTile(groundDetail, HubGroundDetailTile.mossPatch, x, y);
+    else if (tile === HubGroundTile.training && hash < 8) setTile(groundDetail, HubGroundDetailTile.sandRipple, x, y);
+    else if (tile === HubGroundTile.expedition && hash < 8) setTile(groundDetail, HubGroundDetailTile.voidMote, x, y);
   }
 }
 

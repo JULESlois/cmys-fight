@@ -25,6 +25,15 @@ const PALETTES: Record<number, MaterialPalette> = {
 
 const renderer = new WorldMapRenderer();
 
+// Hoisted per-tile loop constants: no per-frame allocations inside the draw loops.
+const EDGE_DIRECTIONS = [
+  ["n", 0, -1], ["e", 1, 0], ["s", 0, 1], ["w", -1, 0],
+] as const;
+const SHADE_LIGHT = "rgba(255,255,255,0.05)";
+const SHADE_DARK = "rgba(0,0,0,0.065)";
+const SPECK_LIGHT = "rgba(255,255,255,0.10)";
+const SPECK_DARK = "rgba(0,0,0,0.16)";
+
 function tileAt(map: WorldMapDefinition, tiles: number[], x: number, y: number): number {
   if (x < 0 || y < 0 || x >= map.widthTiles || y >= map.heightTiles) return HubGroundTile.sanctuary;
   return tiles[y * map.widthTiles + x] ?? HubGroundTile.sanctuary;
@@ -92,7 +101,19 @@ export class HubGroundRenderer {
     ctx.fillStyle = palette.center;
     ctx.fillRect(x, y, map.tileSize, map.tileSize);
 
+    // Two extra brightness variants per material: a seeded scatter of slightly
+    // lighter and slightly darker whole tiles breaks the single-tone field.
+    const shade = hash(tileX, tileY, 5) % 7;
+    if (shade === 0) {
+      ctx.fillStyle = SHADE_LIGHT;
+      ctx.fillRect(x, y, map.tileSize, map.tileSize);
+    } else if (shade === 1) {
+      ctx.fillStyle = SHADE_DARK;
+      ctx.fillRect(x, y, map.tileSize, map.tileSize);
+    }
+
     const variation = hash(tileX, tileY) % 3;
+    const micro = hash(tileX, tileY, 9) % 5;
     ctx.fillStyle = palette.wear[variation];
     if (tileId === HubGroundTile.sanctuary || tileId === HubGroundTile.garden) {
       // Organic ground: isolated blades and mottling, never a full grid.
@@ -100,25 +121,69 @@ export class HubGroundRenderer {
         ctx.fillRect(x + 4 + variation * 3, y + 8, 1, 4);
         ctx.fillRect(x + 5 + variation * 3, y + 6, 1, 6);
       }
+      if (micro === 0) {
+        ctx.fillStyle = palette.dark;
+        ctx.fillRect(x + 9, y + 3 + variation, 4, 2);
+        ctx.fillRect(x + 10, y + 5 + variation, 2, 1);
+      } else if (micro === 1) {
+        ctx.fillStyle = palette.light;
+        ctx.fillRect(x + 2 + variation * 4, y + 12, 2, 1);
+      }
     } else if (tileId === HubGroundTile.training) {
       // Sand: broken wear scratches rather than continuous tile seams.
       ctx.fillRect(x + 2 + variation * 2, y + 5, 5, 1);
       if (variation !== 1) ctx.fillRect(x + 9, y + 11, 4, 1);
+      if (micro === 0) {
+        // Raked drill lines, offset per tile so they never chain into rails.
+        ctx.fillStyle = palette.light;
+        ctx.fillRect(x + 3, y + 13, 6 + variation, 1);
+      } else if (micro === 1) {
+        ctx.fillStyle = palette.dark;
+        ctx.fillRect(x + 4 + variation * 3, y + 2, 2, 2);
+      }
     } else if (tileId === HubGroundTile.road) {
       // Staggered large paving blocks; joints alternate every row.
       const course = tileY % 2 === 0 ? 3 : 9;
       ctx.fillRect(x + course, y + 8, 7, 1);
       if ((tileX + tileY) % 3 === 0) ctx.fillRect(x + (tileY % 2 ? 2 : 12), y + 2, 1, 6);
+      if (micro === 0) {
+        // Cart-worn sheen along the travel direction.
+        ctx.fillStyle = SPECK_LIGHT;
+        ctx.fillRect(x + 3, y + 4 + variation * 3, 8, 1);
+      } else if (micro === 1) {
+        ctx.fillStyle = SPECK_DARK;
+        ctx.fillRect(x + 5 + variation * 2, y + 12, 3, 1);
+        ctx.fillRect(x + 6 + variation * 2, y + 13, 1, 1);
+      }
     } else if (tileId === HubGroundTile.plaza) {
       // 2x2 slab groups, with only group boundaries emphasized.
       if (tileX % 2 === 0) ctx.fillRect(x, y + 1, 1, 14);
       if (tileY % 2 === 0) ctx.fillRect(x + 1, y, 14, 1);
       ctx.fillStyle = palette.light;
       ctx.fillRect(x + 3, y + 3, 5, 1);
+      if (micro === 0) {
+        // Chipped slab corner.
+        ctx.fillStyle = palette.dark;
+        ctx.fillRect(x + 12, y + 11 - variation, 3, 1);
+        ctx.fillRect(x + 13, y + 12 - variation, 2, 2);
+      } else if (micro === 1) {
+        ctx.fillStyle = SPECK_LIGHT;
+        ctx.fillRect(x + 8 + variation, y + 7, 2, 1);
+      }
     } else {
       // Artificial district stone: partial, staggered courses only.
       if ((tileX + tileY) % 2 === 0) ctx.fillRect(x + 2, y + 9, 9, 1);
       if (variation === 2) ctx.fillRect(x + 11, y + 4, 1, 5);
+      if (micro === 0) {
+        // Material fleck keyed to the district: soot, dust, filings, grit.
+        ctx.fillStyle = tileId === HubGroundTile.workshop || tileId === HubGroundTile.expedition ? SPECK_DARK : SPECK_LIGHT;
+        ctx.fillRect(x + 3 + variation * 4, y + 12, 2, 1);
+        ctx.fillRect(x + 4 + variation * 4, y + 13, 1, 1);
+      } else if (micro === 1) {
+        ctx.fillStyle = palette.dark;
+        ctx.fillRect(x + 6, y + 2 + variation * 2, 1, 3);
+        ctx.fillRect(x + 7, y + 3 + variation * 2, 1, 1);
+      }
     }
   }
 
@@ -126,12 +191,9 @@ export class HubGroundRenderer {
     const tileId = tileAt(map, tiles, tileX, tileY);
     const x = tileX * map.tileSize;
     const y = tileY * map.tileSize;
-    const directions = [
-      ["n", 0, -1], ["e", 1, 0], ["s", 0, 1], ["w", -1, 0],
-    ] as const;
 
     // Immediate edge and second-ring edge together form a two-tile transition.
-    for (const [direction, dx, dy] of directions) {
+    for (const [direction, dx, dy] of EDGE_DIRECTIONS) {
       const adjacent = tileAt(map, tiles, tileX + dx, tileY + dy);
       const second = tileAt(map, tiles, tileX + dx * 2, tileY + dy * 2);
       if (adjacent !== tileId) {
