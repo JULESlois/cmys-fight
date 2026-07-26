@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1018"/><stop offset="1" stop-color="#171126"/></linearGradient>
+  <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6f675d"/><stop offset="1" stop-color="#2c2830"/></linearGradient>
+  <style>
+    .t{font:700 32px system-ui,sans-serif;fill:#f0f3f7}.h{font:700 20px system-ui,sans-serif;fill:#b893ff}.b{font:500 16px system-ui,sans-serif;fill:#d6dce5}.s{font:500 13px system-ui,sans-serif;fill:#9eabba}.p{fill:#111a27;stroke:#2d3b50;stroke-width:2}.l{stroke:#465873;stroke-width:2}
+  </style>
+</defs>
+<rect width="1200" height="760" fill="url(#bg)"/>
+<text x="36" y="48" class="t">CMYS-FIGHT 美术重画提案：Bone Guard 骨盾卫士</text>
+<text x="36" y="76" class="s">类型：怪物 / 地牢近战召唤物　当前机制：13 HP · 34 速度 · 0.30 秒攻击前摇</text>
+
+<rect x="28" y="96" width="350" height="292" rx="12" class="p"/>
+<text x="48" y="130" class="h">现状问题</text>
+<text x="52" y="164" class="b">• 作为 Grave Summoner 的召唤物，阵营联系不足</text>
+<text x="52" y="192" class="b">• 盾牌轮廓普通，难以快速判断“挡在前面”</text>
+<text x="52" y="220" class="b">• 0.30 秒前摇很短，但现有动作反馈仍不够集中</text>
+<text x="52" y="248" class="b">• 受击与死亡主要依赖整体位移，材质碎裂不足</text>
+<text x="48" y="296" class="h">视觉目标</text>
+<text x="52" y="328" class="b">高大盾牌、低重心骨架、紫色灵火与墓碑符文</text>
+<text x="52" y="356" class="b">在 320×240 下优先读出“盾、骨、亡灵阵营”</text>
+
+<rect x="396" y="96" width="404" height="460" rx="12" class="p"/>
+<text x="418" y="130" class="h">概念主视图</text>
+<ellipse cx="598" cy="502" rx="112" ry="20" fill="#03060b" opacity=".7"/>
+<!-- shield -->
+<path d="M620 238 L714 262 L706 456 Q668 500 620 514 Q572 500 534 456 L526 262 Z" fill="#18161d" stroke="#08090c" stroke-width="12"/>
+<path d="M620 252 L695 272 L688 445 Q656 479 620 491 Q584 479 552 445 L545 272 Z" fill="url(#shield)" stroke="#9a9180" stroke-width="5"/>
+<path d="M620 282 V456 M575 335 H665" stroke="#6f3eb2" stroke-width="12" opacity=".8"/>
+<path d="M620 282 V456 M575 335 H665" stroke="#c39cff" stroke-width="3"/>
+<!-- skeleton -->
+<circle cx="500" cy="244" r="34" fill="#d9cfb5" stroke="#17151a" stroke-width="8"/>
+<rect x="481" y="236" width="11" height="9" fill="#0c0a10"/><rect x="508" y="236" width="11" height="9" fill="#0c0a10"/>
+<path d="M494 260 H506 M500 260 V270" stroke="#4b4240" stroke-width="4"/>
+<path d="M486 280 Q500 302 514 280" fill="none" stroke="#c7bca4" stroke-width="12"/>
+<path d="M480 300 V425 M518 300 V425" stroke="#cfc5ac" stroke-width="16"/>
+<path d="M464 320 L430 408 M528 320 L554 380" stroke="#cfc5ac" stroke-width="14"/>
+<path d="M480 418 L458 492 M518 418 L528 492" stroke="#cfc5ac" stroke-width="15"/>
+<path d="M468 298 L530 298 L520 398 L478 398 Z" fill="#332641" opacity=".95"/>
+<path d="M462 430 L442 500 L478 482 L500 518 L522 482 L554 500 L538 430 Z" fill="#3f2b55"/>
+<!-- sword -->
+<path d="M424 344 L408 454" stroke="#c7bca4" stroke-width="10"/>
+<path d="M405 454 L394 516 L420 482" fill="#e6dcc3" stroke="#17151a" stroke-width="5"/>
+<!-- spirit fire -->
+<path d="M462 306 Q440 276 462 250 Q470 271 482 250 Q492 282 472 310 Z" fill="#9b5cff" opacity=".9"/>
+<path d="M538 306 Q520 276 542 250 Q550 271 560 250 Q570 282 548 310 Z" fill="#9b5cff" opacity=".9"/>
+<text x="438" y="538" class="s">主轮廓：高盾牌占宽约 45%，骨架后撤，形成明确前后层级</text>
+
+<rect x="818" y="96" width="354" height="460" rx="12" class="p"/>
+<text x="840" y="130" class="h">轮廓、配色与动画</text>
+<text x="842" y="164" class="b">轮廓</text>
+<text x="860" y="192" class="s">• 盾顶略高于头骨，底部厚重且贴地</text>
+<text x="860" y="216" class="s">• 骨架身体收窄，避免与普通骷髅混淆</text>
+<text x="842" y="252" class="b">配色</text>
+<g transform="translate(842 270)"><rect width="48" height="28" fill="#d9cfb5"/><rect x="58" width="48" height="28" fill="#6f675d"/><rect x="116" width="48" height="28" fill="#332641"/><rect x="174" width="48" height="28" fill="#9b5cff"/><rect x="232" width="48" height="28" fill="#f06a55"/></g>
+<text x="842" y="330" class="b">动画关键帧</text>
+<text x="860" y="358" class="s">• 待机：盾缘轻微呼吸，肩部灵火错相摆动</text>
+<text x="860" y="382" class="s">• 移动：盾先行 1px，骨架延迟跟随</text>
+<text x="860" y="406" class="s">• 攻击前摇：盾牌抬起、身体后仰、剑臂收紧</text>
+<text x="860" y="430" class="s">• 命中：横劈 2–3 帧紫色弧光，随后快速复位</text>
+<text x="860" y="454" class="s">• 受击：盾面震动、骨屑外喷、灵火白闪</text>
+<text x="860" y="478" class="s">• 死亡：盾先碎裂，骨架坍塌，灵火延迟消散</text>
+
+<rect x="28" y="578" width="1144" height="146" rx="12" class="p"/>
+<text x="48" y="612" class="h">玩法可读性、实现建议与验收标准</text>
+<text x="52" y="644" class="s">可读性：盾牌必须持续表达前方阻挡职责；攻击弧光不应覆盖地面危险提示；召唤物与 Grave Summoner 共享紫色灵火与十字符文。</text>
+<text x="52" y="670" class="s">实现：保留原生像素模型入口，将盾、骨架、剑臂和灵火拆为独立绘制层；攻击前摇至少稳定显示 3 帧；死亡采用 6–8 帧确定性碎裂序列。</text>
+<text x="52" y="696" class="s">验收：暗色地牢背景下一眼识别；与普通近战敌人轮廓差异明确；受击与死亡反馈不影响性能；320×240 下盾面符文仍可辨认。</text>
+<text x="36" y="748" class="s">记录：本次对象 Bone Guard。下一步评审重点：盾牌占比、前摇可读性、紫色灵火饱和度、死亡碎裂节奏。</text>
+</svg>
