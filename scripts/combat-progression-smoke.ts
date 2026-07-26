@@ -21,11 +21,11 @@ const oldDefaults = {
   fire: "f", skill: "e", interact: " ", swapWeapon: "q", pause: "p",
 } as const;
 
-assert.equal(SETTINGS_VERSION, 9);
+assert.equal(SETTINGS_VERSION, 10);
 assert.deepEqual(DEFAULT_KEY_BINDINGS, {
   moveUp: "w", moveDown: "s", moveLeft: "a", moveRight: "d",
   fire: "j", skill: "l", interact: "k", swapWeapon: "i", pause: "escape",
-  dodge: " ",
+  dodge: " ", subWeapon: "u", crush: "o",
 });
 const migratedDefaults = normalizeSettings({ version: 4, keyBindings: oldDefaults });
 assert.deepEqual(migratedDefaults.keyBindings, DEFAULT_KEY_BINDINGS);
@@ -95,8 +95,9 @@ assert.equal(legendaryWeapons.length, 17);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "vanguard").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "aether").length, 2);
 assert.equal(legendaryWeapons.filter(weapon => weapon.series === "phoenix").length, 2);
-assert.equal(getAvailableWeapons(1).length, Object.keys(WEAPONS).length);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
+assert.equal(getAvailableWeapons(1).length, Object.values(WEAPONS).filter(w => !w.experimental).length);
+assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "last_prism"), false, "experimental Last Prism must not be player-available");
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 16);
 assert.equal(mythWeapons.length, 3);
 assert.deepEqual(mythWeapons.map(weapon => weapon.id).sort(), ["awp_dragon_lore", "so_14", "ultimate"]);
 assert.deepEqual(
