@@ -97,6 +97,28 @@ export class PixelFxSystem {
 
   emitMuzzle(projectile: Projectile, lowFx = false) {
     const direction = Math.atan2(projectile.vy, projectile.vx);
+    if (projectile.muzzleEffect === "smoke") {
+      // Mechanical weapons use two readable smoke layers: a dense core that
+      // expands near the muzzle and a softer back-drifting tail. Lifetimes are
+      // capped below the issue's 0.55s visibility budget.
+      this.emit(projectile.x, projectile.y, lowFx ? 2 : 4, "#B7A79C", 18, 0.38, {
+        direction: direction + Math.PI,
+        spread: 0.72,
+        gravity: -7,
+        glow: false,
+        size: lowFx ? 2 : 3,
+        shape: "smoke",
+      });
+      this.emit(projectile.x, projectile.y, lowFx ? 1 : 3, "#695D58", 9, 0.5, {
+        direction: direction + Math.PI,
+        spread: 1.05,
+        gravity: -11,
+        glow: false,
+        size: 2,
+        shape: "smoke",
+      });
+      return;
+    }
     const count = projectile.muzzleEffect === "flame" ? (lowFx ? 4 : 9)
       : projectile.muzzleEffect === "rocket" ? (lowFx ? 4 : 8)
         : projectile.muzzleEffect === "electric" || projectile.muzzleEffect === "beam" ? (lowFx ? 3 : 7)

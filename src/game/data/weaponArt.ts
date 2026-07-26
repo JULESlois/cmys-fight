@@ -726,8 +726,29 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(7, 8, 7, 2, "2"); c.polygon([[8,9],[13,9],[12,14],[8,14]], "6"); c.rect(9, 10, 2, 3, "7");
   }),
   shotgun: drawWeapon(30, 16, c => {
-    c.polygon([[1,8],[7,5],[11,6],[11,10],[6,13],[1,12]], "6"); c.rect(8, 6, 9, 5, "3");
-    c.rect(16, 5, 13, 2, "2"); c.rect(16, 8, 13, 2, "4"); c.rect(18, 10, 7, 2, "7"); c.rect(11, 10, 4, 3, "5");
+    // Down-set worn wood stock: broad enough to read as a heavy shotgun,
+    // with a two-tone wear strip instead of uniform brown noise.
+    c.polygon([[1,8],[6,5],[11,6],[12,9],[8,13],[2,13],[1,11]], "6");
+    c.polygon([[2,9],[7,6],[10,7],[10,9],[7,11],[3,11]], "7");
+    c.rect(4, 12, 4, 1, "8");
+
+    // Thick patched receiver with bright edge wear, a replacement plate and
+    // concentrated rust around seams/rivets.
+    c.polygon([[9,5],[19,5],[22,7],[20,11],[10,11],[8,9]], "3");
+    c.rect(10, 6, 10, 4, "4");
+    c.rect(11, 6, 8, 1, "5");
+    c.rect(10, 9, 9, 1, "2");
+    c.rect(13, 7, 5, 2, "6");
+    c.set(14, 7, "8"); c.set(18, 9, "8"); c.set(20, 8, "8");
+
+    // Separate pump block and short, square twin barrel mass. The visible gap
+    // between pump and receiver keeps the three-part silhouette legible.
+    c.rect(18, 11, 7, 2, "6");
+    c.rect(19, 11, 5, 1, "7");
+    c.rect(21, 5, 9, 5, "2");
+    c.rect(22, 6, 8, 1, "5");
+    c.rect(22, 8, 8, 1, "4");
+    c.rect(27, 9, 3, 1, "8");
   }),
   laser: drawWeapon(25, 16, c => {
     c.polygon([[3,6],[6,3],[17,3],[20,6],[18,10],[6,10]], "2"); c.rect(7, 5, 10, 3, "4");
@@ -972,7 +993,16 @@ const BASE_OUTLINE = { ".": "transparent", "1": "#080B10" };
 
 export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   pistol: { ...BASE_OUTLINE, "2":"#292D33","3":"#4B535E","4":"#8D98A4","5":"#D3DAE2","6":"#5B3527","7":"#A85E36" },
-  shotgun: { ...BASE_OUTLINE, "2":"#171A1F","3":"#3B424A","4":"#6C7781","5":"#AEB8C0","6":"#5A2D1E","7":"#9A5532" },
+  shotgun: {
+    ...BASE_OUTLINE,
+    "2":"#211A17",
+    "3":"#3B2D28",
+    "4":"#5D493E",
+    "5":"#B99170",
+    "6":"#7A4127",
+    "7":"#A85A34",
+    "8":"#C96B45",
+  },
   laser: { ...BASE_OUTLINE, "2":"#17243A","3":"#2F4C68","4":"#00B8D9","5":"#B8E7F2","6":"#38F5FF","7":"#F2FCFF","9":"#FFFFFF" },
   bell_repeater: { ...BASE_OUTLINE, "2":"#261A10","3":"#5D4630","4":"#A87321","5":"#E6B84B","6":"#6D3A20","7":"#FFE081","8":"#FFF3B0" },
   mask_sprayer: { ...BASE_OUTLINE, "2":"#20242B","3":"#324C39","4":"#5D6A62","5":"#7EC25A","6":"#71492B","7":"#E7D35D","8":"#E85D44" },
