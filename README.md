@@ -19,7 +19,7 @@ The game renders at a fixed 320 × 240 logical resolution and scales to desktop 
 ## Main flow
 
 ```text
-Splash → Hub → Character Select / Expedition → Dungeon → Run Result → Hub
+Hub intro → Hub → Character Select / Expedition → Dungeon → Run Result → Hub
 ```
 
 `TitleState` remains available as a compatibility and QA entry, but the normal launch path enters the Hub.
@@ -56,7 +56,7 @@ Start the development server:
 npm run dev
 ```
 
-The default URL is `http://localhost:3000/`. Set `PORT` to use another port.
+The default URL is `http://localhost:3001/`. Set `PORT` to use another port.
 
 Run the complete automated verification chain:
 
@@ -78,7 +78,7 @@ npm start
 Open the application with `?qa=1`:
 
 ```text
-http://localhost:3000/?qa=1
+http://localhost:3001/?qa=1
 ```
 
 QA mode exposes an in-game panel and `window.__CMYS_QA__` for stage navigation, snapshots, audio checks, loadout grants, and PNG capture. See `BROWSER_QA.md` for the manual browser procedure.
