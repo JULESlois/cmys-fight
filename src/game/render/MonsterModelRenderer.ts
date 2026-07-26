@@ -2088,40 +2088,64 @@ const models: Record<string, ModelDraw> = {
     const phase = phaseOf(state, stateFrame);
     const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
     const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
-    const thrust = state === "attack" ? [0, 3, 10, 5][phase] : 0;
+    const recoil = state === "attack" ? [0, 0, -3, -1][phase] : 0;
+    const aimStage = state === "attack" ? phase + 1 : 0;
+    const sapPulse = state === "idle" ? [0, 1][phase] : 0;
 
-    // Three root feet anchor a thin sniper silhouette.
-    for (const [x, shift] of [[-8, -stride], [0, stride], [7, -stride]] as const) {
-      rect(ctx, p.ink, x + shift, -3 + bob, 5, 8);
-      rect(ctx, "#604229", x + 1 + shift, -2 + bob, 3, 6);
-      rect(ctx, p.ink, x - 2 + shift, 3 + bob, 8, 3);
-      rect(ctx, "#7A5638", x - 1 + shift, 3 + bob, 6, 1);
+    // Split roots produce the tall, planted silhouette of a forest sniper.
+    for (const [x, shift, reach] of [[-6, -stride, -4], [3, stride, 5]] as const) {
+      rect(ctx, p.ink, x + shift, -3 + bob, 5, 10);
+      rect(ctx, "#2C241D", x + 1 + shift, -2 + bob, 3, 8);
+      rect(ctx, p.ink, x + reach + shift, 5 + bob, 10, 3);
+      rect(ctx, "#6A4C2D", x + reach + 1 + shift, 5 + bob, 8, 1);
     }
 
-    // Bark torso, leaf mantle and seed-mask head.
-    rect(ctx, p.ink, -7, -24 + bob, 14, 22);
-    rect(ctx, "#5A3B27", -6, -23 + bob, 12, 20);
-    rect(ctx, "#805B3A", -4, -22 + bob, 5, 17);
-    rect(ctx, p.ink, -11, -25 + bob, 22, 7);
-    rect(ctx, "#48653A", -10, -24 + bob, 20, 5);
-    rect(ctx, "#7FA85C", -8, -25 + bob, 7, 4);
-    rect(ctx, "#91BB67", 3, -24 + bob, 6, 3);
-    rect(ctx, p.ink, -6, -34 + bob, 12, 11);
-    rect(ctx, "#6B4B31", -5, -33 + bob, 10, 9);
-    rect(ctx, "#9C774B", -3, -32 + bob, 5, 7);
-    drawPixelEye(ctx, p, -3, -29 + bob, "#D8FF8D");
-    drawPixelEye(ctx, p, 2, -29 + bob, "#D8FF8D");
-    rect(ctx, p.ink, -2, -25 + bob, 5, 2);
+    // Narrow forward-leaning trunk and broad moss mantle keep it distinct from melee treefolk.
+    rect(ctx, p.ink, -6, -28 + bob, 13, 27);
+    rect(ctx, "#2C241D", -5, -27 + bob, 11, 25);
+    rect(ctx, "#6A4C2D", -3, -26 + bob, 6, 22);
+    rect(ctx, "#8A6840", -1, -25 + bob, 2, 17);
+    rect(ctx, p.ink, -13, -27 + bob, 25, 8);
+    rect(ctx, "#46652F", -12, -26 + bob, 23, 6);
+    rect(ctx, "#6F9F4B", -10, -27 + bob, 8, 4);
+    rect(ctx, "#88B85A", 3, -26 + bob, 7, 3);
 
-    // The root lance telescopes in four visible segments during the sniper shot.
-    rect(ctx, p.ink, 6, -21 + bob, 8 + thrust, 7);
-    rect(ctx, "#6D4A30", 7, -20 + bob, 6 + thrust, 5);
-    rect(ctx, "#A07A4E", 9, -19 + bob, 4 + thrust, 2);
-    rect(ctx, p.ink, 13 + thrust, -20 + bob, 12, 5);
-    rect(ctx, "#93B75F", 14 + thrust, -19 + bob, 10, 3);
-    rect(ctx, "#D9F2A2", 22 + thrust, -18 + bob, 5, 1);
-    rect(ctx, p.ink, 25 + thrust, -20 + bob, 5, 5);
-    rect(ctx, "#E8F7B2", 26 + thrust, -19 + bob, 4, 3);
+    // Seed-mask eye is the first stage of the three-step charge read.
+    rect(ctx, p.ink, -5, -38 + bob, 12, 11);
+    rect(ctx, "#2C241D", -4, -37 + bob, 10, 9);
+    rect(ctx, "#6A4C2D", -2, -36 + bob, 6, 7);
+    const eye = aimStage >= 1 ? "#F4FFD0" : "#CDE66F";
+    drawPixelEye(ctx, p, 1, -33 + bob, eye);
+    if (aimStage >= 1) rect(ctx, "#CDE66F", 0, -31 + bob, 4, 1);
+
+    // Body, shaft, leaf head and sap conduit are authored as separate rifle layers.
+    const gunY = -23 + bob;
+    const gunX = 4 + recoil;
+    rect(ctx, p.ink, gunX, gunY, 25, 7);
+    rect(ctx, "#2C241D", gunX + 1, gunY + 1, 23, 5);
+    rect(ctx, "#6A4C2D", gunX + 4, gunY + 2, 20, 2);
+    rect(ctx, p.ink, gunX + 26, gunY - 1, 18, 6);
+    rect(ctx, "#4A3825", gunX + 27, gunY, 16, 4);
+    rect(ctx, "#6A4C2D", gunX + 29, gunY + 1, 14, 2);
+
+    // Leaf spearhead keeps the muzzle readable at 320x240 and closes during recoil.
+    const muzzleX = gunX + 44;
+    const leafInset = state === "attack" && phase >= 2 ? 1 : 0;
+    rect(ctx, p.ink, muzzleX, gunY - 3 + leafInset, 11, 10 - leafInset * 2);
+    rect(ctx, "#46652F", muzzleX + 1, gunY - 2 + leafInset, 8, 8 - leafInset * 2);
+    rect(ctx, "#6F9F4B", muzzleX + 3, gunY - 1 + leafInset, 7, 6 - leafInset * 2);
+    rect(ctx, "#CDE66F", muzzleX + 8, gunY + 1, 4, 2);
+
+    // Charge stages: eye -> sap conduit -> muzzle and narrow lock line.
+    if (aimStage >= 2 || sapPulse > 0) {
+      rect(ctx, "#CDE66F", gunX + 5, gunY + 2, aimStage >= 2 ? 37 : 12, 1);
+      if (aimStage >= 2) rect(ctx, "#8EAF46", gunX + 12, gunY + 3, 24, 1);
+    }
+    if (aimStage >= 3) {
+      rect(ctx, "rgba(205,230,111,0.35)", muzzleX + 11, gunY, 24, 3);
+      rect(ctx, "#CDE66F", muzzleX + 11, gunY + 1, 24, 1);
+      rect(ctx, "#F4FFD0", muzzleX + 10, gunY, 3, 3);
+    }
   },
   petal_moth(ctx, p, _limbFrame, state, stateFrame) {
     const phase = phaseOf(state, stateFrame);
