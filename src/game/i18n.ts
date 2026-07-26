@@ -102,6 +102,9 @@ const EN = {
   "action.interact": "INTERACT",
   "action.swapWeapon": "SWAP WEAPON",
   "action.pause": "PAUSE",
+  "action.dodge": "DODGE",
+  "action.subWeapon": "SUB-WEAPON",
+  "action.crush": "ITEM CRUSH",
   "tutorial.move": "MOVE",
   "tutorial.fire": "FIRE",
   "tutorial.skill": "SKILL",
@@ -208,6 +211,7 @@ const EN = {
   "shop.coins": "COINS {coins}",
   "shop.talent": "TALENT",
   "shop.weapon": "WEAPON",
+  "shop.equipment": "GEAR",
   "shop.price": "{price} COINS",
   "shop.footer": "[{cycle}] MOVE   [{confirm}] BUY   [{close}] EXIT",
   "shop.failure.sold": "ITEM ALREADY SOLD",
@@ -514,6 +518,9 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "action.interact": "交互",
   "action.swapWeapon": "切换武器",
   "action.pause": "暂停",
+  "action.dodge": "闪避",
+  "action.subWeapon": "副武器",
+  "action.crush": "道具爆碎",
   "tutorial.move": "移动",
   "tutorial.fire": "射击",
   "tutorial.skill": "技能",
@@ -611,6 +618,7 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "shop.coins": "金币 {coins}",
   "shop.talent": "天赋",
   "shop.weapon": "武器",
+  "shop.equipment": "装备",
   "shop.price": "{price} 金币",
   "shop.footer": "[{cycle}] 移动   [{confirm}] 购买   [{close}] 退出",
   "shop.failure.sold": "该商品已售出",
@@ -958,6 +966,118 @@ const META_ZH: Record<string, { name: string; description: string }> = {
   supply_drop: { name: "回收协议", description: "每级敌人补给掉落概率 +5%。" },
 };
 
+/**
+ * zh-CN overrides for soul display names. Souls author their English name in
+ * data/souls.ts (the data files stay English, mirroring BUFF_ZH's pattern);
+ * this map is keyed by soul id and must cover the entire roster — the i18n
+ * smoke asserts one entry per soul.
+ */
+const SOUL_ZH: Record<string, string> = {
+  // ---- forest ----
+  soul_moss_brute: "苔藓之皮",
+  soul_thorn_archer: "荆棘齐射",
+  soul_boar_charger: "野猪突进",
+  soul_dingdong_fowl: "灵禽之运",
+  soul_spore_mimic: "孢子帷幕",
+  soul_root_lancer: "根须长枪",
+  soul_petal_moth: "花瓣飘浮",
+  soul_forest_guardian: "林地守护",
+  soul_broadcast_rooster: "信号敛财",
+  // ---- dungeon ----
+  soul_bone_guard: "白骨甲片",
+  soul_bolt_cultist: "咒雷邪术",
+  soul_grave_summoner: "坟冢召唤",
+  soul_bark_hound: "猎犬直觉",
+  soul_chain_jailer: "锁链钩爪",
+  soul_coffin_lobber: "棺柩投掷",
+  soul_lantern_wraith: "幽灯雾化",
+  soul_crypt_overseer: "墓穴神盾",
+  soul_kennel_warden: "狱吏敛魂",
+  // ---- snow ----
+  soul_frost_hound: "霜狼皮毛",
+  soul_ice_shaman: "冰川灵光",
+  soul_snow_turret: "炮塔连发",
+  soul_white_sampler: "采样心智",
+  soul_mirror_wisp: "镜流回环",
+  soul_icicle_sniper: "冰锥狙击",
+  soul_lab_servitor: "侍役滑行",
+  soul_frost_titan: "泰坦之踏",
+  soul_white_director: "主管锋芒",
+  // ---- lava ----
+  soul_ember_knight: "余烬之刃",
+  soul_magma_spitter: "岩浆喷吐",
+  soul_cinder_oracle: "烬火光环",
+  soul_code_horse: "代码疾驰",
+  soul_furnace_beetle: "熔炉甲壳",
+  soul_magma_mortar: "岩浆迫击",
+  soul_heat_smith_drone: "锻匠储备",
+  soul_inferno_core: "炼狱护咒",
+  soul_vat_horse_prime: "原体再生",
+  // ---- sealed library ----
+  soul_cursed_tome: "书页风暴",
+  soul_arcane_guard: "奥术甲胄",
+  soul_ink_summoner: "墨影召唤",
+  soul_glyph_sniper: "符文穿刺",
+  soul_tome_lord: "典籍心智",
+  // ---- cooling canal ----
+  soul_canal_warden: "运河卫体",
+  soul_crystal_drifter: "晶簇散射",
+  soul_cryo_lancer: "极寒冰枪",
+  soul_glacier_director: "冰川领域",
+  // ---- sealed armory ----
+  soul_iron_sentinel: "钢铁甲板",
+  soul_siege_mortar: "攻城炮击",
+  soul_armory_commander: "军需储备",
+  soul_war_engine: "战争光环",
+  // ---- observatory ----
+  soul_void_moth: "虚空浮游",
+  soul_star_caster: "星辰力场",
+  soul_astral_shade: "星影疾步",
+  soul_star_sentinel: "星辰眷顾",
+  // ---- forge core ----
+  soul_forge_mech: "锻造臂膀",
+  soul_slag_crawler: "熔渣光环",
+  soul_anvil_guard: "铁砧献纳",
+  soul_forge_prime: "原初锻火",
+  // ---- ash catacombs ----
+  soul_ashen_revenant: "灰烬锋芒",
+  soul_ash_lobber: "烬灰爆弹",
+  soul_bone_sovereign: "骸骨君召",
+  // ---- deep prison ----
+  soul_chain_specter: "怨魂锁链",
+  soul_prison_brute: "蛮狱厚皮",
+  soul_warden_alpha: "狱首神盾",
+  // ---- deep archive ----
+  soul_archive_construct: "构装外壳",
+  soul_void_cultist: "虚空弹幕",
+  soul_echo_mind: "回响共鸣",
+};
+
+/**
+ * zh-CN overrides for equipment display names, keyed by equipment id. Covers
+ * every entry in data/equipment.ts; asserted by the i18n smoke.
+ */
+const EQUIPMENT_ZH: Record<string, string> = {
+  // ---- hand ----
+  worn_gauntlet: "磨损护手",
+  hunter_glove: "猎人手套",
+  vampire_killer_grip: "猎魔者握柄",
+  alchemy_bracer: "炼金臂铠",
+  belmont_relic: "贝尔蒙特圣遗物",
+  // ---- armor ----
+  travel_cloak: "旅行斗篷",
+  chain_vest: "锁子背心",
+  mirror_plate: "明镜胸甲",
+  soul_shroud: "魂灵裹布",
+  dracula_mantle: "德古拉披风",
+  // ---- accessory ----
+  copper_ring: "铜制指环",
+  heart_locket: "心形吊坠",
+  moon_charm: "月光护符",
+  scholar_lens: "学者透镜",
+  crimson_seal: "绯红封印",
+};
+
 const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
   knight: { title: "CMYS·守御形态", passive: "护甲充满时获得守卫，使下一次受到的伤害减少 1 点。" },
   mage: { title: "CMYS·奥术形态", passive: "每累计消耗 12 点能量，触发一次 50% 伤害的奥术回响。" },
@@ -1000,6 +1120,26 @@ export function getChallengeText(id: string, fallback: { name: string; descripti
 
 export function getMetaUpgradeText(id: string, fallback: { name: string; description: string }, language: Language) {
   return language === "zh-CN" && META_ZH[id] ? META_ZH[id] : fallback;
+}
+
+/** Localized soul display name; `fallback` is the English name authored in data/souls.ts. */
+export function getSoulName(id: string, fallback: string, language: Language): string {
+  return language === "zh-CN" ? SOUL_ZH[id] ?? fallback : fallback;
+}
+
+/** Localized equipment display name; `fallback` is the English name authored in data/equipment.ts. */
+export function getEquipmentName(id: string, fallback: string, language: Language): string {
+  return language === "zh-CN" ? EQUIPMENT_ZH[id] ?? fallback : fallback;
+}
+
+/**
+ * EN keys with no ZH entry, filtered to the given key prefixes. Exists for the
+ * i18n smoke, which pins the Castlevania-layer prefixes to full parity.
+ */
+export function findUntranslatedKeys(prefixes: readonly string[]): string[] {
+  return (Object.keys(EN) as TranslationKey[]).filter(
+    key => prefixes.some(prefix => key.startsWith(prefix)) && ZH[key] === undefined,
+  );
 }
 
 export function getCharacterText(id: string, fallback: { title: string; passive: string }, language: Language) {

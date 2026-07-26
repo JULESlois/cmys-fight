@@ -51,6 +51,7 @@ const gaps = findSoulCoverageGaps();
 assert.deepEqual(gaps.missing, [], "every enemy must drop a soul");
 assert.deepEqual(gaps.orphaned, [], "every soul must belong to a real enemy");
 assert.equal(SOUL_IDS.length, Object.keys(ENEMIES).length, "souls are one-to-one with enemies");
+assert.equal(SOUL_IDS.length, 66, "the deep-route rollout grew the roster from 36 to 66 souls");
 
 // Every boss soul is a guaranteed drop; no regular enemy is.
 for (const soul of Object.values(SOULS)) {

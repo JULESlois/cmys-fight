@@ -10,6 +10,9 @@ import { generateStage } from "../src/game/FloorGenerator";
 import { createRunProgressFromGlobalStage, FINAL_GLOBAL_STAGE, STAGES_PER_CHAPTER } from "../src/game/RunProgress";
 import { getMapData, getRoomTemplate, isSolid, MAP_HEIGHT, MAP_WIDTH } from "../src/game/MapData";
 import { EncounterFactory } from "../src/game/EncounterFactory";
+import { ShopSystem } from "../src/game/shop/ShopSystem";
+import { createDefaultEquipmentProgress } from "../src/game/combat/EquipmentSystem";
+import { EQUIPMENT } from "../src/game/data/equipment";
 
 const themes: EnemyTheme[] = ["forest", "dungeon", "snow", "lava"];
 assert.equal(Object.keys(ENEMIES).length, 66);
@@ -119,6 +122,55 @@ function seeded(seed: number) {
   };
 }
 
+// Shops can offer unowned meta equipment as a distinct offer kind; purchasing
+// records ownership on the equipment progress and deducts coins.
+const equipmentProgress = createDefaultEquipmentProgress();
+const shopPlayer = {
+  characterId: "knight",
+  buffs: [],
+  weaponLoadout: { slots: [{ weaponId: "pistol" }], activeSlot: 0 },
+  shopDiscount: 0,
+} as any;
+const equipmentShopStage = { seed: 1, globalStageIndex: 1, chapterIndex: 1 } as any;
+let equipmentOfferRoom: any;
+let equipmentOffer: ReturnType<typeof ShopSystem.generateStock>[number] | undefined;
+for (let seed = 1; seed <= 200 && !equipmentOffer; seed++) {
+  const room = { id: `equip-shop-${seed}`, shopSeed: seed } as any;
+  const stock = ShopSystem.generateStock(equipmentShopStage, room, shopPlayer, equipmentProgress);
+  assert.equal(stock.length, 4, "equipment never shrinks the four-card stock");
+  assert.ok(stock.filter(item => item.kind === "equipment").length <= 1, "at most one equipment card per shop");
+  const offer = stock.find(item => item.kind === "equipment");
+  if (offer) {
+    equipmentOffer = offer;
+    equipmentOfferRoom = room;
+  }
+}
+assert.ok(equipmentOffer, "seeded shops must be able to offer equipment");
+const offeredEquipment = EQUIPMENT[equipmentOffer!.equipmentId!];
+assert.ok(offeredEquipment, "equipment offers carry a valid equipment id");
+assert.equal(equipmentProgress.owned.includes(offeredEquipment.id), false, "only unowned gear is offered");
+assert.equal(equipmentOffer!.name, offeredEquipment.name, "offers use the equipment data name");
+assert.equal(equipmentOffer!.price, offeredEquipment.cost, "stage-1 undiscounted price equals the data cost");
+const equipmentCoinsBefore = equipmentOffer!.price + 25;
+const noProgressPurchase = ShopSystem.purchase(shopPlayer, { ...equipmentOffer!, purchased: false }, equipmentCoinsBefore);
+assert.equal(noProgressPurchase.success, false, "equipment purchase requires the meta equipment progress");
+const poorPurchase = ShopSystem.purchase(shopPlayer, equipmentOffer!, equipmentOffer!.price - 1, equipmentProgress);
+assert.equal(poorPurchase.success, false);
+assert.equal(poorPurchase.reason, "coins");
+const equipmentPurchase = ShopSystem.purchase(shopPlayer, equipmentOffer!, equipmentCoinsBefore, equipmentProgress);
+assert.equal(equipmentPurchase.success, true, "equipment purchase succeeds");
+assert.equal(equipmentPurchase.coinsAfter, equipmentCoinsBefore - equipmentOffer!.price, "purchase deducts the price");
+assert.equal(equipmentProgress.owned.includes(offeredEquipment.id), true, "purchase records ownership");
+assert.equal(equipmentOffer!.purchased, true);
+const repeatPurchase = ShopSystem.purchase(shopPlayer, { ...equipmentOffer!, purchased: false }, equipmentCoinsBefore, equipmentProgress);
+assert.equal(repeatPurchase.success, false, "owned gear cannot be sold twice");
+const restock = ShopSystem.generateStock(equipmentShopStage, equipmentOfferRoom, shopPlayer, equipmentProgress);
+assert.equal(restock.some(item => item.equipmentId === offeredEquipment.id), false, "owned gear leaves the offer pool");
+for (let seed = 1; seed <= 40; seed++) {
+  const stock = ShopSystem.generateStock(equipmentShopStage, { id: `legacy-shop-${seed}`, shopSeed: seed } as any, shopPlayer);
+  assert.equal(stock.some(item => item.kind === "equipment"), false, "callers without meta equipment keep legacy stock");
+}
+
 const originalLog = console.log;
 console.log = () => {};
 let hazardsChecked = 0;
@@ -223,8 +275,12 @@ assert.match(minimapSource, /visibleKeys\.has/);
 assert.match(minimapSource, /ctx\.fillText\("\?"/);
 assert.match(minimapSource, /for \(const room of visible\) \{[\s\S]*minX = Math\.min\(minX, room\.x\)/);
 assert.doesNotMatch(minimapSource, /for \(const room of floor\.rooms\) \{\s*minX = Math\.min/);
-assert.match(gameDataSource, /room\.type = "combat"/);
-assert.match(gameDataSource, /room\.templateId = "legacy_room"/);
+// Legacy per-room repair (room.type = "combat" / templateId = "legacy_room") was removed:
+// incompatible saves are now detected by isStageCompatible and the stage is regenerated whole.
+assert.match(gameDataSource, /private isStageCompatible\(stage: any, run: RunProgress\)/, "legacy room repair replaced by whole-stage compatibility check");
+assert.match(gameDataSource, /if \(loadedVersion < 6 \|\| !stageCompatible\) \{\s*this\.data\.floor = generateStage\(this\.data\.run\)/, "incompatible saves regenerate the stage instead of patching rooms");
+assert.match(gameDataSource, /stage\.worldNodeId !== run\.worldNodeId/, "stage compatibility keys on the run's world node");
+assert.match(gameDataSource, /hashSeed\(stage\.seed, room\.id\)/, "normalizeStageMetadata re-stamps per-room encounter seeds");
 const specialRoomSource = fs.readFileSync("src/game/render/SpecialRoomRenderer.ts", "utf8");
 const portalSource = fs.readFileSync("src/game/render/PortalRenderer.ts", "utf8");
 const ritualSpringSource = fs.readFileSync("src/game/render/RitualSpringRenderer.ts", "utf8");
