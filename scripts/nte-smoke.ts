@@ -237,7 +237,7 @@ assert.ok(
   "Collins Heavy Fists expose four plated knuckles",
 );
 
-assert.equal(META_SAVE_VERSION, 8);
+assert.equal(META_SAVE_VERSION, 9);
 const defaultMeta = createDefaultMetaProgress();
 for (const id of ["esper_zero", "nanally"]) assert.ok(defaultMeta.unlockedCharacters.includes(id));
 for (const id of ["zeroth_sense", "colucci_claws"]) assert.ok(defaultMeta.unlockedStarterWeapons.includes(id));
