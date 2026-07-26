@@ -1,4 +1,4 @@
-export type PickupType = "hp" | "mana" | "coin" | "weapon";
+export type PickupType = "hp" | "mana" | "coin" | "weapon" | "heart" | "soul";
 
 export class Pickup {
   public id = 0;
@@ -8,15 +8,17 @@ export class Pickup {
   public type: PickupType = "coin";
   public value = 0;
   public weaponId?: string;
+  /** Which soul a "soul" pickup grants. Mirrors weaponId for "weapon" drops. */
+  public soulId?: string;
   public blockedUntilPlayerLeaves = false;
 
   private static nextId = 0;
 
-  constructor(x: number, y: number, type: PickupType, value: number, weaponId?: string) {
-    this.reset(x, y, type, value, weaponId);
+  constructor(x: number, y: number, type: PickupType, value: number, weaponId?: string, soulId?: string) {
+    this.reset(x, y, type, value, weaponId, soulId);
   }
 
-  reset(x: number, y: number, type: PickupType, value: number, weaponId?: string): this {
+  reset(x: number, y: number, type: PickupType, value: number, weaponId?: string, soulId?: string): this {
     this.id = Pickup.nextId++;
     this.x = x;
     this.y = y;
@@ -24,6 +26,7 @@ export class Pickup {
     this.type = type;
     this.value = value;
     this.weaponId = weaponId;
+    this.soulId = soulId;
     this.blockedUntilPlayerLeaves = false;
     delete (this as any).bounceTimer;
     delete (this as any).baseY;

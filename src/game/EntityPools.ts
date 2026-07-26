@@ -64,8 +64,13 @@ export function releaseEnemy(enemy: Enemy): void {
   enemyPool.release(enemy);
 }
 
-export function acquirePickup(x: number, y: number, type: PickupType, value: number, weaponId?: string): Pickup {
-  return pickupPool.acquire().reset(x, y, type, value, weaponId);
+export function acquirePickup(
+  x: number, y: number,
+  type: PickupType, value: number,
+  weaponId?: string,
+  soulId?: string,
+): Pickup {
+  return pickupPool.acquire().reset(x, y, type, value, weaponId, soulId);
 }
 
 export function releasePickup(pickup: Pickup): void {

@@ -1,5 +1,8 @@
 export const SETTINGS_SAVE_KEY = "retro_rpg_settings";
-export const SETTINGS_VERSION = 9;
+// v10 adds the Castlevania-layer actions (subWeapon, crush). Saves from v7-v9
+// pick up the new default bindings through the DEFAULT_KEY_BINDINGS fallback
+// in normalizeSettings without touching any existing rebind.
+export const SETTINGS_VERSION = 10;
 
 export type InputAction =
   | "moveUp"
@@ -11,7 +14,9 @@ export type InputAction =
   | "interact"
   | "swapWeapon"
   | "pause"
-  | "dodge";
+  | "dodge"
+  | "subWeapon"
+  | "crush";
 
 export const INPUT_ACTIONS: InputAction[] = [
   "moveUp",
@@ -23,7 +28,9 @@ export const INPUT_ACTIONS: InputAction[] = [
   "interact",
   "swapWeapon",
   "pause",
-  "dodge"
+  "dodge",
+  "subWeapon",
+  "crush"
 ];
 
 export const ACTION_LABELS: Record<InputAction, string> = {
@@ -36,9 +43,14 @@ export const ACTION_LABELS: Record<InputAction, string> = {
   interact: "INTERACT",
   swapWeapon: "SWAP WEAPON",
   pause: "PAUSE",
-  dodge: "DODGE"
+  dodge: "DODGE",
+  subWeapon: "SUB-WEAPON",
+  crush: "ITEM CRUSH"
 };
 
+// subWeapon/crush postdate every legacy layout, so the legacy maps carry the
+// modern defaults: a pre-v10 save has no stored value for them, and the
+// fallback is what gets injected during migration.
 const LEGACY_V4_KEY_BINDINGS: Record<InputAction, string> = {
   moveUp: "w",
   moveDown: "s",
@@ -49,7 +61,9 @@ const LEGACY_V4_KEY_BINDINGS: Record<InputAction, string> = {
   interact: " ",
   swapWeapon: "q",
   pause: "p",
-  dodge: "shift"
+  dodge: "shift",
+  subWeapon: "u",
+  crush: "o"
 };
 
 const LEGACY_V6_KEY_BINDINGS: Record<InputAction, string> = {
@@ -62,7 +76,9 @@ const LEGACY_V6_KEY_BINDINGS: Record<InputAction, string> = {
   interact: "l",
   swapWeapon: "i",
   pause: "escape",
-  dodge: " "
+  dodge: " ",
+  subWeapon: "u",
+  crush: "o"
 };
 
 export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
@@ -75,7 +91,9 @@ export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
   interact: "k",
   swapWeapon: "i",
   pause: "escape",
-  dodge: " "
+  dodge: " ",
+  subWeapon: "u",
+  crush: "o"
 };
 
 export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
