@@ -8,6 +8,7 @@ import { LegacyDialogState } from "./states/LegacyDialogState";
 import { MenuState } from "./states/MenuState";
 import { DungeonState, type DungeonQaScene } from "./states/DungeonState";
 import { TitleState } from "./states/TitleState";
+import { SplashState } from "./states/SplashState";
 
 import { RebirthLoadoutState } from "./states/RebirthLoadoutState";
 import { SettingsState } from "./states/SettingsState";
@@ -28,7 +29,7 @@ export class Engine {
   public input: Input;
   public data: GameData;
   public states: { [key: string]: GameState } = {};
-  public currentState: string = "hub";
+  public currentState: string = "splash";
   public isPaused: boolean = false;
   public readonly performanceMonitor = new PerformanceMonitor();
   public readonly debugMode = isDebugMode();
@@ -63,6 +64,7 @@ export class Engine {
 
     for (let i = 0; i < 300; i++) this.transitionOrder.push(i);
     this.states = {
+      splash: new SplashState(this),
       title: new TitleState(this),
       rebirth_loadout: new RebirthLoadoutState(this),
       settings: new SettingsState(this),

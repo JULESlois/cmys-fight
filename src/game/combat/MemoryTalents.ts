@@ -28,29 +28,20 @@ export const MEMORY_TALENTS: Record<MemoryTalentId, MemoryTalentDefinition> = {
   ballistic_memory: {
     id: "ballistic_memory",
     name: "BALLISTIC MEMORY",
-    description: "First buff choice includes a Vanguard protocol. First non-starter weapon gains +10% speed until chapter end.",
+    description: "Begin the descent already carrying one common Vanguard protocol.",
     shortCode: "BAL",
-    experimental: true,
-
-
   },
   echo_memory: {
     id: "echo_memory",
     name: "ECHO MEMORY",
-    description: "Start with one Archive Pulse. First perfect dodge restores 25% dodge cooldown.",
+    description: "The first perfect dodge of the descent refunds 25% dodge cooldown.",
     shortCode: "ECH",
-    experimental: true,
-
-
   },
   phoenix_memory: {
     id: "phoenix_memory",
     name: "PHOENIX MEMORY",
-    description: "First armor break per chapter clears nearby projectiles. If no armor, triggers at half HP.",
+    description: "The first armor break each chapter clears nearby enemy projectiles.",
     shortCode: "PHX",
-    experimental: true,
-
-
   },
   starmap_memory: {
     id: "starmap_memory",
@@ -91,11 +82,8 @@ export const MEMORY_TALENTS: Record<MemoryTalentId, MemoryTalentDefinition> = {
   forbidden_memory: {
     id: "forbidden_memory",
     name: "FORBIDDEN MEMORY",
-    description: "Start with +15 corruption. First hidden room or anomaly altar reward quality +1.",
+    description: "Carry +15 corruption. In exchange: two extra talent rerolls.",
     shortCode: "FBD",
-    experimental: true,
-
-
   },
 };
 
@@ -115,12 +103,16 @@ export function getAvailableMemoryTalents(): MemoryTalentId[] {
 
 export function setMemoryTalent(player: Player, id: MemoryTalentId): void {
   player.buffState["memoryTalent"] = id;
-  if (id === "echo_memory") {
-    player.buffState["archivePulseCharges"] = 1;
-  }
   if (id === "forbidden_memory") {
     player.buffState["corruption"] = (player.buffState["corruption"] ?? 0) + 15;
   }
+}
+
+/** 校验存档/元数据里的天赋 id;experimental 的一律视为无效 */
+export function normalizeMemoryTalentId(value: unknown): MemoryTalentId | undefined {
+  if (typeof value !== "string") return undefined;
+  const def = MEMORY_TALENTS[value as MemoryTalentId];
+  return def && !def.experimental ? def.id : undefined;
 }
 
 // ============================================================

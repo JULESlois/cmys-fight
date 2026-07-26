@@ -5,9 +5,12 @@ import {
   CELESTIA_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
+  KNIGHT_PLAYER_PALETTE,
+  MAGE_PLAYER_PALETTE,
   MICHELE_PLAYER_PALETTE,
   NANALLY_PLAYER_PALETTE,
   PLAYER_PALETTE,
+  ROGUE_PLAYER_PALETTE,
 } from "../data/sprites";
 import {
   CHARACTER_COLLECTION_IDS,
@@ -22,6 +25,8 @@ import { WEAPONS, isWeaponAvailableForCharacter, type WeaponData } from "../data
 import { MAX_PLAYER_MANA } from "../entities/Player";
 import { getCharacterText, t, uiFont, wrapLocalized } from "../i18n";
 import { SkillController } from "../combat/SkillController";
+import { getAvailableMemoryTalents, type MemoryTalentId } from "../combat/MemoryTalents";
+import { getMemoryTalentText } from "../narrative/StoryLore";
 import { drawBadge, drawMeter, drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 
 type SelectionMode = "collection" | "character" | "form";
@@ -32,7 +37,13 @@ export class RebirthLoadoutState extends GameState {
   protected selectedWeaponIndex = 0;
   private selectedCharacterIndex = 0;
   private selectedFormIndex = 0;
+  private selectedTalentIndex = 0;
   private mode: SelectionMode = "collection";
+
+  /** 记忆天赋选项:第 0 项表示"不携带记忆" */
+  private get talentOptions(): Array<MemoryTalentId | null> {
+    return [null, ...getAvailableMemoryTalents()];
+  }
 
   constructor(engine: Engine) {
     super(engine);
@@ -60,6 +71,14 @@ export class RebirthLoadoutState extends GameState {
     const weapons = this.getUnlockedWeapons(character.id);
     const weaponIndex = weapons.findIndex(weapon => weapon.id === loadout.starterWeaponId);
     this.selectedWeaponIndex = weaponIndex >= 0 ? weaponIndex : 0;
+    const savedTalent = this.engine.data.getHubMemoryTalent?.();
+    const talentIndex = this.talentOptions.findIndex(id => id === (savedTalent ?? null));
+    this.selectedTalentIndex = talentIndex >= 0 ? talentIndex : 0;
+  }
+
+  private cycleTalent(): void {
+    this.selectedTalentIndex = (this.selectedTalentIndex + 1) % this.talentOptions.length;
+    audio.playShoot();
   }
 
   exit() {}
@@ -113,6 +132,7 @@ export class RebirthLoadoutState extends GameState {
     const weapons = this.getUnlockedWeapons(character.id);
     const starterWeaponId = weapons[this.selectedWeaponIndex]?.id;
     this.engine.data.setHubLoadout(character.id, starterWeaponId);
+    this.engine.data.setHubMemoryTalent?.(this.talentOptions[this.selectedTalentIndex] ?? null);
     this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
   }
 
@@ -163,6 +183,7 @@ export class RebirthLoadoutState extends GameState {
       }
       if (up) this.cycleWeapon(this.selectedCharacter.id, -1);
       if (down) this.cycleWeapon(this.selectedCharacter.id, 1);
+      if (this.engine.input.wasUiPressed("secondary")) this.cycleTalent();
       if (confirm) this.confirmLoadout(this.selectedCharacter);
       return;
     }
@@ -175,6 +196,7 @@ export class RebirthLoadoutState extends GameState {
     }
     if (up) this.cycleWeapon(this.selectedForm.id, -1);
     if (down) this.cycleWeapon(this.selectedForm.id, 1);
+    if (this.engine.input.wasUiPressed("secondary")) this.cycleTalent();
     if (confirm) this.confirmLoadout(this.selectedForm);
   }
 
@@ -185,6 +207,9 @@ export class RebirthLoadoutState extends GameState {
       celestia: { sprite: "player_celestia_side_idle", palette: CELESTIA_PLAYER_PALETTE },
       esper_zero: { sprite: "player_esper_zero_side_idle", palette: ESPER_ZERO_PLAYER_PALETTE },
       nanally: { sprite: "player_nanally_side_idle", palette: NANALLY_PLAYER_PALETTE },
+      knight: { sprite: "player_knight_side_idle", palette: KNIGHT_PLAYER_PALETTE },
+      mage: { sprite: "player_mage_side_idle", palette: MAGE_PLAYER_PALETTE },
+      rogue: { sprite: "player_rogue_side_idle", palette: ROGUE_PLAYER_PALETTE },
     }[characterId];
     if (detailed) return { ...detailed, scale: 1 };
     return { sprite: "player_main_side_idle", palette: { ...PLAYER_PALETTE, "2": color }, scale: 2 };
@@ -387,7 +412,26 @@ export class RebirthLoadoutState extends GameState {
     ctx.fillStyle = UI_COLORS.white;
     ctx.font = uiFont(language, 8, true);
     ctx.fillText(weapon.name.toUpperCase(), 70, 222);
-    drawBadge(ctx, unlocked ? this.engine.input.getConfirmPrompt() : t(language, "common.locked"), 246, 209, 45, language, unlocked ? "green" : "red");
+
+    // 记忆天赋(重生泉仪式):secondary 键循环
+    const talentId = this.talentOptions[this.selectedTalentIndex];
+    const talentText = talentId ? getMemoryTalentText(talentId, language) : null;
+    const talentPrompt = this.engine.input.getUiPrompt("secondary");
+    ctx.fillStyle = UI_COLORS.cyan;
+    ctx.font = uiFont(language, 6, true);
+    ctx.fillText(
+      `[${talentPrompt}] ${language === "zh-CN" ? "记忆" : "MEMORY"}: ${talentText ? talentText.name : language === "zh-CN" ? "不携带" : "NONE"}`,
+      142,
+      211,
+    );
+    if (talentText) {
+      ctx.fillStyle = UI_COLORS.muted;
+      ctx.font = uiFont(language, 5);
+      const ritualLines = wrapLocalized(talentText.ritual, language === "zh-CN" ? 20 : 30);
+      ctx.fillText(ritualLines[0] ?? "", 142, 219);
+      if (ritualLines[1]) ctx.fillText(ritualLines[1], 142, 226);
+    }
+    drawBadge(ctx, unlocked ? this.engine.input.getConfirmPrompt() : t(language, "common.locked"), 258, 209, 36, language, unlocked ? "green" : "red");
 
     ctx.textAlign = "center";
     ctx.fillStyle = unlocked ? UI_COLORS.text : UI_COLORS.red;

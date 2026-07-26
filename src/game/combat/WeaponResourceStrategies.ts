@@ -1,6 +1,7 @@
 import type { Player } from "../entities/Player";
 import { WEAPONS, type WeaponData } from "../data/weapons";
 import type { WeaponRuntimeState } from "./WeaponRuntimeState";
+import { CombatEventDispatcher } from "./CombatEvents";
 
 export interface WeaponResourceStrategy {
   type: "magazine" | "battery" | "heat" | "charge" | "action";
@@ -29,18 +30,22 @@ export const MagazineStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value -= energyCost;
     if (runtime.resourceState.value <= 0) {
       runtime.customState.reloadTimer = weapon.reloadTime ?? 1.5;
+      CombatEventDispatcher.emit("reload_started", { player, weaponId: runtime.weaponId });
     }
   },
   update(runtime, weapon, player, dt, isActive, fireHeld) {
     if (runtime.resourceState.value <= 0 || runtime.customState.reloadTimer > 0) {
-      const reloadSpeed = isActive ? 1.0 : 1.5; // faster reload when stowed!
+      let reloadSpeed = isActive ? 1.0 : 1.5; // faster reload when stowed!
+      if (runtime.customState.tacticalReloadActive) reloadSpeed *= 1.25; // TACTICAL RELOAD module
       if (runtime.customState.reloadTimer === undefined) {
         runtime.customState.reloadTimer = weapon.reloadTime ?? 1.5;
+        CombatEventDispatcher.emit("reload_started", { player, weaponId: runtime.weaponId });
       }
       runtime.customState.reloadTimer -= dt * reloadSpeed;
       if (runtime.customState.reloadTimer <= 0) {
         runtime.resourceState.value = runtime.resourceState.max;
         runtime.customState.reloadTimer = 0;
+        CombatEventDispatcher.emit("reload_completed", { player, weaponId: runtime.weaponId });
       }
     }
   },
@@ -60,14 +65,19 @@ export const BatteryStrategy: WeaponResourceStrategy = {
     runtime.customState.rechargeDelayTimer = 0;
     runtime.customState.isEmpowered = false;
   },
-  canFire(runtime, weapon, player) {
-    return runtime.resourceState.value >= (weapon.manaCost || 1);
+  canFire(runtime, weapon, player, energyCost) {
+    const cost = Number.isFinite(energyCost) ? energyCost : (weapon.manaCost || 1);
+    return runtime.resourceState.value >= cost;
   },
   getFailReason() { return "energy"; },
-  consume(runtime, weapon, player) {
-    runtime.resourceState.value -= (weapon.manaCost || 1);
+  consume(runtime, weapon, player, energyCost) {
+    const cost = Number.isFinite(energyCost) ? energyCost : (weapon.manaCost || 1);
+    runtime.resourceState.value -= cost;
     runtime.customState.rechargeDelayTimer = weapon.batteryRechargeDelay ?? 1.0;
     runtime.customState.isEmpowered = false;
+    if (runtime.resourceState.value <= 0) {
+      CombatEventDispatcher.emit("battery_depleted", { player, weaponId: runtime.weaponId });
+    }
   },
   update(runtime, weapon, player, dt, isActive) {
     if (runtime.customState.rechargeDelayTimer > 0) {
@@ -76,7 +86,8 @@ export const BatteryStrategy: WeaponResourceStrategy = {
       const rechargeRate = weapon.batteryRechargeRate ?? 10;
       runtime.resourceState.value = Math.min(runtime.resourceState.max, runtime.resourceState.value + rechargeRate * dt);
       if (runtime.resourceState.value >= runtime.resourceState.max) {
-        runtime.customState.isEmpowered = true; // Empowered when naturally recovered to full
+        // Empowerment is granted by the OVERCHARGE CELL module (battery_full handler)
+        CombatEventDispatcher.emit("battery_full", { player, weaponId: runtime.weaponId });
       }
     }
   },
@@ -100,6 +111,7 @@ export const HeatStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value += (weapon.heatPerShot ?? 10);
     if (runtime.resourceState.value >= runtime.resourceState.max) {
       runtime.customState.overheatTimer = weapon.overheatLockout ?? 2.0;
+      CombatEventDispatcher.emit("weapon_overheated", { player, weaponId: runtime.weaponId });
     }
   },
   update(runtime, weapon, player, dt, isActive) {
@@ -109,9 +121,11 @@ export const HeatStrategy: WeaponResourceStrategy = {
         runtime.resourceState.value = 0; // instantly cool down after lockout
       }
     } else {
-      const decay = weapon.heatDecayRate ?? 25;
-      const decayMultiplier = isActive ? 1.0 : 1.5; // faster cool down when stowed
-      runtime.resourceState.value = Math.max(0, runtime.resourceState.value - decay * decayMultiplier * dt);
+      const baseDecay = weapon.heatDecayRate ?? 25;
+      const decay = isActive
+        ? baseDecay
+        : weapon.heatStowedDecayRate ?? baseDecay * 1.5; // faster cool down when stowed
+      runtime.resourceState.value = Math.max(0, runtime.resourceState.value - decay * dt);
     }
   },
   getRatio(runtime, weapon) {
@@ -142,6 +156,7 @@ export const ChargeStrategy: WeaponResourceStrategy = {
       if (runtime.customState.chargeTimer >= chargeTime) {
         runtime.customState.chargeTimer -= chargeTime;
         runtime.resourceState.value += 1;
+        CombatEventDispatcher.emit("charge_restored", { player, weaponId: runtime.weaponId });
       }
     } else {
       runtime.customState.chargeTimer = 0;

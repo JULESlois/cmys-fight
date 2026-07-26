@@ -248,6 +248,40 @@ function drawBreakableTile(ctx: CanvasRenderingContext2D, theme: string, tx: num
     ctx.fillStyle = "#26262B"; // Eyes
     ctx.fillRect(tx + 8, ty + 6, 1, 1);
     ctx.fillRect(tx + 10, ty + 6, 1, 1);
+  } else if (theme === "sealed_armory") {
+    // Army-green weapon crate with an exposed sword blade
+    ctx.fillStyle = "#161B16";
+    ctx.fillRect(tx + 2, ty + 5, 12, 11);
+    ctx.fillStyle = "#4C5A3A";
+    ctx.fillRect(tx + 3, ty + 6, 10, 9);
+    ctx.fillStyle = "#66754A";
+    ctx.fillRect(tx + 4, ty + 7, 8, 2);
+    ctx.fillStyle = "#2A2F2C";
+    ctx.fillRect(tx + 2, ty + 10, 12, 1);
+    ctx.fillRect(tx + 7, ty + 5, 1, 11);
+    ctx.fillStyle = "#A9B4B8";
+    ctx.fillRect(tx + 9, ty + 2, 2, 6);
+    ctx.fillStyle = "#D8E0E2";
+    ctx.fillRect(tx + 9, ty + 2, 1, 4);
+    ctx.fillStyle = "#6E5A34";
+    ctx.fillRect(tx + 8, ty + 7, 4, 1);
+  } else if (theme === "deep_prison") {
+    // Rusted iron cage with a snapped chain
+    ctx.fillStyle = "#120C08";
+    ctx.fillRect(tx + 3, ty + 4, 11, 12);
+    ctx.fillStyle = "#3E2C1F";
+    ctx.fillRect(tx + 4, ty + 5, 9, 10);
+    ctx.fillStyle = "#6E3A24";
+    ctx.fillRect(tx + 5, ty + 5, 1, 10);
+    ctx.fillRect(tx + 8, ty + 5, 1, 10);
+    ctx.fillRect(tx + 11, ty + 5, 1, 10);
+    ctx.fillStyle = "#B05A38";
+    ctx.fillRect(tx + 5, ty + 5, 1, 3);
+    ctx.fillStyle = "#8A8F96";
+    ctx.fillRect(tx + 6, ty + 2, 3, 2);
+    ctx.fillRect(tx + 9, ty + 3, 3, 2);
+    ctx.fillStyle = "#54595E";
+    ctx.fillRect(tx + 7, ty + 2, 1, 1);
   } else if (baseTheme === "forest") {
     ctx.fillStyle = "#243027";
     ctx.fillRect(tx + 2, ty + 4, 13, 12);
@@ -1028,6 +1062,294 @@ function drawForgeCoreFloorTile(ctx: CanvasRenderingContext2D, x: number, y: num
   }
 }
 
+// Sub-theme floor identity marks: a light deterministic tint over every floor
+// tile plus a sparse tileHash-scattered motif so each world node reads
+// differently from its base chapter theme. Pure fillRect pixel blocks only.
+function drawSubThemeFloorOverlay(ctx: CanvasRenderingContext2D, theme: string, tx: number, ty: number, hash: number): void {
+  const h = Math.floor(hash);
+  if (theme === "sealed_library") {
+    ctx.fillStyle = "rgba(74, 40, 110, 0.18)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 6 === 0) {
+      // Loose parchment page with purple ink lines.
+      ctx.fillStyle = "#2A1C3E";
+      ctx.fillRect(tx + 4, ty + 6, 8, 7);
+      ctx.fillStyle = "#D9C285";
+      ctx.fillRect(tx + 5, ty + 5, 7, 7);
+      ctx.fillStyle = "#5C3B85";
+      ctx.fillRect(tx + 6, ty + 7, 5, 1);
+      ctx.fillRect(tx + 6, ty + 9, 4, 1);
+    }
+  } else if (theme === "observatory") {
+    ctx.fillStyle = "rgba(24, 32, 76, 0.34)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 5 === 0) {
+      // Star-chart engraving: thin orbit lines with bright star points.
+      ctx.fillStyle = "#3D4F86";
+      ctx.fillRect(tx + 2, ty + 8, 12, 1);
+      ctx.fillRect(tx + 8, ty + 3, 1, 10);
+      ctx.fillStyle = "#9FF2FF";
+      ctx.fillRect(tx + 8, ty + 8, 1, 1);
+      ctx.fillRect(tx + 3, ty + 4, 1, 1);
+      ctx.fillRect(tx + 12, ty + 12, 1, 1);
+      ctx.fillStyle = "#E6FDFF";
+      ctx.fillRect(tx + 12, ty + 4, 1, 1);
+    }
+  } else if (theme === "sealed_armory") {
+    ctx.fillStyle = "rgba(52, 68, 40, 0.20)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 6 === 0) {
+      // Riveted iron floor plate with an army-green stencil stripe.
+      ctx.fillStyle = "#20262A";
+      ctx.fillRect(tx + 3, ty + 4, 10, 8);
+      ctx.fillStyle = "#4A5258";
+      ctx.fillRect(tx + 4, ty + 5, 8, 6);
+      ctx.fillStyle = "#6F8447";
+      ctx.fillRect(tx + 4, ty + 7, 8, 2);
+      ctx.fillStyle = "#8B959B";
+      ctx.fillRect(tx + 4, ty + 5, 1, 1);
+      ctx.fillRect(tx + 11, ty + 5, 1, 1);
+      ctx.fillRect(tx + 4, ty + 10, 1, 1);
+      ctx.fillRect(tx + 11, ty + 10, 1, 1);
+    }
+  } else if (theme === "deep_prison") {
+    ctx.fillStyle = "rgba(80, 40, 24, 0.24)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 6 === 0) {
+      // Rusted drain grate set into the slabs.
+      ctx.fillStyle = "#1A130E";
+      ctx.fillRect(tx + 3, ty + 5, 10, 7);
+      ctx.fillStyle = "#6E3A24";
+      ctx.fillRect(tx + 3, ty + 5, 10, 1);
+      ctx.fillRect(tx + 3, ty + 11, 10, 1);
+      ctx.fillStyle = "#7C4A32";
+      ctx.fillRect(tx + 4, ty + 6, 1, 5);
+      ctx.fillRect(tx + 7, ty + 6, 1, 5);
+      ctx.fillRect(tx + 10, ty + 6, 1, 5);
+      ctx.fillStyle = "#B05A38";
+      ctx.fillRect(tx + 4, ty + 6, 1, 2);
+    }
+  } else if (theme === "deep_archive") {
+    ctx.fillStyle = "rgba(52, 30, 104, 0.26)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 5 === 0) {
+      // Gold data-circuit traces etched into the void stone.
+      ctx.fillStyle = "#7A5FB0";
+      ctx.fillRect(tx + 2, ty + 6, 6, 1);
+      ctx.fillRect(tx + 7, ty + 6, 1, 6);
+      ctx.fillRect(tx + 7, ty + 11, 7, 1);
+      ctx.fillStyle = "#E3BC5E";
+      ctx.fillRect(tx + 2, ty + 5, 2, 2);
+      ctx.fillRect(tx + 13, ty + 10, 2, 2);
+      ctx.fillStyle = "#FFE9A8";
+      ctx.fillRect(tx + 2, ty + 5, 1, 1);
+    }
+  } else if (theme === "ash_catacombs") {
+    ctx.fillStyle = "rgba(84, 78, 74, 0.28)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 5 === 0) {
+      // Drifted ash pile with a smoldering ember.
+      ctx.fillStyle = "#4C4744";
+      ctx.fillRect(tx + 3, ty + 10, 10, 4);
+      ctx.fillStyle = "#6B6560";
+      ctx.fillRect(tx + 5, ty + 9, 6, 3);
+      ctx.fillStyle = "#8C857E";
+      ctx.fillRect(tx + 6, ty + 9, 3, 1);
+      ctx.fillStyle = "#5A1F1A";
+      ctx.fillRect(tx + 8, ty + 11, 3, 2);
+      ctx.fillStyle = "#C4573B";
+      ctx.fillRect(tx + 9, ty + 11, 1, 1);
+    }
+  } else if (theme === "overgrown_archive") {
+    ctx.fillStyle = "rgba(16, 46, 26, 0.24)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 5 === 0) {
+      // Rotten archive plank swallowed by creeping vines.
+      ctx.fillStyle = "#3A2A18";
+      ctx.fillRect(tx + 3, ty + 7, 10, 5);
+      ctx.fillStyle = "#5C4426";
+      ctx.fillRect(tx + 4, ty + 8, 8, 3);
+      ctx.fillStyle = "#2F2013";
+      ctx.fillRect(tx + 7, ty + 7, 1, 5);
+      ctx.fillStyle = "#3F7A3C";
+      ctx.fillRect(tx + 2, ty + 5, 1, 8);
+      ctx.fillRect(tx + 3, ty + 6, 2, 1);
+      ctx.fillRect(tx + 12, ty + 10, 3, 1);
+      ctx.fillStyle = "#6FAF58";
+      ctx.fillRect(tx + 2, ty + 5, 1, 2);
+    }
+  } else if (theme === "cooling_canal" && h % 7 === 0) {
+    // Frost fracture lines across the coolant deck plating.
+    ctx.fillStyle = "#CFE9F2";
+    ctx.fillRect(tx + 3, ty + 9, 6, 1);
+    ctx.fillRect(tx + 8, ty + 10, 5, 1);
+    ctx.fillRect(tx + 6, ty + 11, 1, 3);
+    ctx.fillStyle = "#F2FCFF";
+    ctx.fillRect(tx + 4, ty + 9, 2, 1);
+  } else if (theme === "forge_core" && h % 7 === 0) {
+    // Hazard-striped maintenance plate on the charred deck.
+    ctx.fillStyle = "#1C0A05";
+    ctx.fillRect(tx + 3, ty + 10, 10, 4);
+    ctx.fillStyle = "#B36A12";
+    ctx.fillRect(tx + 4, ty + 11, 2, 2);
+    ctx.fillRect(tx + 8, ty + 11, 2, 2);
+    ctx.fillRect(tx + 12, ty + 11, 1, 2);
+  }
+}
+
+// Sub-theme wall identity marks layered over the base chapter wall tiles:
+// a low-alpha recolor wash plus a sparse deterministic motif kept inside the
+// tile so the adjacency-aware edge shading of the base tile survives.
+function drawSubThemeWallOverlay(ctx: CanvasRenderingContext2D, theme: string, tileX: number, tileY: number, hash: number): void {
+  const tx = tileX * TILE_SIZE;
+  const ty = tileY * TILE_SIZE;
+  const h = Math.floor(hash);
+  if (theme === "sealed_library") {
+    ctx.fillStyle = "rgba(70, 38, 108, 0.28)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 3 === 0) {
+      // Recessed bookshelf with parchment and ink-purple spines.
+      ctx.fillStyle = "#1B1229";
+      ctx.fillRect(tx + 3, ty + 4, 10, 9);
+      ctx.fillStyle = "#8A6B3F";
+      ctx.fillRect(tx + 3, ty + 8, 10, 1);
+      const spines = ["#7A4FA8", "#D9C285", "#4E346E", "#B583DE"] as const;
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = spines[(i + h) % 4];
+        ctx.fillRect(tx + 4 + i * 2, ty + 5, 2, 3);
+        ctx.fillStyle = spines[(i + h + 2) % 4];
+        ctx.fillRect(tx + 4 + i * 2, ty + 9, 2, 3);
+      }
+    }
+  } else if (theme === "observatory") {
+    ctx.fillStyle = "rgba(22, 30, 72, 0.36)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 3 === 0) {
+      // Constellation etched into the masonry.
+      ctx.fillStyle = "#55688F";
+      ctx.fillRect(tx + 4, ty + 6, 5, 1);
+      ctx.fillRect(tx + 9, ty + 7, 1, 4);
+      ctx.fillStyle = "#9FF2FF";
+      ctx.fillRect(tx + 3, ty + 5, 2, 2);
+      ctx.fillRect(tx + 9, ty + 5, 1, 1);
+      ctx.fillRect(tx + 9, ty + 11, 2, 2);
+      ctx.fillStyle = "#E6FDFF";
+      ctx.fillRect(tx + 4, ty + 6, 1, 1);
+    }
+  } else if (theme === "sealed_armory") {
+    ctx.fillStyle = "rgba(50, 66, 38, 0.30)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 4 === 0) {
+      // Mounted armory plaque: iron plate with a crossed blade.
+      ctx.fillStyle = "#1C2226";
+      ctx.fillRect(tx + 4, ty + 4, 8, 9);
+      ctx.fillStyle = "#5C6A4A";
+      ctx.fillRect(tx + 5, ty + 5, 6, 7);
+      ctx.fillStyle = "#A9B4B8";
+      ctx.fillRect(tx + 7, ty + 5, 2, 6);
+      ctx.fillStyle = "#6E5A34";
+      ctx.fillRect(tx + 6, ty + 10, 4, 1);
+      ctx.fillStyle = "#D8E0E2";
+      ctx.fillRect(tx + 7, ty + 5, 1, 3);
+    }
+  } else if (theme === "deep_prison") {
+    ctx.fillStyle = "rgba(76, 38, 22, 0.32)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 3 === 0) {
+      // Hanging chain with rust bleeding down the stones.
+      ctx.fillStyle = "#3A2C22";
+      ctx.fillRect(tx + 6, ty + 3, 1, 10);
+      ctx.fillStyle = "#8A8F96";
+      ctx.fillRect(tx + 5, ty + 4, 3, 2);
+      ctx.fillRect(tx + 5, ty + 8, 3, 2);
+      ctx.fillRect(tx + 5, ty + 12, 3, 2);
+      ctx.fillStyle = "#54595E";
+      ctx.fillRect(tx + 6, ty + 5, 1, 1);
+      ctx.fillRect(tx + 6, ty + 9, 1, 1);
+      ctx.fillStyle = "#7C3A20";
+      ctx.fillRect(tx + 10, ty + 6, 2, 7);
+      ctx.fillStyle = "#B05A38";
+      ctx.fillRect(tx + 10, ty + 6, 1, 3);
+    }
+  } else if (theme === "deep_archive") {
+    ctx.fillStyle = "rgba(50, 28, 100, 0.34)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 3 === 0) {
+      // Gold data seam pulsing through the void masonry.
+      ctx.fillStyle = "#4E3E86";
+      ctx.fillRect(tx + 7, ty + 3, 2, 10);
+      ctx.fillStyle = "#E3BC5E";
+      ctx.fillRect(tx + 7, ty + 4, 1, 3);
+      ctx.fillRect(tx + 8, ty + 9, 1, 3);
+      ctx.fillStyle = "#FFE9A8";
+      ctx.fillRect(tx + 7, ty + 4, 1, 1);
+      ctx.fillStyle = "#8A73C4";
+      ctx.fillRect(tx + 4, ty + 6, 3, 1);
+      ctx.fillRect(tx + 9, ty + 11, 3, 1);
+    }
+  } else if (theme === "ash_catacombs") {
+    ctx.fillStyle = "rgba(70, 64, 60, 0.34)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 4 === 0) {
+      // Burial niche holding a pale funerary urn.
+      ctx.fillStyle = "#17130F";
+      ctx.fillRect(tx + 4, ty + 4, 8, 9);
+      ctx.fillStyle = "#2A2420";
+      ctx.fillRect(tx + 5, ty + 5, 6, 7);
+      ctx.fillStyle = "#9B948C";
+      ctx.fillRect(tx + 6, ty + 7, 4, 5);
+      ctx.fillRect(tx + 7, ty + 6, 2, 1);
+      ctx.fillStyle = "#6B6560";
+      ctx.fillRect(tx + 6, ty + 9, 4, 1);
+      ctx.fillStyle = "#C4573B";
+      ctx.fillRect(tx + 7, ty + 5, 2, 1);
+    }
+  } else if (theme === "overgrown_archive") {
+    ctx.fillStyle = "rgba(14, 44, 24, 0.30)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 2 === 0) {
+      // Creeper vines spilling down over the hedge wall.
+      ctx.fillStyle = "#2E5A30";
+      ctx.fillRect(tx + 3 + (h % 5), ty, 1, 9 + (h % 4));
+      ctx.fillRect(tx + 9 + (h % 3), ty, 1, 6 + (h % 5));
+      ctx.fillStyle = "#5F9A4A";
+      ctx.fillRect(tx + 2 + (h % 5), ty + 3, 2, 1);
+      ctx.fillRect(tx + 9 + (h % 3), ty + 5, 2, 1);
+      if (h % 6 === 0) {
+        ctx.fillStyle = "#8FCB6B";
+        ctx.fillRect(tx + 4 + (h % 5), ty + 7, 1, 1);
+      }
+    }
+  } else if (theme === "cooling_canal") {
+    ctx.fillStyle = "rgba(120, 190, 220, 0.20)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 3 === 0) {
+      // Ice crystals growing out of the glacier blocks.
+      ctx.fillStyle = "#A8E5FF";
+      ctx.fillRect(tx + 4, ty + 8, 2, 5);
+      ctx.fillRect(tx + 10, ty + 9, 2, 4);
+      ctx.fillRect(tx + 7, ty + 6, 1, 4);
+      ctx.fillStyle = "#E4F9FF";
+      ctx.fillRect(tx + 4, ty + 8, 1, 2);
+      ctx.fillRect(tx + 10, ty + 9, 1, 2);
+    }
+  } else if (theme === "forge_core") {
+    ctx.fillStyle = "rgba(40, 10, 4, 0.36)";
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (h % 3 === 0) {
+      // Molten seam glowing through the charred iron wall.
+      ctx.fillStyle = "#3A120A";
+      ctx.fillRect(tx + 5, ty + 4, 2, 9);
+      ctx.fillRect(tx + 7, ty + 9, 4, 2);
+      ctx.fillStyle = "#E85A10";
+      ctx.fillRect(tx + 5, ty + 6, 1, 4);
+      ctx.fillRect(tx + 8, ty + 9, 2, 1);
+      ctx.fillStyle = "#FFC22E";
+      ctx.fillRect(tx + 5, ty + 7, 1, 2);
+    }
+  }
+}
+
 export function getBaseTheme(theme: string): string {
   if (theme === "overgrown_archive") return "forest";
   if (theme === "sealed_library" || theme === "sealed_armory" || theme === "ash_catacombs" || theme === "deep_prison" || theme === "deep_archive") return "dungeon";
@@ -1151,6 +1473,9 @@ export class RoomRenderer {
             ctx.fillStyle = "rgba(0,0,0,0.05)";
             ctx.fillRect(tx, ty + TILE_SIZE - 1, TILE_SIZE, 1);
             ctx.fillRect(tx + TILE_SIZE - 1, ty, 1, TILE_SIZE);
+          }
+          if (theme !== baseTheme) {
+            drawSubThemeFloorOverlay(ctx, theme, tx, ty, hash);
           }
         } else if (tileId === 3) {
           if (theme === "forest") {
@@ -1628,6 +1953,9 @@ export class RoomRenderer {
               }
             }
           }
+          if (theme !== baseTheme) {
+            drawSubThemeWallOverlay(ctx, theme, x, y, hash);
+          }
         } else if (isTile(mapData, x, y, TILE_STRUCTURE)) {
           const hash = tileHash(x, y);
           if (theme === "cooling_canal") drawCoolingCanalStructureTile(ctx, mapData, x, y, hash);
@@ -1658,6 +1986,22 @@ export class RoomRenderer {
           ctx.fillStyle = "#AFAFB9";
             ctx.fillRect(tx + 7, ty + 6, 2, 4);
             ctx.fillRect(tx + 6, ty + 7, 4, 2);
+          } else if (theme === "observatory") {
+            // Brass telescope on a tripod aimed at the night sky
+            ctx.fillStyle = "#1B2440";
+            ctx.fillRect(tx + 4, ty + 12, 9, 4);
+            ctx.fillStyle = "#2C3A5C";
+            ctx.fillRect(tx + 5, ty + 9, 2, 5);
+            ctx.fillRect(tx + 10, ty + 9, 2, 5);
+            ctx.fillRect(tx + 7, ty + 8, 2, 7);
+            ctx.fillStyle = "#8A6B3F";
+            ctx.fillRect(tx + 4, ty + 6, 8, 3);
+            ctx.fillRect(tx + 10, ty + 4, 4, 3);
+            ctx.fillStyle = "#C9A25A";
+            ctx.fillRect(tx + 5, ty + 6, 6, 1);
+            ctx.fillRect(tx + 11, ty + 4, 2, 1);
+            ctx.fillStyle = "#9FF2FF";
+            ctx.fillRect(tx + 13, ty + 4, 1, 2);
           } else if (baseTheme === "forest") {
             // A small carved spirit lantern replaces the generic metal post.
             ctx.fillStyle = "#17271F";

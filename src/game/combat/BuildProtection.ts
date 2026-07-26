@@ -1,99 +1,107 @@
-import type { Player } from "../entities/Player";
-import { BUFFS, BuffSystem, type BuffId, type BuffFamily } from "./BuffSystem";
-import { detectActiveSynergies } from "./SynergySystem";
+import { BUFFS, type BuffId, type BuffFamily } from "./BuffSystem";
+import { SYNERGIES, ALL_SYNERGY_IDS } from "./SynergySystem";
 import { createSeededRandom, normalizeSeed } from "../Random";
 
 // ============================================================
-// Build Protection & Weight System (§2.4)
+// Build Protection & Weight System (buff-system-plan §2.4)
+// 抽卡保护:
+//  - 同系列加权(有协同后收敛)
+//  - 保底:连续 PITY_THRESHOLD 次没抽到同系列后,强制给一个
+//  - 每次至少一个"机制型"buff(带 triggers 的),避免整轮全是数值
 // ============================================================
 
 const TAG_BOOST_NO_SYNERGY = 1.8;
 const TAG_BOOST_ONE_SYNERGY = 1.35;
-const PITY_THRESHOLD = 2;
+export const PITY_THRESHOLD = 2;
 
-function getOwnedFamilies(player: Player): Set<BuffFamily> {
+function getOwnedFamilies(owned: readonly BuffId[]): Set<BuffFamily> {
   const families = new Set<BuffFamily>();
-  for (const id of player.buffs) {
+  for (const id of owned) {
     const def = BUFFS[id];
     if (def) families.add(def.family);
   }
   return families;
 }
 
-function getTagBoost(player: Player): number {
-  const synergyCount = detectActiveSynergies(player).length;
+function countActiveSynergies(owned: readonly BuffId[]): number {
+  const ownedSet = new Set(owned);
+  let count = 0;
+  for (const id of ALL_SYNERGY_IDS) {
+    const def = SYNERGIES[id];
+    if (def.experimental) continue;
+    const [a, b] = def.requiredBuffs;
+    if (ownedSet.has(a) && ownedSet.has(b)) count++;
+  }
+  return count;
+}
+
+function getTagBoost(owned: readonly BuffId[]): number {
+  const synergyCount = countActiveSynergies(owned);
   if (synergyCount === 0) return TAG_BOOST_NO_SYNERGY;
   if (synergyCount === 1) return TAG_BOOST_ONE_SYNERGY;
   return 1.0;
 }
 
-function hasMechanismBuff(ids: BuffId[]): boolean {
-  return ids.some(id => {
-    const def = BUFFS[id];
-    return def && def.triggers && def.triggers.length > 0;
-  });
+function isMechanismBuff(id: BuffId): boolean {
+  const def = BUFFS[id];
+  return !!def && !!def.triggers && def.triggers.length > 0;
 }
 
 export interface RollContext {
   seed: number;
-  owned: BuffId[];
+  owned: readonly BuffId[];
   count: number;
-  globalStageIndex: number;
-  player: Player;
+  /** 难度阶段索引,用于 minGlobalStage 过滤 */
+  difficultyStageIndex: number;
+  /** 连续多少次抽卡没有出现同系列选项(保底计数) */
   consecutiveNoTagChoices: number;
 }
 
 export function rollBuffChoices(ctx: RollContext): BuffId[] {
   const random = createSeededRandom(normalizeSeed(ctx.seed));
   const ownedSet = new Set(ctx.owned);
-  const ownedFamilies = getOwnedFamilies(ctx.player);
-  const tagBoost = getTagBoost(ctx.player);
+  const ownedFamilies = getOwnedFamilies(ctx.owned);
+  const tagBoost = getTagBoost(ctx.owned);
   const needPity = ctx.consecutiveNoTagChoices >= PITY_THRESHOLD;
 
-  const candidates = (Object.keys(BUFFS) as BuffId[]).filter(id =>
-    !ownedSet.has(id) && (BUFFS[id].minGlobalStage ?? 1) <= ctx.globalStageIndex
+  const available = (Object.keys(BUFFS) as BuffId[]).filter(id =>
+    !ownedSet.has(id)
+    && !BUFFS[id].experimental
+    && (BUFFS[id].minGlobalStage ?? 1) <= ctx.difficultyStageIndex
   );
+  if (available.length === 0) return [];
 
-  if (candidates.length === 0) return [];
-
-  const weights = candidates.map(id => {
+  const availableWeights = available.map(id => {
     const def = BUFFS[id];
     let weight = def.rarity === "common" ? 6 : def.rarity === "uncommon" ? 3 : 1;
-    if (ownedFamilies.has(def.family)) {
-      weight *= tagBoost;
-    }
+    if (ownedFamilies.has(def.family)) weight *= tagBoost;
     return weight;
   });
 
   const choices: BuffId[] = [];
-  const available = [...candidates];
-  const availableWeights = [...weights];
+  const takeAt = (index: number) => {
+    choices.push(available[index]);
+    available.splice(index, 1);
+    availableWeights.splice(index, 1);
+  };
 
   // Pity: force at least one buff matching owned families
   if (needPity && ownedFamilies.size > 0) {
-    const matchingIndices = available
+    const matching = available
       .map((id, i) => ({ id, i }))
       .filter(({ id }) => ownedFamilies.has(BUFFS[id].family));
-    if (matchingIndices.length > 0) {
-      const pick = matchingIndices[Math.floor(random() * matchingIndices.length)];
-      choices.push(pick.id);
-      available.splice(pick.i, 1);
-      availableWeights.splice(pick.i, 1);
+    if (matching.length > 0) {
+      takeAt(matching[Math.floor(random() * matching.length)].i);
     }
   }
 
-  // Ensure at least one mechanism-changing buff
-  if (choices.length < ctx.count && !hasMechanismBuff(choices)) {
-    const mechIndices = available
+  // Ensure at least one mechanism-changing buff in the roll
+  if (choices.length < ctx.count && !choices.some(isMechanismBuff)) {
+    const mech = available
       .map((id, i) => ({ id, i }))
-      .filter(({ id }) => BUFFS[id].triggers && BUFFS[id].triggers.length > 0);
-    if (mechIndices.length > 0) {
-      const pick = mechIndices[Math.floor(random() * mechIndices.length)];
-      if (!choices.includes(pick.id)) {
-        choices.push(pick.id);
-        available.splice(pick.i, 1);
-        availableWeights.splice(pick.i, 1);
-      }
+      .filter(({ id }) => isMechanismBuff(id));
+    if (mech.length > 0) {
+      takeAt(mech[Math.floor(random() * mech.length)].i);
     }
   }
 
@@ -106,16 +114,15 @@ export function rollBuffChoices(ctx: RollContext): BuffId[] {
       roll -= availableWeights[i];
       if (roll <= 0) { selectedIndex = i; break; }
     }
-    choices.push(available[selectedIndex]);
-    available.splice(selectedIndex, 1);
-    availableWeights.splice(selectedIndex, 1);
+    takeAt(selectedIndex);
   }
 
   return choices;
 }
 
-export function checkTagRelevance(choices: BuffId[], player: Player): boolean {
-  const ownedFamilies = getOwnedFamilies(player);
+/** 本轮选项里是否至少有一个与已持有系列同源(用于更新保底计数) */
+export function checkTagRelevance(choices: readonly BuffId[], owned: readonly BuffId[]): boolean {
+  const ownedFamilies = getOwnedFamilies(owned);
   if (ownedFamilies.size === 0) return true;
   return choices.some(id => ownedFamilies.has(BUFFS[id].family));
 }

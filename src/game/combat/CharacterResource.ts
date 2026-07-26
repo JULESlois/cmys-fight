@@ -2,6 +2,7 @@ import type { Player } from "../entities/Player";
 import type { CombatEventType, CombatEventPayloads } from "./CombatEvents";
 import { CombatEventDispatcher } from "./CombatEvents";
 import { SkillController } from "./SkillController";
+import { WEAPONS } from "../data/weapons";
 
 export interface CharacterResourceContext {
   player: Player;
@@ -41,7 +42,7 @@ export class MageArcaneEcho implements CharacterResource {
     if (event === "weapon_fired") {
       const p = payload as CombatEventPayloads["weapon_fired"];
       if (p.resourceType === "battery") {
-        const weapon = (require("../data/weapons") as typeof import("../data/weapons")).WEAPONS[p.weaponId];
+        const weapon = WEAPONS[p.weaponId];
         const cost = weapon?.manaCost ?? 0;
         if (cost > 0) {
           this.value += cost;

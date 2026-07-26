@@ -109,6 +109,8 @@ export interface StageData {
   buffChoiceRoomId?: string;
   buffChoiceCompleted?: boolean;
   buffChoiceRerollCount?: number;
+  /** 保底计数:连续多少轮天赋选项与已持有系列无关(BuildProtection pity) */
+  buffNoTagStreak?: number;
   theme: ThemeId;
   rooms: Room[];
   currentRoomX: number;

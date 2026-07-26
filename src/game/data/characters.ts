@@ -51,7 +51,16 @@ export const CHARACTER_COLLECTIONS: Record<CharacterCollectionId, CharacterColle
   },
 };
 
-export const DETAILED_CHARACTER_IDS = ["michele", "kanami", "celestia", "esper_zero", "nanally"] as const;
+export const DETAILED_CHARACTER_IDS = [
+  "michele",
+  "kanami",
+  "celestia",
+  "esper_zero",
+  "nanally",
+  "knight",
+  "mage",
+  "rogue",
+] as const;
 
 export function usesDetailedCharacterArt(characterId: string): boolean {
   return (DETAILED_CHARACTER_IDS as readonly string[]).includes(characterId);

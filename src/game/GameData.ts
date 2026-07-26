@@ -24,7 +24,8 @@ import {
   WEAPONS,
 } from "./data/weapons";
 import { hashSeed, normalizeSeed } from "./Random";
-import { BuffSystem, type BuffId } from "./combat/BuffSystem";
+import { BUFFS, BuffSystem, type BuffId } from "./combat/BuffSystem";
+import { normalizeMemoryTalentId, type MemoryTalentId } from "./combat/MemoryTalents";
 import { ShopSystem } from "./shop/ShopSystem";
 import { StatusEffectSystem, type ActiveStatusEffect } from "./combat/StatusEffectSystem";
 import {
@@ -122,6 +123,12 @@ export interface GameSave {
     buffRerollsRemaining: number;
     shopDiscount: number;
     supplyDropBonus: number;
+    /** 本局携带的记忆天赋(重生泉选择) */
+    memoryTalentId?: string;
+    /** 本局激活的协议进化(同系列集齐 3 个协议时自动触发,一局一次) */
+    activeEvolutionId?: string;
+    /** 蚀痕:读取禁忌条目累积的污染值 */
+    corruption?: number;
   };
   /** @deprecated Preferences are stored separately in retro_rpg_settings. */
   settings?: Partial<GameSettings>;
@@ -370,6 +377,7 @@ export class GameData {
     this.data.player.buffRerollsRemaining = bonuses.buffRerolls;
     this.data.player.shopDiscount = bonuses.shopDiscount;
     this.data.player.supplyDropBonus = bonuses.supplyDropBonus;
+    this.applyMemoryTalentToNewRun();
     const useHardMode = this.meta.hardModeUnlocked && hardMode;
     this.data.run = createInitialRunProgress(
       useHardMode,
@@ -385,6 +393,28 @@ export class GameData {
     this.data.saveVersion = CURRENT_SAVE_VERSION;
     this.discoverPlayerBuild();
     this.save();
+  }
+
+  /** 把重生泉选择的记忆天赋应用到新一局的存档玩家上 */
+  private applyMemoryTalentToNewRun(): void {
+    const player = this.data.player;
+    player.memoryTalentId = undefined;
+    player.activeEvolutionId = undefined;
+    player.corruption = 0;
+    const talentId = this.getHubMemoryTalent();
+    if (!talentId) return;
+    player.memoryTalentId = talentId;
+    if (talentId === "ballistic_memory") {
+      const vanguardCommons = (Object.keys(BUFFS) as BuffId[]).filter(id =>
+        BUFFS[id].family === "vanguard" && BUFFS[id].rarity === "common" && !BUFFS[id].experimental && !player.buffs.includes(id)
+      );
+      if (vanguardCommons.length > 0) {
+        player.buffs.push(vanguardCommons[Math.floor(Math.random() * vanguardCommons.length)]);
+      }
+    } else if (talentId === "forbidden_memory") {
+      player.corruption = (player.corruption ?? 0) + 15;
+      player.buffRerollsRemaining += 2;
+    }
   }
 
   restartCurrentRun() {
@@ -407,6 +437,7 @@ export class GameData {
     this.data.player.buffRerollsRemaining = bonuses.buffRerolls;
     this.data.player.shopDiscount = bonuses.shopDiscount;
     this.data.player.supplyDropBonus = bonuses.supplyDropBonus;
+    this.applyMemoryTalentToNewRun();
     const useHardMode = this.meta.hardModeUnlocked && this.meta.preferredHardMode;
     this.data.run = createInitialRunProgress(
       useHardMode,
@@ -560,6 +591,15 @@ export class GameData {
     return this.isStarterWeaponUnlocked(character.starterWeapon)
       ? character.starterWeapon
       : "pistol";
+  }
+
+  public setHubMemoryTalent(memoryTalentId: string | null): void {
+    this.meta.hubProgress.selectedMemoryTalentId = normalizeMemoryTalentId(memoryTalentId ?? undefined);
+    this.saveMeta();
+  }
+
+  public getHubMemoryTalent(): MemoryTalentId | undefined {
+    return normalizeMemoryTalentId(this.meta.hubProgress.selectedMemoryTalentId);
   }
 
   public setHubLoadout(characterId: string, starterWeaponId?: string): void {
@@ -1092,7 +1132,17 @@ export class GameData {
       Number(stage.seed) || hashSeed(0xC0FFEE, `${stage.worldNodeId}:${getGlobalStageIndex(run.routeDepth, run.stageWithinNode)}:${roomSignature}`),
     );
 
+    const KNOWN_ROOM_TYPES = new Set(["start", "combat", "treasure", "boss", "exit", "npc", "hidden"]);
     for (const room of stage.rooms) {
+      // 旧存档迁移:legacy 房型(legacy_rpg/legacy_tactics/wish/photo 等)统一降级为
+      // 已清理的战斗房,使用 legacy_room 模板,保证旧 Run 存档仍可继续。
+      if (!KNOWN_ROOM_TYPES.has(room.type)) {
+        room.type = "combat";
+        room.templateId = "legacy_room";
+        room.cleared = true;
+        room.combatCleared = true;
+        room.rewardGenerated = true;
+      }
       room.encounterSeed = normalizeSeed(
         Number(room.encounterSeed) || hashSeed(stage.seed, room.id),
       );

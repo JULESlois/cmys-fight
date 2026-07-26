@@ -32,9 +32,6 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
     shortCode: "OVR",
     requiredFamily: "vanguard",
     requiredCount: 3,
-    experimental: true,
-
-
   },
   ghost_loop_evo: {
     id: "ghost_loop_evo",
@@ -50,13 +47,10 @@ export const EVOLUTIONS: Record<EvolutionId, EvolutionDefinition> = {
   aegis_foundry_evo: {
     id: "aegis_foundry_evo",
     name: "AEGIS FOUNDRY",
-    description: "+4 max armor. Armor regen produces repulsion. Full armor grants 1s projectile barrier (8s CD).",
+    description: "+4 max armor. Armor recharges 50% faster.",
     shortCode: "AEG",
     requiredFamily: "phoenix",
     requiredCount: 3,
-    experimental: true,
-
-
   },
   skill_loop_evo: {
     id: "skill_loop_evo",

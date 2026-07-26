@@ -378,54 +378,304 @@ function drawBottomLavaDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked:
 // visualBounds: 16w x 64h (left: x=0..16, right: x=304..320)
 // ============================================================
 
-function drawSideDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, theme: DoorTheme, locked: boolean, side: "left" | "right"): void {
+type SideDoorSide = "left" | "right";
+
+// Mirror-aware placement: px(offset, width) returns the draw x for a rect
+// whose near (wall-outer) edge sits `offset` px from the door's outer edge.
+// Rects always stay inside [vb.x, vb.x + vb.width] as long as offset+width <= vb.width.
+function makeSidePx(vb: DoorRect, mirror: boolean): (offset: number, width: number) => number {
+  return (offset, width) => mirror ? vb.x + vb.width - offset - width : vb.x + offset;
+}
+
+function drawSideJunction(ctx: CanvasRenderingContext2D, vb: DoorRect, mirror: boolean): void {
+  const px = makeSidePx(vb, mirror);
+  fill(ctx, "rgba(255,255,255,0.08)", px(1, 1), vb.y + 5, 1, vb.height - 10);
+  fill(ctx, "rgba(0,0,0,0.2)", px(vb.width - 1, 1), vb.y + 5, 1, vb.height - 10);
+}
+
+// Forest side door: living bark jambs, a vine winding down the frame, pink blossoms.
+function drawSideForestDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, side: SideDoorSide): void {
   const { x, y, width: w, height: h } = vb;
   const cy = y + h / 2;
   const mirror = side === "right";
-  const px = (offset: number) => mirror ? x + w - offset : x + offset;
+  const px = makeSidePx(vb, mirror);
 
-  const recessColor = theme === "forest" ? (locked ? "rgba(51,78,45,0.5)" : "rgba(28,55,38,0.25)")
-    : theme === "dungeon" ? (locked ? "rgba(22,15,31,0.7)" : "rgba(10,15,24,0.4)")
-    : theme === "snow" ? (locked ? "rgba(31,73,91,0.65)" : "rgba(47,92,108,0.25)")
-    : (locked ? "rgba(77,29,24,0.7)" : "rgba(42,29,35,0.35)");
-  fill(ctx, recessColor, x + 2, cy - 14, w - 4, 28);
+  fill(ctx, locked ? "rgba(51,78,45,0.5)" : "rgba(28,55,38,0.25)", x + 2, cy - 16, w - 4, 32);
 
-  const frameDark = theme === "forest" ? "#3E2B20" : theme === "dungeon" ? "#111925" : theme === "snow" ? "#294A5B" : "#171219";
-  const frameMid = theme === "forest" ? "#6A4B31" : theme === "dungeon" ? "#3B485C" : theme === "snow" ? "#6F929E" : "#493943";
-  const frameLight = theme === "forest" ? "#56864B" : theme === "dungeon" ? "#718095" : theme === "snow" ? "#D9E8EB" : "#777E7F";
+  // Bark frame caps with heartwood core
+  fill(ctx, "#3E2B20", x, y, w, 5);
+  fill(ctx, "#3E2B20", x, y + h - 5, w, 5);
+  fill(ctx, "#6A4B31", x + 1, y + 1, w - 2, 3);
+  fill(ctx, "#6A4B31", x + 1, y + h - 4, w - 2, 3);
 
-  // Top and bottom frame caps
-  fill(ctx, frameDark, x, y, w, 5);
-  fill(ctx, frameDark, x, y + h - 5, w, 5);
-  fill(ctx, frameMid, x + 1, y + 1, w - 2, 3);
-  fill(ctx, frameMid, x + 1, y + h - 4, w - 2, 3);
-  fill(ctx, frameLight, px(2), y + 2, 2, 2);
-  fill(ctx, frameLight, px(2), y + h - 4, 2, 2);
-
-  // Inner groove
-  fill(ctx, frameDark, px(4), cy - 16, 2, 32);
+  // Leaf canopy tufts spilling over the caps
+  fill(ctx, "#56864B", px(1, 6), y + 4, 6, 3);
+  fill(ctx, "#56864B", px(8, 5), y + h - 8, 5, 3);
 
   if (locked) {
-    const lockDark = theme === "forest" ? "#29472F" : theme === "dungeon" ? "#151C25" : theme === "snow" ? "#284E5E" : "#261C22";
-    const lockMid = theme === "forest" ? "#81A957" : theme === "dungeon" ? "#7B8993" : theme === "snow" ? "#719EAA" : "#913B2C";
-    const lockGlow = theme === "forest" ? "#E783A5" : theme === "dungeon" ? "#A25DCC" : theme === "snow" ? "#55BBC9" : "#E34F1E";
-
-    for (let i = cy - 10; i < cy + 8; i += 7) {
-      fill(ctx, lockDark, x + 3, i, w - 6, 3);
-      fill(ctx, lockMid, x + 4, i + 1, w - 9, 1);
+    // Woven living-vine lattice sealing the passage
+    for (let i = cy - 12; i < cy + 10; i += 8) {
+      fill(ctx, "#29472F", x + 3, i, w - 6, 3);
+      fill(ctx, "#81A957", x + 4, i + 1, w - 8, 1);
     }
-    fill(ctx, lockDark, px(6), cy - 3, 6, 7);
-    fill(ctx, lockGlow, px(7), cy - 1, 3, 4);
+    // Blossom seal at the heart of the lattice
+    fill(ctx, "#1C2C21", px(4, 8), cy - 4, 8, 8);
+    fill(ctx, "#E783A5", px(6, 4), cy - 2, 4, 4);
+    fill(ctx, "#FFE47A", px(7, 2), cy - 1, 2, 2);
   } else {
-    const passageDark = theme === "forest" ? "#142219" : theme === "dungeon" ? "#080D15" : theme === "snow" ? "#173440" : "#150F13";
-    fill(ctx, passageDark, x + 4, cy - 12, w - 8, 24);
-    fill(ctx, frameMid, px(4), cy - 12, 2, 3);
-    fill(ctx, frameMid, px(4), cy + 9, 2, 3);
+    fill(ctx, "#142219", x + 4, cy - 14, w - 8, 28);
+    // Moss tufts on the open jamb
+    fill(ctx, "#6C9C53", px(3, 3), cy - 13, 3, 3);
+    fill(ctx, "#6C9C53", px(10, 3), cy + 10, 3, 3);
   }
 
-  // Wall-junction highlight/shadow
-  fill(ctx, "rgba(255,255,255,0.08)", px(1), y + 5, 1, h - 10);
-  fill(ctx, "rgba(0,0,0,0.2)", mirror ? x : x + w - 1, y + 5, 1, h - 10);
+  // Vine snaking down the jamb (drawn over frame and door)
+  fill(ctx, "#3E5C34", px(3, 2), y + 6, 2, 9);
+  fill(ctx, "#3E5C34", px(6, 2), y + 13, 2, 9);
+  fill(ctx, "#3E5C34", px(9, 2), y + h - 22, 2, 9);
+  fill(ctx, "#3E5C34", px(5, 2), y + h - 15, 2, 9);
+  fill(ctx, "#81A957", px(2, 2), y + 10, 2, 2);
+  fill(ctx, "#81A957", px(11, 2), y + h - 18, 2, 2);
+
+  // Pink blossoms dotting the vine
+  fill(ctx, "#E783A5", px(6, 3), y + 8, 3, 3);
+  fill(ctx, "#E783A5", px(3, 3), y + h - 12, 3, 3);
+  fill(ctx, "#FFE47A", px(7, 1), y + 9, 1, 1);
+  fill(ctx, "#FFE47A", px(4, 1), y + h - 11, 1, 1);
+
+  drawSideJunction(ctx, vb, mirror);
+}
+
+// Dungeon side door: stone jambs, purple soul-fire sconces, iron portcullis bars when locked.
+function drawSideDungeonDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, side: SideDoorSide): void {
+  const { x, y, width: w, height: h } = vb;
+  const cy = y + h / 2;
+  const mirror = side === "right";
+  const px = makeSidePx(vb, mirror);
+
+  fill(ctx, locked ? "rgba(22,15,31,0.7)" : "rgba(10,15,24,0.4)", x + 2, cy - 16, w - 4, 32);
+
+  // Stone frame caps with iron edge
+  fill(ctx, "#111925", x, y, w, 5);
+  fill(ctx, "#111925", x, y + h - 5, w, 5);
+  fill(ctx, "#3B485C", x + 1, y + 1, w - 2, 3);
+  fill(ctx, "#3B485C", x + 1, y + h - 4, w - 2, 3);
+  fill(ctx, "#718095", px(2, 3), y + 2, 3, 1);
+  fill(ctx, "#718095", px(2, 3), y + h - 3, 3, 1);
+
+  // Soul-fire sconces above and below the passage
+  for (const sy of [y + 8, y + h - 15]) {
+    fill(ctx, "#241531", px(5, 5), sy, 5, 6);
+    fill(ctx, "#9E59C8", px(6, 3), sy + 1, 3, 4);
+    fill(ctx, "#E0B8F2", px(7, 1), sy + 2, 1, 2);
+  }
+
+  if (locked) {
+    // Portcullis: iron bars across the passage
+    for (let i = cy - 12; i < cy + 10; i += 7) {
+      fill(ctx, "#151C25", x + 3, i, w - 6, 3);
+      fill(ctx, "#7B8993", x + 4, i + 1, w - 9, 1);
+    }
+    // Vertical spine and chain links
+    fill(ctx, "#151C25", px(7, 2), cy - 14, 2, 28);
+    fill(ctx, "#0E151E", px(3, 4), cy - 16, 4, 3);
+    fill(ctx, "#0E151E", px(9, 4), cy + 13, 4, 3);
+    // Soul-lock keystone
+    fill(ctx, "#241531", px(5, 6), cy - 3, 6, 6);
+    fill(ctx, "#A25DCC", px(6, 4), cy - 2, 4, 4);
+    fill(ctx, "#E0B8F2", px(7, 2), cy - 1, 2, 2);
+  } else {
+    fill(ctx, "#080D15", x + 4, cy - 14, w - 8, 28);
+    // Hinge plates
+    fill(ctx, "#6D7B85", px(3, 3), cy - 13, 3, 3);
+    fill(ctx, "#6D7B85", px(3, 3), cy + 10, 3, 3);
+  }
+
+  drawSideJunction(ctx, vb, mirror);
+}
+
+// Snow side door: steel jambs under snow, icicles hanging from the lintel, frosted faces.
+function drawSideSnowDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, side: SideDoorSide): void {
+  const { x, y, width: w, height: h } = vb;
+  const cy = y + h / 2;
+  const mirror = side === "right";
+  const px = makeSidePx(vb, mirror);
+
+  fill(ctx, locked ? "rgba(31,73,91,0.65)" : "rgba(47,92,108,0.25)", x + 2, cy - 16, w - 4, 32);
+
+  // Steel frame caps
+  fill(ctx, "#294A5B", x, y, w, 5);
+  fill(ctx, "#294A5B", x, y + h - 5, w, 5);
+  fill(ctx, "#6F929E", x + 1, y + 1, w - 2, 3);
+  fill(ctx, "#6F929E", x + 1, y + h - 4, w - 2, 3);
+
+  // Snow drift on the top cap, thin drift below
+  fill(ctx, "#D9E8EB", x + 1, y, w - 2, 2);
+  fill(ctx, "#D9E8EB", px(6, 8), y + h - 5, 8, 2);
+
+  // Icicles hanging from the top cap (varying lengths)
+  fill(ctx, "#A9D4DC", px(3, 2), y + 5, 2, 8);
+  fill(ctx, "#A9D4DC", px(7, 2), y + 5, 2, 5);
+  fill(ctx, "#A9D4DC", px(11, 2), y + 5, 2, 10);
+  fill(ctx, "#EFFBFC", px(3, 1), y + 5, 1, 6);
+  fill(ctx, "#EFFBFC", px(11, 1), y + 5, 1, 8);
+
+  // Frost patches creeping along the jamb
+  fill(ctx, "#EFFBFC", px(2, 3), cy + 14, 3, 2);
+  fill(ctx, "#EFFBFC", px(10, 3), y + h - 9, 3, 2);
+
+  if (locked) {
+    // Airlock slabs sliding from top and bottom, meeting at a glowing pressure seam
+    fill(ctx, "#284E5E", x + 3, cy - 14, w - 6, 13);
+    fill(ctx, "#719EAA", x + 4, cy - 13, w - 8, 10);
+    fill(ctx, "#284E5E", x + 3, cy + 1, w - 6, 13);
+    fill(ctx, "#719EAA", x + 4, cy + 3, w - 8, 10);
+    fill(ctx, "#173643", x + 3, cy - 2, w - 6, 4);
+    fill(ctx, "#55BBC9", x + 4, cy - 1, w - 8, 2);
+    // Warning lamps
+    fill(ctx, "#C94C55", px(4, 3), cy - 11, 3, 3);
+    fill(ctx, "#C94C55", px(9, 3), cy + 8, 3, 3);
+    fill(ctx, "#FFD16A", px(5, 1), cy - 10, 1, 1);
+    fill(ctx, "#FFD16A", px(10, 1), cy + 9, 1, 1);
+  } else {
+    fill(ctx, "#173440", x + 4, cy - 14, w - 8, 28);
+    // Frost rim inside the open passage
+    fill(ctx, "#A9D4DC", px(4, 2), cy - 14, 2, 4);
+    fill(ctx, "#A9D4DC", px(4, 2), cy + 10, 2, 4);
+  }
+
+  drawSideJunction(ctx, vb, mirror);
+}
+
+// Lava side door: riveted iron plates over basalt, a molten seam glowing down the jamb.
+function drawSideLavaDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, side: SideDoorSide): void {
+  const { x, y, width: w, height: h } = vb;
+  const cy = y + h / 2;
+  const mirror = side === "right";
+  const px = makeSidePx(vb, mirror);
+
+  fill(ctx, locked ? "rgba(77,29,24,0.7)" : "rgba(42,29,35,0.35)", x + 2, cy - 16, w - 4, 32);
+
+  // Basalt frame caps with iron banding
+  fill(ctx, "#171219", x, y, w, 5);
+  fill(ctx, "#171219", x, y + h - 5, w, 5);
+  fill(ctx, "#493943", x + 1, y + 1, w - 2, 3);
+  fill(ctx, "#493943", x + 1, y + h - 4, w - 2, 3);
+
+  // Rivet dots on the caps
+  fill(ctx, "#B6AAA5", px(2, 2), y + 2, 2, 2);
+  fill(ctx, "#B6AAA5", px(11, 2), y + 2, 2, 2);
+  fill(ctx, "#B6AAA5", px(2, 2), y + h - 4, 2, 2);
+  fill(ctx, "#B6AAA5", px(11, 2), y + h - 4, 2, 2);
+
+  // Molten seam running down the jamb
+  fill(ctx, "#5A211C", px(3, 2), y + 6, 2, h - 12);
+  fill(ctx, "#E34F1E", px(3, 1), y + 9, 1, 8);
+  fill(ctx, "#E34F1E", px(4, 1), y + h - 20, 1, 9);
+  fill(ctx, "#FFB52C", px(3, 1), y + 12, 1, 3);
+
+  if (locked) {
+    // Stacked riveted iron plates
+    fill(ctx, "#261C22", x + 3, cy - 14, w - 6, 28);
+    fill(ctx, "#5B454C", x + 4, cy - 13, w - 8, 12);
+    fill(ctx, "#5B454C", x + 4, cy + 1, w - 8, 12);
+    fill(ctx, "#8B8583", px(5, 2), cy - 12, 2, 2);
+    fill(ctx, "#8B8583", px(10, 2), cy - 12, 2, 2);
+    fill(ctx, "#8B8583", px(5, 2), cy + 10, 2, 2);
+    fill(ctx, "#8B8583", px(10, 2), cy + 10, 2, 2);
+    // Furnace eye glowing between the plates
+    fill(ctx, "#5A211C", px(5, 6), cy - 3, 6, 6);
+    fill(ctx, "#E34F1E", px(6, 4), cy - 2, 4, 4);
+    fill(ctx, "#FFB52C", px(7, 2), cy - 1, 2, 2);
+  } else {
+    fill(ctx, "#150F13", x + 4, cy - 14, w - 8, 28);
+    fill(ctx, "rgba(227,79,30,0.15)", x + 5, cy - 12, w - 10, 24);
+    // Ember-scorched jamb blocks
+    fill(ctx, "#8C4A37", px(3, 3), cy - 13, 3, 4);
+    fill(ctx, "#8C4A37", px(10, 3), cy + 9, 3, 4);
+  }
+
+  drawSideJunction(ctx, vb, mirror);
+}
+
+// Sealed-library side door: archive stone with glowing runes, arcane seal when locked.
+function drawSideLibraryDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, side: SideDoorSide): void {
+  const { x, y, width: w, height: h } = vb;
+  const cy = y + h / 2;
+  const mirror = side === "right";
+  const px = makeSidePx(vb, mirror);
+
+  fill(ctx, locked ? "rgba(42,30,64,0.7)" : "rgba(30,22,48,0.22)", x + 2, cy - 16, w - 4, 32);
+
+  // Archive stone caps with shelf relief
+  fill(ctx, "#181422", x, y, w, 5);
+  fill(ctx, "#181422", x, y + h - 5, w, 5);
+  fill(ctx, "#2F2540", x + 1, y + 1, w - 2, 3);
+  fill(ctx, "#2F2540", x + 1, y + h - 4, w - 2, 3);
+  fill(ctx, "#44345E", x + 3, y + 2, w - 6, 1);
+  fill(ctx, "#44345E", x + 3, y + h - 3, w - 6, 1);
+
+  // Runes on the jamb
+  fill(ctx, "#782A9C", px(3, 4), y + 9, 4, 2);
+  fill(ctx, "#9B4EE0", px(4, 2), y + 10, 2, 4);
+  fill(ctx, "#782A9C", px(8, 4), y + h - 13, 4, 2);
+  fill(ctx, "#9B4EE0", px(9, 2), y + h - 12, 2, 4);
+
+  if (locked) {
+    fill(ctx, "#4B326D", x + 3, cy - 14, w - 6, 28);
+    fill(ctx, "#291544", x + 4, cy - 12, w - 8, 24);
+    // Glowing arcane seal
+    fill(ctx, "#AF46FF", px(5, 6), cy - 3, 6, 6);
+    fill(ctx, "#E0A8FF", px(7, 2), cy - 1, 2, 2);
+  } else {
+    fill(ctx, "#0E0A17", x + 4, cy - 14, w - 8, 28);
+    fill(ctx, "#362852", px(4, 2), cy - 13, 2, 4);
+    fill(ctx, "#362852", px(4, 2), cy + 9, 2, 4);
+  }
+
+  drawSideJunction(ctx, vb, mirror);
+}
+
+// Forge-core side door: black vault metal, hazard stripes, red heat rails.
+function drawSideForgeCoreDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, side: SideDoorSide): void {
+  const { x, y, width: w, height: h } = vb;
+  const cy = y + h / 2;
+  const mirror = side === "right";
+  const px = makeSidePx(vb, mirror);
+
+  fill(ctx, locked ? "rgba(74,20,10,0.6)" : "rgba(35,10,5,0.2)", x + 2, cy - 16, w - 4, 32);
+
+  // Vault metal caps with hazard stripes
+  fill(ctx, "#100604", x, y, w, 5);
+  fill(ctx, "#100604", x, y + h - 5, w, 5);
+  for (let i = 0; i < 2; i++) {
+    fill(ctx, "#260D0A", x + 1 + i * 8, y + 1, 4, 3);
+    fill(ctx, "#D99311", x + 5 + i * 8, y + 1, 4, 3);
+    fill(ctx, "#260D0A", x + 1 + i * 8, y + h - 4, 4, 3);
+    fill(ctx, "#D99311", x + 5 + i * 8, y + h - 4, 4, 3);
+  }
+
+  // Vent slits on the jamb
+  fill(ctx, "#3D130E", px(3, 2), y + 8, 2, 12);
+  fill(ctx, "#3D130E", px(11, 2), y + h - 20, 2, 12);
+
+  if (locked) {
+    fill(ctx, "#290A06", x + 3, cy - 14, w - 6, 28);
+    fill(ctx, "#1A0604", x + 4, cy - 12, w - 8, 24);
+    // Valve wheel glowing with core heat
+    fill(ctx, "#5E180E", px(4, 8), cy - 4, 8, 8);
+    fill(ctx, "#FF4000", px(5, 6), cy - 3, 6, 6);
+    fill(ctx, "#942516", px(7, 2), cy - 6, 2, 12);
+    fill(ctx, "#942516", px(3, 10), cy - 1, 10, 2);
+    fill(ctx, "#FF8800", px(7, 2), cy - 1, 2, 2);
+  } else {
+    fill(ctx, "#050100", x + 4, cy - 14, w - 8, 28);
+    // Red heat rails framing the open passage
+    fill(ctx, "#FF2200", px(4, 1), cy - 12, 1, 24);
+    fill(ctx, "#FF2200", px(11, 1), cy - 12, 1, 24);
+  }
+
+  drawSideJunction(ctx, vb, mirror);
 }
 
 // ============================================================
@@ -575,11 +825,16 @@ export class DoorRenderer {
         else drawBottomLavaDoor(ctx, vb, locked);
         break;
       case "left":
-        drawSideDoor(ctx, vb, baseTheme, locked, "left");
+      case "right": {
+        const side = geometry.direction;
+        if (theme === "sealed_library") drawSideLibraryDoor(ctx, vb, locked, side);
+        else if (theme === "forge_core") drawSideForgeCoreDoor(ctx, vb, locked, side);
+        else if (baseTheme === "forest") drawSideForestDoor(ctx, vb, locked, side);
+        else if (baseTheme === "dungeon") drawSideDungeonDoor(ctx, vb, locked, side);
+        else if (baseTheme === "snow") drawSideSnowDoor(ctx, vb, locked, side);
+        else drawSideLavaDoor(ctx, vb, locked, side);
         break;
-      case "right":
-        drawSideDoor(ctx, vb, baseTheme, locked, "right");
-        break;
+      }
     }
 
     ctx.restore();

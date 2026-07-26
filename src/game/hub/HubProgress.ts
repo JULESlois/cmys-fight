@@ -8,6 +8,8 @@ export interface HubProgress {
   y?: number;
   selectedCharacterId: string;
   selectedStarterWeaponId: string;
+  /** 重生泉选择的记忆天赋;undefined 表示不携带记忆 */
+  selectedMemoryTalentId?: string;
   visitedZones: string[];
   unlockedFacilities: string[];
 }
@@ -46,6 +48,9 @@ export function normalizeHubProgress(value: unknown, mapVersion = 1): HubProgres
     selectedStarterWeaponId: typeof raw.selectedStarterWeaponId === "string" && raw.selectedStarterWeaponId
       ? raw.selectedStarterWeaponId
       : fallback.selectedStarterWeaponId,
+    selectedMemoryTalentId: typeof raw.selectedMemoryTalentId === "string" && raw.selectedMemoryTalentId
+      ? raw.selectedMemoryTalentId
+      : undefined,
     visitedZones: uniqueStrings(raw.visitedZones),
     unlockedFacilities: uniqueStrings(raw.unlockedFacilities).length > 0
       ? uniqueStrings(raw.unlockedFacilities)

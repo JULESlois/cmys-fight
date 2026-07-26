@@ -5,6 +5,7 @@ import { audio } from "../audio/AudioManager";
 import { APP_VERSION } from "../../version";
 import { MenuBackdropRenderer } from "../render/MenuBackdropRenderer";
 import { t as tr, uiFont } from "../i18n";
+import { loreText, TITLE_TAGLINE } from "../narrative/StoryLore";
 
 export class TitleState extends GameState {
   protected options = ["newRun", "continue", "hub", "records", "settings"] as const;
@@ -123,7 +124,12 @@ export class TitleState extends GameState {
     ctx.fillText("DEEP DELVE", 160, titleY + 16 + 1);
     ctx.fillStyle = "#BDC3C7";
     ctx.fillText("DEEP DELVE", 160, titleY + 16);
-    
+
+    // Story tagline
+    ctx.font = uiFont(this.engine.data.settings.language, 7);
+    ctx.fillStyle = "rgba(189, 195, 199, 0.55)";
+    ctx.fillText(loreText(TITLE_TAGLINE, this.engine.data.settings.language), 160, titleY + 30);
+
     ctx.restore();
     ctx.textAlign = "left";
 

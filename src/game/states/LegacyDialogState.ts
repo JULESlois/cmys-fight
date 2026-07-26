@@ -1,6 +1,7 @@
 import { GameState } from "./GameState";
 import { events } from "../EventBus";
 import { t, uiFont } from "../i18n";
+import { pickOldMemoryFallback } from "../narrative/StoryLore";
 
 export class LegacyDialogState extends GameState {
   private npc: any;
@@ -48,7 +49,7 @@ export class LegacyDialogState extends GameState {
       this.engine.data.logEvent(`Spoke with ${this.npc.name}`);
     } catch (e) {
       console.error(e);
-      this.dialogLines = ["Greetings, traveler.", "May the sacred blossoms guide your path.", "(Connection safe, standard response activated.)"];
+      this.dialogLines = pickOldMemoryFallback(Math.random(), this.engine.data.settings.language);
       this.loading = false;
     }
   }

@@ -6,10 +6,16 @@ import {
   ESPER_ZERO_CHARACTER_SPRITES,
   KANAMI_CHARACTER_SPRITES,
   KANAMI_CHARACTER_PALETTE,
+  KNIGHT_CHARACTER_PALETTE,
+  KNIGHT_CHARACTER_SPRITES,
+  MAGE_CHARACTER_PALETTE,
+  MAGE_CHARACTER_SPRITES,
   MICHELE_CHARACTER_SPRITES,
   MICHELE_CHARACTER_PALETTE,
   NANALLY_CHARACTER_PALETTE,
   NANALLY_CHARACTER_SPRITES,
+  ROGUE_CHARACTER_PALETTE,
+  ROGUE_CHARACTER_SPRITES,
 } from "./characterArt";
 
 export type SpriteData = string[];
@@ -79,6 +85,9 @@ export const SPRITES: Record<string, SpriteData> = {
   ...CELESTIA_CHARACTER_SPRITES,
   ...ESPER_ZERO_CHARACTER_SPRITES,
   ...NANALLY_CHARACTER_SPRITES,
+  ...KNIGHT_CHARACTER_SPRITES,
+  ...MAGE_CHARACTER_SPRITES,
+  ...ROGUE_CHARACTER_SPRITES,
 
   enemy_melee_idle: [
     "...11......11...",
@@ -305,6 +314,15 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
   ...Object.fromEntries(
     Object.keys(NANALLY_CHARACTER_SPRITES).map(spriteName => [spriteName, NANALLY_CHARACTER_PALETTE]),
   ),
+  ...Object.fromEntries(
+    Object.keys(KNIGHT_CHARACTER_SPRITES).map(spriteName => [spriteName, KNIGHT_CHARACTER_PALETTE]),
+  ),
+  ...Object.fromEntries(
+    Object.keys(MAGE_CHARACTER_SPRITES).map(spriteName => [spriteName, MAGE_CHARACTER_PALETTE]),
+  ),
+  ...Object.fromEntries(
+    Object.keys(ROGUE_CHARACTER_SPRITES).map(spriteName => [spriteName, ROGUE_CHARACTER_PALETTE]),
+  ),
 };
 
 
@@ -317,6 +335,12 @@ export const CELESTIA_PLAYER_PALETTE: Record<string, string> = CELESTIA_CHARACTE
 export const ESPER_ZERO_PLAYER_PALETTE: Record<string, string> = ESPER_ZERO_CHARACTER_PALETTE;
 
 export const NANALLY_PLAYER_PALETTE: Record<string, string> = NANALLY_CHARACTER_PALETTE;
+
+export const KNIGHT_PLAYER_PALETTE: Record<string, string> = KNIGHT_CHARACTER_PALETTE;
+
+export const MAGE_PLAYER_PALETTE: Record<string, string> = MAGE_CHARACTER_PALETTE;
+
+export const ROGUE_PLAYER_PALETTE: Record<string, string> = ROGUE_CHARACTER_PALETTE;
 
 export const PLAYER_PALETTE: Record<string, string> = {
   ".": "transparent",

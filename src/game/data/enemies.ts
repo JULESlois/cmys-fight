@@ -3,14 +3,20 @@ import type { StatusEffectId } from "../combat/StatusEffectSystem";
 export type EnemyRole = "melee" | "ranged" | "boss";
 export type EnemyBehavior = "melee" | "charge" | "shoot" | "scatter" | "summon" | "area" | "sniper" | "lob" | "support" | "orbit" | "boss";
 export type EnemyTheme = "forest" | "dungeon" | "snow" | "lava";
-export type EnemyVisual = "brute" | "archer" | "beast" | "bird" | "mushroom" | "lancer" | "moth" | "guard" | "cultist" | "summoner" | "jailer" | "hound" | "coffin" | "lantern" | "shaman" | "turret" | "hazmat" | "wisp" | "sniper" | "servitor" | "knight" | "spitter" | "oracle" | "horse" | "beetle" | "mortar" | "smith" | "boss";
+/** World-node exclusive rosters keep the four base chapters at nine models each. */
+export type EnemyNodeTheme =
+  | "sealed_library" | "cooling_canal"
+  | "sealed_armory" | "observatory" | "forge_core"
+  | "ash_catacombs" | "deep_prison"
+  | "deep_archive";
+export type EnemyVisual = "brute" | "archer" | "beast" | "bird" | "mushroom" | "lancer" | "moth" | "guard" | "cultist" | "summoner" | "jailer" | "hound" | "coffin" | "lantern" | "shaman" | "turret" | "hazmat" | "wisp" | "sniper" | "servitor" | "knight" | "spitter" | "oracle" | "horse" | "beetle" | "mortar" | "smith" | "tome" | "mech" | "crawler" | "drifter" | "warden" | "sentinel" | "commander" | "caster" | "shade" | "revenant" | "specter" | "construct" | "boss";
 export type EnemyProjectileKind = "standard" | "needle" | "shell" | "orbit" | "support";
 export type BossPattern = "grove" | "broadcast" | "crypt" | "kennel" | "frost" | "sample" | "inferno" | "code";
 
 export interface EnemyDefinition {
   id: string;
   name: string;
-  theme: EnemyTheme;
+  theme: EnemyTheme | EnemyNodeTheme;
   role: EnemyRole;
   behavior: EnemyBehavior;
   visual: EnemyVisual;
@@ -269,20 +275,257 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
     attackDamage: 4, attackInterval: 1.82, attackWindup: 0.5,
     projectileSpeed: 76, projectileCount: 10, summonEnemyId: "code_horse", statusEffect: "burn", statusDuration: 2.4,
   }),
+
+  // --- Sealed Library (dungeon base, route depth 2) ---
+  cursed_tome: enemy({
+    id: "cursed_tome", name: "Cursed Tome", theme: "sealed_library", role: "melee", behavior: "charge", visual: "tome",
+    color: "#7E57C2", maxHp: 11, speed: 44, radius: 8, hitboxRadius: 18, hitboxOffsetY: -14, shadowWidth: 22,
+    attackDamage: 3, attackInterval: 1.3, attackWindup: 0.42,
+    chargeDistance: 62,
+  }),
+  arcane_guard: enemy({
+    id: "arcane_guard", name: "Arcane Guard", theme: "sealed_library", role: "melee", behavior: "melee", visual: "guard",
+    color: "#5C6BC0", maxHp: 14, speed: 34, radius: 8, hitboxRadius: 19, hitboxOffsetY: -16, shadowWidth: 21,
+    attackDamage: 3, attackInterval: 0.85, attackWindup: 0.3,
+  }),
+  ink_summoner: enemy({
+    id: "ink_summoner", name: "Ink Summoner", theme: "sealed_library", role: "ranged", behavior: "summon", visual: "summoner", introducedAtStage: 2,
+    color: "#4527A0", maxHp: 11, speed: 20, radius: 9, hitboxRadius: 22, hitboxOffsetY: -20, shadowWidth: 23,
+    attackDamage: 2, attackInterval: 2.6, attackWindup: 0.8,
+    summonEnemyId: "cursed_tome",
+  }),
+  glyph_sniper: enemy({
+    id: "glyph_sniper", name: "Glyph Sniper", theme: "sealed_library", role: "ranged", behavior: "sniper", visual: "sniper", introducedAtStage: 2,
+    color: "#9575CD", maxHp: 9, speed: 18, radius: 7, hitboxRadius: 20, hitboxOffsetY: -19, shadowWidth: 21,
+    attackDamage: 3, attackInterval: 1.85, attackWindup: 0.9, attackRange: 180, requiresLineOfSight: true,
+    projectileSpeed: 210, projectileKind: "needle",
+  }),
+  tome_lord: enemy({
+    id: "tome_lord", name: "Tome Lord", theme: "sealed_library", role: "boss", behavior: "boss", visual: "boss", bossPattern: "crypt",
+    color: "#512DA8", maxHp: 60, speed: 26, radius: 15, hitboxRadius: 36, hitboxOffsetY: -25, shadowWidth: 45,
+    attackDamage: 3, attackInterval: 2.2, attackWindup: 0.62,
+    projectileSpeed: 64, projectileCount: 10, summonEnemyId: "cursed_tome",
+  }),
+
+  // --- Cooling Canal (snow base, route depth 2) ---
+  crystal_drifter: enemy({
+    id: "crystal_drifter", name: "Crystal Drifter", theme: "cooling_canal", role: "ranged", behavior: "orbit", visual: "drifter",
+    color: "#4DD0E1", maxHp: 8, speed: 34, radius: 7, hitboxRadius: 19, hitboxOffsetY: -17, shadowWidth: 21,
+    attackDamage: 2, attackInterval: 1.25, attackWindup: 0.46, attackRange: 150,
+    projectileSpeed: 90, projectileCount: 3, projectileSpread: 0.5, projectileKind: "orbit",
+  }),
+  canal_warden: enemy({
+    id: "canal_warden", name: "Canal Warden", theme: "cooling_canal", role: "ranged", behavior: "area", visual: "warden",
+    color: "#26C6DA", maxHp: 12, speed: 20, radius: 9, hitboxRadius: 22, hitboxOffsetY: -19, shadowWidth: 25,
+    attackDamage: 2, attackInterval: 2.3, attackWindup: 0.9,
+    attackRange: 135, minimumWindup: 0.75, minimumAttackInterval: 1.65, requiresLineOfSight: true,
+    areaRadius: 20, statusEffect: "slow", statusDuration: 1.2,
+  }),
+  cryo_lancer: enemy({
+    id: "cryo_lancer", name: "Cryo Lancer", theme: "cooling_canal", role: "ranged", behavior: "sniper", visual: "lancer", introducedAtStage: 2,
+    color: "#80DEEA", maxHp: 10, speed: 19, radius: 7, hitboxRadius: 20, hitboxOffsetY: -19, shadowWidth: 21,
+    attackDamage: 3, attackInterval: 1.85, attackWindup: 0.9, attackRange: 182, requiresLineOfSight: true,
+    projectileSpeed: 215, projectileKind: "needle", statusEffect: "slow", statusDuration: 0.9,
+  }),
+  glacier_director: enemy({
+    id: "glacier_director", name: "Glacier Director", theme: "cooling_canal", role: "boss", behavior: "boss", visual: "boss", bossPattern: "frost",
+    color: "#0277BD", maxHp: 66, speed: 24, radius: 16, hitboxRadius: 39, hitboxOffsetY: -28, shadowWidth: 53,
+    attackDamage: 4, attackInterval: 2.1, attackWindup: 0.66,
+    projectileSpeed: 66, projectileCount: 10, statusEffect: "slow", statusDuration: 1.2,
+  }),
+
+  // --- Forge Core (lava base, route depth 3) ---
+  forge_mech: enemy({
+    id: "forge_mech", name: "Forge Mech", theme: "forge_core", role: "melee", behavior: "melee", visual: "mech",
+    color: "#EF6C00", maxHp: 17, speed: 34, radius: 9, hitboxRadius: 22, hitboxOffsetY: -18, shadowWidth: 25,
+    attackDamage: 4, attackInterval: 0.8, attackWindup: 0.28,
+    statusEffect: "burn", statusDuration: 2,
+  }),
+  slag_crawler: enemy({
+    id: "slag_crawler", name: "Slag Crawler", theme: "forge_core", role: "ranged", behavior: "scatter", visual: "crawler",
+    color: "#BF360C", maxHp: 12, speed: 24, radius: 8, hitboxRadius: 21, hitboxOffsetY: -12, shadowWidth: 29,
+    attackDamage: 3, attackInterval: 1.5, attackWindup: 0.46,
+    projectileSpeed: 98, projectileCount: 4, projectileSpread: 0.3, statusEffect: "burn", statusDuration: 2.2,
+  }),
+  anvil_guard: enemy({
+    id: "anvil_guard", name: "Anvil Guard", theme: "forge_core", role: "melee", behavior: "charge", visual: "guard", introducedAtStage: 2,
+    color: "#A1887F", maxHp: 16, speed: 36, radius: 9, hitboxRadius: 22, hitboxOffsetY: -15, shadowWidth: 30,
+    attackDamage: 4, attackInterval: 1.5, attackWindup: 0.52,
+    chargeDistance: 68, statusEffect: "burn", statusDuration: 1.6,
+  }),
+  forge_prime: enemy({
+    id: "forge_prime", name: "Forge Prime", theme: "forge_core", role: "boss", behavior: "boss", visual: "boss", bossPattern: "inferno",
+    color: "#D84315", maxHp: 74, speed: 28, radius: 16, hitboxRadius: 42, hitboxOffsetY: -28, shadowWidth: 56,
+    attackDamage: 4, attackInterval: 2.0, attackWindup: 0.6,
+    projectileSpeed: 70, projectileCount: 12, summonEnemyId: "forge_mech", statusEffect: "burn", statusDuration: 2.6,
+  }),
+
+  // --- Sealed Armory (dungeon base, route depth 3) ---
+  iron_sentinel: enemy({
+    id: "iron_sentinel", name: "Iron Sentinel", theme: "sealed_armory", role: "melee", behavior: "melee", visual: "sentinel",
+    color: "#90A4AE", maxHp: 16, speed: 33, radius: 9, hitboxRadius: 20, hitboxOffsetY: -16, shadowWidth: 23,
+    attackDamage: 3, attackInterval: 0.85, attackWindup: 0.3,
+  }),
+  siege_mortar: enemy({
+    id: "siege_mortar", name: "Siege Mortar", theme: "sealed_armory", role: "ranged", behavior: "lob", visual: "mortar",
+    color: "#78909C", maxHp: 15, speed: 15, radius: 9, hitboxRadius: 23, hitboxOffsetY: -15, shadowWidth: 30,
+    attackDamage: 4, attackInterval: 2.1, attackWindup: 0.76, attackRange: 156, requiresLineOfSight: true,
+    projectileSpeed: 50, projectileCount: 3, projectileSpread: 0.24, projectileKind: "shell",
+  }),
+  armory_commander: enemy({
+    id: "armory_commander", name: "Armory Commander", theme: "sealed_armory", role: "ranged", behavior: "support", visual: "commander", introducedAtStage: 2,
+    color: "#B0BEC5", maxHp: 14, speed: 24, radius: 8, hitboxRadius: 21, hitboxOffsetY: -17, shadowWidth: 24,
+    attackDamage: 2, attackInterval: 2.5, attackWindup: 0.7, attackRange: 136,
+    projectileSpeed: 76, projectileCount: 4, projectileSpread: 1.57, projectileKind: "support",
+  }),
+  war_engine: enemy({
+    id: "war_engine", name: "War Engine", theme: "sealed_armory", role: "boss", behavior: "boss", visual: "boss", bossPattern: "code",
+    color: "#607D8B", maxHp: 68, speed: 28, radius: 16, hitboxRadius: 36, hitboxOffsetY: -26, shadowWidth: 58,
+    attackDamage: 4, attackInterval: 1.95, attackWindup: 0.56,
+    projectileSpeed: 74, projectileCount: 10, summonEnemyId: "iron_sentinel",
+  }),
+
+  // --- Observatory (snow base, route depth 3) ---
+  void_moth: enemy({
+    id: "void_moth", name: "Void Moth", theme: "observatory", role: "ranged", behavior: "orbit", visual: "moth",
+    color: "#B39DDB", maxHp: 8, speed: 37, radius: 7, hitboxRadius: 19, hitboxOffsetY: -17, shadowWidth: 21,
+    attackDamage: 2, attackInterval: 1.2, attackWindup: 0.44, attackRange: 150,
+    projectileSpeed: 94, projectileCount: 3, projectileSpread: 0.48, projectileKind: "orbit",
+  }),
+  star_caster: enemy({
+    id: "star_caster", name: "Star Caster", theme: "observatory", role: "ranged", behavior: "area", visual: "caster",
+    color: "#7986CB", maxHp: 11, speed: 21, radius: 8, hitboxRadius: 22, hitboxOffsetY: -20, shadowWidth: 25,
+    attackDamage: 3, attackInterval: 2.25, attackWindup: 0.9,
+    attackRange: 140, minimumWindup: 0.72, minimumAttackInterval: 1.6, requiresLineOfSight: true,
+    areaRadius: 22, statusEffect: "slow", statusDuration: 1.1,
+  }),
+  astral_shade: enemy({
+    id: "astral_shade", name: "Astral Shade", theme: "observatory", role: "melee", behavior: "charge", visual: "shade", introducedAtStage: 2,
+    color: "#9FA8DA", maxHp: 12, speed: 42, radius: 8, hitboxRadius: 19, hitboxOffsetY: -14, shadowWidth: 24,
+    attackDamage: 3, attackInterval: 1.4, attackWindup: 0.46,
+    chargeDistance: 64,
+  }),
+  star_sentinel: enemy({
+    id: "star_sentinel", name: "Star Sentinel", theme: "observatory", role: "boss", behavior: "boss", visual: "boss", bossPattern: "sample",
+    color: "#5C6BC0", maxHp: 66, speed: 26, radius: 16, hitboxRadius: 38, hitboxOffsetY: -27, shadowWidth: 50,
+    attackDamage: 4, attackInterval: 1.95, attackWindup: 0.6,
+    projectileSpeed: 78, projectileCount: 9, summonEnemyId: "void_moth", statusEffect: "slow", statusDuration: 1,
+  }),
+
+  // --- Ash Catacombs (dungeon base, route depth 4) ---
+  ashen_revenant: enemy({
+    id: "ashen_revenant", name: "Ashen Revenant", theme: "ash_catacombs", role: "melee", behavior: "melee", visual: "revenant",
+    color: "#A1887F", maxHp: 17, speed: 36, radius: 9, hitboxRadius: 20, hitboxOffsetY: -16, shadowWidth: 22,
+    attackDamage: 4, attackInterval: 0.85, attackWindup: 0.3,
+    statusEffect: "burn", statusDuration: 2,
+  }),
+  ash_lobber: enemy({
+    id: "ash_lobber", name: "Ash Lobber", theme: "ash_catacombs", role: "ranged", behavior: "lob", visual: "coffin",
+    color: "#8D6E63", maxHp: 16, speed: 16, radius: 9, hitboxRadius: 23, hitboxOffsetY: -16, shadowWidth: 29,
+    attackDamage: 4, attackInterval: 2.1, attackWindup: 0.76, attackRange: 155, requiresLineOfSight: true,
+    projectileSpeed: 48, projectileCount: 3, projectileSpread: 0.24, projectileKind: "shell", statusEffect: "burn", statusDuration: 2.2,
+  }),
+  bone_sovereign: enemy({
+    id: "bone_sovereign", name: "Bone Sovereign", theme: "ash_catacombs", role: "boss", behavior: "boss", visual: "boss", bossPattern: "crypt",
+    color: "#4A148C", maxHp: 72, speed: 26, radius: 16, hitboxRadius: 38, hitboxOffsetY: -26, shadowWidth: 50,
+    attackDamage: 4, attackInterval: 2.1, attackWindup: 0.6,
+    projectileSpeed: 68, projectileCount: 11, summonEnemyId: "ashen_revenant",
+  }),
+
+  // --- Deep Prison (dungeon base, route depth 4) ---
+  chain_specter: enemy({
+    id: "chain_specter", name: "Chain Specter", theme: "deep_prison", role: "ranged", behavior: "shoot", visual: "specter",
+    color: "#B0BEC5", maxHp: 13, speed: 27, radius: 8, hitboxRadius: 20, hitboxOffsetY: -18, shadowWidth: 22,
+    attackDamage: 3, attackInterval: 1.2, attackWindup: 0.42,
+    projectileSpeed: 130, statusEffect: "root", statusDuration: 0.4,
+  }),
+  prison_brute: enemy({
+    id: "prison_brute", name: "Prison Brute", theme: "deep_prison", role: "melee", behavior: "melee", visual: "brute",
+    color: "#6D4C41", maxHp: 19, speed: 33, radius: 10, hitboxRadius: 21, hitboxOffsetY: -16, shadowWidth: 26,
+    attackDamage: 4, attackInterval: 0.9, attackWindup: 0.34,
+  }),
+  warden_alpha: enemy({
+    id: "warden_alpha", name: "Warden Alpha", theme: "deep_prison", role: "boss", behavior: "boss", visual: "boss", bossPattern: "kennel",
+    color: "#455A64", maxHp: 74, speed: 30, radius: 16, hitboxRadius: 38, hitboxOffsetY: -24, shadowWidth: 60,
+    attackDamage: 4, attackInterval: 2.0, attackWindup: 0.56,
+    projectileSpeed: 72, projectileCount: 9, summonEnemyId: "chain_specter", statusEffect: "root", statusDuration: 0.55,
+  }),
+
+  // --- Deep Archive (dungeon base, final depth) ---
+  archive_construct: enemy({
+    id: "archive_construct", name: "Archive Construct", theme: "deep_archive", role: "ranged", behavior: "shoot", visual: "construct",
+    color: "#26A69A", maxHp: 15, speed: 26, radius: 8, hitboxRadius: 20, hitboxOffsetY: -17, shadowWidth: 23,
+    attackDamage: 3, attackInterval: 1.15, attackWindup: 0.4,
+    projectileSpeed: 134,
+  }),
+  void_cultist: enemy({
+    id: "void_cultist", name: "Void Cultist", theme: "deep_archive", role: "ranged", behavior: "area", visual: "cultist",
+    color: "#7E57C2", maxHp: 13, speed: 22, radius: 9, hitboxRadius: 22, hitboxOffsetY: -20, shadowWidth: 25,
+    attackDamage: 4, attackInterval: 2.15, attackWindup: 0.85,
+    attackRange: 145, minimumWindup: 0.68, minimumAttackInterval: 1.55, requiresLineOfSight: true,
+    areaRadius: 24, statusEffect: "poison", statusDuration: 2.5,
+  }),
+  echo_mind: enemy({
+    id: "echo_mind", name: "Echo Mind", theme: "deep_archive", role: "boss", behavior: "boss", visual: "boss", bossPattern: "broadcast",
+    color: "#00897B", maxHp: 78, speed: 27, radius: 16, hitboxRadius: 38, hitboxOffsetY: -26, shadowWidth: 50,
+    attackDamage: 4, attackInterval: 1.9, attackWindup: 0.58,
+    projectileSpeed: 80, projectileCount: 10, summonEnemyId: "archive_construct",
+  }),
 };
 
-const CHAPTER_POOLS: Record<EnemyTheme, string[]> = {
+const CHAPTER_POOLS: Record<EnemyTheme | EnemyNodeTheme, string[]> = {
   forest: ["moss_brute", "thorn_archer", "boar_charger", "dingdong_fowl", "spore_mimic", "root_lancer", "petal_moth"],
   dungeon: ["bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith"],
   snow: ["frost_hound", "ice_shaman", "snow_turret", "white_sampler", "mirror_wisp", "icicle_sniper", "lab_servitor"],
   lava: ["ember_knight", "magma_spitter", "cinder_oracle", "code_horse", "furnace_beetle", "magma_mortar", "heat_smith_drone"],
+  // World-node rosters extend the base chapter pool with node exclusives.
+  sealed_library: [
+    "bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith",
+    "cursed_tome", "arcane_guard", "ink_summoner", "glyph_sniper",
+  ],
+  cooling_canal: [
+    "frost_hound", "ice_shaman", "snow_turret", "white_sampler", "mirror_wisp", "icicle_sniper", "lab_servitor",
+    "crystal_drifter", "canal_warden", "cryo_lancer",
+  ],
+  sealed_armory: [
+    "bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith",
+    "iron_sentinel", "siege_mortar", "armory_commander",
+  ],
+  observatory: [
+    "frost_hound", "ice_shaman", "snow_turret", "white_sampler", "mirror_wisp", "icicle_sniper", "lab_servitor",
+    "void_moth", "star_caster", "astral_shade",
+  ],
+  forge_core: [
+    "ember_knight", "magma_spitter", "cinder_oracle", "code_horse", "furnace_beetle", "magma_mortar", "heat_smith_drone",
+    "forge_mech", "slag_crawler", "anvil_guard",
+  ],
+  ash_catacombs: [
+    "bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith",
+    "ashen_revenant", "ash_lobber",
+  ],
+  deep_prison: [
+    "bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith",
+    "chain_specter", "prison_brute",
+  ],
+  deep_archive: [
+    "bone_guard", "bolt_cultist", "grave_summoner", "bark_hound", "chain_jailer", "coffin_lobber", "lantern_wraith",
+    "archive_construct", "void_cultist",
+  ],
 };
 
-const CHAPTER_BOSSES: Record<EnemyTheme, string[]> = {
+const CHAPTER_BOSSES: Record<EnemyTheme | EnemyNodeTheme, string[]> = {
   forest: ["forest_guardian", "broadcast_rooster"],
   dungeon: ["crypt_overseer", "kennel_warden"],
   snow: ["frost_titan", "white_director"],
   lava: ["inferno_core", "vat_horse_prime"],
+  sealed_library: ["tome_lord", "crypt_overseer"],
+  cooling_canal: ["glacier_director", "frost_titan"],
+  sealed_armory: ["war_engine", "kennel_warden"],
+  observatory: ["star_sentinel", "white_director"],
+  forge_core: ["forge_prime", "inferno_core"],
+  ash_catacombs: ["bone_sovereign", "crypt_overseer"],
+  deep_prison: ["warden_alpha", "kennel_warden"],
+  deep_archive: ["echo_mind", "tome_lord"],
 };
 
 export function isEnemyId(value: unknown): value is string {
@@ -307,7 +550,7 @@ export function getBaseTheme(theme: string): EnemyTheme {
   return theme as EnemyTheme;
 }
 
-export function getEnemyPool(theme: EnemyTheme, role?: EnemyRole, stageIndex = 5): EnemyDefinition[] {
+export function getEnemyPool(theme: EnemyTheme | EnemyNodeTheme, role?: EnemyRole, stageIndex = 5): EnemyDefinition[] {
   const baseTheme = getBaseTheme(theme);
   const poolIds = CHAPTER_POOLS[theme] ?? CHAPTER_POOLS[baseTheme] ?? CHAPTER_POOLS.forest;
   const pool = poolIds
@@ -316,13 +559,13 @@ export function getEnemyPool(theme: EnemyTheme, role?: EnemyRole, stageIndex = 5
   return role ? pool.filter(definition => definition.role === role) : pool;
 }
 
-export function getBossPool(theme: EnemyTheme): EnemyDefinition[] {
+export function getBossPool(theme: EnemyTheme | EnemyNodeTheme): EnemyDefinition[] {
   const baseTheme = getBaseTheme(theme);
   const poolIds = CHAPTER_BOSSES[theme] ?? CHAPTER_BOSSES[baseTheme] ?? CHAPTER_BOSSES.forest;
   return poolIds.map(id => ENEMIES[id]);
 }
 
-export function getBossDefinition(theme: EnemyTheme): EnemyDefinition {
+export function getBossDefinition(theme: EnemyTheme | EnemyNodeTheme): EnemyDefinition {
   return getBossPool(theme)[0];
 }
 

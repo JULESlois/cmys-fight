@@ -197,6 +197,28 @@ export class PixelFxSystem {
     this.emit(x, y, lowFx ? 4 : 9, "#FF5D73", 72, 0.32, { gravity: 55, size: 2 });
   }
 
+  emitStatusTick(x: number, y: number, statusId: "poison" | "burn" | "slow" | "root", lowFx: boolean) {
+    if (statusId === "poison") {
+      const count = lowFx ? 1 : 2 + Math.floor(Math.random() * 2);
+      this.emit(x, y, count, "#7EE081", 9, 0.7, { direction: -Math.PI / 2, spread: 0.8, gravity: -12, size: 2 });
+      return;
+    }
+    if (statusId === "burn") {
+      const count = lowFx ? 1 : 2 + Math.floor(Math.random() * 2);
+      this.emit(x, y, count, Math.random() < 0.5 ? "#FF7043" : "#FFB347", 26, 0.3, { direction: -Math.PI / 2, spread: 0.7, gravity: -34, glow: true, size: 2, shape: "streak" });
+      if (!lowFx && Math.random() < 0.35) {
+        this.emit(x, y - 3, 1, "#6D5148", 12, 0.42, { direction: -Math.PI / 2, spread: 0.9, gravity: -14, size: 2, shape: "smoke" });
+      }
+      return;
+    }
+    if (statusId === "slow") {
+      this.emit(x, y - 4, lowFx ? 1 : 2, "#8DF6FF", 14, 0.5, { direction: Math.PI / 2, spread: 0.85, gravity: 30, size: 2 });
+      return;
+    }
+    // root: earthy tendrils skittering horizontally along the ground
+    this.emit(x, y + 9, lowFx ? 1 : 2, "#8A5A33", 24, 0.4, { direction: Math.random() < 0.5 ? 0 : Math.PI, spread: 0.3, gravity: 0, size: 2 });
+  }
+
   emitPickup(pickup: Pickup, lowFx = false) {
     const color = pickup.type === "coin" ? "#F1C40F"
       : pickup.type === "hp" ? "#FF5D73"

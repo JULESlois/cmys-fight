@@ -1085,6 +1085,325 @@ function drawNanally(frame: number, idle: boolean): CharacterSpriteData {
   return finish(compactNanallySilhouette(canvas, phase));
 }
 
+// All three CMYS forms are sibling verification constructs of the Archive.
+// They share the same gold checksum diamond on the chest so the player reads
+// them as one program entity wearing three different combat shells.
+function drawChecksumEmblem(canvas: PixelCanvas, cx: number, cy: number): void {
+  rasterPixel(canvas, cx, cy - 1, "M");
+  rasterPixel(canvas, cx - 1, cy, "M");
+  rasterPixel(canvas, cx + 1, cy, "M");
+  rasterPixel(canvas, cx, cy + 1, "M");
+  rasterPixel(canvas, cx, cy, "N");
+}
+
+function drawKnight(frame: number, idle: boolean): CharacterSpriteData {
+  const canvas = createCanvas();
+  const phase = idle ? frame % 2 : frame % 4;
+  const bob = idle ? 0 : [0, 1, 0, -1][phase];
+  const glowPulse = idle ? phase : phase % 2;
+  const legPoses = idle
+    ? { rear: [13, 25, 13, 12], front: [19, 25, 21, 22] }
+    : [
+        { rear: [13, 25, 10, 9], front: [19, 25, 23, 25] },
+        { rear: [14, 25, 13, 12], front: [19, 25, 21, 22] },
+        { rear: [14, 25, 20, 22], front: [19, 25, 15, 13] },
+        { rear: [14, 25, 16, 15], front: [19, 25, 18, 19] },
+      ][phase];
+
+  // Rear armored leg with steel greave and sabaton.
+  rasterLine(canvas, 14, 22 + bob, legPoses.rear[0], legPoses.rear[1], "A", 5);
+  rasterLine(canvas, legPoses.rear[0], legPoses.rear[1], legPoses.rear[2], 29, "A", 5);
+  rasterLine(canvas, 14, 22 + bob, legPoses.rear[0], legPoses.rear[1], "B", 3);
+  rasterLine(canvas, legPoses.rear[0], legPoses.rear[1], legPoses.rear[2], 28, "C", 3);
+  rasterSpan(canvas, legPoses.rear[2] - 1, legPoses.rear[2] + 1, 27, "K");
+  rasterSpan(canvas, legPoses.rear[2] - 1, legPoses.rear[2] + 1, 28, "K");
+  rasterSpan(canvas, legPoses.rear[3] - 1, legPoses.rear[3] + 2, 29, "K");
+  rasterSpan(canvas, legPoses.rear[3] - 2, legPoses.rear[3] + 2, 30, "A");
+
+  // Rear pauldron and gauntlet arm.
+  rasterSpan(canvas, 8, 12, 10 + bob, "B");
+  rasterSpan(canvas, 7, 12, 11 + bob, "C");
+  rasterSpan(canvas, 7, 12, 12 + bob, "C");
+  rasterSpan(canvas, 8, 11, 13 + bob, "B");
+  rasterLine(canvas, 9, 14 + bob, 8, 18 + bob, "B", 3);
+  rasterRect(canvas, 7, 18 + bob, 3, 3, "K");
+
+  // Broad cuirass. The guard form is deliberately the widest CMYS silhouette.
+  rasterSpan(canvas, 12, 21, 10 + bob, "B");
+  rasterSpan(canvas, 11, 22, 11 + bob, "C");
+  rasterSpan(canvas, 11, 22, 12 + bob, "D");
+  rasterSpan(canvas, 11, 22, 13 + bob, "D");
+  rasterSpan(canvas, 11, 22, 14 + bob, "C");
+  rasterSpan(canvas, 12, 21, 15 + bob, "C");
+  rasterSpan(canvas, 12, 21, 16 + bob, "B");
+  rasterSpan(canvas, 12, 21, 17 + bob, "A");
+  rasterPixel(canvas, 21, 12 + bob, "E");
+  rasterPixel(canvas, 21, 13 + bob, "E");
+  rasterPixel(canvas, 12, 12 + bob, "B");
+  rasterPixel(canvas, 16, 17 + bob, "M");
+
+  // Split faulds over a dark under-suit.
+  rasterSpan(canvas, 11, 22, 18 + bob, "B");
+  rasterSpan(canvas, 12, 21, 19 + bob, "C");
+  rasterSpan(canvas, 12, 15, 20 + bob, "B");
+  rasterSpan(canvas, 18, 21, 20 + bob, "B");
+  rasterSpan(canvas, 15, 18, 20 + bob, "G");
+  rasterSpan(canvas, 13, 20, 21 + bob, "G");
+
+  drawChecksumEmblem(canvas, 16, 13 + bob);
+
+  // Crested helmet with a glowing checksum visor instead of a face.
+  rasterSpan(canvas, 14, 18, 0 + bob, "C");
+  rasterPixel(canvas, 19, 0 + bob, "E");
+  rasterSpan(canvas, 13, 19, 1 + bob, "C");
+  rasterSpan(canvas, 12, 20, 2 + bob, "D");
+  rasterSpan(canvas, 11, 21, 3 + bob, "D");
+  rasterSpan(canvas, 11, 21, 4 + bob, "D");
+  rasterSpan(canvas, 11, 21, 5 + bob, "C");
+  rasterSpan(canvas, 12, 21, 6 + bob, "A");
+  rasterPixel(canvas, 14, 6 + bob, "L");
+  rasterPixel(canvas, 18, 6 + bob, "L");
+  rasterPixel(canvas, 19, 6 + bob, glowPulse === 1 ? "L" : "A");
+  rasterSpan(canvas, 12, 21, 7 + bob, "B");
+  rasterSpan(canvas, 13, 20, 8 + bob, "C");
+  rasterSpan(canvas, 14, 19, 9 + bob, "B");
+  rasterPixel(canvas, 19, 2 + bob, "E");
+  rasterPixel(canvas, 20, 3 + bob, "E");
+
+  // Front pauldron, arm and the steel bracer shield that breaks the outline.
+  rasterSpan(canvas, 21, 25, 10 + bob, "C");
+  rasterSpan(canvas, 21, 26, 11 + bob, "D");
+  rasterSpan(canvas, 21, 26, 12 + bob, "D");
+  rasterSpan(canvas, 22, 26, 13 + bob, "C");
+  rasterPixel(canvas, 24, 11 + bob, "E");
+  rasterLine(canvas, 24, 14 + bob, 25, 17 + bob, "C", 3);
+  rasterRect(canvas, 23, 15 + bob, 5, 7, "A");
+  rasterRect(canvas, 24, 16 + bob, 3, 5, "I");
+  rasterPixel(canvas, 24, 16 + bob, "J");
+  rasterPixel(canvas, 25, 18 + bob, "M");
+  rasterPixel(canvas, 26, 20 + bob, "B");
+
+  // Front armored leg.
+  rasterLine(canvas, 19, 22 + bob, legPoses.front[0], legPoses.front[1], "A", 5);
+  rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 29, "A", 5);
+  rasterLine(canvas, 19, 22 + bob, legPoses.front[0], legPoses.front[1], "C", 3);
+  rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 28, "D", 3);
+  rasterSpan(canvas, legPoses.front[2] - 1, legPoses.front[2] + 1, 27, "K");
+  rasterSpan(canvas, legPoses.front[2] - 1, legPoses.front[2] + 1, 28, "K");
+  rasterSpan(canvas, legPoses.front[3] - 1, legPoses.front[3] + 2, 29, "K");
+  rasterSpan(canvas, legPoses.front[3] - 2, legPoses.front[3] + 2, 30, "A");
+  rasterPixel(canvas, legPoses.front[2] + 1, 27, "J");
+
+  return finish(canvas);
+}
+
+function drawMage(frame: number, idle: boolean): CharacterSpriteData {
+  const canvas = createCanvas();
+  const phase = idle ? frame % 2 : frame % 4;
+  const bob = idle ? 0 : [0, 1, 0, -1][phase];
+  const orbLift = idle ? (phase === 1 ? 1 : 0) : [0, 1, 0, -1][phase];
+  const hemSway = idle ? 0 : [1, 0, -1, 0][phase];
+  const legPoses = idle
+    ? { rear: [13, 12], front: [21, 22] }
+    : [
+        { rear: [10, 9], front: [23, 25] },
+        { rear: [13, 12], front: [21, 22] },
+        { rear: [20, 22], front: [15, 13] },
+        { rear: [16, 15], front: [18, 19] },
+      ][phase];
+
+  // Rear floating focus orb, part of the arcane form's data halo.
+  rasterPixel(canvas, 6, 12 + orbLift + bob, "J");
+  rasterPixel(canvas, 5, 12 + orbLift + bob, "O");
+  rasterPixel(canvas, 7, 12 + orbLift + bob, "O");
+  rasterPixel(canvas, 6, 11 + orbLift + bob, "O");
+  rasterPixel(canvas, 6, 13 + orbLift + bob, "O");
+
+  // Rear sleeve with an open cuff leaking glow.
+  rasterLine(canvas, 12, 12 + bob, 9, 16 + bob, "B", 3);
+  rasterRect(canvas, 8, 16 + bob, 3, 3, "C");
+  rasterPixel(canvas, 9, 19 + bob, "L");
+
+  // Slim legs, mostly hidden by the robe hem.
+  rasterLine(canvas, 14, 23 + bob, legPoses.rear[0], 28, "A", 4);
+  rasterLine(canvas, 14, 23 + bob, legPoses.rear[0], 28, "K", 2);
+  rasterSpan(canvas, legPoses.rear[1] - 1, legPoses.rear[1] + 1, 29, "K");
+  rasterSpan(canvas, legPoses.rear[1] - 2, legPoses.rear[1] + 1, 30, "A");
+  rasterLine(canvas, 19, 23 + bob, legPoses.front[0], 28, "A", 4);
+  rasterLine(canvas, 19, 23 + bob, legPoses.front[0], 28, "H", 2);
+  rasterSpan(canvas, legPoses.front[1] - 1, legPoses.front[1] + 1, 29, "H");
+  rasterSpan(canvas, legPoses.front[1] - 1, legPoses.front[1] + 2, 30, "A");
+
+  // Long robe: narrow shoulders, sashed waist, hem swaying with the stride.
+  rasterSpan(canvas, 13, 20, 10 + bob, "B");
+  rasterSpan(canvas, 12, 21, 11 + bob, "C");
+  rasterSpan(canvas, 12, 21, 12 + bob, "D");
+  rasterSpan(canvas, 12, 21, 13 + bob, "D");
+  rasterSpan(canvas, 12, 21, 14 + bob, "C");
+  rasterSpan(canvas, 12, 21, 15 + bob, "D");
+  rasterSpan(canvas, 13, 20, 16 + bob, "C");
+  rasterSpan(canvas, 13, 20, 17 + bob, "K");
+  rasterPixel(canvas, 15, 17 + bob, "H");
+  rasterSpan(canvas, 12, 21, 18 + bob, "C");
+  rasterSpan(canvas, 11, 22, 19 + bob, "C");
+  rasterSpan(canvas, 11, 22, 20 + bob, "D");
+  rasterSpan(canvas, 10 + hemSway, 23 + hemSway, 21 + bob, "C");
+  rasterSpan(canvas, 10 + hemSway, 23 + hemSway, 22 + bob, "D");
+  rasterSpan(canvas, 9 + hemSway, 24 + hemSway, 23 + bob, "C");
+  rasterSpan(canvas, 9 + hemSway, 24 + hemSway, 24 + bob, "B");
+  rasterSpan(canvas, 11 + hemSway, 22 + hemSway, 24 + bob, "H");
+  rasterLine(canvas, 16, 18 + bob, 16, 23 + bob, "B", 1);
+  rasterPixel(canvas, 21, 12 + bob, "E");
+  rasterPixel(canvas, 21, 15 + bob, "E");
+  rasterPixel(canvas, 22, 20 + bob, "E");
+  rasterPixel(canvas, 13, 22 + bob, "L");
+  rasterPixel(canvas, 19, 23 + bob, "L");
+
+  drawChecksumEmblem(canvas, 16, 13 + bob);
+
+  // Deep hood with a pale synthetic face and glowing arcane eyes.
+  rasterSpan(canvas, 10, 13, 0 + bob, "B");
+  rasterSpan(canvas, 10, 16, 1 + bob, "C");
+  rasterSpan(canvas, 10, 19, 2 + bob, "C");
+  rasterSpan(canvas, 10, 20, 3 + bob, "D");
+  rasterSpan(canvas, 10, 21, 4 + bob, "D");
+  rasterSpan(canvas, 10, 21, 5 + bob, "C");
+  rasterSpan(canvas, 10, 21, 6 + bob, "C");
+  rasterSpan(canvas, 11, 21, 7 + bob, "C");
+  rasterSpan(canvas, 12, 20, 8 + bob, "B");
+  rasterSpan(canvas, 13, 19, 9 + bob, "B");
+  rasterPixel(canvas, 19, 3 + bob, "E");
+  rasterPixel(canvas, 20, 4 + bob, "E");
+  rasterSpan(canvas, 13, 20, 5 + bob, "G");
+  rasterSpan(canvas, 13, 20, 6 + bob, "F");
+  rasterSpan(canvas, 13, 20, 7 + bob, "F");
+  rasterSpan(canvas, 14, 19, 8 + bob, "F");
+  rasterPixel(canvas, 14, 6 + bob, "L");
+  rasterPixel(canvas, 18, 6 + bob, "L");
+  rasterPixel(canvas, 19, 6 + bob, "L");
+
+  // Front sleeve with a wide cuff and the hovering staff mote above the palm.
+  rasterLine(canvas, 21, 12 + bob, 24, 16 + bob, "C", 3);
+  rasterRect(canvas, 23, 16 + bob, 4, 3, "D");
+  rasterPixel(canvas, 26, 17 + bob, "E");
+  rasterPixel(canvas, 25, 19 + bob - orbLift, "J");
+  rasterPixel(canvas, 24, 19 + bob - orbLift, "L");
+  rasterPixel(canvas, 26, 19 + bob - orbLift, "L");
+  rasterPixel(canvas, 25, 18 + bob - orbLift, "L");
+  rasterPixel(canvas, 25, 20 + bob - orbLift, "L");
+
+  // Front floating orb near the shoulder, counter-phased against the palm.
+  rasterPixel(canvas, 26, 7 - orbLift + bob, "J");
+  rasterPixel(canvas, 25, 7 - orbLift + bob, "O");
+  rasterPixel(canvas, 27, 7 - orbLift + bob, "O");
+  rasterPixel(canvas, 26, 6 - orbLift + bob, "O");
+  rasterPixel(canvas, 26, 8 - orbLift + bob, "O");
+
+  return finish(canvas);
+}
+
+function drawRogue(frame: number, idle: boolean): CharacterSpriteData {
+  const canvas = createCanvas();
+  const phase = idle ? frame % 2 : frame % 4;
+  const bob = idle ? 0 : [0, 1, 0, -1][phase];
+  const scarfSwing = idle ? (phase === 1 ? 1 : 0) : [2, 1, -2, -1][phase];
+  const legPoses = idle
+    ? { rear: [13, 24, 13, 12], front: [20, 24, 21, 22] }
+    : [
+        { rear: [12, 24, 9, 8], front: [20, 24, 24, 26] },
+        { rear: [14, 24, 13, 12], front: [19, 24, 21, 22] },
+        { rear: [15, 24, 21, 23], front: [18, 24, 14, 12] },
+        { rear: [14, 24, 17, 16], front: [19, 24, 18, 19] },
+      ][phase];
+
+  // Twin trailing scarf streamers define the swift form's silhouette.
+  rasterLine(canvas, 13, 10 + bob, 8 - scarfSwing, 13 + bob, "C", 2);
+  rasterLine(canvas, 8 - scarfSwing, 13 + bob, 5 - scarfSwing, 17 + bob, "D", 2);
+  rasterPixel(canvas, 4 - scarfSwing, 18 + bob, "E");
+  rasterLine(canvas, 13, 12 + bob, 7 - scarfSwing, 19 + bob, "B", 2);
+  rasterPixel(canvas, 6 - scarfSwing, 20 + bob, "C");
+
+  // Rear runner leg, longer and thinner than the other forms.
+  rasterLine(canvas, 14, 21 + bob, legPoses.rear[0], legPoses.rear[1], "A", 4);
+  rasterLine(canvas, legPoses.rear[0], legPoses.rear[1], legPoses.rear[2], 29, "A", 4);
+  rasterLine(canvas, 14, 21 + bob, legPoses.rear[0], legPoses.rear[1], "H", 2);
+  rasterLine(canvas, legPoses.rear[0], legPoses.rear[1], legPoses.rear[2], 28, "B", 2);
+  rasterSpan(canvas, legPoses.rear[2] - 1, legPoses.rear[2] + 1, 28, "K");
+  rasterSpan(canvas, legPoses.rear[3] - 1, legPoses.rear[3] + 2, 29, "K");
+  rasterSpan(canvas, legPoses.rear[3] - 2, legPoses.rear[3] + 2, 30, "A");
+
+  // Rear arm.
+  rasterLine(canvas, 13, 12 + bob, 11, 16 + bob, "B", 2);
+  rasterRect(canvas, 10, 16 + bob, 2, 2, "K");
+
+  // Slim vest torso with a diagonal bandolier and short trousers.
+  rasterSpan(canvas, 13, 20, 11 + bob, "C");
+  rasterSpan(canvas, 13, 20, 12 + bob, "D");
+  rasterSpan(canvas, 13, 20, 13 + bob, "D");
+  rasterSpan(canvas, 13, 19, 14 + bob, "C");
+  rasterSpan(canvas, 13, 19, 15 + bob, "D");
+  rasterSpan(canvas, 14, 19, 16 + bob, "C");
+  rasterSpan(canvas, 13, 19, 17 + bob, "A");
+  rasterPixel(canvas, 18, 17 + bob, "H");
+  rasterLine(canvas, 13, 11 + bob, 19, 16 + bob, "G", 1);
+  rasterPixel(canvas, 20, 12 + bob, "E");
+  rasterPixel(canvas, 19, 15 + bob, "E");
+  rasterSpan(canvas, 13, 20, 18 + bob, "H");
+  rasterSpan(canvas, 13, 19, 19 + bob, "G");
+  rasterSpan(canvas, 13, 19, 20 + bob, "G");
+
+  drawChecksumEmblem(canvas, 16, 13 + bob);
+
+  // Wrapped neck scarf above the emblem.
+  rasterSpan(canvas, 12, 20, 10 + bob, "D");
+  rasterSpan(canvas, 13, 19, 11 + bob, "C");
+
+  // Windswept hair, headband with a trailing ribbon, sharp program eyes.
+  rasterPixel(canvas, 12, 0 + bob, "B");
+  rasterPixel(canvas, 15, 0 + bob, "B");
+  rasterPixel(canvas, 18, 0 + bob, "B");
+  rasterSpan(canvas, 13, 18, 1 + bob, "B");
+  rasterSpan(canvas, 12, 19, 2 + bob, "B");
+  rasterSpan(canvas, 11, 20, 3 + bob, "B");
+  rasterPixel(canvas, 13, 2 + bob, "C");
+  rasterPixel(canvas, 17, 2 + bob, "C");
+  rasterSpan(canvas, 11, 20, 4 + bob, "D");
+  rasterPixel(canvas, 10, 4 + bob, "D");
+  rasterLine(canvas, 10, 5 + bob, 7 - scarfSwing, 8 + bob, "D", 1);
+  rasterSpan(canvas, 12, 20, 5 + bob, "F");
+  rasterSpan(canvas, 12, 20, 6 + bob, "F");
+  rasterSpan(canvas, 12, 20, 7 + bob, "F");
+  rasterSpan(canvas, 13, 19, 8 + bob, "F");
+  rasterSpan(canvas, 14, 18, 9 + bob, "F");
+  rasterPixel(canvas, 12, 5 + bob, "B");
+  rasterPixel(canvas, 12, 6 + bob, "B");
+  rasterPixel(canvas, 20, 5 + bob, "B");
+  rasterPixel(canvas, 14, 6 + bob, "A");
+  rasterPixel(canvas, 18, 6 + bob, "A");
+  rasterPixel(canvas, 19, 6 + bob, "A");
+  rasterPixel(canvas, 14, 7 + bob, "L");
+  rasterPixel(canvas, 18, 7 + bob, "L");
+  rasterPixel(canvas, 17, 9 + bob, "G");
+
+  // Front arm with a bracer and a bare knife hand.
+  rasterLine(canvas, 20, 12 + bob, 23, 16 + bob, "C", 2);
+  rasterRect(canvas, 22, 15 + bob, 3, 2, "H");
+  rasterRect(canvas, 23, 17 + bob, 2, 2, "F");
+  rasterPixel(canvas, 25, 18 + bob, "J");
+
+  // Front runner leg.
+  rasterLine(canvas, 19, 21 + bob, legPoses.front[0], legPoses.front[1], "A", 4);
+  rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 29, "A", 4);
+  rasterLine(canvas, 19, 21 + bob, legPoses.front[0], legPoses.front[1], "H", 2);
+  rasterLine(canvas, legPoses.front[0], legPoses.front[1], legPoses.front[2], 28, "C", 2);
+  rasterSpan(canvas, legPoses.front[2] - 1, legPoses.front[2] + 1, 28, "K");
+  rasterSpan(canvas, legPoses.front[3] - 1, legPoses.front[3] + 2, 29, "K");
+  rasterSpan(canvas, legPoses.front[3] - 2, legPoses.front[3] + 2, 30, "A");
+  rasterPixel(canvas, legPoses.front[2], 27, "E");
+
+  return finish(canvas);
+}
+
 export const MICHELE_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
   player_michele_side_idle: drawMichele(0, true),
   player_michele_side_idle_1: drawMichele(1, true),
@@ -1127,6 +1446,33 @@ export const NANALLY_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
   player_nanally_side_walk_1: drawNanally(1, false),
   player_nanally_side_walk_2: drawNanally(2, false),
   player_nanally_side_walk_3: drawNanally(3, false),
+};
+
+export const KNIGHT_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
+  player_knight_side_idle: drawKnight(0, true),
+  player_knight_side_idle_1: drawKnight(1, true),
+  player_knight_side_walk_0: drawKnight(0, false),
+  player_knight_side_walk_1: drawKnight(1, false),
+  player_knight_side_walk_2: drawKnight(2, false),
+  player_knight_side_walk_3: drawKnight(3, false),
+};
+
+export const MAGE_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
+  player_mage_side_idle: drawMage(0, true),
+  player_mage_side_idle_1: drawMage(1, true),
+  player_mage_side_walk_0: drawMage(0, false),
+  player_mage_side_walk_1: drawMage(1, false),
+  player_mage_side_walk_2: drawMage(2, false),
+  player_mage_side_walk_3: drawMage(3, false),
+};
+
+export const ROGUE_CHARACTER_SPRITES: Record<string, CharacterSpriteData> = {
+  player_rogue_side_idle: drawRogue(0, true),
+  player_rogue_side_idle_1: drawRogue(1, true),
+  player_rogue_side_walk_0: drawRogue(0, false),
+  player_rogue_side_walk_1: drawRogue(1, false),
+  player_rogue_side_walk_2: drawRogue(2, false),
+  player_rogue_side_walk_3: drawRogue(3, false),
 };
 
 export const MICHELE_CHARACTER_PALETTE: Record<string, string> = {
@@ -1210,6 +1556,32 @@ export const NANALLY_CHARACTER_PALETTE: Record<string, string> = {
   I: "#F4F4F7", J: "#727A8C", K: "#34313B", L: "#8E273F",
   M: "#FF9DB7", N: "#413B49", O: "#FFB5C8", P: "#76C7E8",
   Q: "#9B4C42", R: "#62566B", S: "#FFFFFF",
+};
+
+// The three CMYS form palettes share the gold "M"/"N" checksum emblem tones
+// so the sibling constructs remain visually linked across their color shells.
+export const KNIGHT_CHARACTER_PALETTE: Record<string, string> = {
+  ".": "transparent",
+  A: "#2A1218", B: "#7B1F1F", C: "#B03A2E", D: "#E74C3C",
+  E: "#F5A79B", F: "#F7E2D3", G: "#3A2733", H: "#5A3B4C",
+  I: "#B9BFD1", J: "#ECEFF7", K: "#31404F", L: "#7FE7FF",
+  M: "#F6C445", N: "#FFF3CF",
+};
+
+export const MAGE_CHARACTER_PALETTE: Record<string, string> = {
+  ".": "transparent",
+  A: "#101B33", B: "#1B3B66", C: "#2A6099", D: "#3498DB",
+  E: "#8FD0F5", F: "#F0E2D6", G: "#0B1226", H: "#5DADE2",
+  I: "#D6ECFA", J: "#F3FBFF", K: "#232B4A", L: "#9FF2FF",
+  M: "#F6C445", N: "#FFF3CF", O: "#B39DFF",
+};
+
+export const ROGUE_CHARACTER_PALETTE: Record<string, string> = {
+  ".": "transparent",
+  A: "#122019", B: "#14522F", C: "#1E8449", D: "#2ECC71",
+  E: "#8CE8B0", F: "#F2D2B4", G: "#20313C", H: "#33475A",
+  I: "#D8F5E6", J: "#F4FDF8", K: "#1A2530", L: "#A8F5C9",
+  M: "#F6C445", N: "#FFF3CF",
 };
 
 export const MICHELE_HIGH_RES_PALETTE = MICHELE_CHARACTER_PALETTE;

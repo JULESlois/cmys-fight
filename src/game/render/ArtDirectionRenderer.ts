@@ -5,6 +5,17 @@ const THEME_TINTS: Record<string, { light: string; dark: string; accent: string 
   dungeon: { light: "rgba(164, 105, 255, 0.055)", dark: "rgba(10, 8, 24, 0.6)", accent: "#B388FF" },
   snow: { light: "rgba(184, 236, 255, 0.11)", dark: "rgba(24, 49, 72, 0.42)", accent: "#B8ECFF" },
   lava: { light: "rgba(255, 106, 46, 0.085)", dark: "rgba(38, 7, 8, 0.6)", accent: "#FF7B45" },
+  // World-node grades: restrained, dark and austere. Alphas stay in the same
+  // band as the four base grades (light ~0.05-0.11, dark ~0.42-0.6).
+  overgrown_archive: { light: "rgba(104, 196, 128, 0.065)", dark: "rgba(10, 24, 15, 0.56)", accent: "#6FC98A" },
+  sealed_library: { light: "rgba(148, 106, 216, 0.06)", dark: "rgba(15, 9, 27, 0.58)", accent: "#9E7BFF" },
+  cooling_canal: { light: "rgba(138, 226, 233, 0.09)", dark: "rgba(9, 30, 38, 0.5)", accent: "#8CE6EB" },
+  sealed_armory: { light: "rgba(128, 178, 138, 0.058)", dark: "rgba(13, 21, 15, 0.57)", accent: "#8FB89A" },
+  observatory: { light: "rgba(108, 148, 250, 0.07)", dark: "rgba(6, 10, 31, 0.6)", accent: "#7FA6FF" },
+  forge_core: { light: "rgba(255, 138, 58, 0.08)", dark: "rgba(33, 10, 6, 0.6)", accent: "#FF9A4D" },
+  ash_catacombs: { light: "rgba(198, 192, 180, 0.055)", dark: "rgba(17, 16, 15, 0.6)", accent: "#C9C2B5" },
+  deep_prison: { light: "rgba(214, 104, 74, 0.055)", dark: "rgba(23, 10, 8, 0.6)", accent: "#C96A4A" },
+  deep_archive: { light: "rgba(186, 148, 255, 0.06)", dark: "rgba(15, 8, 27, 0.6)", accent: "#E5C878" },
 };
 
 export class ArtDirectionRenderer {
@@ -16,6 +27,7 @@ export class ArtDirectionRenderer {
     combat: boolean,
     lowFx: boolean,
     reducedFlashing: boolean,
+    playerHpRatio?: number,
   ) {
     const palette = THEME_TINTS[theme] ?? THEME_TINTS.forest;
     ctx.save();
@@ -56,6 +68,17 @@ export class ArtDirectionRenderer {
       ctx.strokeRect(8, 8, 304, 224);
     }
 
+    if (playerHpRatio !== undefined && playerHpRatio < 0.34) {
+      // Low-health warning: dark red edge vignette. Slow pulse only (no
+      // high-frequency flashing); constant low alpha when reducedFlashing.
+      const strength = reducedFlashing ? 0.16 : 0.13 + (Math.sin(time * 1.4) + 1) * 0.045;
+      const danger = ctx.createRadialGradient(160, 118, 96, 160, 118, 208);
+      danger.addColorStop(0, "rgba(120, 8, 8, 0)");
+      danger.addColorStop(0.72, `rgba(120, 8, 8, ${(strength * 0.35).toFixed(3)})`);
+      danger.addColorStop(1, `rgba(140, 10, 10, ${strength.toFixed(3)})`);
+      ctx.fillStyle = danger;
+      ctx.fillRect(0, 0, 320, 240);
+    }
 
     ctx.restore();
   }

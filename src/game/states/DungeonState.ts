@@ -58,6 +58,9 @@ import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
 import { BuffSystem, type BuffId } from "../combat/BuffSystem";
 import { createSeededRandom, hashSeed } from "../Random";
+import { getBossIntro, getChapterFlavor, getEvolutionText, getZoneLore, pickBroadcastLine } from "../narrative/StoryLore";
+import { checkTagRelevance } from "../combat/BuildProtection";
+import { EVOLUTIONS, activateEvolution, getActiveEvolution, getAvailableEvolutions } from "../combat/ProtocolEvolutions";
 import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, rollAvailableWeapon } from "../data/weapons";
 import { usesDetailedCharacterArt } from "../data/characters";
 import { BuffSelectionRenderer } from "../render/BuffSelectionRenderer";
@@ -174,6 +177,8 @@ export class DungeonState extends GameState {
   private pickups: Pickup[] = [];
   
   private chest: WeaponChest | null = null;
+  private bossIntroShown = false;
+  private roomDamageTaken = false;
   
   private portal?: { x: number, y: number, state: PortalState, timer: number, destination?: Room["exitDestination"] };
   
@@ -207,6 +212,9 @@ export class DungeonState extends GameState {
     super(engine);
     this.player = new Player(160, 120);
     CharacterResourceController.initForCharacter(this.player.characterId, this.player);
+    CombatEventDispatcher.on("player_damaged", (payload) => {
+      if (payload.player === this.player) this.roomDamageTaken = true;
+    });
   }
 
   public capturesPauseInput(): boolean {
@@ -254,6 +262,9 @@ export class DungeonState extends GameState {
     player.buffRerollsRemaining = savedP.buffRerollsRemaining ?? 0;
     player.shopDiscount = savedP.shopDiscount ?? 0;
     player.supplyDropBonus = savedP.supplyDropBonus ?? 0;
+    if (savedP.memoryTalentId) player.buffState["memoryTalent"] = savedP.memoryTalentId;
+    if (savedP.activeEvolutionId) player.buffState["activeEvolution"] = savedP.activeEvolutionId;
+    if (savedP.corruption) player.buffState["corruption"] = savedP.corruption;
     BuffSystem.applyRuntimeStats(player);
     CharacterResourceController.initForCharacter(player.characterId, player);
     return player;
@@ -344,6 +355,9 @@ export class DungeonState extends GameState {
     savedP.buffRerollsRemaining = this.player.buffRerollsRemaining;
     savedP.shopDiscount = this.player.shopDiscount;
     savedP.supplyDropBonus = this.player.supplyDropBonus;
+    savedP.memoryTalentId = (this.player.buffState["memoryTalent"] as string | undefined) ?? undefined;
+    savedP.activeEvolutionId = (this.player.buffState["activeEvolution"] as string | undefined) ?? undefined;
+    savedP.corruption = (this.player.buffState["corruption"] as number | undefined) ?? undefined;
     this.engine.data.discoverPlayerBuild();
   }
 
@@ -471,6 +485,8 @@ export class DungeonState extends GameState {
     this.lightningArcs = [];
     this.portal = undefined;
     this.chest = null;
+    this.bossIntroShown = false;
+    this.roomDamageTaken = false;
     this.shopFailure = undefined;
     
     this.environmentHazards = [];
@@ -492,6 +508,7 @@ export class DungeonState extends GameState {
     }
 
     normalizeRoomState(currentRoom);
+    this.player.buffState["currentChapter"] = floor.routeDepth ?? 1;
     this.currentMapData = getMapData(currentRoom, floor.theme || "forest");
     this.roomObjectCollision.clear();
     this.rebuildRoomObjectCollision(currentRoom);
@@ -513,6 +530,20 @@ export class DungeonState extends GameState {
     CombatEventDispatcher.emit("player_room_entered", { player: this.player });
 
     if (currentRoom.type === "start" || currentRoom.type === "npc") {
+      if (currentRoom.type === "start") {
+        const nodeId: string | undefined = (floor as { worldNodeId?: string }).worldNodeId;
+        const zoneLore = nodeId ? getZoneLore(nodeId, this.engine.data.settings.language) : null;
+        if (zoneLore) {
+          this.engine.worldNotices.showBottom({
+            id: `zone-lore:${nodeId}`,
+            text: zoneLore,
+            tone: "cyan",
+            duration: 4.5,
+            dedupe: true,
+            dedupeWindow: 600,
+          });
+        }
+      }
       this.finalizeRoomObjects(currentRoom);
       this.setPhase("exploration");
       return;
@@ -621,6 +652,7 @@ export class DungeonState extends GameState {
         candidate?.x === floor?.currentRoomX && candidate?.y === floor?.currentRoomY
       );
       this.phaseTimer = room?.type === "boss" ? 0.5 : 0.25;
+      this.roomDamageTaken = false;
       this.emitCombatLifecycleNotice("combat_started", room);
     } else if (phase === "combat") {
       const activeFloor = this.engine.data.data.floor;
@@ -702,11 +734,12 @@ export class DungeonState extends GameState {
       return;
     }
     const seed = hashSeed(floor.seed, `buff:${currentRoom.id}:${this.player.buffs.join(",")}`);
-    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3, floor);
+    const options = BuffSystem.rollChoices(seed, this.player.buffs, 3, floor, floor.buffNoTagStreak ?? 0);
     if (options.length === 0) {
       floor.buffChoiceCompleted = true;
       return;
     }
+    floor.buffNoTagStreak = checkTagRelevance(options, this.player.buffs) ? 0 : (floor.buffNoTagStreak ?? 0) + 1;
     floor.buffChoiceOptions = options;
     floor.buffChoiceRoomId = currentRoom.id;
     floor.buffChoiceCompleted = false;
@@ -886,6 +919,7 @@ export class DungeonState extends GameState {
     this.player.justPerfectDodged = false;
 
     BuffSystem.update(this.player, dt);
+    this.checkEvolutionUnlock();
     SkillController.update(this.player, dt);
     CharacterResourceController.update(dt, {
       player: this.player,
@@ -940,6 +974,23 @@ export class DungeonState extends GameState {
           DamageSystem.damageEnemy(enemy, ventDamage, this.player, false, { kind: "explosion", canTriggerBuffs: false, canTriggerSynergies: false });
         }
       }
+    }
+
+    // Phoenix memory: first armor break each chapter clears nearby enemy projectiles
+    if (this.player.buffState["phoenixMemoryClearReady"] === true) {
+      this.player.buffState["phoenixMemoryClearReady"] = false;
+      const clearRadius = 88;
+      for (let i = this.projectiles.length - 1; i >= 0; i--) {
+        const p = this.projectiles[i];
+        if (p.faction !== "enemy") continue;
+        const dx = p.x - this.player.x;
+        const dy = p.y - this.player.y;
+        if (dx * dx + dy * dy <= clearRadius * clearRadius) {
+          releaseProjectile(p);
+          this.projectiles.splice(i, 1);
+        }
+      }
+      this.fx.emitRoomClear(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
     }
 
     const activeWeapon = WEAPONS[this.player.currentWeaponId];
@@ -1034,6 +1085,17 @@ export class DungeonState extends GameState {
                  t(this.engine.data.settings.language, `notice.chapter.${chapter}.name` as Parameters<typeof t>[1]),
                  3.6,
                );
+               const chapterFlavor = getChapterFlavor(chapter, this.engine.data.settings.language);
+               if (chapterFlavor) {
+                 this.engine.worldNotices.showBottom({
+                   id: `chapter-flavor:${chapter}`,
+                   text: chapterFlavor,
+                   tone: "cyan",
+                   duration: 5,
+                   dedupe: true,
+                   dedupeWindow: 60,
+                 });
+               }
              }
              this.player.x = 160;
              this.player.y = 120;
@@ -1054,6 +1116,36 @@ export class DungeonState extends GameState {
   }
 
   
+  /** 协议进化:同系列集齐 3 个协议时自动觉醒(一局一次) */
+  private checkEvolutionUnlock(): void {
+    if (this.player.buffs.length < 3) return;
+    if (getActiveEvolution(this.player)) return;
+    const available = getAvailableEvolutions(this.player);
+    if (available.length === 0) return;
+    const evolutionId = available[0];
+    if (!activateEvolution(this.player, evolutionId)) return;
+    const language = this.engine.data.settings.language;
+    const text = getEvolutionText(evolutionId, language);
+    this.engine.worldNotices.showRegion(
+      language === "zh-CN" ? "协议进化" : "PROTOCOL EVOLUTION",
+      text?.name ?? EVOLUTIONS[evolutionId].name,
+      3.2,
+    );
+    if (text?.line) {
+      this.engine.worldNotices.showBottom({
+        id: `evolution:${evolutionId}`,
+        text: text.line,
+        tone: "cyan",
+        duration: 5,
+        dedupe: true,
+        dedupeWindow: 120,
+      });
+    }
+    audio.playClearRoom();
+    this.syncPlayerState();
+    this.engine.data.save();
+  }
+
   private activateDodge(): void {
     if (this.player.dodgeCooldown > 0 || this.player.dodgeTimer > 0) return;
     const axis = this.engine.input.getAxis();
@@ -1070,6 +1162,10 @@ export class DungeonState extends GameState {
     this.player.dodgeCooldown = 1.0;
     this.player.perfectDodgeWindow = 0.12;
     this.player.invulnerabilityTimer = Math.max(this.player.invulnerabilityTimer, this.player.dodgeTimer + 0.05);
+    // 闪避取消部分换枪准备(combat-refactor-plan §7.1)
+    if (this.player.weaponLoadout.swapTimer > 0) {
+      this.player.weaponLoadout.swapTimer *= 0.5;
+    }
     
     // Play dodge sound if any, or dash sound
     audio.playSkill(); // Temp sound or use something else
@@ -1214,7 +1310,7 @@ export class DungeonState extends GameState {
          this.addEnemy(EncounterFactory.createEnemy(this.engine.data.data.floor, spawn));
       });
       if (!this.encounterCtrl.active && this.enemies.length === 0) {
-         CombatEventDispatcher.emit("player_room_cleared", { player: this.player, noDamageTaken: false });
+         CombatEventDispatcher.emit("player_room_cleared", { player: this.player, noDamageTaken: !this.roomDamageTaken });
          this.setPhase("cleared");
       }
     } else if (this.roomPhase === "cleared") {
@@ -1226,9 +1322,19 @@ export class DungeonState extends GameState {
     }
   }
 
+  private statusFxTimer = 0;
+
   private updateEnemyStatuses(dt: number) {
+    this.statusFxTimer -= dt;
+    const emitStatusFx = this.statusFxTimer <= 0;
+    if (emitStatusFx) this.statusFxTimer = 0.65;
     for (let index = this.enemies.length - 1; index >= 0; index--) {
       const enemy = this.enemies[index];
+      if (emitStatusFx) {
+        for (const status of enemy.statusEffects) {
+          this.fx.emitStatusTick(enemy.x, enemy.y - 8, status.id, this.engine.isPerformanceDegraded());
+        }
+      }
       if (!StatusEffectSystem.updateEnemy(enemy, dt, this.player)) continue;
       this.handleEnemyKilled(enemy);
       this.enemies.splice(index, 1);
@@ -1686,6 +1792,14 @@ export class DungeonState extends GameState {
          room.rewardGenerated = true;
          audio.playClearRoom();
          this.fx.emitRoomClear(target.x, target.y, this.engine.isPerformanceDegraded());
+         this.engine.worldNotices.showBottom({
+           id: `broadcast-line:${room.id}`,
+           text: pickBroadcastLine(random(), this.engine.data.settings.language),
+           tone: "cyan",
+           duration: 5.5,
+           dedupe: true,
+           dedupeWindow: 20,
+         });
          this.syncRoomState();
          this.syncPlayerState();
          this.engine.data.save();
@@ -2216,6 +2330,23 @@ export class DungeonState extends GameState {
 
   private updateEnemies(dt: number) {
     if (this.player.hp <= 0) return;
+    if (!this.bossIntroShown) {
+      const boss = this.enemies.find(enemy => enemy.type === "boss");
+      if (boss) {
+        this.bossIntroShown = true;
+        const introLine = getBossIntro(boss.enemyId, this.engine.data.settings.language);
+        if (introLine) {
+          this.engine.worldNotices.showBottom({
+            id: `boss-intro:${boss.enemyId}`,
+            text: introLine,
+            tone: "red",
+            duration: 4,
+            dedupe: true,
+            dedupeWindow: 120,
+          });
+        }
+      }
+    }
     const normalMode = this.engine.data.data.floor?.hardMode !== true;
     
     for (const e of this.enemies) {
@@ -3804,6 +3935,7 @@ export class DungeonState extends GameState {
       this.roomPhase === "combat",
       this.engine.isPerformanceDegraded(),
       this.engine.data.settings.reducedFlashing,
+      this.player.hp / this.player.maxHp,
     );
     if (this.qaCollisionDebug) this.drawRoomObjectCollisionDebug(ctx);
     

@@ -14,6 +14,7 @@ import {
   uiFont,
   wrapLocalized,
 } from "../i18n";
+import { getEnemyLore } from "../narrative/StoryLore";
 import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { MonsterModelRenderer } from "../render/MonsterModelRenderer";
@@ -95,7 +96,7 @@ export class RecordsState extends GameState {
         .map(enemy => ({
           id: enemy.id,
           name: enemy.name.toUpperCase(),
-          description: `${enemy.theme.toUpperCase()} // ${enemy.behavior.toUpperCase()}`,
+          description: getEnemyLore(enemy.id, language) ?? `${enemy.theme.toUpperCase()} // ${enemy.behavior.toUpperCase()}`,
           unlocked: (bossPage ? meta.codex.bosses : meta.codex.enemies).includes(enemy.id),
         }));
     }

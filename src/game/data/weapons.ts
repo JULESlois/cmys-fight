@@ -124,6 +124,8 @@ export interface WeaponData {
   chargeTime?: number;
   heatPerShot?: number;
   heatDecayRate?: number;
+  /** 收起(非当前武器)时的散热速率;缺省为 heatDecayRate × 1.5 */
+  heatStowedDecayRate?: number;
   maxHeat?: number;
   overheatLockout?: number;
   heatSpreadMultiplier?: number;
@@ -214,7 +216,7 @@ export const WEAPONS: Record<string, WeaponData> = {
   },
   vat_horse_cannon: {
     id: "vat_horse_cannon", name: "Vat-Horse Cannon", category: "launcher", rarity: "rare",
-    damage: 5, fireRate: 1.2, bulletSpeed: 145, manaCost: 4, spread: 0.24,
+    damage: 5, fireRate: 1.2, bulletSpeed: 145, manaCost: 1, spread: 0.24,
     resourceType: "magazine", magazineSize: 3, reloadTime: 2.2,
     pelletCount: 3, knockback: 10, critChance: 0.08, color: "#FF8A65",
     projectileRadius: 4, projectileLife: 2.6, wallBounces: 1,
@@ -422,7 +424,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     resourceType: "heat",
     pelletCount: 1, knockback: 3, critChance: 0.1, color: "#F0C56A",
     projectileLife: 1.8, pierce: 2,
-    heatPerShot: 2.3, heatDecayRate: 24, maxHeat: 100, overheatLockout: 1.1, heatSpreadMultiplier: 1.65,
+    heatPerShot: 2.3, heatDecayRate: 0.6, heatStowedDecayRate: 30, maxHeat: 100, overheatLockout: 1.1, heatSpreadMultiplier: 1.65,
     mechanic: "Buzzsaw-rate machine gun builds heat and spread until an overheat lockout forces cooling.",
     projectileStyle: "tracer", trailLength: 16, muzzleEffect: "smoke", recoil: 0.28,
   },
@@ -608,7 +610,7 @@ export const WEAPONS: Record<string, WeaponData> = {
     impactEffect: "plasma", recoil: 0.15,
   },
   last_prism: {
-    id: "last_prism", experimental: true, name: "Last Prism", category: "magic", rarity: "legendary",
+    id: "last_prism", name: "Last Prism", category: "magic", rarity: "legendary",
     damage: 1, fireRate: 4, bulletSpeed: 360, manaCost: 1.5, spread: 0.52,
     resourceType: "battery", batteryCapacity: 24, batteryRechargeRate: 6, batteryRechargeDelay: 0.5,
     pelletCount: 6, knockback: 2, critChance: 0.12, color: "#FFFFFF",

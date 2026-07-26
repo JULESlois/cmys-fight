@@ -52,7 +52,7 @@ assert.equal(WEAPONS.ripper_disc.wallBounces, 3);
 assert.equal(getAvailableWeapons(1).length, Object.values(WEAPONS).filter(w => !w.experimental).length);
 assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "vector_9"), true);
 assert.equal(getAvailableWeapons(1).some(weapon => weapon.id === "micro_rocket"), true);
-assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 16);
+assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "legendary").length, 17);
 assert.equal(getAvailableWeapons(1).filter(weapon => weapon.rarity === "myth").length, 3);
 assert.equal(WEAPONS.ultimate.rarity, "myth");
 assert.equal(WEAPONS.ultimate.dualWield, true);

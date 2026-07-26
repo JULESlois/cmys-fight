@@ -1,4 +1,3 @@
-import { createSeededRandom, normalizeSeed } from "../Random";
 import { getDifficultyStageIndex, type RunProgress } from "../RunProgress";
 import { CHARACTERS } from "../data/characters";
 import { MAX_PLAYER_MANA, type Player } from "../entities/Player";
@@ -142,9 +141,10 @@ type ManaRuntimePlayer = Pick<
   "characterId" | "buffs" | "mana" | "maxMana" | "manaRechargeDelay" | "manaRechargeRate"
 >;
 
-type RuntimePlayer = ManaRuntimePlayer & Pick<Player, "armorRechargeDelay" | "armorRechargeRate">;
+type RuntimePlayer = ManaRuntimePlayer & Pick<Player, "armorRechargeDelay" | "armorRechargeRate" | "buffState">;
 
 import { CombatEventDispatcher } from "./CombatEvents";
+import { rollBuffChoices as rollProtectedBuffChoices } from "./BuildProtection";
 import { initBuffEventHandlers } from "./BuffEventHandlers";
 import { initWeaponModuleHandlers } from "./WeaponModules";
 import { initSynergyHandlers } from "./SynergySystem";
@@ -187,38 +187,22 @@ export class BuffSystem {
     return player.buffs.includes(id);
   }
 
-  static rollChoices(seed: number, owned: BuffId[], count = 3, progress: Pick<RunProgress, "routeDepth" | "stageWithinNode"> = { routeDepth: 1, stageWithinNode: 1 }): BuffId[] {
-    const random = createSeededRandom(normalizeSeed(seed));
-    const difficultyStageIndex = getDifficultyStageIndex(progress);
-    const candidates = ALL_BUFF_IDS.filter(id =>
-      !owned.includes(id) && !BUFFS[id].experimental && (BUFFS[id].minGlobalStage ?? 1) <= difficultyStageIndex
-    );
-
-    // Build protection: boost weights for buffs matching owned families
-    const ownedFamilies = new Set<BuffFamily>();
-    for (const id of owned) {
-      const def = BUFFS[id];
-      if (def) ownedFamilies.add(def.family);
-    }
-    const familyBoost = ownedFamilies.size === 0 ? 1.0 : owned.length < 4 ? 1.8 : 1.35;
-
-    const choices: BuffId[] = [];
-    while (choices.length < count && candidates.length > 0) {
-      const weights = candidates.map(id => {
-        let w = RARITY_WEIGHT[BUFFS[id].rarity];
-        if (ownedFamilies.has(BUFFS[id].family)) w *= familyBoost;
-        return w;
-      });
-      const total = weights.reduce((sum, w) => sum + w, 0);
-      let roll = random() * total;
-      let selectedIndex = 0;
-      for (let i = 0; i < candidates.length; i++) {
-        roll -= weights[i];
-        if (roll <= 0) { selectedIndex = i; break; }
-      }
-      choices.push(candidates.splice(selectedIndex, 1)[0]);
-    }
-    return choices;
+  static rollChoices(
+    seed: number,
+    owned: BuffId[],
+    count = 3,
+    progress: Pick<RunProgress, "routeDepth" | "stageWithinNode"> = { routeDepth: 1, stageWithinNode: 1 },
+    consecutiveNoTagChoices = 0,
+  ): BuffId[] {
+    // Delegates to BuildProtection: family weighting, pity guarantee,
+    // and the at-least-one-mechanism-buff rule.
+    return rollProtectedBuffChoices({
+      seed,
+      owned,
+      count,
+      difficultyStageIndex: getDifficultyStageIndex(progress),
+      consecutiveNoTagChoices,
+    });
   }
 
   static update(player: Player, dt: number): void {
@@ -249,6 +233,17 @@ export class BuffSystem {
         player.buffState["altCurrentStacks"] = 0;
         player.buffState["altCurrentLastWeapon"] = "";
         player.buffState["altCurrentLastAttackId"] = "";
+      }
+    }
+
+    // Protocol evolution: OVERCLOCK CORE timers
+    if (player.buffState["overclockActive"] > 0) {
+      player.buffState["overclockActive"] -= dt;
+    }
+    if (player.buffState["overclockKillTimer"] > 0) {
+      player.buffState["overclockKillTimer"] -= dt;
+      if (player.buffState["overclockKillTimer"] <= 0) {
+        player.buffState["overclockRapidKills"] = 0;
       }
     }
   }
@@ -318,6 +313,10 @@ export class BuffSystem {
     player.armorRechargeRate = BuffSystem.has(player, "aegis_foundry")
       ? baseArmorRechargeRate + 3
       : baseArmorRechargeRate;
+    // Protocol evolution: AEGIS FOUNDRY — armor recharges 50% faster
+    if (player.buffState["activeEvolution"] === "aegis_foundry_evo") {
+      player.armorRechargeRate *= 1.5;
+    }
     BuffSystem.applyManaRuntimeStats(player);
   }
 
@@ -349,6 +348,12 @@ export class BuffSystem {
       projectileSpeedMultiplier *= 1.15;
     }
     if (BuffSystem.has(player, "blood_pact_engine")) damageMultiplier *= 1.2;
+    // Protocol evolution: OVERCLOCK CORE — active window buffs
+    if (player.buffState["overclockActive"] > 0) {
+      critChanceBonus += 0.15;
+      spreadMultiplier *= 0.7;
+      projectileSpeedMultiplier *= 1.2;
+    }
     return {
       spreadMultiplier,
       projectileSpeedMultiplier,

@@ -2,9 +2,12 @@ import {
   CELESTIA_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
+  KNIGHT_PLAYER_PALETTE,
+  MAGE_PLAYER_PALETTE,
   MICHELE_PLAYER_PALETTE,
   NANALLY_PLAYER_PALETTE,
   PLAYER_PALETTE,
+  ROGUE_PLAYER_PALETTE,
 } from "../data/sprites";
 import { usesDetailedCharacterArt } from "../data/characters";
 import type { Player } from "../entities/Player";
@@ -18,6 +21,9 @@ export class HubPlayerRenderer {
       celestia: { prefix: "player_celestia_side", palette: CELESTIA_PLAYER_PALETTE },
       esper_zero: { prefix: "player_esper_zero_side", palette: ESPER_ZERO_PLAYER_PALETTE },
       nanally: { prefix: "player_nanally_side", palette: NANALLY_PLAYER_PALETTE },
+      knight: { prefix: "player_knight_side", palette: KNIGHT_PLAYER_PALETTE },
+      mage: { prefix: "player_mage_side", palette: MAGE_PLAYER_PALETTE },
+      rogue: { prefix: "player_rogue_side", palette: ROGUE_PLAYER_PALETTE },
     }[player.characterId];
     const hasDetailedArt = usesDetailedCharacterArt(player.characterId);
     const prefix = detailed?.prefix ?? "player_main_side";

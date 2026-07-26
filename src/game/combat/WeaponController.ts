@@ -20,7 +20,7 @@ export interface FireWeaponResult {
   projectiles: Projectile[];
   recoil: number;
   echoTriggered?: boolean;
-  reason?: "energy" | "cooldown" | "overheated" | "invalid_weapon" | "reloading";
+  reason?: "energy" | "cooldown" | "overheated" | "invalid_weapon" | "reloading" | "swapping";
 }
 
 export class WeaponController {
@@ -83,6 +83,9 @@ export class WeaponController {
 
   
   static updateRuntime(player: Player, dt: number, fireHeld: boolean): void {
+    if (player.weaponLoadout.swapTimer > 0) {
+      player.weaponLoadout.swapTimer = Math.max(0, player.weaponLoadout.swapTimer - dt);
+    }
     player.weaponLoadout.slots.forEach((slot, index) => {
       if (!slot) return;
       const weaponDef = WEAPONS[slot.weaponId];
@@ -108,12 +111,26 @@ export class WeaponController {
     player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.linkedShotWeaponId = "";
   }
 
+  /** 换枪准备时间(combat-refactor-plan §6.1):轻型 0.15s / 普通 0.22s / 重型 0.32s */
+  static getSwapReadyTime(player: Player, weaponId: string): number {
+    const weapon = WEAPONS[weaponId];
+    const category = weapon?.category ?? "sidearm";
+    const base = category === "launcher"
+      ? 0.32
+      : category === "sidearm" || category === "smg" || category === "sword" || category === "yoyo"
+        ? 0.15
+        : 0.22;
+    // 交叉换装协议:换枪准备时间减半
+    return BuffSystem.has(player, "cross_swap") ? base * 0.5 : base;
+  }
+
   static switchWeapon(player: Player): boolean {
     const previousId = player.currentWeaponId;
     if (!player.weaponLoadout.slots[1]) return false;
     player.weaponLoadout.activeSlot = player.weaponLoadout.activeSlot === 0 ? 1 : 0;
     player.weaponLoadout.slots[player.weaponLoadout.activeSlot].customState.channelTime = 0;
     WeaponController.resetWeaponRuntime(player);
+    player.weaponLoadout.swapTimer = WeaponController.getSwapReadyTime(player, player.currentWeaponId);
     CombatEventDispatcher.emit("player_weapon_swapped", { player, previousWeaponId: previousId, newWeaponId: player.currentWeaponId });
     return true;
   }
@@ -176,6 +193,9 @@ export class WeaponController {
     }
     
     const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (player.weaponLoadout.swapTimer > 0) {
+      return { fired: false, projectiles: [], recoil: 0, reason: "swapping" };
+    }
     if (slot.fireCooldown > 0) {
       return { fired: false, projectiles: [], recoil: 0, reason: "cooldown" };
     }
@@ -334,7 +354,7 @@ export class WeaponController {
         const isCritOverride = isEmpowered ? true : critical;
         
         const baseDamage = Math.max(1, Math.round(
-          weapon.damage * channelDamageMultiplier * burstDamageMultiplier * appraisalDamageMultiplier * empowerDamageMultiplier,
+          weapon.damage * channelDamageMultiplier * burstDamageMultiplier * appraisalDamageMultiplier * empowerDamageMultiplier * modifiers.damageMultiplier,
         ));
         const criticalMultiplier = Math.max(1, (weapon.critMultiplier ?? 2) + modifiers.critDamageBonus);
         const fullDamage = isCritOverride ? Math.max(baseDamage + 1, Math.round(baseDamage * criticalMultiplier)) : baseDamage;

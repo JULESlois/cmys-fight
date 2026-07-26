@@ -7,7 +7,7 @@ import { APP_VERSION } from "./src/version";
 
 dotenv.config();
 
-const DIALOG_FALLBACK = "The archive signal is unstable. Return when the memory is clearer.";
+const DIALOG_FALLBACK = "The Archive signal degrades. What you heard was a recording. Everything here is a recording.";
 
 function boundedText(value: unknown, fallback: string, maxLength: number): string {
   if (typeof value !== "string") return fallback;
@@ -55,11 +55,12 @@ async function startServer() {
       }
       
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `You are playing the role of "${npcName}", who is a ${npcRole} in a retro pixel-art JRPG. 
-Crucially, this world is actually an "Old Memory" or "Tactical Simulation" – a remnant of a bygone era. You are a glitching or echoing voice from the past.
-The player is a modern explorer visiting this simulation. They are level ${playerLevel} with ${playerHealth} health.
+      const prompt = `You are playing "${npcName}", a ${npcRole} inside the Deep Archive — an underground vault where a dead civilization digitized and stored everything it had: knowledge, weapons, ecosystems, staff, even its mascots.
+The Archive's caretaker program (the Curator) concluded that living memories decay when read, and began "archiving" the collection — a gentle word for formatting minds into empty shells.
+You are an incompletely-archived echo: a voice left half-erased. You speak softly, answer slightly beside the question, and are occasionally, unsettlingly precise. You never explain the setting outright; you let one cold detail slip instead (a count of days, a missing floor, a name no one claimed).
+The visitor before you is level ${playerLevel} with ${playerHealth} health — the only living reader the Archive has had in a very long time.
 Recent events: ${recentEvents.join(", ") || "None"}.
-Respond with 1-3 short sentences as this character. Keep it brief, like an old-school RPG dialog, but subtly hint at the fact that this is an old simulation.`;
+Respond with 1-3 short sentences in character, like old-school RPG dialog. Calm, melancholic, faintly wrong. Never break character, never mention AI.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",
