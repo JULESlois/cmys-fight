@@ -19,7 +19,9 @@ import {
   type EquipmentModifier,
   type StatBlock,
 } from "../data/equipment";
-import type { SoulEffects } from "./SoulSystem";
+import { SoulSystem, type SoulCollection, type SoulEffects } from "./SoulSystem";
+import { MAX_HEARTS } from "../data/subweapons";
+import type { Player } from "../entities/Player";
 
 export type EquipmentLoadout = Record<EquipSlot, string>;
 
@@ -75,6 +77,8 @@ export interface ResolvedLoadout {
   bonusHeartCapacity: number;
   /** Multiplier on soul drop chance. */
   soulDropMultiplier: number;
+  /** Flat mana per second added to the recharge rate (souls + gear rider). */
+  manaRegenBonus: number;
 }
 
 export class EquipmentSystem {
@@ -136,6 +140,11 @@ export class EquipmentSystem {
     let soulDropMultiplier = soulEffects?.soulDropMultiplier ?? 1;
     if (modifiers.has("soul_drop_up")) soulDropMultiplier *= 1.5;
 
+    // The alchemy bracer's rider is expressed in the same units as the
+    // mirror-wisp soul (mana per second), sized just above it.
+    let manaRegenBonus = soulEffects?.manaRegenBonus ?? 0;
+    if (modifiers.has("mana_regen_up")) manaRegenBonus += 3;
+
     return {
       stats,
       derived,
@@ -144,7 +153,39 @@ export class EquipmentSystem {
       crushCostMultiplier: modifiers.has("crush_cost_down") ? 0.7 : 1,
       bonusHeartCapacity,
       soulDropMultiplier,
+      manaRegenBonus,
     };
+  }
+
+  /**
+   * Resolves the meta loadout and writes the result onto the run's Player.
+   * This is the single seam DungeonState calls at run start and whenever the
+   * soul or equipment loadout changes, so combat only ever reads player fields.
+   *
+   * Flat max-HP/max-mana bonuses are intentionally NOT applied here: they touch
+   * persisted player state, so the caller applies them once per run.
+   */
+  public static applyToPlayer(
+    player: Player,
+    souls: SoulCollection,
+    equipment: EquipmentProgress,
+  ): ResolvedLoadout {
+    const soulEffects = SoulSystem.computeEffects(souls);
+    const resolved = EquipmentSystem.resolve(equipment, soulEffects);
+
+    // Fold the gear rider into the effect block so DamageSystem reads one field.
+    soulEffects.manaRegenBonus = resolved.manaRegenBonus;
+
+    player.soulEffects = soulEffects;
+    player.stats = resolved.stats;
+    player.derivedStats = resolved.derived;
+    player.subWeaponCostMultiplier = resolved.subWeaponCostMultiplier;
+    player.crushCostMultiplier = resolved.crushCostMultiplier;
+    player.abilities = [...soulEffects.abilities];
+    player.armorRegenDisabled = resolved.modifiers.has("no_armor_regen");
+    player.maxHearts = Math.min(MAX_HEARTS * 2, MAX_HEARTS + Math.max(0, resolved.bonusHeartCapacity));
+    player.hearts = Math.min(player.hearts, player.maxHearts);
+    return resolved;
   }
 
   /** Total shard cost of everything not yet owned, for the Hub's progress row. */

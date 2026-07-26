@@ -24,7 +24,9 @@ export class DamageSystem {
 
     if (player.maxArmor > 0) {
       player.armorRechargeTimer = Math.max(0, player.armorRechargeTimer - dt);
-      if (player.armor < player.maxArmor && player.armorRechargeTimer <= 0) {
+      // The Dracula Mantle trades its huge stat block for a shell that never
+      // self-repairs (`no_armor_regen`).
+      if (player.armor < player.maxArmor && player.armorRechargeTimer <= 0 && !player.armorRegenDisabled) {
         player.armor = Math.min(player.maxArmor, player.armor + player.armorRechargeRate * dt);
       }
 
@@ -39,12 +41,20 @@ export class DamageSystem {
 
     player.manaRechargeTimer = Math.max(0, player.manaRechargeTimer - dt);
     if (player.mana < player.maxMana && player.manaRechargeTimer <= 0) {
-      player.mana = Math.min(player.maxMana, player.mana + player.manaRechargeRate * dt);
+      // Souls (mirror wisp) and gear (alchemy bracer) add flat mana/second.
+      const manaRate = player.manaRechargeRate + Math.max(0, player.soulEffects?.manaRegenBonus ?? 0);
+      player.mana = Math.min(player.maxMana, player.mana + manaRate * dt);
     }
   }
 
   static damagePlayer(player: Player, amount: number, invulnerabilityDuration = 0.55, source?: import("./CombatEvents").CombatSource): DamageResult {
     let damage = Math.max(0, amount);
+    // Equipment/soul damage reduction (CON-derived plus soul passives, both
+    // capped upstream). Applied before armor so the caps stay meaningful.
+    const reduction = Math.max(0, Math.min(0.7, player.derivedStats?.damageReduction ?? 0));
+    if (reduction > 0 && damage > 0) {
+      damage = Math.round(damage * (1 - reduction) * 100) / 100;
+    }
     if (damage <= 0 || player.hp <= 0) {
       return { ...NO_DAMAGE, killed: player.hp <= 0 };
     }
@@ -104,7 +114,23 @@ export class DamageSystem {
   }
 
   static damageEnemy(enemy: Enemy, amount: number, player?: Player, isCrit?: boolean, source?: import("./CombatEvents").CombatSource): DamageResult {
-    const damage = Math.max(0, amount);
+    let damage = Math.max(0, amount);
+    // STR-derived damage multiplier from the equipment/soul layer. Sub-weapon
+    // spawns are excluded: their damage was already scaled by the dedicated
+    // subWeaponMultiplier when SubWeaponSystem produced them.
+    const isSubWeapon = source?.weaponId?.startsWith("subweapon:") === true;
+    if (player && damage > 0 && !isSubWeapon) {
+      damage = Math.round(damage * (player.derivedStats?.damageMultiplier ?? 1) * 100) / 100;
+    }
+    // Bonus crit chance from LCK/souls, layered on top of the weapon's own
+    // crit roll (which arrives here as isCrit). Uses the game's default 2x.
+    if (player && damage > 0 && !isCrit) {
+      const bonusCrit = Math.max(0, Math.min(0.75, player.derivedStats?.critChance ?? 0));
+      if (bonusCrit > 0 && Math.random() < bonusCrit) {
+        isCrit = true;
+        damage = Math.round(damage * 2 * 100) / 100;
+      }
+    }
     if (damage <= 0 || enemy.hp <= 0) {
       return { ...NO_DAMAGE, killed: enemy.hp <= 0 };
     }

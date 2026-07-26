@@ -8,6 +8,7 @@ export interface HudRect {
 export interface HudLayoutDefinition {
   topLeftStatus: HudRect;
   topRightMinimap: HudRect;
+  rightSubWeapon: HudRect;
   bottomRightWeapon: HudRect;
   hubBottomNotice: HudRect;
   dungeonBottomNotice: HudRect;
@@ -19,6 +20,11 @@ export const HUD_LAYOUT: HudLayoutDefinition = {
   // derives its cell size and right-aligns inside this box, so the reservation
   // and the drawing cannot drift apart.
   topRightMinimap: { x: 202, y: 18, width: 112, height: 78 },
+  // Castlevania cluster (hearts + sub-weapon slot). It shares the weapon
+  // panel's column but sits directly under the minimap reservation, because the
+  // strip above the weapon panel belongs to the dungeon bottom notice. This is
+  // the only right-rail slot that can never collide with either notice.
+  rightSubWeapon: { x: 219, y: 99, width: 96, height: 26 },
   bottomRightWeapon: { x: 219, y: 197, width: 96, height: 38 },
   hubBottomNotice: { x: 43, y: 207, width: 234, height: 23 },
   dungeonBottomNotice: { x: 43, y: 169, width: 234, height: 23 },
