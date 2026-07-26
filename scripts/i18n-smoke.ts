@@ -7,21 +7,27 @@ import { CHARACTERS } from "../src/game/data/characters";
 import { WEAPONS } from "../src/game/data/weapons";
 import {
   actionLabel,
+  findUntranslatedKeys,
   getAchievementText,
   getBuffText,
   getChallengeText,
   getCharacterText,
+  getEquipmentName,
   getMetaUpgradeText,
+  getSoulName,
   getWeaponMechanic,
   normalizeLanguage,
   rarityLabel,
   t,
   wrapLocalized,
 } from "../src/game/i18n";
+import { EQUIPMENT } from "../src/game/data/equipment";
+import { SOULS } from "../src/game/data/souls";
+import { SUB_WEAPON_IDS } from "../src/game/data/subweapons";
 import { META_UPGRADES } from "../src/game/MetaUpgrades";
-import { createDefaultSettings, normalizeSettings, SETTINGS_VERSION } from "../src/game/Settings";
+import { createDefaultSettings, INPUT_ACTIONS, normalizeSettings, SETTINGS_VERSION } from "../src/game/Settings";
 
-assert.equal(SETTINGS_VERSION, 9);
+assert.equal(SETTINGS_VERSION, 10);
 assert.equal(createDefaultSettings().language, "en");
 assert.equal(normalizeSettings({ version: 5 }).language, "en");
 assert.equal(normalizeSettings({ version: 7, language: "zh-CN" }).language, "zh-CN");
@@ -73,6 +79,37 @@ for (const character of Object.values(CHARACTERS)) {
   assert.notEqual(localized.passive, character.passive, `missing character passive: ${character.id}`);
 }
 
+// Castlevania-layer key parity: every EN key in the block has a ZH entry.
+assert.deepEqual(
+  findUntranslatedKeys(["hud.", "subweapon.", "soul.", "equip.", "stat.", "gate.", "map.", "action."]),
+  [],
+  "every Castlevania-layer EN key needs a ZH entry",
+);
+// The six sub-weapons resolve to distinct bilingual names through t().
+for (const id of SUB_WEAPON_IDS) {
+  const key = `subweapon.${id}` as Parameters<typeof t>[1];
+  assert.ok(t("en", key).length > 0, `missing EN subweapon name: ${id}`);
+  assert.notEqual(t("zh-CN", key), t("en", key), `missing ZH subweapon name: ${id}`);
+}
+// Every input action (including the v10 subWeapon/crush pair) is bilingual.
+for (const action of INPUT_ACTIONS) {
+  assert.ok(actionLabel(action, "en").length > 0, `missing EN action label: ${action}`);
+  assert.notEqual(actionLabel(action, "zh-CN"), actionLabel(action, "en"), `missing ZH action label: ${action}`);
+}
+assert.equal(actionLabel("subWeapon", "en"), "SUB-WEAPON");
+assert.equal(actionLabel("subWeapon", "zh-CN"), "副武器");
+assert.equal(actionLabel("crush", "en"), "ITEM CRUSH");
+assert.equal(actionLabel("crush", "zh-CN"), "道具爆碎");
+// SOUL_ZH covers the entire 66-soul roster; EQUIPMENT_ZH covers all gear.
+for (const soul of Object.values(SOULS)) {
+  assert.notEqual(getSoulName(soul.id, soul.name, "zh-CN"), soul.name, `missing Chinese soul name: ${soul.id}`);
+  assert.equal(getSoulName(soul.id, soul.name, "en"), soul.name);
+}
+for (const item of Object.values(EQUIPMENT)) {
+  assert.notEqual(getEquipmentName(item.id, item.name, "zh-CN"), item.name, `missing Chinese equipment name: ${item.id}`);
+  assert.equal(getEquipmentName(item.id, item.name, "en"), item.name);
+}
+
 const chineseLines = wrapLocalized("这是一个需要自动换行的中文说明文本。", 12);
 assert.ok(chineseLines.length >= 2);
 assert.equal(chineseLines.join(""), "这是一个需要自动换行的中文说明文本。");
@@ -108,6 +145,10 @@ console.log(JSON.stringify({
   challenges: Object.keys(CHALLENGES).length,
   metaUpgrades: Object.keys(META_UPGRADES).length,
   characterPassives: Object.keys(CHARACTERS).length,
+  soulNames: Object.keys(SOULS).length,
+  equipmentNames: Object.keys(EQUIPMENT).length,
+  subWeaponNames: SUB_WEAPON_IDS.length,
+  actionLabels: INPUT_ACTIONS.length,
   cjkWrapping: "ok",
   englishFallback: "ok",
 }));
