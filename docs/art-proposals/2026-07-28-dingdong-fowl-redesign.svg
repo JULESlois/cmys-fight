@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#12161d"/>
+  <rect x="36" y="36" width="1128" height="728" rx="18" fill="#1b222c" stroke="#3b4654" stroke-width="3"/>
+  <text x="70" y="88" fill="#f4f1de" font-family="sans-serif" font-size="34" font-weight="700">Ding-Dong Fowl / 铃响禽 重画概念</text>
+  <text x="70" y="122" fill="#9eabb8" font-family="sans-serif" font-size="18">目标：强化“钟腹散射怪”的轮廓、攻击预警与四向弹幕可读性</text>
+
+  <g transform="translate(110 175)">
+    <text x="0" y="0" fill="#f1c40f" font-family="sans-serif" font-size="22" font-weight="700">主轮廓</text>
+    <ellipse cx="205" cy="245" rx="125" ry="28" fill="#0c1016" opacity=".7"/>
+    <path d="M95 230 L78 170 L118 142 L132 85 L170 45 L220 38 L267 58 L292 104 L320 123 L302 159 L330 205 L285 232 Z" fill="#252c35" stroke="#0a0d12" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M122 215 L110 170 L145 150 L153 102 L183 70 L223 64 L257 82 L269 119 L297 134 L279 158 L302 202 L270 219 Z" fill="#f4f1de"/>
+    <path d="M147 154 Q205 118 271 152 L281 202 Q210 236 137 202 Z" fill="#e3a01f" stroke="#5c3a14" stroke-width="8"/>
+    <path d="M164 160 Q205 139 258 160 L263 194 Q212 216 153 193 Z" fill="#f1c40f"/>
+    <rect x="197" y="174" width="28" height="28" rx="5" fill="#6b4516"/>
+    <rect x="204" y="181" width="14" height="14" rx="3" fill="#fff1a6"/>
+    <path d="M180 68 L188 26 L204 58 L218 18 L229 61 L247 34 L249 76 Z" fill="#e53935" stroke="#0a0d12" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="241" cy="100" r="7" fill="#263238"/>
+    <path d="M268 105 L325 122 L272 142 Z" fill="#f9a825" stroke="#0a0d12" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M118 146 L48 104 L84 172 L42 207 L127 205 Z" fill="#b76a16" stroke="#0a0d12" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M127 144 L78 118 L101 180 Z" fill="#efb53a"/>
+    <path d="M141 154 L85 118 L98 198 L151 185 Z" fill="#c47a18" stroke="#0a0d12" stroke-width="7"/>
+    <path d="M278 153 L340 112 L326 192 L279 185 Z" fill="#d98c10" stroke="#0a0d12" stroke-width="7"/>
+    <path d="M173 220 L166 267 M235 220 L245 267" stroke="#f9a825" stroke-width="10" stroke-linecap="square"/>
+    <path d="M142 267 H179 M234 267 H271" stroke="#0a0d12" stroke-width="12"/>
+    <path d="M144 267 H177 M236 267 H268" stroke="#f9a825" stroke-width="6"/>
+    <text x="35" y="318" fill="#c7d0da" font-family="sans-serif" font-size="16">宽尾扇 + 高鸡冠 + 钟形腹部 + 双翼负形</text>
+  </g>
+
+  <g transform="translate(540 165)">
+    <text x="0" y="0" fill="#f1c40f" font-family="sans-serif" font-size="22" font-weight="700">状态设计</text>
+    <g transform="translate(0 35)">
+      <rect x="0" y="0" width="270" height="128" rx="12" fill="#222b36" stroke="#3b4654"/>
+      <text x="18" y="28" fill="#f4f1de" font-family="sans-serif" font-size="17" font-weight="700">待机 / 移动</text>
+      <path d="M42 96 Q78 48 118 96" fill="#f4f1de" stroke="#0a0d12" stroke-width="6"/>
+      <path d="M53 86 Q78 66 107 87" fill="#f1c40f"/>
+      <path d="M135 90 Q166 52 198 90" fill="#c47a18" stroke="#0a0d12" stroke-width="6"/>
+      <path d="M139 90 Q166 74 194 90" stroke="#f1c40f" stroke-width="5" fill="none"/>
+      <text x="18" y="118" fill="#9eabb8" font-family="sans-serif" font-size="14">钟腹轻摆，步态与响片反相</text>
+    </g>
+    <g transform="translate(292 35)">
+      <rect x="0" y="0" width="270" height="128" rx="12" fill="#222b36" stroke="#3b4654"/>
+      <text x="18" y="28" fill="#f4f1de" font-family="sans-serif" font-size="17" font-weight="700">0.34 秒攻击前摇</text>
+      <circle cx="73" cy="78" r="30" fill="none" stroke="#f1c40f" stroke-width="5"/>
+      <circle cx="73" cy="78" r="8" fill="#fff1a6"/>
+      <path d="M122 78 H230 M176 28 V118" stroke="#efb53a" stroke-width="4" stroke-dasharray="8 7"/>
+      <text x="18" y="118" fill="#9eabb8" font-family="sans-serif" font-size="14">双翼抬起，四向散射轴预显</text>
+    </g>
+    <g transform="translate(0 185)">
+      <rect x="0" y="0" width="270" height="128" rx="12" fill="#222b36" stroke="#3b4654"/>
+      <text x="18" y="28" fill="#f4f1de" font-family="sans-serif" font-size="17" font-weight="700">释放</text>
+      <circle cx="130" cy="75" r="15" fill="#f1c40f"/>
+      <circle cx="130" cy="35" r="8" fill="#fff1a6"/>
+      <circle cx="130" cy="115" r="8" fill="#fff1a6"/>
+      <circle cx="90" cy="75" r="8" fill="#fff1a6"/>
+      <circle cx="170" cy="75" r="8" fill="#fff1a6"/>
+      <path d="M130 51 V59 M130 91 V99 M106 75 H114 M146 75 H154" stroke="#efb53a" stroke-width="4"/>
+      <text x="18" y="118" fill="#9eabb8" font-family="sans-serif" font-size="14">胸铃压缩后弹开，四弹同帧离体</text>
+    </g>
+    <g transform="translate(292 185)">
+      <rect x="0" y="0" width="270" height="128" rx="12" fill="#222b36" stroke="#3b4654"/>
+      <text x="18" y="28" fill="#f4f1de" font-family="sans-serif" font-size="17" font-weight="700">受击 / 死亡</text>
+      <path d="M45 91 L85 50 L125 92" fill="#f4f1de" stroke="#0a0d12" stroke-width="6"/>
+      <path d="M151 55 L175 40 L184 64 L207 50 L211 82 L239 76" fill="none" stroke="#e53935" stroke-width="6"/>
+      <circle cx="170" cy="92" r="6" fill="#f1c40f"/>
+      <circle cx="203" cy="99" r="5" fill="#f9a825"/>
+      <text x="18" y="118" fill="#9eabb8" font-family="sans-serif" font-size="14">钟腹偏转，响片与羽片分离坠落</text>
+    </g>
+  </g>
+
+  <g transform="translate(70 590)">
+    <text x="0" y="0" fill="#f1c40f" font-family="sans-serif" font-size="22" font-weight="700">配色与实现约束</text>
+    <g transform="translate(0 22)">
+      <rect x="0" y="0" width="82" height="42" fill="#f4f1de"/><rect x="88" y="0" width="82" height="42" fill="#f1c40f"/><rect x="176" y="0" width="82" height="42" fill="#c47a18"/><rect x="264" y="0" width="82" height="42" fill="#e53935"/><rect x="352" y="0" width="82" height="42" fill="#263238"/>
+      <text x="0" y="68" fill="#9eabb8" font-family="sans-serif" font-size="14">羽白 / 铃黄 / 翼铜 / 冠红 / 墨色轮廓</text>
+    </g>
+    <text x="510" y="24" fill="#c7d0da" font-family="sans-serif" font-size="16">1× 像素缩放下，胸铃至少 7×7 px；攻击预警不依赖颜色；弹体起点避免被双翼遮挡。</text>
+    <text x="510" y="54" fill="#c7d0da" font-family="sans-serif" font-size="16">下一步：验证鸡冠高度、翼展宽度、四向预警长度、胸铃回弹幅度与暖色森林背景对比。</text>
+  </g>
+</svg>
