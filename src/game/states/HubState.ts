@@ -11,7 +11,7 @@ import { HUB_MOVE_SPEED, HubPlayerController } from "../hub/HubPlayerController"
 import { HubPlayerRenderer } from "../hub/HubPlayerRenderer";
 import { clampHubPromptPosition, isHubPromptAnchorNearViewport } from "../hub/HubPromptLayout";
 import { resolveHubSpawn } from "../hub/HubProgress";
-import { HubWorldRenderer } from "../hub/HubWorldRenderer";
+import { HubWorldRenderer, type TrainingMarkerRenderState } from "../hub/HubWorldRenderer";
 import { HubDebugOverlay } from "../hub/HubDebugOverlay";
 import { drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { PromptRenderer } from "../render/PromptRenderer";
@@ -662,6 +662,7 @@ export class HubState extends GameState {
         object,
         this.time,
         this.occlusionController.getAlpha(object.occlusionGroupId),
+        this.getTrainingMarkerRenderState(object),
       ),
     }));
     
@@ -739,6 +740,15 @@ export class HubState extends GameState {
     ctx.fillStyle = UI_COLORS.yellow;
     ctx.font = uiFont(this.language, 6, true);
     ctx.fillText(`${this.engine.data.meta.currency} ${t(this.language, "common.shards")}`, 13, 27);
+  }
+
+  private getTrainingMarkerRenderState(object: WorldObjectDefinition): TrainingMarkerRenderState | undefined {
+    if (object.id !== "training_marker") return undefined;
+    const target = this.interactionTarget;
+    if (!target || target.object.action !== "open_training") return { proximity: 0 };
+    return {
+      proximity: Math.max(0, Math.min(1, 1 - target.distance / 40)),
+    };
   }
 
   private spawnIntroSplash() {

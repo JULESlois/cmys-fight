@@ -39,6 +39,30 @@ const COLORS = {
   sand: "#76664A",
 } as const;
 
+export const TRAINING_MARKER_COLORS = {
+  stoneDark: "#252B35",
+  stone: "#4B5260",
+  woodDark: "#68472E",
+  woodWear: "#9B6A3E",
+  target: "#8F2F38",
+  gold: "#D8B45C",
+  proximity: "#72E0E8",
+  hit: "#FFD36B",
+  heavyHit: "#B7FAF5",
+} as const;
+
+export type TrainingMarkerHitStrength = "normal" | "heavy";
+
+export interface TrainingMarkerRenderState {
+  proximity?: number;
+  hitDirectionX?: number;
+  hitDirectionY?: number;
+  hitStrength?: TrainingMarkerHitStrength;
+  /** Elapsed seconds since the latest hit. Omit when the marker is idle. */
+  hitAgeSeconds?: number;
+  comboLevel?: number;
+}
+
 function kindOf(object: WorldObjectDefinition): string {
   const value = object.properties?.kind;
   return typeof value === "string" ? value : object.id;
@@ -505,11 +529,12 @@ export class HubWorldRenderer {
     object: WorldObjectDefinition,
     time: number,
     alpha = 1,
+    trainingMarkerState?: TrainingMarkerRenderState,
   ): void {
     if (!object) return;
     ctx.save();
     ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
-    this.drawObject(ctx, object, time);
+    this.drawObject(ctx, object, time, trainingMarkerState);
     ctx.restore();
   }
 
@@ -691,7 +716,12 @@ export class HubWorldRenderer {
     else ctx.fillRect(x, y, 5, 16);
   };
 
-  private drawObject(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawObject(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    trainingMarkerState?: TrainingMarkerRenderState,
+  ): void {
     if (object.properties?.visible === false) return;
     if (HubArchitectureRenderer.draw(ctx, object, time)) return;
     const kind = kindOf(object);
@@ -699,7 +729,7 @@ export class HubWorldRenderer {
     else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time);
     else if (kind === "waystone") this.drawWaystone(ctx, object, time);
     else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time);
-    else if (kind === "training_marker") this.drawTrainingMarker(ctx, object);
+    else if (kind === "training_marker") this.drawTrainingMarker(ctx, object, time, trainingMarkerState);
     else if (kind === "garden_wish") this.drawGardenWish(ctx, object, time);
   }
 
@@ -997,13 +1027,189 @@ export class HubWorldRenderer {
     }
   }
 
-  private drawTrainingMarker(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition): void {
-    const cx = object.x + (object.width ?? 80) / 2;
-    const bottom = object.y + (object.height ?? 80);
-    ctx.fillStyle = COLORS.wood; ctx.fillRect(cx - 4, bottom - 62, 8, 60); ctx.fillRect(cx - 24, bottom - 52, 48, 7);
-    ctx.fillStyle = "#82624A"; ctx.fillRect(cx - 15, bottom - 47, 30, 29);
-    ctx.fillStyle = COLORS.red; ctx.fillRect(cx - 8, bottom - 42, 16, 16);
-    ctx.fillStyle = COLORS.fire; ctx.fillRect(cx - 3, bottom - 37, 6, 6);
+  private drawTrainingMarker(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state?: TrainingMarkerRenderState,
+  ): void {
+    const cx = Math.round(object.x + (object.width ?? 80) / 2);
+    const bottom = Math.round(object.y + (object.height ?? 80));
+    const proximity = Math.max(0, Math.min(1, state?.proximity ?? 0));
+    const hitStrength = state?.hitStrength ?? "normal";
+    const hitDuration = hitStrength === "heavy" ? 0.18 : 0.12;
+    const hitAge = state?.hitAgeSeconds;
+    const impact = hitAge === undefined
+      ? 0
+      : Math.max(0, Math.min(1, 1 - Math.max(0, hitAge) / hitDuration));
+    const rawDirectionX = state?.hitDirectionX ?? 1;
+    const rawDirectionY = state?.hitDirectionY ?? 0;
+    const directionLength = Math.hypot(rawDirectionX, rawDirectionY) || 1;
+    const directionX = rawDirectionX / directionLength;
+    const directionY = rawDirectionY / directionLength;
+    const deflection = (hitStrength === "heavy" ? 3 : 2) * impact;
+    const shieldOffsetX = Math.round(directionX * deflection);
+    const shieldOffsetY = Math.round(directionY * deflection);
+    const emblemSwing = Math.round(Math.sin(time * Math.PI * 2 / 2.8));
+    const idlePulse = 0.5 + 0.5 * Math.sin(time * Math.PI * 2 / 2.6);
+    const comboLevel = Math.max(0, Math.min(3, Math.floor(state?.comboLevel ?? 0)));
+
+    this.drawTrainingMarkerBase(ctx, cx, bottom);
+    this.drawTrainingMarkerFrame(ctx, cx, bottom, emblemSwing, idlePulse, proximity, comboLevel);
+
+    const targetX = cx + shieldOffsetX;
+    const targetY = bottom - 36 + shieldOffsetY;
+    this.drawTrainingMarkerTarget(ctx, targetX, targetY, idlePulse, proximity, impact, hitStrength);
+    this.drawTrainingMarkerImpact(ctx, targetX, targetY, directionX, directionY, impact, hitStrength);
+  }
+
+  private drawTrainingMarkerBase(ctx: CanvasRenderingContext2D, cx: number, bottom: number): void {
+    ctx.fillStyle = "rgba(4,7,8,0.38)";
+    ctx.fillRect(cx - 31, bottom - 7, 62, 5);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stoneDark;
+    ctx.fillRect(cx - 23, bottom - 18, 46, 2);
+    ctx.fillRect(cx - 29, bottom - 16, 58, 10);
+    ctx.fillRect(cx - 25, bottom - 6, 50, 4);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stone;
+    ctx.fillRect(cx - 20, bottom - 15, 40, 2);
+    ctx.fillRect(cx - 25, bottom - 13, 50, 6);
+    ctx.fillRect(cx - 21, bottom - 7, 42, 2);
+    ctx.fillStyle = "#697482";
+    ctx.fillRect(cx - 19, bottom - 14, 38, 1);
+    ctx.fillRect(cx - 24, bottom - 12, 2, 4);
+    ctx.fillStyle = "rgba(18,22,29,0.48)";
+    ctx.fillRect(cx - 13, bottom - 9, 11, 1);
+    ctx.fillRect(cx + 6, bottom - 12, 13, 1);
+  }
+
+  private drawTrainingMarkerFrame(
+    ctx: CanvasRenderingContext2D,
+    cx: number,
+    bottom: number,
+    emblemSwing: number,
+    idlePulse: number,
+    proximity: number,
+    comboLevel: number,
+  ): void {
+    ctx.fillStyle = TRAINING_MARKER_COLORS.woodDark;
+    ctx.fillRect(cx - 5, bottom - 65, 10, 49);
+    ctx.fillRect(cx - 28, bottom - 58, 56, 9);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.woodWear;
+    ctx.fillRect(cx - 2, bottom - 63, 2, 45);
+    ctx.fillRect(cx - 25, bottom - 55, 47, 2);
+    ctx.fillRect(cx + 19, bottom - 57, 5, 1);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.gold;
+    ctx.fillRect(cx - 7, bottom - 52, 3, 5);
+    ctx.fillRect(cx + 4, bottom - 52, 3, 5);
+    ctx.fillRect(cx - 2, bottom - 20, 4, 3);
+
+    const emblemX = cx + emblemSwing;
+    const emblemTop = bottom - 72;
+    ctx.fillStyle = TRAINING_MARKER_COLORS.gold;
+    ctx.fillRect(emblemX - 2, emblemTop, 4, 2);
+    ctx.fillRect(emblemX - 5, emblemTop + 2, 10, 2);
+    ctx.fillRect(emblemX - 7, emblemTop + 4, 14, 5);
+    ctx.fillRect(emblemX - 5, emblemTop + 9, 10, 2);
+    ctx.fillRect(emblemX - 2, emblemTop + 11, 4, 2);
+    ctx.fillStyle = "#5B2736";
+    ctx.fillRect(emblemX - 4, emblemTop + 3, 8, 7);
+
+    const previousAlpha = ctx.globalAlpha;
+    const comboBoost = comboLevel * 0.06;
+    ctx.globalAlpha = previousAlpha * Math.min(1, 0.72 + idlePulse * 0.18 + proximity * 0.1 + comboBoost);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.proximity;
+    ctx.fillRect(emblemX - 1, emblemTop + 3, 2, 7);
+    ctx.fillRect(emblemX - 4, emblemTop + 6, 8, 2);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.heavyHit;
+    ctx.fillRect(emblemX, emblemTop + 6, 1, 1);
+    ctx.globalAlpha = previousAlpha;
+  }
+
+  private drawTrainingMarkerTarget(
+    ctx: CanvasRenderingContext2D,
+    targetX: number,
+    targetY: number,
+    idlePulse: number,
+    proximity: number,
+    impact: number,
+    hitStrength: TrainingMarkerHitStrength,
+  ): void {
+    if (proximity > 0) {
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * proximity * 0.68;
+      ctx.fillStyle = TRAINING_MARKER_COLORS.proximity;
+      ctx.fillRect(targetX - 16, targetY - 14, 32, 1);
+      ctx.fillRect(targetX - 18, targetY - 11, 1, 22);
+      ctx.fillRect(targetX + 17, targetY - 11, 1, 22);
+      ctx.fillRect(targetX - 13, targetY + 14, 26, 1);
+      ctx.globalAlpha = previousAlpha;
+    }
+
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stoneDark;
+    ctx.fillRect(targetX - 19, targetY - 17, 38, 18);
+    ctx.fillRect(targetX - 16, targetY + 1, 32, 5);
+    ctx.fillRect(targetX - 12, targetY + 6, 24, 4);
+    ctx.fillRect(targetX - 7, targetY + 10, 14, 3);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stone;
+    ctx.fillRect(targetX - 16, targetY - 14, 32, 14);
+    ctx.fillRect(targetX - 13, targetY, 26, 4);
+    ctx.fillRect(targetX - 9, targetY + 4, 18, 3);
+    ctx.fillRect(targetX - 5, targetY + 7, 10, 2);
+
+    const borderColor = impact > 0.55 ? TRAINING_MARKER_COLORS.hit : TRAINING_MARKER_COLORS.gold;
+    ctx.fillStyle = borderColor;
+    ctx.fillRect(targetX - 8, targetY - 12, 16, 2);
+    ctx.fillRect(targetX - 11, targetY - 10, 22, 16);
+    ctx.fillRect(targetX - 8, targetY + 6, 16, 2);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.target;
+    ctx.fillRect(targetX - 7, targetY - 9, 14, 14);
+    ctx.fillRect(targetX - 9, targetY - 7, 18, 10);
+
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * Math.min(1, 0.82 + idlePulse * 0.18 + impact * 0.2);
+    const coreCompression = impact > 0.68 ? 1 : 0;
+    ctx.fillStyle = hitStrength === "heavy" && impact > 0.45
+      ? TRAINING_MARKER_COLORS.heavyHit
+      : TRAINING_MARKER_COLORS.hit;
+    ctx.fillRect(targetX - 4, targetY - 4 + coreCompression, 8, 8 - coreCompression * 2);
+    ctx.fillStyle = "#FFF3B8";
+    ctx.fillRect(targetX - 1, targetY - 5 + coreCompression, 2, 10 - coreCompression * 2);
+    ctx.fillRect(targetX - 5, targetY - 1, 10, 2);
+    ctx.globalAlpha = previousAlpha;
+  }
+
+  private drawTrainingMarkerImpact(
+    ctx: CanvasRenderingContext2D,
+    targetX: number,
+    targetY: number,
+    directionX: number,
+    directionY: number,
+    impact: number,
+    hitStrength: TrainingMarkerHitStrength,
+  ): void {
+    if (impact <= 0) return;
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * impact;
+    const heavy = hitStrength === "heavy";
+    const sparkCount = heavy ? 7 : 4;
+    const perpendicularX = -directionY;
+    const perpendicularY = directionX;
+    for (let index = 0; index < sparkCount; index++) {
+      const spread = (index - (sparkCount - 1) / 2) * (heavy ? 2.4 : 2.1);
+      const distance = 13 + (index % 3) * 5 + (heavy ? 3 : 0);
+      const sparkX = Math.round(targetX + directionX * distance + perpendicularX * spread);
+      const sparkY = Math.round(targetY + directionY * distance + perpendicularY * spread);
+      ctx.fillStyle = heavy && index % 2 === 0
+        ? TRAINING_MARKER_COLORS.proximity
+        : TRAINING_MARKER_COLORS.hit;
+      ctx.fillRect(sparkX, sparkY, index % 3 === 0 ? 2 : 1, 1);
+    }
+    if (heavy) {
+      ctx.fillStyle = TRAINING_MARKER_COLORS.heavyHit;
+      ctx.fillRect(targetX - 1, targetY - 7, 2, 14);
+      ctx.fillRect(targetX - 7, targetY - 1, 14, 2);
+    }
+    ctx.globalAlpha = previousAlpha;
   }
 
   private drawGardenWish(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
