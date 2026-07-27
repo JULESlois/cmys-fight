@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08111d"/><stop offset="1" stop-color="#15102a"/></linearGradient>
+<linearGradient id="robe" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#43d9ff"/><stop offset=".45" stop-color="#3564c9"/><stop offset="1" stop-color="#1b204c"/></linearGradient>
+<radialGradient id="core"><stop stop-color="#ffffff"/><stop offset=".35" stop-color="#8ff5ff"/><stop offset="1" stop-color="#7a4dff"/></radialGradient>
+<filter id="g"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<style>.t{font:700 34px sans-serif;fill:#eef8ff}.h{font:700 22px sans-serif;fill:#8fdcff}.b{font:500 17px sans-serif;fill:#d3e2ee}.s{font:500 14px sans-serif;fill:#9fb3c4}.p{fill:#101a28;stroke:#2d4258;stroke-width:2}.l{font:700 14px sans-serif;fill:#fff}</style>
+</defs>
+<rect width="1400" height="900" fill="url(#bg)"/><rect x="18" y="18" width="1364" height="864" rx="18" fill="none" stroke="#3a4d64" stroke-width="2"/>
+<text x="42" y="62" class="t">CMYS-FIGHT 美术重画提案：CMYS Arcane Form</text><text x="42" y="94" class="s">对象：角色 / CMYS 奥术形态 · 目标规格：32×32像素角色图集</text>
+<rect x="38" y="122" width="410" height="280" rx="14" class="p"/><text x="58" y="157" class="h">一、现状问题</text>
+<text x="62" y="194" class="b">• 当前与其他CMYS形态共用通用16×16身体轮廓</text><text x="62" y="225" class="b">• 高法力、激光武器与回响被动缺少视觉身份</text><text x="62" y="256" class="b">• 射击、能量消耗与回响触发没有身体层反馈</text><text x="62" y="287" class="b">• 蓝色主要停留在换色，轮廓仍偏近战角色</text><text x="62" y="318" class="b">• 小尺寸下法术核心与武器方向不够清晰</text>
+<text x="58" y="360" class="h">视觉目标</text><text x="62" y="390" class="s">建立“轻装施术者 + 悬浮棱镜 + 回响残像”的独立语言。</text>
+<rect x="468" y="122" width="560" height="520" rx="14" class="p"/><text x="490" y="157" class="h">二、概念主视图</text>
+<ellipse cx="748" cy="577" rx="126" ry="23" fill="#02050b" opacity=".7"/>
+<g transform="translate(748 375)">
+<path d="M-72 148 L-52 20 L-24 -15 L0 -34 L24 -15 L52 20 L72 148 L37 162 L12 135 L0 166 L-12 135 L-37 162 Z" fill="url(#robe)" stroke="#91f1ff" stroke-width="7" stroke-linejoin="round"/>
+<path d="M-43 18 L-17 -12 L0 -23 L17 -12 L43 18 L29 54 L0 39 L-29 54 Z" fill="#152548" stroke="#6fe6ff" stroke-width="5"/>
+<circle cx="0" cy="25" r="18" fill="url(#core)" filter="url(#g)"/>
+<path d="M-65 48 L-101 83 L-86 99 L-42 70 M65 48 L101 83 L86 99 L42 70" fill="#243b70" stroke="#75eaff" stroke-width="6"/>
+<path d="M-20 -30 L-14 -75 L0 -95 L14 -75 L20 -30" fill="#263d72" stroke="#8bf2ff" stroke-width="6"/>
+<rect x="-11" y="-73" width="22" height="18" rx="5" fill="#0a1730"/><rect x="-6" y="-68" width="12" height="8" fill="#dffcff"/>
+<g fill="#8bf2ff" filter="url(#g)"><rect x="-112" y="5" width="16" height="16" transform="rotate(45 -104 13)"/><rect x="96" y="-5" width="14" height="14" transform="rotate(45 103 2)"/><rect x="-93" y="-45" width="11" height="11" transform="rotate(45 -87 -39)"/><rect x="80" y="-55" width="12" height="12" transform="rotate(45 86 -49)"/></g>
+<path d="M-105 34 C-60 -5 58 -7 107 30" fill="none" stroke="#8e67ff" stroke-width="4" stroke-dasharray="8 9" opacity=".8"/>
+</g>
+<text x="500" y="606" class="s">轮廓锚点：高帽冠、尖肩、长袍分叉、四枚悬浮棱镜</text><text x="500" y="629" class="s">材质锚点：深蓝织物、青色能量边、紫色回响残光</text>
+<rect x="1048" y="122" width="314" height="520" rx="14" class="p"/><text x="1070" y="157" class="h">三、轮廓与配色</text>
+<text x="1070" y="194" class="b">轮廓</text><text x="1084" y="222" class="s">• 头部纵向延伸，区别Guard</text><text x="1084" y="247" class="s">• 下摆分叉，移动时产生漂移</text><text x="1084" y="272" class="s">• 棱镜保持在肩外侧，不遮枪口</text>
+<text x="1070" y="316" class="b">建议色板</text>
+<g><rect x="1080" y="338" width="48" height="32" fill="#0b1429"/><rect x="1138" y="338" width="48" height="32" fill="#243b70"/><rect x="1196" y="338" width="48" height="32" fill="#3498db"/><rect x="1254" y="338" width="48" height="32" fill="#6fe6ff"/><rect x="1080" y="382" width="48" height="32" fill="#7a4dff"/><rect x="1138" y="382" width="48" height="32" fill="#dffcff"/></g>
+<text x="1070" y="450" class="b">层级</text><text x="1084" y="478" class="s">1. 深色身体保证背景对比</text><text x="1084" y="503" class="s">2. 青色只用于能量边和核心</text><text x="1084" y="528" class="s">3. 紫色仅在回响触发时出现</text><text x="1084" y="553" class="s">4. 白色高光限制在关键帧</text>
+<rect x="38" y="662" width="1324" height="188" rx="14" class="p"/><text x="58" y="697" class="h">四、动画、特效与可读性</text>
+<g transform="translate(70 722)">
+<g><circle cx="55" cy="45" r="34" fill="#20365e" stroke="#63e7ff" stroke-width="4"/><path d="M30 68 L42 32 L55 20 L68 32 L80 68" fill="#284f91"/><text x="32" y="104" class="l">待机</text></g>
+<g transform="translate(180 0)"><circle cx="55" cy="45" r="34" fill="#20365e" stroke="#63e7ff" stroke-width="4"/><path d="M15 45 H95" stroke="#8ef3ff" stroke-width="5" opacity=".65"/><text x="32" y="104" class="l">移动</text></g>
+<g transform="translate(360 0)"><circle cx="55" cy="45" r="34" fill="#20365e" stroke="#ffffff" stroke-width="5"/><circle cx="55" cy="45" r="14" fill="#8ef3ff" filter="url(#g)"/><text x="15" y="104" class="l">射击蓄能</text></g>
+<g transform="translate(540 0)"><circle cx="55" cy="45" r="34" fill="#20365e" stroke="#63e7ff" stroke-width="4"/><path d="M82 44 H145" stroke="#8ef3ff" stroke-width="10"/><text x="25" y="104" class="l">激光释放</text></g>
+<g transform="translate(750 0)"><circle cx="55" cy="45" r="34" fill="#20365e" stroke="#a26bff" stroke-width="5"/><circle cx="95" cy="45" r="30" fill="none" stroke="#9a6bff" stroke-width="4" opacity=".65"/><text x="17" y="104" class="l">回响触发</text></g>
+<g transform="translate(950 0)"><ellipse cx="55" cy="52" rx="43" ry="25" fill="#43558e" stroke="#ffffff" stroke-width="5"/><path d="M25 20 L86 82 M86 20 L25 82" stroke="#fff" stroke-width="6"/><text x="32" y="104" class="l">受击</text></g>
+<g transform="translate(1130 0)"><g fill="#6fe6ff"><rect x="22" y="25" width="16" height="16" transform="rotate(45 30 33)"/><rect x="59" y="10" width="14" height="14" transform="rotate(45 66 17)"/><rect x="83" y="48" width="12" height="12" transform="rotate(45 89 54)"/></g><path d="M12 78 H102" stroke="#734fff" stroke-width="5" opacity=".5"/><text x="32" y="104" class="l">倒地</text></g>
+</g>
+<text x="58" y="834" class="s">可读性：回响残像延迟80–120ms；射击高光不超过3帧；棱镜不覆盖弹道、敌人预警或脚下危险区。</text>
+<text x="42" y="878" class="s">记录：本次对象为 CMYS Arcane Form。下一步评审重点：帽冠高度、棱镜数量、回响残像透明度、激光蓄能时长与长袍摆幅。</text>
+</svg>

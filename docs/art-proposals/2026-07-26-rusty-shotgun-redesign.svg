@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1118"/><stop offset="1" stop-color="#18120f"/></linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7c4a4"/><stop offset="0.45" stop-color="#8f7760"/><stop offset="1" stop-color="#3e332d"/></linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3c2117"/><stop offset="0.5" stop-color="#7a4127"/><stop offset="1" stop-color="#2b1812"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .title{font:700 34px ui-sans-serif,system-ui,sans-serif;fill:#f4eee7}.sub{font:600 18px ui-sans-serif,system-ui,sans-serif;fill:#e69b67}.head{font:700 22px ui-sans-serif,system-ui,sans-serif;fill:#f0b37f}.body{font:500 17px ui-sans-serif,system-ui,sans-serif;fill:#d9d4ce}.small{font:500 14px ui-sans-serif,system-ui,sans-serif;fill:#aaa39d}.label{font:700 14px ui-sans-serif,system-ui,sans-serif;fill:#f4eee7}.panel{fill:#121820;stroke:#3a322d;stroke-width:2}
+    </style>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/><rect x="18" y="18" width="1164" height="764" rx="18" fill="none" stroke="#4a4038" stroke-width="2"/>
+  <text x="46" y="62" class="title">CMYS-FIGHT 美术重画提案</text><text x="46" y="96" class="sub">对象：Rusty Shotgun · 近距离五弹丸武器</text>
+
+  <rect x="42" y="126" width="560" height="420" rx="14" class="panel"/><text x="66" y="160" class="head">概念主视图</text>
+  <g transform="translate(92 220)">
+    <path d="M45 84 L360 84 L360 120 L45 120 Z" fill="#211a17" stroke="#0b0908" stroke-width="8"/>
+    <path d="M42 80 L370 80 L370 103 L42 103 Z" fill="url(#metal)" stroke="#0b0908" stroke-width="7"/>
+    <path d="M110 73 L300 73 L300 91 L110 91 Z" fill="#5d493e"/><path d="M144 76 L286 76 L286 84 L144 84 Z" fill="#b99170" opacity=".8"/>
+    <path d="M358 76 L430 66 L430 113 L358 103 Z" fill="url(#wood)" stroke="#0b0908" stroke-width="7"/>
+    <path d="M95 98 C88 137 103 164 126 165 L154 165 C139 141 139 119 149 98 Z" fill="url(#wood)" stroke="#0b0908" stroke-width="7"/>
+    <path d="M82 64 L118 64 L118 112 L82 112 Z" fill="#51342a" stroke="#0b0908" stroke-width="7"/>
+    <circle cx="95" cy="85" r="7" fill="#d98c51"/><circle cx="328" cy="88" r="5" fill="#d98c51"/>
+    <path d="M215 64 L244 64 L244 106 L215 106 Z" fill="#34383e" stroke="#0b0908" stroke-width="6"/>
+    <path d="M221 68 L238 68 L238 77 L221 77 Z" fill="#d5b995"/>
+    <path d="M52 73 L86 73 L86 111 L52 111 Z" fill="#3f4549" stroke="#0b0908" stroke-width="6"/>
+    <path d="M28 82 L52 82 L52 102 L28 102 Z" fill="#1d2225" stroke="#0b0908" stroke-width="6"/>
+    <g stroke="#c96b45" stroke-width="4" opacity=".8"><path d="M168 80 l10 16"/><path d="M278 76 l-8 19"/><path d="M338 81 l9 13"/></g>
+    <g fill="#f0b37f"><circle cx="169" cy="111" r="3"/><circle cx="277" cy="68" r="2"/><circle cx="343" cy="108" r="2"/></g>
+  </g>
+  <text x="66" y="485" class="small">轮廓：短枪管、厚机匣、下沉木质枪托，强调近距离冲击感</text><text x="66" y="510" class="small">材质：旧钢、氧化铜锈、深色木纹、局部维修铆钉</text>
+
+  <rect x="626" y="126" width="532" height="420" rx="14" class="panel"/><text x="650" y="160" class="head">设计要求</text>
+  <text x="650" y="198" class="body">现状问题</text><text x="670" y="228" class="small">• 数据层有明确五弹丸、烟雾和强后坐，但武器外观缺少对应重量感</text><text x="670" y="254" class="small">• 近战定位与普通长枪轮廓区分不足</text><text x="670" y="280" class="small">• 锈蚀若只用棕色点缀，容易看成脏污而非结构老化</text>
+  <text x="650" y="324" class="body">视觉目标</text><text x="670" y="354" class="small">• 一眼识别为“粗重、近距离、低频爆发”的旧式霰弹枪</text><text x="670" y="380" class="small">• 枪口、机匣与木托形成三段清晰材质层</text><text x="670" y="406" class="small">• 发射后烟雾和后坐与角色动作形成统一重音</text>
+  <text x="650" y="452" class="body">建议色板</text>
+  <g><rect x="670" y="470" width="58" height="28" rx="4" fill="#211a17"/><rect x="738" y="470" width="58" height="28" rx="4" fill="#5d493e"/><rect x="806" y="470" width="58" height="28" rx="4" fill="#b99170"/><rect x="874" y="470" width="58" height="28" rx="4" fill="#7a4127"/><rect x="942" y="470" width="58" height="28" rx="4" fill="#c96b45"/><rect x="1010" y="470" width="58" height="28" rx="4" fill="#f0b37f"/></g>
+
+  <rect x="42" y="574" width="1116" height="168" rx="14" class="panel"/><text x="66" y="610" class="head">动画与特效关键帧</text>
+  <g transform="translate(80 637)">
+    <g><rect x="0" y="20" width="120" height="18" fill="#756153"/><rect x="95" y="15" width="42" height="28" fill="#5a3020"/><text x="28" y="78" class="label">待机</text></g>
+    <g transform="translate(180 0)"><rect x="0" y="20" width="120" height="18" fill="#756153"/><rect x="95" y="15" width="42" height="28" fill="#5a3020"/><path d="M-8 28 H-34" stroke="#f3d0a8" stroke-width="6" filter="url(#glow)"/><text x="14" y="78" class="label">发射瞬间</text></g>
+    <g transform="translate(380 0)"><rect x="12" y="20" width="120" height="18" fill="#756153"/><rect x="107" y="15" width="42" height="28" fill="#5a3020"/><path d="M0 22 C-18 4 -36 8 -48 22 C-34 16 -22 28 -5 30" fill="#b7b9b7" opacity=".75"/><text x="18" y="78" class="label">烟雾拖尾</text></g>
+    <g transform="translate(590 0)"><rect x="0" y="20" width="120" height="18" fill="#756153"/><rect x="95" y="15" width="42" height="28" fill="#5a3020"/><g fill="#e9d3b1"><circle cx="-18" cy="10" r="4"/><circle cx="-30" cy="20" r="4"/><circle cx="-22" cy="30" r="4"/><circle cx="-40" cy="8" r="3"/><circle cx="-42" cy="34" r="3"/></g><text x="9" y="78" class="label">五弹丸散布</text></g>
+    <g transform="translate(810 0)"><rect x="0" y="20" width="120" height="18" fill="#756153"/><rect x="95" y="15" width="42" height="28" fill="#5a3020"/><path d="M54 8 v42" stroke="#f0b37f" stroke-width="5"/><text x="15" y="78" class="label">装填提示</text></g>
+  </g>
+  <text x="46" y="770" class="small">记录：本次对象为 Rusty Shotgun。下一步重点：枪管长度、锈蚀面积、烟雾寿命、后坐幅度、五弹丸散布的视觉密度。</text>
+</svg>

@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090d14"/><stop offset="1" stop-color="#151022"/></linearGradient>
+  <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5f4384"/><stop offset="0.55" stop-color="#34264d"/><stop offset="1" stop-color="#171221"/></linearGradient>
+  <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9aa3a7"/><stop offset="1" stop-color="#424a50"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <style>
+    .title{font:700 32px system-ui,sans-serif;fill:#f2f5f7}.sub{font:600 18px system-ui,sans-serif;fill:#85f0c8}.h{font:700 21px system-ui,sans-serif;fill:#caa5ff}.b{font:500 16px system-ui,sans-serif;fill:#d6dde4}.s{font:500 13px system-ui,sans-serif;fill:#9eaeba}.panel{fill:#101824;stroke:#2d4052;stroke-width:2}.tag{fill:#251b36;stroke:#7853a2;stroke-width:1}
+  </style>
+</defs>
+<rect width="1200" height="800" fill="url(#bg)"/>
+<rect x="18" y="18" width="1164" height="764" rx="18" fill="none" stroke="#35465a" stroke-width="2"/>
+<text x="44" y="58" class="title">CMYS-FIGHT 美术重画提案：Grave Summoner 墓穴召唤师</text>
+<text x="44" y="88" class="sub">类别：怪物 / 地牢召唤单位 · 小范围重画</text>
+
+<rect x="40" y="116" width="360" height="294" rx="12" class="panel"/>
+<text x="60" y="150" class="h">现状问题与视觉目标</text>
+<text x="60" y="184" class="b">现状问题</text>
+<text x="76" y="212" class="s">• 主体轮廓接近普通长袍施法者，远距离辨识度不足</text>
+<text x="76" y="236" class="s">• 0.82 秒前摇缺少分阶段聚能与召唤落点提示</text>
+<text x="76" y="260" class="s">• 棺碑法杖已有主题，但与地面召唤事件联系较弱</text>
+<text x="76" y="284" class="s">• 受击与死亡仍缺少“灵火熄灭 / 墓布坍塌”层次</text>
+<text x="60" y="322" class="b">视觉目标</text>
+<text x="76" y="350" class="s">• 建立高帽兜、长碑杖、拖地墓布的三段式轮廓</text>
+<text x="76" y="374" class="s">• 一眼识别为召唤者，而不是普通散射法师</text>
+<text x="76" y="398" class="s">• 保持 320×240 下的剪影清晰与战斗可读性</text>
+
+<rect x="424" y="116" width="736" height="420" rx="12" class="panel"/>
+<text x="448" y="150" class="h">具体概念方案</text>
+<ellipse cx="690" cy="475" rx="120" ry="22" fill="#03060a" opacity=".75"/>
+<ellipse cx="690" cy="466" rx="90" ry="14" fill="#6df3bd" opacity=".18" filter="url(#glow)"/>
+
+<!-- staff rear -->
+<g>
+  <rect x="792" y="238" width="18" height="224" rx="7" fill="#201720" stroke="#0b080e" stroke-width="6"/>
+  <rect x="798" y="246" width="6" height="205" fill="#765a43"/>
+  <path d="M759 221 L801 191 L843 221 L835 286 L767 286 Z" fill="url(#stone)" stroke="#11151a" stroke-width="7"/>
+  <rect x="793" y="208" width="16" height="56" fill="#252c31"/>
+  <rect x="797" y="220" width="8" height="28" fill="#72f3bd" filter="url(#glow)"/>
+  <path d="M777 230 H825 M801 211 V269" stroke="#b5fff0" stroke-width="5" opacity=".8"/>
+</g>
+
+<!-- robe silhouette -->
+<path d="M617 454 C605 400 616 336 644 302 C642 258 660 226 690 218 C721 224 739 258 736 302 C766 338 775 402 764 454 L736 478 L710 464 L690 484 L669 464 L640 478 Z" fill="#090b12" stroke="#05060a" stroke-width="12"/>
+<path d="M627 450 C618 397 630 348 653 315 C654 286 667 255 691 249 C714 256 728 286 726 315 C750 350 762 398 753 449 L730 464 L709 451 L690 470 L671 451 L649 464 Z" fill="url(#robe)"/>
+<path d="M649 338 C664 350 677 355 690 355 C705 355 717 349 732 337 L727 405 C713 414 702 417 690 417 C676 417 664 413 651 405 Z" fill="#493267"/>
+<rect x="681" y="349" width="18" height="96" fill="#5d4771" opacity=".75"/>
+
+<!-- hood and skull lantern -->
+<path d="M639 285 Q690 208 741 285 L729 333 H651 Z" fill="#171020" stroke="#07060b" stroke-width="8"/>
+<path d="M653 282 Q690 231 727 282 L720 321 H660 Z" fill="#3b2752"/>
+<rect x="662" y="284" width="56" height="43" rx="12" fill="#0a0c12" stroke="#050608" stroke-width="5"/>
+<path d="M669 290 L711 290 L716 310 L705 325 H675 L664 310 Z" fill="#ddd9cd"/>
+<rect x="675" y="301" width="9" height="9" fill="#11151a"/>
+<rect x="697" y="301" width="9" height="9" fill="#11151a"/>
+<rect x="678" y="304" width="4" height="4" fill="#7dffcc" filter="url(#glow)"/>
+<rect x="700" y="304" width="4" height="4" fill="#7dffcc" filter="url(#glow)"/>
+<rect x="687" y="316" width="8" height="4" fill="#171b20"/>
+
+<!-- arms -->
+<path d="M652 340 C620 348 602 374 590 410 L610 421 C626 397 640 382 662 376 Z" fill="#39264f" stroke="#09070d" stroke-width="7"/>
+<path d="M728 338 C760 346 780 372 792 402 L774 417 C757 391 744 379 719 374 Z" fill="#4b3266" stroke="#09070d" stroke-width="7"/>
+<circle cx="597" cy="416" r="13" fill="#d9ded6" stroke="#0c1012" stroke-width="6"/>
+<circle cx="783" cy="412" r="13" fill="#d9ded6" stroke="#0c1012" stroke-width="6"/>
+
+<!-- summon circle -->
+<ellipse cx="595" cy="455" rx="76" ry="24" fill="none" stroke="#72f3bd" stroke-width="5" opacity=".75" filter="url(#glow)"/>
+<ellipse cx="595" cy="455" rx="50" ry="15" fill="none" stroke="#a782ff" stroke-width="3" opacity=".8"/>
+<path d="M595 431 V478 M558 455 H632 M568 439 L622 471 M622 439 L568 471" stroke="#baffea" stroke-width="3" opacity=".72"/>
+<g fill="#78f2c0" filter="url(#glow)"><rect x="555" y="394" width="8" height="8" transform="rotate(45 559 398)"/><rect x="620" y="402" width="7" height="7" transform="rotate(45 623.5 405.5)"/><rect x="577" y="378" width="6" height="6" transform="rotate(45 580 381)"/></g>
+
+<text x="900" y="198" class="b">轮廓与配色</text>
+<text x="900" y="226" class="s">高帽兜：形成垂直识别轴</text>
+<text x="900" y="250" class="s">棺碑法杖：比角色高 25–35%</text>
+<text x="900" y="274" class="s">墓布下摆：三角分叉，拖地不对称</text>
+<text x="900" y="298" class="s">灵火：青绿色，仅用于眼、符文和召唤圈</text>
+<text x="900" y="322" class="s">主色：#302044 / #493267</text>
+<text x="900" y="346" class="s">骨白：#D7D3C8 · 灵火：#7DFFCC</text>
+
+<rect x="40" y="432" width="360" height="304" rx="12" class="panel"/>
+<text x="60" y="466" class="h">动画、特效与可读性</text>
+<text x="60" y="500" class="b">0.82 秒攻击前摇拆分</text>
+<text x="76" y="528" class="s">1. 0.00–0.24s：法杖抬起，眼火点亮</text>
+<text x="76" y="552" class="s">2. 0.24–0.58s：空心召唤圈显现，落点锁定</text>
+<text x="76" y="576" class="s">3. 0.58–0.82s：符文填充，骷髅手破土</text>
+<text x="60" y="612" class="b">反馈要求</text>
+<text x="76" y="640" class="s">• 召唤落点必须先于骨卫出现，并保持高对比边缘</text>
+<text x="76" y="664" class="s">• 受击：头兜后仰、灵火短灭、墓布压缩</text>
+<text x="76" y="688" class="s">• 死亡：法杖先落地，面灯熄灭，墓布向内坍塌</text>
+<text x="76" y="712" class="s">• 特效不覆盖地面危险区，召唤圈透明度控制在 55–70%</text>
+
+<rect x="424" y="560" width="736" height="176" rx="12" class="panel"/>
+<text x="448" y="594" class="h">关键帧与实现建议</text>
+<g transform="translate(462 615)">
+  <g><circle cx="42" cy="40" r="32" class="tag"/><path d="M24 61 Q42 4 60 61Z" fill="#493267"/><rect x="37" y="24" width="10" height="12" fill="#d7d3c8"/><text x="15" y="94" class="s">待机</text></g>
+  <g transform="translate(112)"><circle cx="42" cy="40" r="32" class="tag"/><path d="M24 61 Q42 3 60 61Z" fill="#493267"/><rect x="67" y="5" width="6" height="56" fill="#765a43"/><rect x="33" y="20" width="18" height="16" fill="#7dffcc" filter="url(#glow)"/><text x="4" y="94" class="s">抬杖聚能</text></g>
+  <g transform="translate(224)"><circle cx="42" cy="40" r="32" class="tag"/><ellipse cx="42" cy="65" rx="34" ry="10" fill="none" stroke="#7dffcc" stroke-width="3"/><path d="M24 61 Q42 3 60 61Z" fill="#493267"/><text x="5" y="94" class="s">锁定落点</text></g>
+  <g transform="translate(336)"><circle cx="42" cy="40" r="32" class="tag"/><path d="M24 61 Q42 3 60 61Z" fill="#493267"/><path d="M13 68 H71" stroke="#a782ff" stroke-width="4"/><path d="M31 61 V43 M43 61 V38 M55 61 V46" stroke="#d9ded6" stroke-width="5"/><text x="6" y="94" class="s">召唤释放</text></g>
+</g>
+<text x="900" y="620" class="b">实现建议</text>
+<text x="900" y="648" class="s">• 拆分 Hood / Robe / Staff / Rune / Hand 五层</text>
+<text x="900" y="672" class="s">• 召唤圈使用确定性帧动画，不使用随机闪烁</text>
+<text x="900" y="696" class="s">• 保留现有 4 帧攻击结构，但重排关键姿势</text>
+<text x="900" y="720" class="s">• 骨手与召唤圈使用独立 sortY，避免穿过角色</text>
+
+<text x="44" y="770" class="s">记录：本次对象为 Grave Summoner。下一步评审重点：法杖高度、召唤圈半径、灵火亮度、墓布下摆长度与死亡坍塌速度。</text>
+</svg>
