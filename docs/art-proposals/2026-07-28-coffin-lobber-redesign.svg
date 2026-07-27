@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#11131a"/>
+  <rect x="28" y="28" width="1144" height="744" rx="18" fill="#1b1f2a" stroke="#4b5368" stroke-width="3"/>
+  <text x="60" y="78" fill="#f3f0e8" font-family="sans-serif" font-size="34" font-weight="700">Coffin Lobber / 棺材投掷者 — Redesign Concept</text>
+  <text x="60" y="112" fill="#9da8bd" font-family="sans-serif" font-size="18">Dungeon lob unit · 3 shell arc · 0.78 s windup · 155 px range</text>
+
+  <g transform="translate(190 435)">
+    <ellipse cx="0" cy="118" rx="104" ry="22" fill="#0b0d12" opacity="0.75"/>
+    <!-- rear coffin pack -->
+    <path d="M-92 -118 L-38 -142 L-6 -116 L-6 70 L-50 104 L-96 78 Z" fill="#252732" stroke="#0b0d12" stroke-width="8"/>
+    <path d="M-80 -105 L-45 -124 L-20 -105 L-20 60 L-51 83 L-82 64 Z" fill="#655c72"/>
+    <path d="M-72 -94 L-46 -108 L-30 -96 L-30 50 L-51 67 L-71 53 Z" fill="#83798d"/>
+    <path d="M-60 -87 L-42 -87 L-42 -24 L-28 -24 L-28 -8 L-42 -8 L-42 32 L-60 32 L-60 -8 L-72 -8 L-72 -24 L-60 -24 Z" fill="#c9c2d0" opacity="0.8"/>
+    <!-- body -->
+    <path d="M-24 -72 L34 -72 L58 -30 L48 76 L-38 76 L-44 -30 Z" fill="#33283f" stroke="#0b0d12" stroke-width="8"/>
+    <path d="M-14 -61 L25 -61 L42 -24 L34 62 L-27 62 L-31 -24 Z" fill="#5e416f"/>
+    <path d="M-10 -50 L5 -50 L5 51 L-22 51 L-22 -18 Z" fill="#7b568c" opacity="0.65"/>
+    <!-- hood -->
+    <path d="M-32 -112 L10 -145 L52 -109 L40 -53 L-23 -53 Z" fill="#2b2136" stroke="#0b0d12" stroke-width="8"/>
+    <path d="M-19 -104 L10 -128 L38 -103 L29 -66 L-12 -66 Z" fill="#6a4a79"/>
+    <rect x="-7" y="-97" width="14" height="8" fill="#17131d"/>
+    <rect x="19" y="-97" width="14" height="8" fill="#17131d"/>
+    <rect x="-3" y="-94" width="6" height="3" fill="#d9c7e6"/>
+    <rect x="23" y="-94" width="6" height="3" fill="#d9c7e6"/>
+    <!-- throwing arm -->
+    <path d="M38 -42 L95 -18 L88 20 L42 8 Z" fill="#56606d" stroke="#0b0d12" stroke-width="8"/>
+    <rect x="82" y="-12" width="30" height="34" rx="4" fill="#8a909b" stroke="#0b0d12" stroke-width="7"/>
+    <!-- shell -->
+    <g transform="translate(116 -6) rotate(-18)">
+      <path d="M0 -18 L24 -28 L42 -14 L40 22 L18 34 L-2 20 Z" fill="#6e6578" stroke="#0b0d12" stroke-width="7"/>
+      <path d="M8 -11 L23 -17 L32 -9 L31 15 L18 23 L7 14 Z" fill="#a69daf"/>
+      <circle cx="20" cy="3" r="6" fill="#b973d6"/>
+      <circle cx="20" cy="3" r="2" fill="#f1d7ff"/>
+    </g>
+    <!-- legs -->
+    <path d="M-28 58 L-3 58 L-8 102 L-39 102 Z" fill="#4a4253" stroke="#0b0d12" stroke-width="7"/>
+    <path d="M16 58 L39 58 L48 102 L17 102 Z" fill="#4a4253" stroke="#0b0d12" stroke-width="7"/>
+    <rect x="-44" y="96" width="42" height="16" rx="5" fill="#747080" stroke="#0b0d12" stroke-width="6"/>
+    <rect x="12" y="96" width="42" height="16" rx="5" fill="#747080" stroke="#0b0d12" stroke-width="6"/>
+  </g>
+
+  <g transform="translate(465 170)">
+    <text x="0" y="0" fill="#f3f0e8" font-family="sans-serif" font-size="24" font-weight="700">Silhouette &amp; palette</text>
+    <text x="0" y="38" fill="#bdc5d5" font-family="sans-serif" font-size="17">• Tall rear coffin establishes the class at 1× scale</text>
+    <text x="0" y="67" fill="#bdc5d5" font-family="sans-serif" font-size="17">• Forward gauntlet + detached shell show lob direction</text>
+    <text x="0" y="96" fill="#bdc5d5" font-family="sans-serif" font-size="17">• Narrow hood prevents overlap with Grave Summoner</text>
+    <g transform="translate(0 130)">
+      <rect width="72" height="34" rx="5" fill="#252732"/><text x="82" y="24" fill="#d3d8e2" font-family="sans-serif" font-size="16">ink / coffin frame</text>
+      <rect y="48" width="72" height="34" rx="5" fill="#655c72"/><text x="82" y="72" fill="#d3d8e2" font-family="sans-serif" font-size="16">aged coffin violet</text>
+      <rect y="96" width="72" height="34" rx="5" fill="#b973d6"/><text x="82" y="120" fill="#d3d8e2" font-family="sans-serif" font-size="16">soul-shell accent</text>
+      <rect y="144" width="72" height="34" rx="5" fill="#c9c2d0"/><text x="82" y="168" fill="#d3d8e2" font-family="sans-serif" font-size="16">bone / metal highlight</text>
+    </g>
+  </g>
+
+  <g transform="translate(465 500)">
+    <text x="0" y="0" fill="#f3f0e8" font-family="sans-serif" font-size="24" font-weight="700">Attack readability — 0.78 s</text>
+    <g transform="translate(0 35)">
+      <rect width="150" height="112" rx="10" fill="#242936" stroke="#4b5368"/>
+      <text x="14" y="26" fill="#f3f0e8" font-family="sans-serif" font-size="16" font-weight="700">1. Brace</text>
+      <path d="M28 82 L72 42 L117 82" fill="none" stroke="#83798d" stroke-width="10"/>
+      <path d="M30 93 L118 93" stroke="#b973d6" stroke-width="5" stroke-dasharray="8 6"/>
+    </g>
+    <g transform="translate(170 35)">
+      <rect width="150" height="112" rx="10" fill="#242936" stroke="#4b5368"/>
+      <text x="14" y="26" fill="#f3f0e8" font-family="sans-serif" font-size="16" font-weight="700">2. Prime shells</text>
+      <circle cx="42" cy="72" r="13" fill="#b973d6"/><circle cx="75" cy="58" r="13" fill="#b973d6"/><circle cx="108" cy="72" r="13" fill="#b973d6"/>
+      <circle cx="42" cy="72" r="5" fill="#f1d7ff"/><circle cx="75" cy="58" r="5" fill="#f1d7ff"/><circle cx="108" cy="72" r="5" fill="#f1d7ff"/>
+    </g>
+    <g transform="translate(340 35)">
+      <rect width="150" height="112" rx="10" fill="#242936" stroke="#4b5368"/>
+      <text x="14" y="26" fill="#f3f0e8" font-family="sans-serif" font-size="16" font-weight="700">3. Lob arc</text>
+      <path d="M18 88 Q74 18 132 84" fill="none" stroke="#c9c2d0" stroke-width="4" stroke-dasharray="7 6"/>
+      <circle cx="98" cy="42" r="11" fill="#b973d6" stroke="#f1d7ff" stroke-width="3"/>
+    </g>
+    <g transform="translate(510 35)">
+      <rect width="150" height="112" rx="10" fill="#242936" stroke="#4b5368"/>
+      <text x="14" y="26" fill="#f3f0e8" font-family="sans-serif" font-size="16" font-weight="700">4. Impact</text>
+      <path d="M75 42 L84 69 L115 69 L90 86 L100 108 L75 94 L50 108 L60 86 L35 69 L66 69 Z" fill="#b973d6"/>
+      <circle cx="75" cy="79" r="15" fill="#f1d7ff" opacity="0.8"/>
+    </g>
+  </g>
+
+  <g transform="translate(60 710)">
+    <text fill="#9da8bd" font-family="sans-serif" font-size="16">Implementation target: dedicated coffin_lobber pose layers, visible 3-shell charge, dashed ballistic arc only during windup, low-density impact shards.</text>
+  </g>
+</svg>
