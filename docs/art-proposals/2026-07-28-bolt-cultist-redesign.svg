@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#11131a"/>
+  <rect x="32" y="32" width="1136" height="736" rx="20" fill="#1b1e29" stroke="#5b6477" stroke-width="3"/>
+  <text x="70" y="90" fill="#f1f3f8" font-family="sans-serif" font-size="38" font-weight="700">Bolt Cultist · 闪电邪教徒重画提案</text>
+  <text x="70" y="126" fill="#aab2c5" font-family="sans-serif" font-size="20">Dungeon scatter caster · 3-bolt spread · 0.58s windup</text>
+
+  <g transform="translate(100 180)">
+    <text x="0" y="0" fill="#cfd5e4" font-family="sans-serif" font-size="24" font-weight="700">轮廓主案</text>
+    <ellipse cx="205" cy="430" rx="105" ry="24" fill="#0b0d12" opacity="0.8"/>
+    <path d="M150 120 L205 68 L260 120 L244 170 L166 170 Z" fill="#24152f" stroke="#0a0910" stroke-width="8"/>
+    <path d="M166 118 L205 88 L244 118 L232 150 L178 150 Z" fill="#6e2d86"/>
+    <path d="M188 122 L205 108 L222 122 L214 139 L196 139 Z" fill="#f1c8ff"/>
+    <path d="M138 176 Q205 142 272 176 L286 360 Q205 418 124 360 Z" fill="#35213f" stroke="#0a0910" stroke-width="10"/>
+    <path d="M162 190 Q205 172 248 190 L250 336 Q205 370 160 336 Z" fill="#6d3a7f"/>
+    <path d="M174 216 L236 216 L228 322 L182 322 Z" fill="#2a1a31"/>
+    <path d="M128 212 L76 252 L92 276 L150 244 Z" fill="#452552" stroke="#0a0910" stroke-width="8"/>
+    <path d="M282 210 L338 246 L324 274 L260 242 Z" fill="#452552" stroke="#0a0910" stroke-width="8"/>
+    <circle cx="82" cy="264" r="18" fill="#8e44ad" stroke="#0a0910" stroke-width="7"/>
+    <circle cx="328" cy="260" r="18" fill="#8e44ad" stroke="#0a0910" stroke-width="7"/>
+    <path d="M70 264 l-32 -22 12 25 -28 7 32 8 -12 24 31 -20" fill="none" stroke="#d86cff" stroke-width="7" stroke-linejoin="miter"/>
+    <path d="M340 260 l30 -24 -10 26 30 4 -29 10 13 23 -33 -17" fill="none" stroke="#d86cff" stroke-width="7" stroke-linejoin="miter"/>
+    <rect x="160" y="348" width="38" height="70" rx="8" fill="#2a1b31" stroke="#0a0910" stroke-width="8"/>
+    <rect x="212" y="348" width="38" height="70" rx="8" fill="#2a1b31" stroke="#0a0910" stroke-width="8"/>
+    <path d="M160 412 L194 412 L185 434 L150 434 Z" fill="#17131d"/>
+    <path d="M216 412 L250 412 L260 434 L225 434 Z" fill="#17131d"/>
+    <circle cx="205" cy="252" r="18" fill="#24152f" stroke="#a84ec7" stroke-width="5"/>
+    <path d="M205 228 L212 247 L232 252 L213 259 L205 278 L198 259 L178 252 L198 246 Z" fill="#f3d6ff"/>
+  </g>
+
+  <g transform="translate(520 180)">
+    <text x="0" y="0" fill="#cfd5e4" font-family="sans-serif" font-size="24" font-weight="700">攻击前摇 0.58s</text>
+    <g transform="translate(0 55)">
+      <rect x="0" y="0" width="185" height="160" rx="12" fill="#242836"/>
+      <text x="16" y="28" fill="#d8deea" font-family="sans-serif" font-size="17">1. 聚能 0–0.20s</text>
+      <circle cx="92" cy="92" r="22" fill="#40234e" stroke="#8e44ad" stroke-width="5"/>
+      <path d="M92 58 v18 M92 108 v18 M58 92 h18 M108 92 h18" stroke="#d86cff" stroke-width="5"/>
+      <text x="16" y="145" fill="#9fa8bb" font-family="sans-serif" font-size="14">胸核先亮，双臂内收</text>
+    </g>
+    <g transform="translate(205 55)">
+      <rect x="0" y="0" width="185" height="160" rx="12" fill="#242836"/>
+      <text x="16" y="28" fill="#d8deea" font-family="sans-serif" font-size="17">2. 锁轴 0.20–0.42s</text>
+      <circle cx="92" cy="92" r="10" fill="#f1d7ff"/>
+      <path d="M92 92 L32 58 M92 92 L152 92 M92 92 L32 126" stroke="#b14fd0" stroke-width="5" stroke-dasharray="8 7"/>
+      <text x="16" y="145" fill="#9fa8bb" font-family="sans-serif" font-size="14">显示三发散射方向</text>
+    </g>
+    <g transform="translate(410 55)">
+      <rect x="0" y="0" width="185" height="160" rx="12" fill="#242836"/>
+      <text x="16" y="28" fill="#d8deea" font-family="sans-serif" font-size="17">3. 释放 0.42–0.58s</text>
+      <circle cx="54" cy="92" r="9" fill="#f1d7ff"/>
+      <circle cx="108" cy="68" r="9" fill="#d86cff"/>
+      <circle cx="130" cy="112" r="9" fill="#d86cff"/>
+      <path d="M58 92 L106 70 M58 92 L128 110" stroke="#7f3b96" stroke-width="5"/>
+      <text x="16" y="145" fill="#9fa8bb" font-family="sans-serif" font-size="14">左右袖口分裂出三束</text>
+    </g>
+  </g>
+
+  <g transform="translate(520 430)">
+    <text x="0" y="0" fill="#cfd5e4" font-family="sans-serif" font-size="24" font-weight="700">配色与状态</text>
+    <rect x="0" y="30" width="70" height="70" rx="8" fill="#24152f"/><text x="0" y="122" fill="#aab2c5" font-family="sans-serif" font-size="14">墨黑紫</text>
+    <rect x="90" y="30" width="70" height="70" rx="8" fill="#6e2d86"/><text x="90" y="122" fill="#aab2c5" font-family="sans-serif" font-size="14">礼袍紫</text>
+    <rect x="180" y="30" width="70" height="70" rx="8" fill="#d86cff"/><text x="180" y="122" fill="#aab2c5" font-family="sans-serif" font-size="14">电弧洋红</text>
+    <rect x="270" y="30" width="70" height="70" rx="8" fill="#f1d7ff"/><text x="270" y="122" fill="#aab2c5" font-family="sans-serif" font-size="14">过载白</text>
+    <rect x="0" y="158" width="595" height="120" rx="12" fill="#242836"/>
+    <text x="18" y="190" fill="#e3e7ef" font-family="sans-serif" font-size="17">可读性要求</text>
+    <text x="18" y="220" fill="#aab2c5" font-family="sans-serif" font-size="15">• 三角兜帽 + 对称宽袖形成远程施法者剪影</text>
+    <text x="18" y="246" fill="#aab2c5" font-family="sans-serif" font-size="15">• 三条虚线预警严格对应 projectileSpread，避免误判为环形弹</text>
+    <text x="18" y="272" fill="#aab2c5" font-family="sans-serif" font-size="15">• 地牢暗背景下，亮色只集中在胸核、袖口和弹体</text>
+  </g>
+
+  <text x="70" y="738" fill="#768096" font-family="sans-serif" font-size="16">CMYS-FIGHT · docs/art-proposals · 2026-07-28</text>
+</svg>
