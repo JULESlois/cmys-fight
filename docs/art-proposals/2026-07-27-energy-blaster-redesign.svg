@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111b"/><stop offset="1" stop-color="#10182a"/></linearGradient>
+  <linearGradient id="gun" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1a2637"/><stop offset=".55" stop-color="#31506b"/><stop offset="1" stop-color="#0d1722"/></linearGradient>
+  <linearGradient id="cell" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#135a75"/><stop offset=".5" stop-color="#00f2fe"/><stop offset="1" stop-color="#d9ffff"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <style>.t{font:700 34px system-ui,sans-serif;fill:#effcff}.h{font:700 22px system-ui,sans-serif;fill:#67ecff}.b{font:500 17px system-ui,sans-serif;fill:#d1dde8}.s{font:500 14px system-ui,sans-serif;fill:#9fb2c3}.p{fill:#0d1723;stroke:#294158;stroke-width:2}.l{font:700 14px system-ui,sans-serif;fill:#eafcff}</style>
+</defs>
+<rect width="1400" height="900" fill="url(#bg)"/><rect x="18" y="18" width="1364" height="864" rx="18" fill="none" stroke="#31445a" stroke-width="2"/>
+<text x="48" y="65" class="t">CMYS-FIGHT 美术重画提案：Energy Blaster</text><text x="48" y="99" class="h">对象：Laser / 稀有能量武器 / 高频连射与长光迹</text>
+<rect x="42" y="128" width="720" height="480" rx="14" class="p"/><text x="66" y="165" class="h">主视图与轮廓</text>
+<g transform="translate(115 240)">
+  <path d="M40 135 L130 78 L392 78 L474 112 L454 150 L338 154 L288 213 L198 213 L166 163 L72 163 Z" fill="url(#gun)" stroke="#8eefff" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M404 88 L520 104 L520 139 L450 150 Z" fill="#172435" stroke="#4abfd0" stroke-width="5"/>
+  <rect x="115" y="94" width="232" height="42" rx="10" fill="#0d1b29" stroke="#58758e" stroke-width="4"/>
+  <rect x="138" y="103" width="180" height="24" rx="8" fill="url(#cell)" filter="url(#glow)"/>
+  <path d="M207 164 L265 164 L246 242 L179 242 Z" fill="#182536" stroke="#58758e" stroke-width="5"/>
+  <path d="M86 137 L34 169 L24 197 L96 179 L148 154 Z" fill="#24384d" stroke="#58758e" stroke-width="5"/>
+  <rect x="459" y="111" width="80" height="18" rx="8" fill="#bffcff" filter="url(#glow)"/>
+  <path d="M539 120 H650" stroke="#00f2fe" stroke-width="10" filter="url(#glow)"/><path d="M539 120 H650" stroke="#eaffff" stroke-width="3"/>
+  <circle cx="655" cy="120" r="11" fill="#eaffff" filter="url(#glow)"/>
+</g>
+<text x="66" y="551" class="s">轮廓：短后托、长矩形能量舱、分段式发射叉、下沉握把</text><text x="66" y="576" class="s">核心材质：暗蓝陶瓷外壳 / 青色透明电池舱 / 冷白发射芯</text>
+<rect x="790" y="128" width="568" height="480" rx="14" class="p"/><text x="814" y="165" class="h">现状与设计目标</text>
+<text x="814" y="205" class="b">现状问题</text><text x="834" y="235" class="s">• 高频 4.2/s 与长光迹已由数据表达，枪体身份仍偏通用</text><text x="834" y="261" class="s">• 30 点电池容量与充能延迟没有稳定可见的武器反馈</text><text x="834" y="287" class="s">• 青色枪体、弹道与场景水光可能形成同值混淆</text><text x="834" y="313" class="s">• 近乎无扩散的精确射击缺少清晰轴线与发射结构</text>
+<text x="814" y="356" class="b">视觉目标</text><text x="834" y="386" class="s">• 仅凭剪影识别为紧凑、高科技、稳定光束武器</text><text x="834" y="412" class="s">• 电池舱承担资源读数，枪口只在发射帧达到最高亮度</text><text x="834" y="438" class="s">• 以深色枪体包围青白能量，避免整枪平均发光</text><text x="834" y="464" class="s">• 与 Code Scanner 区分：本武器短促、高频、单轴，不强调扫描</text>
+<text x="814" y="507" class="b">建议色板</text><g><rect x="834" y="525" width="72" height="30" fill="#0d1722"/><rect x="916" y="525" width="72" height="30" fill="#31506b"/><rect x="998" y="525" width="72" height="30" fill="#135a75"/><rect x="1080" y="525" width="72" height="30" fill="#00f2fe"/><rect x="1162" y="525" width="72" height="30" fill="#eaffff"/></g>
+<rect x="42" y="632" width="1316" height="214" rx="14" class="p"/><text x="66" y="669" class="h">动作与特效关键帧</text>
+<g transform="translate(72 700)"><g><rect width="180" height="100" rx="10" fill="#111d2a"/><text x="15" y="25" class="l">待机</text><path d="M20 62 H130 L155 72 L130 82 H20 Z" fill="#2a4257" stroke="#68ddeb" stroke-width="3"/><rect x="45" y="66" width="70" height="10" fill="#00b7c8"/></g><g transform="translate(205)"><rect width="180" height="100" rx="10" fill="#111d2a"/><text x="15" y="25" class="l">发射</text><path d="M18 62 H126 L151 72 L126 82 H18 Z" fill="#2a4257" stroke="#68ddeb" stroke-width="3"/><path d="M151 72 H174" stroke="#eaffff" stroke-width="8" filter="url(#glow)"/></g><g transform="translate(410)"><rect width="180" height="100" rx="10" fill="#111d2a"/><text x="15" y="25" class="l">连射热态</text><path d="M18 62 H126 L151 72 L126 82 H18 Z" fill="#2a4257" stroke="#68ddeb" stroke-width="3"/><rect x="43" y="66" width="72" height="10" fill="#65f7ff"/><path d="M151 72 H174" stroke="#00f2fe" stroke-width="4"/></g><g transform="translate(615)"><rect width="180" height="100" rx="10" fill="#111d2a"/><text x="15" y="25" class="l">低电量</text><path d="M18 62 H126 L151 72 L126 82 H18 Z" fill="#2a4257" stroke="#527084" stroke-width="3"/><rect x="43" y="66" width="18" height="10" fill="#3d8392"/></g><g transform="translate(820)"><rect width="180" height="100" rx="10" fill="#111d2a"/><text x="15" y="25" class="l">充能延迟</text><path d="M18 62 H126 L151 72 L126 82 H18 Z" fill="#2a4257" stroke="#527084" stroke-width="3"/><g fill="#67ecff"><rect x="50" y="66" width="10" height="10"/><rect x="66" y="66" width="10" height="10" opacity=".65"/><rect x="82" y="66" width="10" height="10" opacity=".3"/></g></g><g transform="translate(1025)"><rect width="180" height="100" rx="10" fill="#111d2a"/><text x="15" y="25" class="l">充满</text><path d="M18 62 H126 L151 72 L126 82 H18 Z" fill="#2a4257" stroke="#bffcff" stroke-width="3"/><rect x="43" y="66" width="72" height="10" fill="#eaffff" filter="url(#glow)"/></g></g>
+<text x="48" y="875" class="s">记录：本轮处理 Energy Blaster。下一步评审发射叉长度、电池舱亮度、低电量提示、光迹寿命与 Code Scanner 的轮廓差异。</text>
+</svg>
