@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#0b1016"/>
+  <rect x="28" y="28" width="1144" height="744" rx="18" fill="#121a23" stroke="#2ecc71" stroke-width="3"/>
+  <text x="60" y="78" fill="#e8fff1" font-family="sans-serif" font-size="34" font-weight="700">CODE SCANNER / 代码扫描器 — REDESIGN CONCEPT</text>
+  <text x="60" y="112" fill="#92a8b5" font-family="sans-serif" font-size="18">Rare energy weapon · piercing scan beam · battery 40 · recharge delay 0.8s</text>
+
+  <g transform="translate(70 165)">
+    <text x="0" y="0" fill="#d7e3ea" font-family="sans-serif" font-size="22" font-weight="700">主轮廓</text>
+    <path d="M20 120 L80 72 L260 72 L310 105 L286 150 L95 150 L35 138 Z" fill="#24313d" stroke="#071016" stroke-width="8"/>
+    <path d="M82 86 L235 86 L268 106 L245 127 L94 127 L55 119 Z" fill="#31505b"/>
+    <rect x="112" y="93" width="96" height="18" rx="5" fill="#2ecc71"/>
+    <rect x="118" y="97" width="70" height="8" rx="3" fill="#caffdf"/>
+    <path d="M255 91 L350 99 L350 119 L260 127 L278 110 Z" fill="#18242c" stroke="#071016" stroke-width="7"/>
+    <path d="M318 100 L372 103 L372 115 L318 118 Z" fill="#2ecc71"/>
+    <path d="M128 146 L190 146 L176 225 L130 225 L112 194 Z" fill="#1b252d" stroke="#071016" stroke-width="8"/>
+    <rect x="137" y="162" width="26" height="48" rx="5" fill="#2ecc71"/>
+    <rect x="143" y="168" width="14" height="34" rx="3" fill="#9af7ba"/>
+    <path d="M58 107 L28 88 L12 106 L35 127 Z" fill="#3e5966" stroke="#071016" stroke-width="7"/>
+    <circle cx="286" cy="109" r="15" fill="#08120d" stroke="#2ecc71" stroke-width="5"/>
+    <circle cx="286" cy="109" r="5" fill="#d8ffe7"/>
+    <text x="0" y="270" fill="#a9bbc5" font-family="sans-serif" font-size="17">短后托 / 宽扫描舱 / 分离式发射叉 / 竖向电池握把</text>
+  </g>
+
+  <g transform="translate(560 165)">
+    <text x="0" y="0" fill="#d7e3ea" font-family="sans-serif" font-size="22" font-weight="700">配色与材质</text>
+    <rect x="0" y="28" width="220" height="50" rx="8" fill="#18242c"/><text x="235" y="61" fill="#cdd9df" font-family="sans-serif" font-size="18">深石墨外壳</text>
+    <rect x="0" y="91" width="220" height="50" rx="8" fill="#31505b"/><text x="235" y="124" fill="#cdd9df" font-family="sans-serif" font-size="18">冷灰蓝结构件</text>
+    <rect x="0" y="154" width="220" height="50" rx="8" fill="#2ecc71"/><text x="235" y="187" fill="#cdd9df" font-family="sans-serif" font-size="18">主扫描绿</text>
+    <rect x="0" y="217" width="220" height="50" rx="8" fill="#caffdf"/><text x="235" y="250" fill="#cdd9df" font-family="sans-serif" font-size="18">高能白绿</text>
+    <text x="0" y="310" fill="#92a8b5" font-family="sans-serif" font-size="17">避免整枪发绿；发光仅用于扫描窗、电池芯、枪口环。</text>
+  </g>
+
+  <g transform="translate(70 500)">
+    <text x="0" y="0" fill="#d7e3ea" font-family="sans-serif" font-size="22" font-weight="700">状态关键帧</text>
+    <g transform="translate(0 30)">
+      <rect width="235" height="170" rx="12" fill="#0e151c" stroke="#263743"/>
+      <text x="16" y="28" fill="#e8fff1" font-family="sans-serif" font-size="17" font-weight="700">IDLE</text>
+      <path d="M28 92 L65 66 L168 66 L198 88 L182 116 L70 116 L36 108 Z" fill="#24313d"/>
+      <rect x="82" y="78" width="68" height="11" fill="#2ecc71" opacity="0.55"/>
+      <text x="16" y="150" fill="#8ea3ae" font-family="sans-serif" font-size="14">扫描窗低频呼吸</text>
+    </g>
+    <g transform="translate(255 30)">
+      <rect width="235" height="170" rx="12" fill="#0e151c" stroke="#263743"/>
+      <text x="16" y="28" fill="#e8fff1" font-family="sans-serif" font-size="17" font-weight="700">FIRE</text>
+      <path d="M28 92 L65 66 L168 66 L198 88 L182 116 L70 116 L36 108 Z" fill="#24313d"/>
+      <rect x="82" y="78" width="68" height="11" fill="#caffdf"/>
+      <line x1="180" y1="91" x2="228" y2="91" stroke="#2ecc71" stroke-width="6"/>
+      <line x1="180" y1="91" x2="228" y2="91" stroke="#e8fff1" stroke-width="2"/>
+      <text x="16" y="150" fill="#8ea3ae" font-family="sans-serif" font-size="14">枪口环闭合后发射细束</text>
+    </g>
+    <g transform="translate(510 30)">
+      <rect width="235" height="170" rx="12" fill="#0e151c" stroke="#263743"/>
+      <text x="16" y="28" fill="#e8fff1" font-family="sans-serif" font-size="17" font-weight="700">LOW BATTERY</text>
+      <path d="M28 92 L65 66 L168 66 L198 88 L182 116 L70 116 L36 108 Z" fill="#24313d"/>
+      <rect x="82" y="78" width="26" height="11" fill="#f0c96a"/>
+      <text x="16" y="150" fill="#8ea3ae" font-family="sans-serif" font-size="14">电池窗缩短并转为琥珀色</text>
+    </g>
+    <g transform="translate(765 30)">
+      <rect width="235" height="170" rx="12" fill="#0e151c" stroke="#263743"/>
+      <text x="16" y="28" fill="#e8fff1" font-family="sans-serif" font-size="17" font-weight="700">RECHARGE</text>
+      <path d="M28 92 L65 66 L168 66 L198 88 L182 116 L70 116 L36 108 Z" fill="#24313d"/>
+      <rect x="82" y="78" width="68" height="11" fill="#2ecc71" opacity="0.3"/>
+      <circle cx="95" cy="83" r="4" fill="#caffdf"/><circle cx="120" cy="83" r="4" fill="#caffdf"/><circle cx="145" cy="83" r="4" fill="#caffdf"/>
+      <text x="16" y="150" fill="#8ea3ae" font-family="sans-serif" font-size="14">0.8 秒延迟后点阵回填</text>
+    </g>
+  </g>
+
+  <text x="70" y="752" fill="#728794" font-family="sans-serif" font-size="15">Concept file: docs/art-proposals/2026-07-27-code-scanner-redesign.svg</text>
+</svg>
