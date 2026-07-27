@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820">
+  <rect width="1200" height="820" fill="#111820"/>
+  <rect x="28" y="28" width="1144" height="764" rx="18" fill="#18232c" stroke="#60717a" stroke-width="3"/>
+  <text x="60" y="82" fill="#f0c35a" font-family="sans-serif" font-size="34" font-weight="700">Chain Jailer / 链狱看守 重画提案</text>
+  <text x="60" y="116" fill="#b9c7cc" font-family="sans-serif" font-size="18">Area-control dungeon enemy · 0.85 s windup · 18 px zone · root status</text>
+
+  <g transform="translate(90 180)">
+    <text x="0" y="0" fill="#dbe5e8" font-family="sans-serif" font-size="24" font-weight="700">主轮廓</text>
+    <ellipse cx="210" cy="455" rx="122" ry="24" fill="#0c1116" opacity="0.8"/>
+    <path d="M150 130 L270 130 L292 182 L280 382 L246 435 L174 435 L140 382 L128 182 Z" fill="#3d4850" stroke="#0a0e12" stroke-width="12"/>
+    <path d="M162 150 L258 150 L270 360 L242 404 L178 404 L150 360 Z" fill="#566670"/>
+    <path d="M150 244 H270 V276 H150 Z" fill="#b48332" stroke="#0a0e12" stroke-width="8"/>
+    <rect x="194" y="145" width="32" height="244" fill="#89969b" stroke="#0a0e12" stroke-width="7"/>
+    <path d="M150 72 H270 V154 H150 Z" fill="#485862" stroke="#0a0e12" stroke-width="12"/>
+    <rect x="168" y="92" width="84" height="42" fill="#12181e"/>
+    <g stroke="#8d9aa0" stroke-width="10">
+      <line x1="178" y1="78" x2="178" y2="154"/><line x1="200" y1="78" x2="200" y2="154"/><line x1="222" y1="78" x2="222" y2="154"/><line x1="244" y1="78" x2="244" y2="154"/>
+    </g>
+    <circle cx="192" cy="112" r="8" fill="#f0c35a"/><circle cx="230" cy="112" r="8" fill="#f0c35a"/>
+    <path d="M126 178 L88 220 L102 388 L156 370 Z" fill="#50616b" stroke="#0a0e12" stroke-width="11"/>
+    <path d="M286 178 L324 205 L322 330 L274 352 Z" fill="#596b75" stroke="#0a0e12" stroke-width="11"/>
+    <rect x="302" y="300" width="42" height="42" rx="7" fill="#aeb8bb" stroke="#0a0e12" stroke-width="8"/>
+    <g fill="none" stroke="#94a3ad" stroke-width="11">
+      <ellipse cx="365" cy="322" rx="18" ry="12"/><ellipse cx="398" cy="335" rx="12" ry="18"/><ellipse cx="430" cy="322" rx="18" ry="12"/><ellipse cx="463" cy="335" rx="12" ry="18"/>
+    </g>
+    <rect x="486" y="296" width="58" height="58" fill="#36434b" stroke="#0a0e12" stroke-width="10"/>
+    <rect x="502" y="310" width="16" height="16" fill="#75868e"/>
+    <path d="M146 404 H190 V468 H128 Z" fill="#3d4850" stroke="#0a0e12" stroke-width="11"/>
+    <path d="M230 404 H274 L292 468 H212 Z" fill="#3d4850" stroke="#0a0e12" stroke-width="11"/>
+    <path d="M118 458 H194 V486 H112 Z" fill="#62717a" stroke="#0a0e12" stroke-width="9"/>
+    <path d="M224 458 H300 V486 H218 Z" fill="#62717a" stroke="#0a0e12" stroke-width="9"/>
+    <text x="40" y="540" fill="#b9c7cc" font-family="sans-serif" font-size="18">高笼盔 · 宽囚衣 · 低重心靴 · 外置链锤</text>
+  </g>
+
+  <g transform="translate(650 170)">
+    <text x="0" y="0" fill="#dbe5e8" font-family="sans-serif" font-size="24" font-weight="700">配色与材质</text>
+    <g font-family="sans-serif" font-size="17" fill="#dbe5e8">
+      <rect x="0" y="30" width="72" height="42" fill="#171c22"/><text x="90" y="58">墨黑：面部负形 / 外轮廓</text>
+      <rect x="0" y="88" width="72" height="42" fill="#4b5a64"/><text x="90" y="116">冷灰钢：笼盔与链节</text>
+      <rect x="0" y="146" width="72" height="42" fill="#566670"/><text x="90" y="174">蓝灰布：囚衣主体</text>
+      <rect x="0" y="204" width="72" height="42" fill="#b48332"/><text x="90" y="232">旧黄铜：腰带、锁扣、提示层</text>
+      <rect x="0" y="262" width="72" height="42" fill="#f0c35a"/><text x="90" y="290">警示黄：眼光与攻击确认</text>
+      <rect x="0" y="320" width="72" height="42" fill="#78909c"/><text x="90" y="348">区域环：低饱和蓝灰，避免伤害色误读</text>
+    </g>
+
+    <text x="0" y="410" fill="#dbe5e8" font-family="sans-serif" font-size="24" font-weight="700">0.85 秒攻击节奏</text>
+    <g font-family="sans-serif" font-size="16" fill="#dbe5e8">
+      <rect x="0" y="438" width="116" height="70" rx="8" fill="#26343e" stroke="#60717a"/><text x="16" y="466">A  收链</text><text x="16" y="490" fill="#9fb0b7">0–0.22 s</text>
+      <rect x="130" y="438" width="116" height="70" rx="8" fill="#26343e" stroke="#60717a"/><text x="146" y="466">B  锁区</text><text x="146" y="490" fill="#9fb0b7">0.22–0.50 s</text>
+      <rect x="260" y="438" width="116" height="70" rx="8" fill="#26343e" stroke="#60717a"/><text x="276" y="466">C  黄闪</text><text x="276" y="490" fill="#9fb0b7">0.50–0.72 s</text>
+      <rect x="390" y="438" width="116" height="70" rx="8" fill="#26343e" stroke="#60717a"/><text x="406" y="466">D  砸落</text><text x="406" y="490" fill="#9fb0b7">0.72–0.85 s</text>
+    </g>
+    <circle cx="248" cy="590" r="88" fill="none" stroke="#78909c" stroke-width="4" stroke-dasharray="10 8"/>
+    <circle cx="248" cy="590" r="10" fill="#f0c35a"/>
+    <path d="M248 540 L248 566 M198 590 L224 590 M272 590 L298 590 M248 614 L248 640" stroke="#b6c2c7" stroke-width="5"/>
+    <text x="0" y="704" fill="#b9c7cc" font-family="sans-serif" font-size="17">区域预警：18 px 对应虚线锁链环；最终 0.13 s 才出现实心黄锁扣。</text>
+  </g>
+
+  <text x="60" y="772" fill="#8fa1a8" font-family="sans-serif" font-size="15">CMYS-FIGHT art proposal · 2026-07-28 · docs/art-proposals/2026-07-28-chain-jailer-redesign.svg</text>
+</svg>
