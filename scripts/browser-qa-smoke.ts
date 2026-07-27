@@ -45,7 +45,9 @@ assert.match(browserQa, /focusHubAnchor/);
 assert.match(browserQa, /focusHubLandmark/);
 assert.match(browserQa, /setHubDebug/);
 assert.match(browserQa, /setHubPromptScene/);
+assert.match(browserQa, /setHubIntro/);
 assert.match(browserQa, /qaHubScene/);
+assert.match(browserQa, /qaIntro/);
 assert.match(browserQa, /qaScene/);
 assert.match(browserQa, /setCaptureFrozen/);
 assert.match(browserQa, /dataset\.qaReady = "pending"/);
@@ -54,6 +56,8 @@ assert.match(browserQa, /dataset\.qaReady = "1"/);
 const engine = fs.readFileSync("src/game/Engine.ts", "utf8");
 assert.match(engine, /private qaCaptureFrozen = false/);
 assert.match(engine, /if \(this\.qaCaptureFrozen\)/);
+assert.match(engine, /qaSetHubIntro[\s\S]*?closeOverlayInternal\(\)[\s\S]*?fromSplash: true/);
+assert.match(engine, /qaSetHubIntro[\s\S]*?shakeTimer = 0[\s\S]*?showDebugOverlay = false/);
 
 const dungeonState = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 for (const scene of [

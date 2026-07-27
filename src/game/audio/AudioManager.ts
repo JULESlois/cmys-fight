@@ -37,6 +37,7 @@ export class AudioManager {
   private musicVolume = 0.55;
   private musicMode: MusicMode = "adaptive";
   private unlocked = false;
+  private musicPaused = false;
   private scene: MusicScene = "title";
   private musicTimer: ReturnType<typeof setInterval> | null = null;
   private nextStepTime = 0;
@@ -196,6 +197,14 @@ export class AudioManager {
     this.restartMusic();
   }
 
+  /** Fully silences music (e.g. during the splash intro) until unpaused. */
+  setMusicPaused(paused: boolean) {
+    if (this.musicPaused === paused) return;
+    this.musicPaused = paused;
+    if (paused) this.stopMusic();
+    else this.restartMusic();
+  }
+
   private stopMusic() {
     if (this.musicTimer) clearInterval(this.musicTimer);
     this.musicTimer = null;
@@ -208,6 +217,7 @@ export class AudioManager {
 
   private restartMusic() {
     this.stopMusic();
+    if (this.musicPaused) return;
     if (!this.unlocked || this.musicMode === "off" || this.masterVolume <= 0 || this.musicVolume <= 0) return;
     if (this.musicMode === "external" && this.tryExternalMusic()) return;
     this.startProceduralMusic();
