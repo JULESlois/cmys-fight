@@ -11,7 +11,7 @@
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
-    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:hub && npm run test:hub-prompts && npm run test:hub-art && npm run test:chests && npm run test:doors && npm run test:rooms && npm run test:wall-rendering && npm run test:flow-settings && npm run test:hub-responsibilities && npm run test:notice && npm run test:weapon-hud && npm run test:i18n && npm run test:castlevania && npm run test:castlevania-integration && npm run test:story && npm run test:content && npm run test:runtime && npm run test:weapons && npm run test:michele && npm run test:kanami && npm run test:celestia && npm run test:nte && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
+    "verify": "npm run lint && npm run test:art && npm run test:weapon-art && npm run test:projectile-art && npm run test:qa && npm run test:feedback && npm run test:mobile && npm run test:ui && npm run test:hub && npm run test:hub-prompts && npm run test:hub-art && npm run test:trial-altar-art && npm run test:chests && npm run test:doors && npm run test:rooms && npm run test:wall-rendering && npm run test:flow-settings && npm run test:hub-responsibilities && npm run test:notice && npm run test:weapon-hud && npm run test:i18n && npm run test:castlevania && npm run test:castlevania-integration && npm run test:story && npm run test:content && npm run test:runtime && npm run test:weapons && npm run test:michele && npm run test:kanami && npm run test:celestia && npm run test:nte && npm run test:balance && npm run test:progression && npm run test:monsters && npm run test:release && npm run test:input && npm run build && node --check public/sw.js && npm run test:http",
     "test:http": "node scripts/http-smoke.mjs",
     "test:input": "node --import tsx scripts/input-smoke.ts",
     "test:art": "node --import tsx scripts/art-audio-smoke.ts",
@@ -45,7 +45,8 @@
     "test:wall-rendering": "node --import tsx scripts/wall-rendering-smoke.ts",
     "test:castlevania": "node --import tsx scripts/castlevania-smoke.ts",
     "test:castlevania-integration": "node --import tsx scripts/castlevania-integration-smoke.ts",
-    "test:story": "node --import tsx scripts/story-smoke.ts"
+    "test:story": "node --import tsx scripts/story-smoke.ts",
+    "test:trial-altar-art": "node --import tsx scripts/trial-altar-art-smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
