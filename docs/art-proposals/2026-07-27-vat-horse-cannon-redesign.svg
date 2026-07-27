@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#111722"/>
+  <rect x="36" y="36" width="1128" height="728" rx="18" fill="#182231" stroke="#3A4A5F" stroke-width="3"/>
+  <text x="70" y="92" fill="#F4F7FA" font-family="sans-serif" font-size="34" font-weight="700">VAT-HORSE CANNON / 重画概念板</text>
+  <text x="72" y="126" fill="#9FB2C8" font-family="sans-serif" font-size="17">三联弹仓 · 跳弹燃烧弹 · 畜力罐体轮廓</text>
+
+  <g transform="translate(90 175)">
+    <text x="0" y="0" fill="#FFB36A" font-family="sans-serif" font-size="21" font-weight="700">主轮廓</text>
+    <rect x="0" y="28" width="650" height="300" rx="12" fill="#0D131C" stroke="#314154"/>
+    <g transform="translate(55 95)">
+      <path d="M40 86 L118 58 L210 58 L258 30 L396 30 L440 52 L520 52 L548 72 L520 92 L432 92 L394 116 L250 116 L212 96 L118 96 Z" fill="#2B3542" stroke="#0A0D12" stroke-width="8"/>
+      <path d="M128 65 L205 65 L246 42 L390 42 L420 58 L246 78 L200 84 L122 84 Z" fill="#667484"/>
+      <ellipse cx="110" cy="77" rx="48" ry="50" fill="#594638" stroke="#0A0D12" stroke-width="7"/>
+      <ellipse cx="110" cy="77" rx="31" ry="34" fill="#8A6B4E"/>
+      <path d="M88 60 Q110 45 132 60 L132 95 Q110 108 88 95 Z" fill="#D7DCE1" opacity="0.75"/>
+      <rect x="218" y="54" width="55" height="42" rx="9" fill="#D95F39" stroke="#0A0D12" stroke-width="6"/>
+      <rect x="278" y="50" width="55" height="46" rx="9" fill="#FF8A65" stroke="#0A0D12" stroke-width="6"/>
+      <rect x="338" y="46" width="55" height="50" rx="9" fill="#FFB36A" stroke="#0A0D12" stroke-width="6"/>
+      <path d="M424 62 L515 62 L542 74 L515 86 L424 86 Z" fill="#5D6977" stroke="#0A0D12" stroke-width="6"/>
+      <path d="M438 67 L516 67 L528 74 L516 81 L438 81 Z" fill="#FF8A65"/>
+      <path d="M225 116 L283 116 L267 182 L214 182 L202 160 Z" fill="#3A4654" stroke="#0A0D12" stroke-width="7"/>
+      <path d="M303 112 L350 112 L362 160 L318 176 L292 146 Z" fill="#4B3D35" stroke="#0A0D12" stroke-width="7"/>
+      <path d="M78 112 L156 112 L166 146 L146 176 L70 164 L52 140 Z" fill="#32404F" stroke="#0A0D12" stroke-width="7"/>
+      <circle cx="246" cy="75" r="8" fill="#FFE0C1"/>
+      <circle cx="306" cy="73" r="8" fill="#FFE0C1"/>
+      <circle cx="366" cy="71" r="8" fill="#FFE0C1"/>
+    </g>
+    <text x="28" y="312" fill="#A9B8C9" font-family="sans-serif" font-size="16">宽后罐、三联弹仓、长直燃烧导轨；后重前窄，避免与普通火箭筒同形。</text>
+  </g>
+
+  <g transform="translate(780 175)">
+    <text x="0" y="0" fill="#6FD6FF" font-family="sans-serif" font-size="21" font-weight="700">配色层级</text>
+    <rect x="0" y="28" width="320" height="300" rx="12" fill="#0D131C" stroke="#314154"/>
+    <g font-family="sans-serif" font-size="16" fill="#DDE6EF">
+      <rect x="28" y="60" width="55" height="34" rx="6" fill="#2B3542"/><text x="96" y="83">枪体冷灰</text>
+      <rect x="28" y="108" width="55" height="34" rx="6" fill="#8A6B4E"/><text x="96" y="131">培养罐皮革棕</text>
+      <rect x="28" y="156" width="55" height="34" rx="6" fill="#FF8A65"/><text x="96" y="179">燃烧等离子橙</text>
+      <rect x="28" y="204" width="55" height="34" rx="6" fill="#FFE0C1"/><text x="96" y="227">压力窗高光</text>
+      <rect x="28" y="252" width="55" height="34" rx="6" fill="#8FE3FF"/><text x="96" y="275">冷却提示青</text>
+    </g>
+  </g>
+
+  <g transform="translate(90 560)">
+    <text x="0" y="0" fill="#F4F7FA" font-family="sans-serif" font-size="21" font-weight="700">状态节奏</text>
+    <g font-family="sans-serif" font-size="15" fill="#DDE6EF">
+      <rect x="0" y="28" width="235" height="116" rx="10" fill="#0D131C" stroke="#314154"/>
+      <text x="18" y="56" fill="#8FE3FF" font-weight="700">待机</text>
+      <text x="18" y="82">三仓暗亮；后罐缓慢鼓动</text>
+      <text x="18" y="105">枪口无火，仅余热 1 px</text>
+
+      <rect x="250" y="28" width="235" height="116" rx="10" fill="#0D131C" stroke="#314154"/>
+      <text x="268" y="56" fill="#FFB36A" font-weight="700">发射</text>
+      <text x="268" y="82">三仓依次压暗，枪口喷出短焰</text>
+      <text x="268" y="105">后坐向后 2 px，罐体抖动</text>
+
+      <rect x="500" y="28" width="235" height="116" rx="10" fill="#0D131C" stroke="#314154"/>
+      <text x="518" y="56" fill="#FF8A65" font-weight="700">跳弹</text>
+      <text x="518" y="82">弹体旋转，触墙出现扁平火环</text>
+      <text x="518" y="105">保留明确反射方向箭头</text>
+
+      <rect x="750" y="28" width="235" height="116" rx="10" fill="#0D131C" stroke="#314154"/>
+      <text x="768" y="56" fill="#FFE0C1" font-weight="700">装填</text>
+      <text x="768" y="82">三枚弹仓逐个回亮</text>
+      <text x="768" y="105">2.2 秒内形成 3 段反馈</text>
+    </g>
+  </g>
+
+  <text x="72" y="738" fill="#7F92A8" font-family="sans-serif" font-size="14">文件：docs/art-proposals/2026-07-27-vat-horse-cannon-redesign.svg</text>
+</svg>
