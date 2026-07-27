@@ -39,6 +39,15 @@ const COLORS = {
   sand: "#76664A",
 } as const;
 
+export type ReforgeStonePhase = "idle" | "confirm" | "cooldown";
+
+export interface ReforgeStoneRenderState {
+  proximity?: number;
+  phase?: ReforgeStonePhase;
+  phaseTime?: number;
+  reducedMotion?: boolean;
+}
+
 function kindOf(object: WorldObjectDefinition): string {
   const value = object.properties?.kind;
   return typeof value === "string" ? value : object.id;
@@ -505,11 +514,12 @@ export class HubWorldRenderer {
     object: WorldObjectDefinition,
     time: number,
     alpha = 1,
+    reforgeState?: ReforgeStoneRenderState,
   ): void {
     if (!object) return;
     ctx.save();
     ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
-    this.drawObject(ctx, object, time);
+    this.drawObject(ctx, object, time, reforgeState);
     ctx.restore();
   }
 
@@ -691,14 +701,19 @@ export class HubWorldRenderer {
     else ctx.fillRect(x, y, 5, 16);
   };
 
-  private drawObject(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawObject(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    reforgeState?: ReforgeStoneRenderState,
+  ): void {
     if (object.properties?.visible === false) return;
     if (HubArchitectureRenderer.draw(ctx, object, time)) return;
     const kind = kindOf(object);
     if (kind === "plaza_banners") this.drawPlazaBanners(ctx, object, time);
     else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time);
     else if (kind === "waystone") this.drawWaystone(ctx, object, time);
-    else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time);
+    else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time, reforgeState);
     else if (kind === "training_marker") this.drawTrainingMarker(ctx, object);
     else if (kind === "garden_wish") this.drawGardenWish(ctx, object, time);
   }
@@ -943,43 +958,83 @@ export class HubWorldRenderer {
     }
   }
 
-  private drawReforgeStone(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawReforgeStone(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state: ReforgeStoneRenderState = {},
+  ): void {
     const cx = object.x + (object.width ?? 64) / 2;
     const cy = object.y + (object.height ?? 64) / 2;
-    ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(cx - 25, cy + 23, 50, 8);
+    const proximity = Math.max(0, Math.min(1, state.proximity ?? 0));
+    const phase = state.phase ?? "idle";
+    const phaseTime = Math.max(0, state.phaseTime ?? 0);
+    const confirmProgress = phase === "confirm" ? Math.min(1, phaseTime / 0.42) : 0;
+    const cooling = phase === "cooldown";
+    const shoulderSink = !state.reducedMotion && confirmProgress >= 0.24 && confirmProgress < 0.62 ? 1 : 0;
 
-    // Layered anvil-slab: plinth, block, beveled top rim, masonry joints.
-    ctx.fillStyle = COLORS.stoneDark;
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.fillRect(cx - 25, cy + 23, 50, 8);
+
+    ctx.fillStyle = "#20262C";
     ctx.fillRect(cx - 23, cy + 17, 46, 9);
-    ctx.fillRect(cx - 19, cy - 20, 38, 45);
-    ctx.fillStyle = COLORS.stone;
-    ctx.fillRect(cx - 15, cy - 17, 30, 38);
-    ctx.fillStyle = COLORS.stoneLight;
-    ctx.fillRect(cx - 15, cy - 17, 30, 2);
-    ctx.fillRect(cx - 15, cy - 15, 2, 32);
-    ctx.fillStyle = "rgba(18,22,29,0.45)";
-    ctx.fillRect(cx + 13, cy - 16, 2, 35);
-    ctx.fillRect(cx - 13, cy - 7, 10, 1); ctx.fillRect(cx + 3, cy + 9, 10, 1);
-    ctx.fillRect(cx - 8, cy + 14, 1, 4); ctx.fillRect(cx + 7, cy - 12, 1, 4);
+    ctx.fillRect(cx - 19, cy + 12, 38, 7);
+    ctx.fillRect(cx - 16, cy - 14 + shoulderSink, 32, 30);
+    ctx.fillRect(cx - 20, cy - 20 + shoulderSink, 40, 8);
+    ctx.fillRect(cx - 23, cy - 18 + shoulderSink, 46, 5);
+    ctx.fillStyle = "#4B535C";
+    ctx.fillRect(cx - 19, cy + 14, 38, 4);
+    ctx.fillRect(cx - 12, cy - 11 + shoulderSink, 24, 25);
+    ctx.fillRect(cx - 17, cy - 17 + shoulderSink, 34, 5);
+    ctx.fillStyle = "#8E9AA5";
+    ctx.fillRect(cx - 18, cy - 17 + shoulderSink, 35, 2);
+    ctx.fillRect(cx - 11, cy - 10 + shoulderSink, 2, 19);
+    ctx.fillRect(cx - 18, cy + 14, 35, 1);
+    ctx.fillStyle = "rgba(15,18,22,0.55)";
+    ctx.fillRect(cx + 10, cy - 10 + shoulderSink, 2, 23);
+    ctx.fillRect(cx + 17, cy - 16 + shoulderSink, 3, 4);
 
-    // Engraved channel first, then the ember glyph seated inside it. The glow
-    // is a slow warm color ramp, not the old 4Hz two-color flash.
+    ctx.fillStyle = "#20262C";
+    ctx.fillRect(cx - 10, cy - 7 + shoulderSink, 4, 1);
+    ctx.fillRect(cx - 7, cy - 6 + shoulderSink, 1, 5);
+    ctx.fillRect(cx + 7, cy + 5 + shoulderSink, 4, 1);
+    ctx.fillRect(cx + 7, cy + 6 + shoulderSink, 1, 4);
+
     ctx.fillStyle = "#1E1713";
-    ctx.fillRect(cx - 3, cy - 13, 6, 26); ctx.fillRect(cx - 11, cy - 3, 22, 6);
-    const emberPulse = 0.5 + 0.5 * Math.sin(time * 1.2);
-    ctx.fillStyle = rampAt(EMBER_RAMP, emberPulse);
-    ctx.fillRect(cx - 2, cy - 12, 4, 24); ctx.fillRect(cx - 10, cy - 2, 20, 4);
-    ctx.fillStyle = "rgba(255,255,255,0.4)";
-    ctx.fillRect(cx - 1, cy - 1, 2, 2);
+    ctx.fillRect(cx - 9, cy - 9 + shoulderSink, 18, 19);
+    ctx.fillRect(cx - 12, cy - 4 + shoulderSink, 24, 9);
+    const idlePulse = 0.5 + 0.5 * Math.sin(time * 4.3);
+    const confirmCompression = confirmProgress < 0.24 ? 1 - confirmProgress * 2.4 : 0.42;
+    const coreHalfWidth = phase === "confirm" ? Math.max(2, Math.round(8 * confirmCompression)) : 8;
+    const coreHalfHeight = phase === "confirm" ? Math.max(2, Math.round(7 * confirmCompression)) : 7;
+    const coreColor = cooling
+      ? "#5A2C20"
+      : confirmProgress >= 0.24 && confirmProgress < 0.62
+        ? "#FFF1B4"
+        : rampAt(EMBER_RAMP, Math.min(1, idlePulse * 0.75 + proximity * 0.3));
+    ctx.fillStyle = coreColor;
+    ctx.fillRect(cx - 2, cy - coreHalfHeight + shoulderSink, 4, coreHalfHeight * 2);
+    ctx.fillRect(cx - coreHalfWidth, cy - 2 + shoulderSink, coreHalfWidth * 2, 4);
+    if (!cooling && (proximity > 0.55 || (confirmProgress >= 0.24 && confirmProgress < 0.62))) {
+      ctx.fillStyle = confirmProgress >= 0.24 ? "#FFF1B4" : "rgba(255,211,107,0.7)";
+      ctx.fillRect(cx - 1, cy - 1 + shoulderSink, 2, 2);
+    }
 
-    // Gold inlay studs at the glyph's cardinal points.
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(cx - 1, cy - 15, 2, 2); ctx.fillRect(cx - 1, cy + 13, 2, 2);
-    ctx.fillRect(cx - 13, cy - 1, 2, 2); ctx.fillRect(cx + 11, cy - 1, 2, 2);
+    const studPositions = [
+      { x: cx - 1, y: cy + 12 },
+      { x: cx - 14, y: cy + 1 },
+      { x: cx + 12, y: cy + 1 },
+      { x: cx - 1, y: cy - 14 + shoulderSink },
+    ];
+    for (let index = 0; index < studPositions.length; index++) {
+      const lit = proximity * 4 > index || (confirmProgress > 0 && confirmProgress < 0.85);
+      ctx.fillStyle = lit ? COLORS.gold : "#6E5A35";
+      ctx.fillRect(studPositions[index].x, studPositions[index].y, 2, 2);
+    }
 
-    // Resting embers at the foot plus two deterministic rising flecks.
     ctx.fillStyle = COLORS.orange;
-    ctx.fillRect(cx - 13, cy + 18, 2, 1); ctx.fillRect(cx + 9, cy + 19, 2, 1);
+    ctx.fillRect(cx - 13, cy + 18, 2, 1);
+    ctx.fillRect(cx + 9, cy + 19, 2, 1);
     for (let fleck = 0; fleck < 2; fleck++) {
       const cycle = (time * 0.45 + fleck * 0.5) % 1;
       const fade = Math.round(Math.min(1, Math.min(cycle, 1 - cycle) * 5) * 3) / 3;
@@ -993,6 +1048,23 @@ export class HubWorldRenderer {
         1,
         1,
       );
+      ctx.globalAlpha = previousAlpha;
+    }
+    if (!state.reducedMotion && confirmProgress >= 0.52 && confirmProgress <= 0.88) {
+      const burstProgress = (confirmProgress - 0.52) / 0.36;
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * (1 - burstProgress);
+      for (let particle = 0; particle < 8; particle++) {
+        const angle = particle * Math.PI / 4;
+        const distance = 4 + Math.round(burstProgress * (9 + particle % 3 * 2));
+        ctx.fillStyle = particle % 3 === 0 ? "#FFF1B4" : particle % 2 === 0 ? COLORS.fire : COLORS.orange;
+        ctx.fillRect(
+          cx + Math.round(Math.cos(angle) * distance),
+          cy + shoulderSink + Math.round(Math.sin(angle) * distance * 0.7),
+          particle % 3 === 0 ? 2 : 1,
+          1,
+        );
+      }
       ctx.globalAlpha = previousAlpha;
     }
   }

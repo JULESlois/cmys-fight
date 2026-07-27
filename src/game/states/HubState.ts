@@ -11,7 +11,7 @@ import { HUB_MOVE_SPEED, HubPlayerController } from "../hub/HubPlayerController"
 import { HubPlayerRenderer } from "../hub/HubPlayerRenderer";
 import { clampHubPromptPosition, isHubPromptAnchorNearViewport } from "../hub/HubPromptLayout";
 import { resolveHubSpawn } from "../hub/HubProgress";
-import { HubWorldRenderer } from "../hub/HubWorldRenderer";
+import { HubWorldRenderer, type ReforgeStoneRenderState } from "../hub/HubWorldRenderer";
 import { HubDebugOverlay } from "../hub/HubDebugOverlay";
 import { drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { PromptRenderer } from "../render/PromptRenderer";
@@ -61,6 +61,8 @@ export class HubState extends GameState {
   private mode: HubMode = "world";
   private selectedIndex = 0;
   private refundArmed = false;
+  private reforgePhase: ReforgeStoneRenderState["phase"] = "idle";
+  private reforgePhaseTime = 0;
   private confirmationAction: "start" | "abandon" | null = null;
   private time = 0;
   private qaPresentationTime: number | null = null;
@@ -120,6 +122,8 @@ export class HubState extends GameState {
       ? Math.max(0, EXPEDITION_ACTIONS.indexOf(params?.focusAction ?? (this.engine.data.hasValidSave() ? "continue" : "start")))
       : 0;
     this.refundArmed = false;
+    this.reforgePhase = "idle";
+    this.reforgePhaseTime = 0;
     this.confirmationAction = null;
     this.interactionTarget = null;
     this.time = 0;
@@ -148,6 +152,16 @@ export class HubState extends GameState {
   public update(dt = 1 / 60): void {
     if (this.qaPresentationTime === null) this.time += dt;
     else this.time = this.qaPresentationTime;
+    if (this.reforgePhase !== "idle") {
+      this.reforgePhaseTime += dt;
+      if (this.reforgePhase === "confirm" && this.reforgePhaseTime >= 0.42) {
+        this.reforgePhase = "cooldown";
+        this.reforgePhaseTime = 0;
+      } else if (this.reforgePhase === "cooldown" && this.reforgePhaseTime >= 0.5) {
+        this.reforgePhase = "idle";
+        this.reforgePhaseTime = 0;
+      }
+    }
 
     if (this.introPhase !== "none") {
       if (this.introPhase === "crystal" && this.introTimer < 3.5 && this.engine.input.wasAnyPressed()) {
@@ -518,7 +532,11 @@ export class HubState extends GameState {
       return;
     }
     const refunded = this.engine.data.refundMetaUpgrades();
-    if (refunded > 0) audio.playPickup();
+    if (refunded > 0) {
+      audio.playPickup();
+      this.reforgePhase = "confirm";
+      this.reforgePhaseTime = 0;
+    }
     else this.showMessage(t(this.language, "hub.noRefund"), true);
     this.refundArmed = false;
   }
@@ -752,6 +770,7 @@ export class HubState extends GameState {
         object,
         this.time,
         this.occlusionController.getAlpha(object.occlusionGroupId) * this.introObjectAlpha(object),
+        this.getReforgeStoneRenderState(object),
       ),
     }));
     
@@ -861,6 +880,20 @@ export class HubState extends GameState {
     ctx.fillStyle = UI_COLORS.yellow;
     ctx.font = uiFont(this.language, 6, true);
     ctx.fillText(`${this.engine.data.meta.currency} ${t(this.language, "common.shards")}`, 13, 27);
+  }
+
+  private getReforgeStoneRenderState(object: WorldObjectDefinition): ReforgeStoneRenderState | undefined {
+    if (object.id !== "reforge_stone") return undefined;
+    const target = this.interactionTarget;
+    const proximity = target?.object.action === "open_meta_refund"
+      ? Math.max(0, Math.min(1, 1 - target.distance / 38))
+      : 0;
+    return {
+      proximity,
+      phase: this.reforgePhase,
+      phaseTime: this.reforgePhaseTime,
+      reducedMotion: this.engine.data.settings.reducedFlashing,
+    };
   }
 
   private spawnIntroSplash() {
