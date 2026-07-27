@@ -870,76 +870,98 @@ export class HubWorldRenderer {
     const centerX = object.x + (object.width ?? 48) / 2;
     const bottom = object.y + (object.height ?? 64);
     const accent = typeof object.properties?.accent === "string" ? object.properties.accent : COLORS.purple;
+    const direction = object.properties?.direction === "south" ? "south" : "north";
+    const state = object.properties?.interactionState;
+    const proximity = state === "proximity" ? 1 : 0;
+    const confirming = state === "confirm";
+    const disabled = state === "disabled";
+    const directionSign = direction === "north" ? -1 : 1;
+    const confirmProgress = confirming ? (time % 0.35) / 0.35 : 0;
+    const ringExpansion = 1 + proximity * 0.25;
+    const ringHalfWidth = Math.round(17 * ringExpansion);
+
     drawGroundShadow(ctx, centerX - 18, bottom - 3, 36, 6);
 
-    // Stepped plinth with a chamfered highlight.
+    // Broken double-step base preserves the authored 48x64 footprint.
     ctx.fillStyle = COLORS.stoneDark;
-    ctx.fillRect(centerX - 15, bottom - 12, 30, 12);
-    ctx.fillRect(centerX - 12, bottom - 15, 24, 4);
+    ctx.fillRect(centerX - 16, bottom - 9, 32, 9);
+    ctx.fillRect(centerX - 12, bottom - 14, 24, 6);
     ctx.fillStyle = COLORS.stone;
-    ctx.fillRect(centerX - 13, bottom - 11, 26, 3);
+    ctx.fillRect(centerX - 13, bottom - 8, 11, 3);
+    ctx.fillRect(centerX + 1, bottom - 8, 12, 3);
+    ctx.fillRect(centerX - 9, bottom - 13, 18, 4);
     ctx.fillStyle = COLORS.stoneLight;
-    ctx.fillRect(centerX - 13, bottom - 11, 26, 1);
-    ctx.fillStyle = "rgba(64,96,58,0.5)";
-    ctx.fillRect(centerX - 14, bottom - 4, 5, 2); ctx.fillRect(centerX + 9, bottom - 6, 4, 2);
+    ctx.fillRect(centerX - 8, bottom - 12, 11, 1);
 
-    // Obelisk shaft: beveled light edge, shadowed edge, hairline cracks.
+    // Direction channel and arrow distinguish north/south without separate art.
+    ctx.fillStyle = disabled ? COLORS.stoneLight : COLORS.gold;
+    ctx.fillRect(centerX - 1, bottom - 13, 2, 7);
+    const arrowY = bottom - 5 + directionSign;
+    ctx.fillRect(centerX - 1, arrowY, 2, 2);
+    ctx.fillRect(centerX - 3, arrowY - directionSign * 2, 6, 1);
+
+    // Narrow-waisted shaft and forked crystal cradle.
     ctx.fillStyle = COLORS.stoneDark;
-    ctx.fillRect(centerX - 9, bottom - 48, 18, 37);
+    ctx.fillRect(centerX - 8, bottom - 45, 16, 33);
+    ctx.fillRect(centerX - 11, bottom - 49, 5, 12);
+    ctx.fillRect(centerX + 6, bottom - 49, 5, 12);
     ctx.fillStyle = COLORS.stone;
-    ctx.fillRect(centerX - 6, bottom - 45, 12, 32);
+    ctx.fillRect(centerX - 5, bottom - 42, 10, 28);
+    ctx.fillRect(centerX - 8, bottom - 47, 4, 9);
+    ctx.fillRect(centerX + 4, bottom - 47, 4, 9);
     ctx.fillStyle = COLORS.stoneLight;
-    ctx.fillRect(centerX - 4, bottom - 42, 2, 26);
-    ctx.fillStyle = "rgba(18,22,29,0.5)";
-    ctx.fillRect(centerX + 4, bottom - 43, 1, 29);
-    ctx.fillRect(centerX + 1, bottom - 26, 1, 4); ctx.fillRect(centerX + 2, bottom - 23, 1, 3);
+    ctx.fillRect(centerX - 4, bottom - 40, 1, 20);
 
-    // Accent capital and collar ring, edged so they read as fitted stone.
-    ctx.fillStyle = accent;
-    ctx.fillRect(centerX - 10, bottom - 53, 20, 10);
-    ctx.fillRect(centerX - 18, bottom - 35, 36, 5);
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    ctx.fillRect(centerX - 10, bottom - 44, 20, 1);
-    ctx.fillRect(centerX - 18, bottom - 31, 36, 1);
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
-    ctx.fillRect(centerX - 9, bottom - 52, 18, 1);
-    ctx.fillRect(centerX - 17, bottom - 35, 34, 1);
-
-    // Gold sigil channel.
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(centerX - 2, bottom - 50, 4, 26);
-    ctx.fillRect(centerX - 8, bottom - 39, 16, 4);
-    ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.fillRect(centerX - 1, bottom - 49, 1, 10);
-
-    // Shaft runes breathe on offset phases (replaces the old 4Hz flicker).
-    const runeRamp = accentRamp(accent, 0.8);
-    for (let rune = 0; rune < 3; rune++) {
-      const pulse = 0.5 + 0.5 * Math.sin(time * 1.5 + rune * 2.1 + object.x * 0.01);
-      ctx.fillStyle = rampAt(runeRamp, pulse);
-      ctx.fillRect(centerX + 5, bottom - 24 + rune * 4, 2, 2);
+    // Open navigation ring, tilted in the authored direction.
+    const ringY = bottom - 33 + directionSign * 2;
+    ctx.fillStyle = disabled ? COLORS.purpleDark : accent;
+    if (disabled) {
+      ctx.fillRect(centerX - ringHalfWidth, ringY, 8, 3);
+      ctx.fillRect(centerX - 4, ringY + directionSign, 8, 3);
+      ctx.fillRect(centerX + ringHalfWidth - 8, ringY + directionSign * 2, 8, 3);
+    } else {
+      ctx.fillRect(centerX - ringHalfWidth, ringY, ringHalfWidth - 5, 3);
+      ctx.fillRect(centerX + 5, ringY + directionSign * 2, ringHalfWidth - 5, 3);
+      ctx.fillStyle = COLORS.purpleDark;
+      ctx.fillRect(centerX - ringHalfWidth + 2, ringY + 3, ringHalfWidth - 7, 1);
+      ctx.fillRect(centerX + 7, ringY + directionSign * 2 + 3, ringHalfWidth - 7, 1);
     }
 
-    // Floating crystal: slow one-pixel bob, soft halo, twin orbit glints.
-    const bob = Math.round(Math.sin(time * 1.3 + object.y * 0.02) * 1.5);
-    const crystalY = bottom - 62 + bob;
-    const haloPulse = 0.5 + 0.5 * Math.sin(time * 1.7 + object.x * 0.013);
-    ctx.fillStyle = rampAt(accentRamp(accent, 0.3), haloPulse);
-    ctx.fillRect(centerX - 4, crystalY - 2, 8, 11);
-    ctx.fillStyle = accent;
-    ctx.fillRect(centerX - 2, crystalY, 4, 7);
-    ctx.fillRect(centerX - 3, crystalY + 2, 6, 3);
-    ctx.fillStyle = COLORS.cyanSoft;
-    ctx.fillRect(centerX - 1, crystalY + 1, 1, 4);
-    for (let glintIndex = 0; glintIndex < 2; glintIndex++) {
-      const angle = time * 0.9 + glintIndex * Math.PI;
-      ctx.fillStyle = glintIndex === 0 ? COLORS.cyanSoft : "rgba(255,255,255,0.6)";
-      ctx.fillRect(
-        centerX + Math.round(Math.cos(angle) * 7),
-        crystalY + 3 + Math.round(Math.sin(angle) * 2),
-        1,
-        1,
-      );
+    // Gold route channel lights bottom-to-top on proximity.
+    for (let rune = 0; rune < 3; rune++) {
+      const active = proximity > rune / 3 || confirming;
+      const pulse = 0.45 + 0.25 * Math.sin(time * 1.4 + rune * 1.8);
+      ctx.fillStyle = active && !disabled ? COLORS.gold : `rgba(216,180,92,${disabled ? 0.12 : pulse})`;
+      ctx.fillRect(centerX - 1, bottom - 22 - rune * 6, 2, 3);
+    }
+
+    // Long faceted crystal: deterministic bob, bounded halo and confirm rebound.
+    const bob = disabled ? 0 : Math.round(Math.sin(time * 4.1 + object.y * 0.02) * 1.5);
+    const press = confirming ? Math.round(Math.sin(confirmProgress * Math.PI) * 3) : 0;
+    const crystalY = bottom - 61 + bob + press;
+    const haloAlpha = disabled ? 0.08 : 0.18 + proximity * 0.18;
+    ctx.fillStyle = `rgba(155,116,213,${haloAlpha})`;
+    ctx.fillRect(centerX - 6, crystalY - 1, 12, 12);
+    ctx.fillStyle = disabled ? COLORS.stoneLight : accent;
+    ctx.fillRect(centerX - 2, crystalY, 4, 10);
+    ctx.fillRect(centerX - 4, crystalY + 3, 8, 4);
+    ctx.fillStyle = disabled ? "rgba(183,250,245,0.18)" : COLORS.cyanSoft;
+    ctx.fillRect(centerX + (direction === "north" ? -1 : 1), crystalY + 2, 1, 5);
+
+    if (!disabled) {
+      for (let glintIndex = 0; glintIndex < 2; glintIndex++) {
+        const angle = time * 0.9 + glintIndex * Math.PI;
+        ctx.fillStyle = glintIndex === 0 ? COLORS.cyanSoft : "rgba(255,255,255,0.6)";
+        ctx.fillRect(centerX + Math.round(Math.cos(angle) * 7), crystalY + 4 + Math.round(Math.sin(angle) * 2), 1, 1);
+      }
+    }
+
+    if (confirming && confirmProgress < 0.8) {
+      const sweepX = centerX - ringHalfWidth + Math.round(confirmProgress * ringHalfWidth * 2);
+      ctx.fillStyle = COLORS.cyanSoft;
+      ctx.fillRect(sweepX, ringY - 1, 2, 5);
+      ctx.fillStyle = COLORS.gold;
+      ctx.fillRect(centerX - 3, arrowY - directionSign * 2, 6, 2);
     }
   }
 
