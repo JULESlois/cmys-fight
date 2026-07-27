@@ -474,7 +474,7 @@ function drawTopLibraryDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked:
   fill(ctx, "rgba(0,0,0,0.4)", cx - 23, baseY + 38, 46, 3);
 }
 
-function drawTopForgeCoreDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean): void {
+function drawTopForgeCoreDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locked: boolean, time: number): void {
   const cx = vb.x + vb.width / 2;
   const baseY = vb.y + 3;
 
@@ -489,7 +489,7 @@ function drawTopForgeCoreDoor(ctx: CanvasRenderingContext2D, vb: DoorRect, locke
   fill(ctx, "#3D130E", cx - 18, baseY + 12, 2, 24);
   fill(ctx, "#3D130E", cx + 16, baseY + 12, 2, 24);
   
-  if (Math.floor(Date.now() / 200) % 3 === 0) {
+  if (Math.floor(time * 5) % 3 === 0) {
     fill(ctx, "#FF5500", cx - 21, baseY + 20, 4, 2);
     fill(ctx, "#FF5500", cx + 17, baseY + 20, 4, 2);
   }
@@ -528,12 +528,73 @@ function getBaseTheme(theme: string): string {
   return theme;
 }
 
+interface WorldNodeDoorStyle {
+  dark: string;
+  energy: string;
+  energyLight: string;
+  warning: string;
+  pattern: number;
+}
+
+const WORLD_NODE_DOOR_STYLES: Record<string, WorldNodeDoorStyle> = {
+  overgrown_archive: { dark: "#29472F", energy: "#71C86B", energyLight: "#E5F7A8", warning: "#E783A5", pattern: 0b00011 },
+  sealed_library: { dark: "#291544", energy: "#AF46FF", energyLight: "#E0A8FF", warning: "#D7B45B", pattern: 0b00101 },
+  cooling_canal: { dark: "#173643", energy: "#39C9D8", energyLight: "#D8FFFF", warning: "#E36A68", pattern: 0b00111 },
+  sealed_armory: { dark: "#31251E", energy: "#C58B4B", energyLight: "#FFE1A0", warning: "#D9534F", pattern: 0b01001 },
+  observatory: { dark: "#223A54", energy: "#6DB9E8", energyLight: "#ECF8FF", warning: "#A681E8", pattern: 0b01011 },
+  forge_core: { dark: "#3D130E", energy: "#FF5500", energyLight: "#FFE86E", warning: "#D99311", pattern: 0b01101 },
+  ash_catacombs: { dark: "#352827", energy: "#9C7B78", energyLight: "#E7D7C8", warning: "#D95B36", pattern: 0b10001 },
+  deep_prison: { dark: "#2B2231", energy: "#8F6E9F", energyLight: "#D9C8E6", warning: "#C44852", pattern: 0b10101 },
+  deep_archive: { dark: "#301537", energy: "#C44CDB", energyLight: "#F5CEFF", warning: "#4ED4C8", pattern: 0b11101 },
+};
+
+function drawWorldNodeAccent(
+  ctx: CanvasRenderingContext2D,
+  geometry: DoorGeometry,
+  theme: string,
+  locked: boolean,
+  time: number,
+): void {
+  const node = WORLD_NODE_DOOR_STYLES[theme];
+  if (!node) return;
+
+  const vb = geometry.visualBounds;
+  const pulse = Math.floor(time * 4 + node.pattern) % 3 === 0;
+  const light = pulse ? node.energyLight : node.energy;
+  const bitColor = locked ? node.warning : light;
+
+  // Five-bit archive marks give every route node a compact, deterministic
+  // identity on all four directional models without changing the aperture.
+  if (geometry.direction === "up" || geometry.direction === "down") {
+    const cx = vb.x + vb.width / 2;
+    const y = geometry.direction === "up" ? vb.y + 1 : vb.y + 2;
+    fill(ctx, node.dark, cx - 13, y, 26, 4);
+    for (let bit = 0; bit < 5; bit++) {
+      const active = (node.pattern & (1 << bit)) !== 0;
+      fill(ctx, active ? bitColor : node.energy, cx - 10 + bit * 4, y + 1, active ? 3 : 1, 2);
+    }
+    fill(ctx, node.warning, vb.x + 8, y + 1, 3, 2);
+    fill(ctx, node.energyLight, vb.x + vb.width - 11, y + 1, 3, 2);
+  } else {
+    const x = geometry.direction === "left" ? vb.x + 2 : vb.x + vb.width - 5;
+    const cy = vb.y + vb.height / 2;
+    fill(ctx, node.dark, x, cy - 15, 3, 30);
+    for (let bit = 0; bit < 5; bit++) {
+      const active = (node.pattern & (1 << bit)) !== 0;
+      fill(ctx, active ? bitColor : node.energy, x + 1, cy - 11 + bit * 5, 2, active ? 3 : 1);
+    }
+    fill(ctx, node.warning, x, vb.y + 6, 3, 3);
+    fill(ctx, node.energyLight, x, vb.y + vb.height - 9, 3, 3);
+  }
+}
+
 export class DoorRenderer {
   public static draw(
     ctx: CanvasRenderingContext2D,
     geometry: DoorGeometry,
     theme: DoorTheme,
     locked: boolean,
+    time = 0,
   ): void {
     const vb = geometry.visualBounds;
 
@@ -562,7 +623,7 @@ export class DoorRenderer {
     switch (geometry.direction) {
       case "up":
         if (theme === "sealed_library") drawTopLibraryDoor(ctx, vb, locked);
-        else if (theme === "forge_core") drawTopForgeCoreDoor(ctx, vb, locked);
+        else if (theme === "forge_core") drawTopForgeCoreDoor(ctx, vb, locked, time);
         else if (baseTheme === "forest") drawTopForestDoor(ctx, vb, locked);
         else if (baseTheme === "dungeon") drawTopDungeonDoor(ctx, vb, locked);
         else if (baseTheme === "snow") drawTopSnowDoor(ctx, vb, locked);
@@ -581,6 +642,8 @@ export class DoorRenderer {
         drawSideDoor(ctx, vb, baseTheme, locked, "right");
         break;
     }
+
+    drawWorldNodeAccent(ctx, geometry, theme, locked, time);
 
     ctx.restore();
   }

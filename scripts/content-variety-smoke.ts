@@ -13,8 +13,46 @@ import { EncounterFactory } from "../src/game/EncounterFactory";
 import { ShopSystem } from "../src/game/shop/ShopSystem";
 import { createDefaultEquipmentProgress } from "../src/game/combat/EquipmentSystem";
 import { EQUIPMENT } from "../src/game/data/equipment";
+import { SpecialRoomRenderer, getSpecialRoomPalette } from "../src/game/render/SpecialRoomRenderer";
+import { WORLD_NODES } from "../src/game/world/WorldNodes";
 
 const themes: EnemyTheme[] = ["forest", "dungeon", "snow", "lava"];
+
+interface StageCall { kind: "fill" | "stroke"; color: string; x: number; y: number; width: number; height: number; }
+function createStageRecorder(): { ctx: CanvasRenderingContext2D; calls: StageCall[] } {
+  const calls: StageCall[] = [];
+  let fillStyle = "";
+  let strokeStyle = "";
+  const target: Record<string, unknown> = {
+    fillRect(x: number, y: number, width: number, height: number) {
+      calls.push({ kind: "fill", color: fillStyle, x, y, width, height });
+    },
+    strokeRect(x: number, y: number, width: number, height: number) {
+      calls.push({ kind: "stroke", color: strokeStyle, x, y, width, height });
+    },
+  };
+  Object.defineProperties(target, {
+    fillStyle: { get: () => fillStyle, set: value => { fillStyle = String(value); } },
+    strokeStyle: { get: () => strokeStyle, set: value => { strokeStyle = String(value); } },
+  });
+  return { ctx: target as unknown as CanvasRenderingContext2D, calls };
+}
+
+function stageSignature(roomType: "start" | "treasure" | "boss" | "exit" | "npc" | "hidden", theme: string, completed = false): string {
+  const recorder = createStageRecorder();
+  SpecialRoomRenderer.drawRoomStage(recorder.ctx, roomType, theme, 3.25, completed);
+  return recorder.calls.map(call => `${call.kind}:${call.color}:${call.x}:${call.y}:${call.width}:${call.height}`).join("|");
+}
+
+const routeNodeIds = Object.keys(WORLD_NODES);
+assert.equal(new Set(routeNodeIds.map(id => JSON.stringify(getSpecialRoomPalette(id)))).size, routeNodeIds.length, "route nodes have distinct special-room palettes");
+const routeStageSignatures = routeNodeIds.map(id => stageSignature("exit", id));
+assert.equal(new Set(routeStageSignatures).size, routeNodeIds.length, "route nodes have distinct floor signatures");
+assert.deepEqual(routeStageSignatures, routeNodeIds.map(id => stageSignature("exit", id)), "special-room stages are deterministic at a fixed time");
+const specialTypes = ["start", "treasure", "boss", "exit", "npc", "hidden"] as const;
+assert.equal(new Set(specialTypes.map(type => stageSignature(type, "deep_archive"))).size, specialTypes.length, "special-room types have distinct floor inlays");
+assert.notEqual(stageSignature("exit", "deep_archive", false), stageSignature("exit", "deep_archive", true), "completed special rooms visibly power down");
+
 assert.equal(Object.keys(ENEMIES).length, 66);
 for (const theme of themes) {
   assert.equal(getEnemyPool(theme, undefined, 1).length, 3, `${theme} stage 1 pool`);
@@ -269,6 +307,8 @@ assert.match(floorSource, /assignRoomType\("treasure"/);
 assert.match(floorSource, /assignRoomType\("npc"/);
 assert.match(floorSource, /createRoom\(origin\.x \+ direction\.dx, origin\.y \+ direction\.dy, "hidden"\)/);
 assert.match(roomRendererSource, /tileId === 0 \|\| tileId === 2/);
+assert.match(roomRendererSource, /getMapData\(currentRoom, baseTheme\)/, "route-node visuals preserve base-theme collision layouts");
+assert.match(dungeonSource, /floor\.worldNodeId \|\| floor\.theme/, "runtime dungeon art resolves the active route node before its base theme");
 assert.match(minimapSource, /room\.doors\.right[\s\S]*room\.doors\.down/);
 assert.match(minimapSource, /room\.visited \|\| isCurrent/);
 assert.match(minimapSource, /visibleKeys\.has/);

@@ -59,6 +59,13 @@ assert.ok(fx.getActiveCount() <= 220, "particle cap");
 fx.update(5);
 assert.equal(fx.getActiveCount(), 0, "particle expiry");
 
+const fullDeathFx = new PixelFxSystem();
+fullDeathFx.emitEnemyDeath(20, 30, "#C44CDB", true, false);
+const lowDeathFx = new PixelFxSystem();
+lowDeathFx.emitEnemyDeath(20, 30, "#C44CDB", true, true);
+assert.ok(fullDeathFx.getActiveCount() > lowDeathFx.getActiveCount(), "low effects reduce enemy death particles");
+assert.ok(lowDeathFx.getActiveCount() >= 6, "low effects retain a readable enemy death cue");
+
 function spriteRectCount(outline: boolean): number {
   let rects = 0;
   const ctx = {

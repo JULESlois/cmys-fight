@@ -2950,8 +2950,9 @@ export class MonsterModelRenderer {
     const palette: Palette = {
       base,
       light: hitFlash ? "#FFFFFF" : adjustHex(enemy.displayColor, 55),
-      dark: hitFlash ? "#FFFFFF" : adjustHex(enemy.displayColor, -55),
-      ink: hitFlash ? "#FFFFFF" : enemy.isElite ? "#6B4E00" : enemy.type === "boss" ? "#26070D" : "#130B18",
+      dark: hitFlash ? "#DCE7F2" : adjustHex(enemy.displayColor, -55),
+      // Ink stays dark during the flash so the silhouette keeps a readable outline.
+      ink: enemy.isElite ? "#6B4E00" : enemy.type === "boss" ? "#26070D" : "#130B18",
       white: "#FFFFFF",
       accent: hitFlash ? "#FFFFFF" : adjustHex(enemy.displayColor, 90),
     };

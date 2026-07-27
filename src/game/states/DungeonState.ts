@@ -702,10 +702,29 @@ export class DungeonState extends GameState {
     }
   }
 
+  /** Keeps the music scene in sync with the current theme, room and combat state. */
+  private syncDungeonMusic(): void {
+    const floor = this.engine.data.data.floor;
+    const theme = floor?.theme;
+    const themeScene = theme === "forest" || theme === "snow" || theme === "lava" ? theme : "dungeon";
+    const room = floor?.rooms?.find((r: Room) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
+    if (room?.type === "npc") {
+      audio.setMusicScene("shop");
+      return;
+    }
+    const inCombat = this.roomPhase === "intro" || this.roomPhase === "locking" || this.roomPhase === "combat";
+    if (inCombat) {
+      audio.setMusicScene(room?.type === "boss" ? "boss" : `combat_${themeScene}`);
+      return;
+    }
+    audio.setMusicScene(themeScene);
+  }
+
   private setPhase(phase: RoomPhase, options?: { startEncounter?: boolean }) {
     this.roomPhase = phase;
     this.phaseTimer = 0;
-    
+    this.syncDungeonMusic();
+
     if (phase === "entering") {
       // Setup
     } else if (phase === "intro") {
@@ -880,7 +899,9 @@ export class DungeonState extends GameState {
       this.pickups.push(acquirePickup(p.x, p.y, p.type === "energy" ? "mana" : "coin", p.type === "energy" ? 15 : 20));
     }
     
-    this.roomRenderer.update(dt);
+    const floor = this.engine.data.data.floor;
+    const sceneTheme = floor?.worldNodeId || floor?.theme || "forest";
+    this.roomRenderer.update(dt, sceneTheme, this.engine.isPerformanceDegraded());
     this.fx.update(dt);
     this.occlusionController.update(
       dt,
@@ -1334,6 +1355,7 @@ export class DungeonState extends GameState {
   }
 
   private handleEnemyKilled(enemy: Enemy) {
+    this.fx.emitEnemyDeath(enemy.x, enemy.y, enemy.displayColor, enemy.type === "boss", this.engine.isPerformanceDegraded());
     this.engine.data.recordEnemyKill(enemy);
     const energyRestore = BuffSystem.getKillEnergyRestore(this.player);
     if (energyRestore > 0) {
@@ -4068,7 +4090,9 @@ export class DungeonState extends GameState {
     const floor = this.engine.data.data.floor;
     const currentRoom = floor?.rooms?.find((r: any) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY);
     
-    const displayTheme: string = floor.theme || "forest";
+    const displayTheme: string = this.qaFrozen
+      ? floor.theme || "forest"
+      : floor.worldNodeId || floor.theme || "forest";
 
     this.roomRenderer.drawBackground(ctx, currentRoom, displayTheme);
     const time = this.qaPresentationTime ?? Date.now() / 1000;
