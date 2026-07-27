@@ -221,6 +221,7 @@ export interface QaBridge {
   setHubPresentation: (time: number, characterId: string) => boolean;
   focusHubPoint: (cameraX: number, cameraY: number, playerX?: number, playerY?: number) => boolean;
   setHubPromptScene: (scene: HubQaPromptScene, time: number) => boolean;
+  setHubIntro: (phase: "crystal" | "particles", time: number) => boolean;
   setDungeonScene: (scene: DungeonQaScene, theme: "forest" | "dungeon" | "snow" | "lava", time: number) => boolean;
   setDungeonCollisionDebug: (enabled: boolean) => boolean;
   setCaptureFrozen: (enabled: boolean) => boolean;
@@ -249,6 +250,7 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     setHubPresentation: (time, characterId) => engine.qaSetHubPresentation(time, characterId),
     focusHubPoint: (cameraX, cameraY, playerX, playerY) => engine.qaFocusHubPoint(cameraX, cameraY, playerX, playerY),
     setHubPromptScene: (scene, time) => engine.qaSetHubPromptScene(scene, time),
+    setHubIntro: (phase, time) => engine.qaSetHubIntro(phase, time),
     setDungeonScene: (scene, theme, time) => engine.qaSetDungeonScene(scene, theme, time),
     setDungeonCollisionDebug: enabled => engine.qaSetDungeonCollisionDebug(enabled),
     setCaptureFrozen: enabled => engine.qaSetCaptureFrozen(enabled),
@@ -267,22 +269,26 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
     const params = new URLSearchParams(window.location.search);
     const scene = params.get("qaScene") as DungeonQaScene | null;
     const hubScene = params.get("qaHubScene") as HubQaPromptScene | null;
+    const introPhaseParam = params.get("qaIntro");
+    const introPhase = introPhaseParam === "crystal" || introPhaseParam === "particles" ? introPhaseParam : null;
     const theme = params.get("qaTheme") as "forest" | "dungeon" | "snow" | "lava" | null;
     const time = Number(params.get("qaTime") ?? 12.5);
     const captureMode = params.get("qaCapture") === "1";
     if (captureMode) {
       const style = document.createElement("style");
       style.dataset.qaCaptureStyle = "true";
-      style.textContent = '.touch-controls, [data-testid="browser-qa-panel"] { display: none !important; }';
+      style.textContent = '.touch-controls, [data-testid="browser-qa-panel"], [data-testid="qa-panel"], [data-testid="qa-open"] { display: none !important; }';
       document.head.appendChild(style);
       document.documentElement.dataset.qaReady = "pending";
     }
-    if (hubScene || scene) {
+    if (hubScene || scene || introPhase) {
       requestAnimationFrame(() => {
         if (captureMode) bridge.setCaptureFrozen(false);
-        const configured = hubScene
-          ? bridge.setHubPromptScene(hubScene, Number.isFinite(time) ? time : 12.5)
-          : bridge.setDungeonScene(scene!, theme ?? "dungeon", Number.isFinite(time) ? time : 12.5);
+        const configured = introPhase
+          ? bridge.setHubIntro(introPhase, Number.isFinite(time) ? time : 0)
+          : hubScene
+            ? bridge.setHubPromptScene(hubScene, Number.isFinite(time) ? time : 12.5)
+            : bridge.setDungeonScene(scene!, theme ?? "dungeon", Number.isFinite(time) ? time : 12.5);
         if (captureMode) {
           bridge.setCaptureFrozen(true);
           document.documentElement.dataset.qaReady = configured ? "rendering" : "error";

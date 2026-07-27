@@ -250,6 +250,21 @@ export class Engine {
     return (this.states.hub as HubState).qaFocusPoint(cameraX, cameraY, playerX, playerY);
   }
 
+  public qaSetHubIntro(phase: "crystal" | "particles", time: number): boolean {
+    if (!this.debugMode || !Number.isFinite(time) || time < 0) return false;
+    this.closeOverlayInternal();
+    this.isPaused = false;
+    this.transitionTimer = 0;
+    this.transitionTarget = null;
+    this.shakeTimer = 0;
+    this.shakeIntensity = 0;
+    this.showDebugOverlay = false;
+    if (this.currentState !== "hub") {
+      this.doSwitchState("hub", { spawnAnchor: "rebirth_spring", fromSplash: true });
+    }
+    return (this.states.hub as HubState).qaSetIntro(phase, time);
+  }
+
   public qaSetHubPromptScene(scene: HubQaPromptScene, time = 12.5): boolean {
     if (!this.debugMode) return false;
     if (this.currentState !== "hub") this.doSwitchState("hub", { spawnAnchor: "central_plaza" });
