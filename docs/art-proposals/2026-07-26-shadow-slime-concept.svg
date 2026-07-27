@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#081018"/>
+      <stop offset="1" stop-color="#121024"/>
+    </linearGradient>
+    <linearGradient id="slime" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#65f1ed"/>
+      <stop offset="0.34" stop-color="#4bcac8"/>
+      <stop offset="0.56" stop-color="#5c53ad"/>
+      <stop offset="1" stop-color="#1d163c"/>
+    </linearGradient>
+    <radialGradient id="core" cx="50%" cy="45%" r="58%">
+      <stop offset="0" stop-color="#201846"/>
+      <stop offset="0.72" stop-color="#18132f"/>
+      <stop offset="1" stop-color="#0d0a1b"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .title{font:700 34px ui-sans-serif,system-ui,sans-serif;fill:#e9f8ff}
+      .sub{font:600 18px ui-sans-serif,system-ui,sans-serif;fill:#74e7e3}
+      .head{font:700 22px ui-sans-serif,system-ui,sans-serif;fill:#b78cff}
+      .body{font:500 17px ui-sans-serif,system-ui,sans-serif;fill:#d5e2ea}
+      .small{font:500 14px ui-sans-serif,system-ui,sans-serif;fill:#9db0bd}
+      .label{font:700 14px ui-sans-serif,system-ui,sans-serif;fill:#e9f8ff}
+      .panel{fill:#101925;stroke:#263647;stroke-width:2}
+      .line{stroke:#355061;stroke-width:2}
+    </style>
+  </defs>
+
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="18" y="18" width="1164" height="764" rx="18" fill="none" stroke="#39475c" stroke-width="2"/>
+
+  <text x="46" y="62" class="title">CMYS-FIGHT 美术重画提案</text>
+  <text x="46" y="96" class="sub">对象：幽影史莱姆（Shadow Slime） · 普通敌人 / 重生泉区域</text>
+
+  <rect x="42" y="126" width="514" height="430" rx="14" class="panel"/>
+  <text x="64" y="160" class="head">概念主视图</text>
+
+  <ellipse cx="300" cy="485" rx="145" ry="28" fill="#03070d" opacity="0.72"/>
+  <ellipse cx="300" cy="472" rx="126" ry="16" fill="#58f5ed" opacity="0.25" filter="url(#glow)"/>
+
+  <g filter="url(#glow)">
+    <path d="M160 463 C154 405 177 354 221 325 C230 289 258 265 292 272 C315 240 355 245 371 283 C406 286 428 312 433 347 C477 373 492 417 476 463 Z" fill="url(#slime)" stroke="#8ffaf3" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M181 451 C177 405 198 368 231 345 C246 317 275 301 301 311 C323 281 353 289 366 320 C396 323 415 344 419 371 C452 391 460 420 451 451 Z" fill="url(#core)" opacity="0.95"/>
+    <path d="M183 456 C217 474 384 476 447 454" fill="none" stroke="#6ff6ef" stroke-width="7" opacity="0.82"/>
+    <rect x="259" y="370" width="18" height="46" rx="8" fill="#8ffaf3"/>
+    <rect x="333" y="370" width="18" height="46" rx="8" fill="#8ffaf3"/>
+    <circle cx="268" cy="393" r="20" fill="#77f4ef" opacity="0.18"/>
+    <circle cx="342" cy="393" r="20" fill="#77f4ef" opacity="0.18"/>
+  </g>
+
+  <g fill="#78f7f0" filter="url(#glow)">
+    <rect x="122" y="309" width="12" height="12" transform="rotate(45 128 315)"/>
+    <rect x="455" y="290" width="14" height="14" transform="rotate(45 462 297)"/>
+    <rect x="480" y="369" width="10" height="10" transform="rotate(45 485 374)"/>
+    <rect x="133" y="394" width="8" height="8" transform="rotate(45 137 398)"/>
+    <rect x="399" y="254" width="9" height="9" transform="rotate(45 403.5 258.5)"/>
+  </g>
+
+  <text x="64" y="522" class="small">轮廓：柔软圆体 + 不对称波峰 + 悬浮晶体碎片</text>
+  <text x="64" y="545" class="small">材质：青色能量膜 / 紫黑灵体核心 / 透明拖影底缘</text>
+
+  <rect x="580" y="126" width="578" height="430" rx="14" class="panel"/>
+  <text x="604" y="160" class="head">设计要求</text>
+  <text x="604" y="198" class="body">现状问题</text>
+  <text x="622" y="228" class="small">• 轮廓偏扁，和泉水、地面青光容易混在一起</text>
+  <text x="622" y="254" class="small">• 攻击前摇、受击和死亡的形变幅度不足</text>
+  <text x="622" y="280" class="small">• 缺少“幽影 + 晶体残渣”的独特材质层次</text>
+
+  <text x="604" y="324" class="body">玩法可读性</text>
+  <text x="622" y="354" class="small">• 攻击前摇至少 0.35–0.45 秒，波峰上抬并变亮</text>
+  <text x="622" y="380" class="small">• 弹体与主体颜色分离，避免和环境水光混淆</text>
+  <text x="622" y="406" class="small">• 受击时压扁、白闪、碎片外喷，明确命中反馈</text>
+  <text x="622" y="432" class="small">• 死亡时核心先熄灭，再分解为影液与晶片</text>
+
+  <text x="604" y="476" class="body">建议色板</text>
+  <g>
+    <rect x="622" y="495" width="64" height="30" rx="4" fill="#1b1230"/><text x="630" y="545" class="small">#1B1230</text>
+    <rect x="696" y="495" width="64" height="30" rx="4" fill="#3a2870"/><text x="704" y="545" class="small">#3A2870</text>
+    <rect x="770" y="495" width="64" height="30" rx="4" fill="#6a3eff"/><text x="778" y="545" class="small">#6A3EFF</text>
+    <rect x="844" y="495" width="64" height="30" rx="4" fill="#8fe0ef"/><text x="852" y="545" class="small">#8FE0EF</text>
+    <rect x="918" y="495" width="64" height="30" rx="4" fill="#e6f2ff"/><text x="926" y="545" class="small">#E6F2FF</text>
+  </g>
+
+  <rect x="42" y="580" width="1116" height="162" rx="14" class="panel"/>
+  <text x="64" y="615" class="head">动画关键帧建议</text>
+
+  <g transform="translate(92 646)">
+    <g transform="translate(0 0)"><ellipse cx="54" cy="60" rx="48" ry="8" fill="#000" opacity=".5"/><path d="M8 58 C9 25 31 8 54 14 C69 2 92 18 98 58 Z" fill="url(#slime)" stroke="#8ffaf3" stroke-width="3"/><rect x="39" y="35" width="6" height="15" fill="#e6f2ff"/><rect x="66" y="35" width="6" height="15" fill="#e6f2ff"/><text x="32" y="91" class="label">待机</text></g>
+    <g transform="translate(190 0)"><ellipse cx="54" cy="60" rx="52" ry="8" fill="#000" opacity=".5"/><path d="M2 58 C12 31 30 17 54 20 C77 15 96 29 106 58 Z" fill="url(#slime)" stroke="#8ffaf3" stroke-width="3"/><path d="M100 28 H145" stroke="#62e9e2" stroke-width="5" opacity=".45"/><text x="31" y="91" class="label">移动</text></g>
+    <g transform="translate(380 0)"><ellipse cx="54" cy="60" rx="48" ry="8" fill="#000" opacity=".5"/><path d="M8 58 C8 20 30 2 54 10 C71 -5 95 13 100 58 Z" fill="url(#slime)" stroke="#b9fff9" stroke-width="4"/><g fill="#e6f2ff"><rect x="30" y="2" width="7" height="7" transform="rotate(45 33 5)"/><rect x="77" y="-2" width="8" height="8" transform="rotate(45 81 2)"/></g><text x="13" y="91" class="label">攻击前摇</text></g>
+    <g transform="translate(570 0)"><ellipse cx="54" cy="60" rx="48" ry="8" fill="#000" opacity=".5"/><path d="M8 58 C10 27 31 10 54 16 C72 4 94 20 99 58 Z" fill="url(#slime)" stroke="#8ffaf3" stroke-width="3"/><circle cx="137" cy="36" r="14" fill="#8ffaf3" filter="url(#glow)"/><path d="M95 36 H121" stroke="#6a3eff" stroke-width="8"/><text x="25" y="91" class="label">攻击</text></g>
+    <g transform="translate(760 0)"><ellipse cx="54" cy="60" rx="48" ry="8" fill="#000" opacity=".5"/><path d="M4 58 C13 38 29 30 54 34 C78 29 95 39 104 58 Z" fill="#4d3a84" stroke="#e6f2ff" stroke-width="4"/><path d="M23 20 L84 66 M84 20 L23 66" stroke="#ffffff" stroke-width="6" opacity=".8"/><text x="31" y="91" class="label">受击</text></g>
+    <g transform="translate(950 0)"><ellipse cx="54" cy="60" rx="50" ry="7" fill="#35c4c2" opacity=".3"/><g fill="#5f4a9d"><rect x="16" y="38" width="18" height="12" transform="rotate(25 25 44)"/><rect x="48" y="28" width="15" height="15" transform="rotate(45 55 35)"/><rect x="78" y="42" width="17" height="10" transform="rotate(-18 86 47)"/></g><g fill="#8ffaf3"><rect x="26" y="10" width="8" height="8" transform="rotate(45 30 14)"/><rect x="72" y="5" width="7" height="7" transform="rotate(45 75 8)"/></g><text x="31" y="91" class="label">死亡</text></g>
+  </g>
+
+  <text x="46" y="770" class="small">记录：本次处理对象为幽影史莱姆。下一步优先评审波峰高度、攻击弹体形状、受击闪烁强度与死亡粒子寿命。</text>
+</svg>

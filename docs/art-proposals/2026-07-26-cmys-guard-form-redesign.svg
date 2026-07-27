@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#081018"/><stop offset="1" stop-color="#15101d"/></linearGradient>
+<linearGradient id="armor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f58b78"/><stop offset=".45" stop-color="#d84943"/><stop offset="1" stop-color="#6f1f26"/></linearGradient>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8edf2"/><stop offset=".5" stop-color="#8997a5"/><stop offset="1" stop-color="#303944"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<style>.title{font:700 34px system-ui;fill:#eef7ff}.sub{font:600 18px system-ui;fill:#ff8178}.h{font:700 22px system-ui;fill:#ff9a8e}.b{font:500 16px system-ui;fill:#d6e0e8}.s{font:500 14px system-ui;fill:#9fb0bd}.p{fill:#111b26;stroke:#2a3a49;stroke-width:2}.l{font:700 14px system-ui;fill:#eef7ff}</style>
+</defs>
+<rect width="1200" height="800" fill="url(#bg)"/><rect x="18" y="18" width="1164" height="764" rx="18" fill="none" stroke="#3a4655" stroke-width="2"/>
+<text x="46" y="62" class="title">CMYS-FIGHT 美术重画提案</text><text x="46" y="96" class="sub">对象：CMYS Guard Form · 主角基础形态 / 角色小范围重画</text>
+<rect x="42" y="126" width="520" height="438" rx="14" class="p"/><text x="64" y="160" class="h">概念主视图</text>
+<ellipse cx="302" cy="505" rx="105" ry="20" fill="#000" opacity=".55"/>
+<g transform="translate(302 340)">
+<path d="M-54 100 L-42 20 L-26 -10 L-19 -78 L19 -78 L27 -10 L45 18 L56 100 Z" fill="#151b22" stroke="#080b0f" stroke-width="8"/>
+<path d="M-34 91 L-29 27 L-18 1 L-14 -54 L14 -54 L19 1 L31 27 L37 91 Z" fill="url(#armor)" stroke="#271016" stroke-width="5"/>
+<path d="M-28 -54 L-18 -88 L18 -88 L29 -53 L18 -32 L-18 -32 Z" fill="url(#steel)" stroke="#111821" stroke-width="5"/>
+<path d="M-14 -81 L0 -102 L14 -81 L10 -58 L-10 -58 Z" fill="#cfd7df" stroke="#202a34" stroke-width="4"/>
+<rect x="-12" y="-69" width="24" height="7" rx="3" fill="#1a2028"/><rect x="4" y="-68" width="8" height="5" fill="#ff574f" filter="url(#glow)"/>
+<path d="M-54 5 L-91 16 L-82 76 L-49 65 Z" fill="url(#steel)" stroke="#111821" stroke-width="6"/>
+<path d="M-86 20 L-118 39 L-113 96 L-78 75 Z" fill="#aeb9c4" stroke="#202a34" stroke-width="6"/>
+<path d="M-107 44 L-88 36 L-84 74 L-104 84 Z" fill="#d94b44"/><path d="M54 4 L82 21 L71 64 L48 54 Z" fill="url(#steel)" stroke="#111821" stroke-width="6"/>
+<path d="M77 28 L112 2 L122 12 L86 40 Z" fill="#dfe6ec" stroke="#202a34" stroke-width="5"/><path d="M103 3 L126 -12 L135 -5 L119 16 Z" fill="#ff5a50" filter="url(#glow)"/>
+<path d="M-31 91 L-39 134 L-8 134 L-2 93 Z" fill="#343d47" stroke="#111821" stroke-width="6"/><path d="M3 93 L8 134 L39 134 L31 91 Z" fill="#343d47" stroke="#111821" stroke-width="6"/>
+<rect x="-35" y="126" width="32" height="15" rx="5" fill="#1d242c"/><rect x="4" y="126" width="32" height="15" rx="5" fill="#1d242c"/>
+<path d="M-16 7 H18 V34 H-16 Z" fill="#e5e9ed" stroke="#202a34" stroke-width="4"/><path d="M-11 11 H13 V20 H-11 Z" fill="#d94b44"/><path d="M-4 25 H6 V40 H-4 Z" fill="#ff8178" filter="url(#glow)"/>
+</g>
+<text x="64" y="532" class="s">轮廓关键词：宽肩、塔盾、单眼红光、短披甲、低重心</text><text x="64" y="553" class="s">角色定位：高护甲、稳固推进、明确防御姿态</text>
+<rect x="586" y="126" width="572" height="438" rx="14" class="p"/><text x="610" y="160" class="h">设计说明</text>
+<text x="610" y="198" class="b">现状问题</text><text x="628" y="226" class="s">• 基础 CMYS 形态共用 16×16 通用人形，身份辨识度不足</text><text x="628" y="250" class="s">• 仅有待机与两帧行走，格挡、受击、射击缺少身体反馈</text><text x="628" y="274" class="s">• 红色只作为色块出现，没有形成“守卫形态”的功能语言</text>
+<text x="610" y="314" class="b">视觉目标</text><text x="628" y="342" class="s">• 远距离先读出塔盾与宽肩，再读出枪械</text><text x="628" y="366" class="s">• 通过低重心和前倾盾面表达抗冲击能力</text><text x="628" y="390" class="s">• 与 Arcane、Swift 形态建立清晰轮廓差异</text>
+<text x="610" y="430" class="b">建议色板</text>
+<g><rect x="628" y="449" width="62" height="30" rx="4" fill="#151b22"/><rect x="700" y="449" width="62" height="30" rx="4" fill="#303944"/><rect x="772" y="449" width="62" height="30" rx="4" fill="#8997a5"/><rect x="844" y="449" width="62" height="30" rx="4" fill="#d84943"/><rect x="916" y="449" width="62" height="30" rx="4" fill="#ff8178"/><rect x="988" y="449" width="62" height="30" rx="4" fill="#eef3f6"/></g>
+<text x="628" y="507" class="s">暗底 / 枪铁 / 钢甲 / 主红 / 警示高光 / 强闪</text>
+<rect x="42" y="586" width="1116" height="156" rx="14" class="p"/><text x="64" y="620" class="h">动画与可读性关键帧</text>
+<g transform="translate(80 642)">
+<g transform="translate(0)"><rect x="25" y="8" width="36" height="58" fill="#d84943"/><rect x="14" y="23" width="15" height="42" fill="#aeb9c4"/><text x="10" y="91" class="l">待机呼吸</text></g>
+<g transform="translate(180)"><rect x="29" y="11" width="36" height="55" fill="#d84943"/><rect x="8" y="16" width="21" height="49" fill="#dfe6ec"/><path d="M72 30 H112" stroke="#ff8178" stroke-width="7"/><text x="15" y="91" class="l">射击后坐</text></g>
+<g transform="translate(380)"><rect x="34" y="12" width="36" height="54" fill="#d84943"/><path d="M4 4 H39 V70 H4 Z" fill="#dfe6ec" stroke="#ff8178" stroke-width="4"/><text x="8" y="91" class="l">格挡展开</text></g>
+<g transform="translate(580)"><rect x="30" y="20" width="42" height="44" fill="#eef3f6"/><path d="M6 15 H35 V69 H6 Z" fill="#8997a5"/><path d="M73 12 l22 22 -22 22" fill="none" stroke="#ff574f" stroke-width="6"/><text x="18" y="91" class="l">受击压缩</text></g>
+<g transform="translate(790)"><rect x="33" y="12" width="36" height="55" fill="#d84943"/><path d="M3 22 H31 V65 H3 Z" fill="#aeb9c4"/><path d="M75 52 Q110 10 145 52" fill="none" stroke="#ff8178" stroke-width="5" opacity=".75"/><text x="3" y="91" class="l">护甲触发</text></g>
+<g transform="translate(1000)"><g fill="#d84943"><rect x="14" y="30" width="18" height="16"/><rect x="45" y="18" width="12" height="20"/><rect x="68" y="39" width="17" height="13"/></g><text x="13" y="91" class="l">倒地/重构</text></g>
+</g>
+<text x="46" y="772" class="s">记录：本次对象为 CMYS Guard Form。下一步评审盾牌占屏比例、头盔识别度、射击后坐幅度、护甲触发特效颜色。</text>
+</svg>

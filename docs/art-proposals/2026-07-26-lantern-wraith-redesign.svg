@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#081018"/><stop offset="1" stop-color="#171126"/></linearGradient>
+ <linearGradient id="cloak" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6e5593"/><stop offset=".52" stop-color="#392b55"/><stop offset="1" stop-color="#171524"/></linearGradient>
+ <radialGradient id="flame"><stop stop-color="#fff6bf"/><stop offset=".3" stop-color="#89fff1"/><stop offset=".68" stop-color="#58cfd4"/><stop offset="1" stop-color="#7650b0" stop-opacity=".1"/></radialGradient>
+ <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <style>.t{font:700 34px system-ui,sans-serif;fill:#f1f6fa}.h{font:700 22px system-ui,sans-serif;fill:#c49cff}.b{font:500 16px system-ui,sans-serif;fill:#d6e0e8}.s{font:500 14px system-ui,sans-serif;fill:#9eb0bc}.p{fill:#101923;stroke:#314150;stroke-width:2}.tag{fill:#281d3f;stroke:#7650b0}.cap{font:700 14px system-ui,sans-serif;fill:#eaf9f6}</style>
+</defs>
+<rect width="1400" height="900" fill="url(#bg)"/><rect x="18" y="18" width="1364" height="864" rx="18" fill="none" stroke="#344355" stroke-width="2"/>
+<text x="46" y="62" class="t">CMYS-FIGHT 美术重画提案：Lantern Wraith 灯笼怨灵</text>
+<text x="46" y="94" class="s">类别：怪物 · 地牢主题 · 远程轨道弹敌人 · 建议原生画布 40×48 px</text>
+
+<rect x="42" y="122" width="454" height="510" rx="14" class="p"/><text x="64" y="158" class="h">主视觉与轮廓</text>
+<ellipse cx="268" cy="550" rx="125" ry="25" fill="#020508" opacity=".72"/>
+<g transform="translate(268 348)">
+ <path d="M-70 145 C-77 85 -65 20 -35 -20 L-26 -82 L-8 -108 L8 -108 L26 -82 L35 -20 C65 20 77 85 70 145 C40 170 -40 170 -70 145Z" fill="url(#cloak)" stroke="#171421" stroke-width="8"/>
+ <path d="M-35 -20 C-58 22 -56 88 -46 132 M35 -20 C58 22 56 88 46 132" fill="none" stroke="#8064a8" stroke-width="5" opacity=".75"/>
+ <path d="M-42 -56 L-30 -95 L30 -95 L42 -56 L31 -29 L-31 -29Z" fill="#282530" stroke="#a48c5c" stroke-width="6"/>
+ <path d="M-27 -82 H27 V-39 H-27Z" fill="#10202a" stroke="#6c6046" stroke-width="5"/>
+ <ellipse cx="0" cy="-59" rx="22" ry="31" fill="url(#flame)" filter="url(#glow)"/>
+ <path d="M0 -88 C-14 -67 -7 -52 0 -43 C9 -55 17 -69 0 -88Z" fill="#eaffd7"/>
+ <circle cx="0" cy="22" r="10" fill="#e7fff9" filter="url(#glow)"/><circle cx="0" cy="22" r="4" fill="#38234f"/>
+ <path d="M-70 145 L-43 123 L-26 150 L0 126 L25 151 L45 123 L70 145" fill="#11111b"/>
+</g>
+<g fill="#84f8ea" filter="url(#glow)"><circle cx="113" cy="300" r="7"/><circle cx="425" cy="326" r="6"/><circle cx="132" cy="445" r="5"/><circle cx="408" cy="473" r="7"/></g>
+<text x="64" y="585" class="s">识别锚点：高灯笼冠、可见魂火、窄肩长披风、锯齿幽影下摆。</text><text x="64" y="608" class="s">远距离先读作“悬浮灯笼”，近距离再读出怨灵躯体。</text>
+
+<rect x="520" y="122" width="838" height="244" rx="14" class="p"/><text x="544" y="158" class="h">设计问题与目标</text>
+<text x="544" y="194" class="b">现状问题</text><text x="564" y="222" class="s">• 当前公共动画姿态以整体位移为主，灯火、提灯外壳和披风缺少各自的运动层。</text><text x="564" y="248" class="s">• 轨道弹行为需要更明确的蓄能提示；紫色主体与地牢背景容易融合。</text><text x="564" y="274" class="s">• 受击和死亡若只做位移/闪白，会损失“灯灭魂散”的主题机会。</text>
+<text x="544" y="310" class="b">视觉目标</text><text x="760" y="310" class="s">灯笼是身体，魂火是生命值，披风是速度方向。</text>
+<g transform="translate(1010 178)"><rect width="76" height="32" rx="5" fill="#171421"/><rect x="88" width="76" height="32" rx="5" fill="#3c2e58"/><rect x="176" width="76" height="32" rx="5" fill="#7650b0"/><rect x="264" width="76" height="32" rx="5" fill="#58cfd4"/><rect x="352" width="76" height="32" rx="5" fill="#89fff1"/></g>
+
+<rect x="520" y="390" width="838" height="242" rx="14" class="p"/><text x="544" y="426" class="h">动画与特效关键帧</text>
+<g transform="translate(552 458)">
+ <g><path d="M10 105 C5 62 20 26 49 12 C78 26 92 62 87 105Z" fill="url(#cloak)"/><rect x="28" y="20" width="42" height="42" fill="#302b32" stroke="#a48c5c" stroke-width="4"/><ellipse cx="49" cy="41" rx="13" ry="18" fill="url(#flame)"/><text x="25" y="137" class="cap">待机</text></g>
+ <g transform="translate(150)"><path d="M0 105 C14 55 40 25 83 18 C99 42 105 70 95 105Z" fill="url(#cloak)"/><rect x="39" y="20" width="42" height="42" fill="#302b32" stroke="#a48c5c" stroke-width="4"/><ellipse cx="60" cy="41" rx="13" ry="18" fill="url(#flame)"/><path d="M-30 55 H10 M-20 75 H16" stroke="#58cfd4" stroke-width="5" opacity=".45"/><text x="32" y="137" class="cap">移动</text></g>
+ <g transform="translate(315)"><path d="M10 105 C5 62 20 26 49 12 C78 26 92 62 87 105Z" fill="url(#cloak)"/><rect x="23" y="15" width="52" height="52" fill="#302b32" stroke="#d6c184" stroke-width="5"/><ellipse cx="49" cy="39" rx="20" ry="27" fill="url(#flame)" filter="url(#glow)"/><circle cx="0" cy="55" r="7" fill="#89fff1"/><circle cx="98" cy="55" r="7" fill="#89fff1"/><text x="10" y="137" class="cap">蓄能前摇</text></g>
+ <g transform="translate(480)"><path d="M10 105 C5 62 20 26 49 12 C78 26 92 62 87 105Z" fill="url(#cloak)"/><rect x="28" y="20" width="42" height="42" fill="#302b32" stroke="#a48c5c" stroke-width="4"/><ellipse cx="49" cy="41" rx="13" ry="18" fill="url(#flame)"/><g fill="none" stroke="#89fff1" stroke-width="5"><circle cx="49" cy="60" r="48"/><circle cx="49" cy="60" r="65" opacity=".35"/></g><text x="10" y="137" class="cap">轨道弹释放</text></g>
+ <g transform="translate(660)"><path d="M2 105 C20 82 34 70 49 72 C67 68 84 82 96 105Z" fill="#7650b0" stroke="#f2ffff" stroke-width="5"/><path d="M20 20 L80 100 M80 20 L20 100" stroke="#fff" stroke-width="7"/><text x="27" y="137" class="cap">受击</text></g>
+</g>
+
+<rect x="42" y="658" width="636" height="178" rx="14" class="p"/><text x="64" y="694" class="h">场景与玩法可读性</text>
+<text x="82" y="724" class="s">• 攻击前摇 0.45–0.55 秒：魂火扩大，外壳缝隙变亮，环绕点位先出现空心标记。</text>
+<text x="82" y="752" class="s">• 主体维持紫黑，危险弹体使用青白核心与紫色外缘，避免和地牢墙面同值。</text>
+<text x="82" y="780" class="s">• 移动时披风反向拉伸；不可用高密度拖尾遮挡地面危险圈。</text>
+<text x="82" y="808" class="s">• 死亡顺序：外壳裂开 → 魂火收缩熄灭 → 披风散为3–5片影雾。</text>
+
+<rect x="702" y="658" width="656" height="178" rx="14" class="p"/><text x="724" y="694" class="h">实现与验收</text>
+<text x="742" y="724" class="s">• 将灯笼外壳、魂火、披风、轨道弹拆为独立绘制层；保留现有行为数据。</text>
+<text x="742" y="752" class="s">• 40×48原生模型；待机2帧、移动4帧、攻击4帧、受击2帧，另加死亡4帧。</text>
+<text x="742" y="780" class="s">• 320×240画面中，敌人缩至1×时仍可辨认灯笼顶部和魂火核心。</text>
+<text x="742" y="808" class="s">• 验收：攻击前0.4秒可预测；轨道弹不与主体重叠；受击点和死亡状态无歧义。</text>
+
+<text x="46" y="870" class="s">记录：本次对象为 Lantern Wraith。下一步评审重点：灯笼冠高度、魂火亮度、轨道半径、披风拖尾长度与死亡熄灭节奏。</text>
+</svg>
