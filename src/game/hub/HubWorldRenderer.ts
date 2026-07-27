@@ -39,6 +39,13 @@ const COLORS = {
   sand: "#76664A",
 } as const;
 
+export type DistrictGateVisualState = "idle" | "nearby" | "confirm" | "disabled";
+
+export interface DistrictGateRenderState {
+  visualState?: DistrictGateVisualState;
+  progress?: number;
+}
+
 function kindOf(object: WorldObjectDefinition): string {
   const value = object.properties?.kind;
   return typeof value === "string" ? value : object.id;
@@ -505,11 +512,12 @@ export class HubWorldRenderer {
     object: WorldObjectDefinition,
     time: number,
     alpha = 1,
+    districtGateState?: DistrictGateRenderState,
   ): void {
     if (!object) return;
     ctx.save();
     ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
-    this.drawObject(ctx, object, time);
+    this.drawObject(ctx, object, time, districtGateState);
     ctx.restore();
   }
 
@@ -691,12 +699,17 @@ export class HubWorldRenderer {
     else ctx.fillRect(x, y, 5, 16);
   };
 
-  private drawObject(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawObject(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    districtGateState?: DistrictGateRenderState,
+  ): void {
     if (object.properties?.visible === false) return;
     if (HubArchitectureRenderer.draw(ctx, object, time)) return;
     const kind = kindOf(object);
     if (kind === "plaza_banners") this.drawPlazaBanners(ctx, object, time);
-    else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time);
+    else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time, districtGateState);
     else if (kind === "waystone") this.drawWaystone(ctx, object, time);
     else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time);
     else if (kind === "training_marker") this.drawTrainingMarker(ctx, object);
@@ -749,7 +762,12 @@ export class HubWorldRenderer {
     }
   }
 
-  private drawDistrictGate(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawDistrictGate(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state?: DistrictGateRenderState,
+  ): void {
     const { x, y } = object;
     const width = object.width ?? 80;
     const height = object.height ?? 80;
@@ -757,6 +775,11 @@ export class HubWorldRenderer {
     const bottom = y + height;
     const accent = typeof object.properties?.accent === "string" ? object.properties.accent : COLORS.gold;
     const emblem = typeof object.properties?.emblem === "string" ? object.properties.emblem : "archive";
+
+    if (emblem === "garden") {
+      this.drawGardenDistrictGate(ctx, object, time, state);
+      return;
+    }
 
     drawGroundShadow(ctx, x + 3, bottom - 5, width - 6, 7);
 
@@ -864,6 +887,109 @@ export class HubWorldRenderer {
     const sway = Math.round(Math.sin(time * 2.2 + x * 0.01));
     drawBanner(ctx, x + 1, y + 29, 12, 25, accent, COLORS.gold, sway);
     drawBanner(ctx, x + width - 13, y + 29, 12, 25, accent, COLORS.gold, -sway);
+  }
+
+  private drawGardenDistrictGate(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state: DistrictGateRenderState = {},
+  ): void {
+    const x = object.x;
+    const y = object.y;
+    const width = object.width ?? 80;
+    const height = object.height ?? 64;
+    const centerX = x + width / 2;
+    const bottom = y + height;
+    const visualState = state.visualState ?? "idle";
+    const disabled = visualState === "disabled";
+    const nearby = visualState === "nearby" || visualState === "confirm";
+    const confirm = visualState === "confirm";
+    const confirmProgress = Math.max(0, Math.min(1, state.progress ?? 0));
+    const seedPulse = 0.5 + 0.5 * Math.sin(time * Math.PI * 2 * 1.2);
+    const vineSegments = disabled ? 0 : nearby ? 6 : 2;
+
+    drawGroundShadow(ctx, x + 2, bottom - 5, width - 4, 7);
+    ctx.fillStyle = "rgba(4,7,8,0.16)";
+    ctx.fillRect(x + 24, bottom - 7, width - 48, 4);
+
+    const drawRootPillar = (left: boolean): void => {
+      const outer = left ? x : x + width - 24;
+      const inner = left ? outer + 18 : outer + 6;
+      ctx.fillStyle = "#28322F";
+      ctx.fillRect(outer + 5, y + 20, 14, height - 29);
+      ctx.fillRect(outer, bottom - 12, 24, 12);
+      ctx.fillRect(left ? outer : outer + 14, bottom - 18, 10, 9);
+      ctx.fillStyle = "#60705F";
+      ctx.fillRect(left ? outer + 8 : outer + 14, y + 23, 3, height - 36);
+      ctx.fillRect(left ? outer + 2 : outer + 16, bottom - 10, 6, 2);
+      ctx.fillRect(left ? outer + 15 : outer + 2, bottom - 7, 7, 2);
+      ctx.fillStyle = "#456A49";
+      ctx.fillRect(left ? inner - 1 : inner - 5, y + 29, 6, 5);
+      ctx.fillRect(left ? inner - 3 : inner - 3, y + 34, 5, 7);
+      ctx.fillStyle = disabled ? "#58655B" : "#7ECF8A";
+      ctx.fillRect(left ? inner + 1 : inner - 4, y + 31, 2, 4);
+    };
+    drawRootPillar(true);
+    drawRootPillar(false);
+
+    const archRows = [
+      { inset: 18, yy: y + 18, span: width - 36 },
+      { inset: 22, yy: y + 14, span: width - 44 },
+      { inset: 28, yy: y + 10, span: width - 56 },
+    ];
+    ctx.fillStyle = "#28322F";
+    for (const row of archRows) ctx.fillRect(x + row.inset, row.yy, row.span, 5);
+    ctx.fillStyle = "#60705F";
+    for (const row of archRows) ctx.fillRect(x + row.inset + 2, row.yy, Math.max(0, row.span - 4), 1);
+
+    const vineColor = disabled ? "#48554A" : "#7ECF8A";
+    const segmentXs = [x + 17, x + 24, x + 31, x + width - 35, x + width - 28, x + width - 21];
+    const segmentYs = [y + 19, y + 15, y + 12, y + 12, y + 15, y + 19];
+    ctx.fillStyle = vineColor;
+    for (let i = 0; i < vineSegments; i++) {
+      const index = nearby ? (i % 2 === 0 ? Math.floor(i / 2) : 5 - Math.floor(i / 2)) : i * 5;
+      ctx.fillRect(segmentXs[index], segmentYs[index], 4, 2);
+    }
+
+    const lanternColor = disabled ? "#6B6748" : nearby ? "#FFE39A" : "#FFD36B";
+    ctx.fillStyle = "#D8B45C";
+    ctx.fillRect(x + 12, y + 23, 6, 3); ctx.fillRect(x + width - 18, y + 23, 6, 3);
+    ctx.fillStyle = lanternColor;
+    ctx.fillRect(x + 13, y + 26, 4, 5); ctx.fillRect(x + width - 17, y + 26, 4, 5);
+
+    const seedLift = confirm && confirmProgress < 0.35 ? 1 : 0;
+    const seedY = y + 3 + seedLift;
+    const seedColor = disabled ? "#65766B" : seedPulse > 0.62 || confirm ? "#B7FAF5" : "#72E0E8";
+    ctx.fillStyle = "#D8B45C";
+    ctx.fillRect(centerX - 8, y + 15, 16, 2);
+    ctx.fillRect(centerX - 5, y + 17, 10, 2);
+    ctx.fillStyle = disabled ? "#48554A" : nearby ? "#72E0E8" : "#456A49";
+    ctx.fillRect(centerX - 11, y + 6, 3, 8); ctx.fillRect(centerX + 8, y + 6, 3, 8);
+    ctx.fillRect(centerX - 8, y + 3, 16, 2);
+    ctx.fillStyle = seedColor;
+    ctx.fillRect(centerX - 2, seedY, 4, 12);
+    ctx.fillRect(centerX - 4, seedY + 3, 8, 6);
+    ctx.fillStyle = disabled ? "#7C8A80" : "rgba(255,255,255,0.72)";
+    ctx.fillRect(centerX - 1, seedY + 2, 2, 5);
+
+    if (!disabled) {
+      for (let mote = 0; mote < 2; mote++) {
+        const cycle = (time * 0.16 + mote * 0.5) % 1;
+        const moteX = Math.round(x + 18 + cycle * (width - 38));
+        const moteY = Math.round(y + 12 + Math.sin(cycle * Math.PI) * -5 + mote * 2);
+        ctx.fillStyle = mote === 0 ? "#7ECF8A" : "#A8D98D";
+        ctx.fillRect(moteX, moteY, 2, 1);
+        ctx.fillRect(moteX + (mote === 0 ? 1 : -1), moteY + 1, 1, 1);
+      }
+    }
+
+    if (confirm) {
+      const sweep = Math.min(1, Math.max(0, (confirmProgress - 0.34) / 0.38));
+      const sweepX = Math.round(x + 18 + sweep * (width - 38));
+      ctx.fillStyle = "#B7FAF5";
+      ctx.fillRect(sweepX, y + 10 + Math.round(Math.abs(centerX - sweepX) * 0.22), 3, 2);
+    }
   }
 
   private drawWaystone(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {

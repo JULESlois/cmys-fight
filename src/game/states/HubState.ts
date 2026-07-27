@@ -11,7 +11,7 @@ import { HUB_MOVE_SPEED, HubPlayerController } from "../hub/HubPlayerController"
 import { HubPlayerRenderer } from "../hub/HubPlayerRenderer";
 import { clampHubPromptPosition, isHubPromptAnchorNearViewport } from "../hub/HubPromptLayout";
 import { resolveHubSpawn } from "../hub/HubProgress";
-import { HubWorldRenderer } from "../hub/HubWorldRenderer";
+import { HubWorldRenderer, type DistrictGateRenderState } from "../hub/HubWorldRenderer";
 import { HubDebugOverlay } from "../hub/HubDebugOverlay";
 import { drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { PromptRenderer } from "../render/PromptRenderer";
@@ -752,6 +752,7 @@ export class HubState extends GameState {
         object,
         this.time,
         this.occlusionController.getAlpha(object.occlusionGroupId) * this.introObjectAlpha(object),
+        this.getDistrictGateRenderState(object),
       ),
     }));
     
@@ -849,6 +850,14 @@ export class HubState extends GameState {
     if (this.introPhase === "none" || object.id !== "rebirth_spring:crystal") return 1;
     if (this.introPhase === "particles") return 1;
     return Math.max(0, Math.min(1, (this.introTimer - 5.25) / 0.45));
+  }
+
+  private getDistrictGateRenderState(object: WorldObjectDefinition): DistrictGateRenderState | undefined {
+    if (object.id !== "garden_district_gate") return undefined;
+    const centerX = object.x + (object.width ?? 80) / 2;
+    const centerY = object.y + (object.height ?? 64) / 2;
+    const distance = Math.hypot(this.player.x - centerX, this.player.y - centerY);
+    return { visualState: distance <= 96 ? "nearby" : "idle" };
   }
 
   private drawHubHud(ctx: CanvasRenderingContext2D): void {
