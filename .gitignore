@@ -9,3 +9,4 @@ coverage/
 screenshots/
 artifacts/
 tools/termux-browser-qa/node_modules/
+.gstack/

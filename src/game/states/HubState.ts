@@ -70,13 +70,17 @@ export class HubState extends GameState {
   private introPhase: "none" | "crystal" | "particles" = "none";
   private introTimer = 0;
   private introImpactTriggered = false;
+  private introSimulating = false;
+  private introRand: () => number = Math.random;
+  private introBubbleTimer = 0;
   private introParticles: {
-    type: "splash" | "soul" | "shard" | "ripple" | "light";
+    type: "splash" | "soul" | "ripple" | "light" | "spout" | "mist" | "bubble";
     x: number; y: number; vx: number; vy: number;
     life: number; maxLife: number; delay: number;
     angle?: number;
     speed?: number;
     radius?: number;
+    size?: number;
   }[] = [];
 
   public enter(params?: HubEnterParams): void {
@@ -122,10 +126,8 @@ export class HubState extends GameState {
     this.qaPresentationTime = null;
     this.currentZoneKey = this.findZoneKey(this.player.x, this.player.y) ?? "hub.zone.sanctuary";
     if (params?.fromSplash) {
-      this.introPhase = "crystal";
-      this.introTimer = 0;
-      this.introImpactTriggered = false;
-      this.introParticles = [];
+      this.resetIntro();
+      audio.setMusicPaused(true);
     } else {
       this.introPhase = "none";
       this.engine.worldNotices.showRegion(t(this.language, this.currentZoneKey as Parameters<typeof t>[1]));
@@ -135,6 +137,7 @@ export class HubState extends GameState {
   }
 
   public exit(): void {
+    if (this.introPhase !== "none") audio.setMusicPaused(false);
     this.saveHubPosition();
   }
 
@@ -147,42 +150,10 @@ export class HubState extends GameState {
     else this.time = this.qaPresentationTime;
 
     if (this.introPhase !== "none") {
-      this.introTimer += dt;
-      if (this.introPhase === "crystal") {
-        if (this.introTimer < 3.5 && this.engine.input.wasAnyPressed()) {
-          this.introTimer = 3.5;
-        }
-
-        if (this.introTimer >= 5.2 && !this.introImpactTriggered) {
-          this.introImpactTriggered = true;
-          // Play impact sound if audio system is available (assume audio.play() exists or just skip if none is directly accessible)
-          this.spawnIntroSplash();
-        }
-        if (this.introTimer >= 5.7) {
-          this.introPhase = "particles";
-          this.introTimer = 0;
-          this.initIntroParticles();
-        }
-      } else if (this.introPhase === "particles") {
-        this.updateIntroParticles(dt);
-        if (this.introTimer >= 2.0) {
-          this.introPhase = "none";
-          this.engine.input.suppressUntilReleased();
-          this.engine.worldNotices.showRegion(t(this.language, this.currentZoneKey as Parameters<typeof t>[1]));
-        }
+      if (this.introPhase === "crystal" && this.introTimer < 3.5 && this.engine.input.wasAnyPressed()) {
+        this.introTimer = 3.5;
       }
-      
-      let targetCamY = this.player.y;
-      if (this.introPhase === "crystal") {
-        targetCamY = this.player.y - 90;
-      } else if (this.introPhase === "particles") {
-        const panProgress = Math.min(1, this.introTimer / 1.5);
-        const t = panProgress * panProgress * (3 - 2 * panProgress);
-        targetCamY = (this.player.y - 90) * (1 - t) + this.player.y * t;
-      }
-      
-      const worldSize = getWorldSize(this.map);
-      this.camera.snapTo(this.player.x, targetCamY, worldSize.width, worldSize.height);
+      this.updateIntro(dt);
       return;
     }
 
@@ -244,6 +215,125 @@ export class HubState extends GameState {
 
     const worldSize = getWorldSize(this.map);
     this.camera.follow(this.player.x, this.player.y, worldSize.width, worldSize.height, dt);
+  }
+
+  private resetIntro(): void {
+    this.introPhase = "crystal";
+    this.introTimer = 0;
+    this.introImpactTriggered = false;
+    this.introSimulating = false;
+    this.introParticles = [];
+    this.introBubbleTimer = 0;
+    this.introRand = HubState.createIntroRng(0xC0FFEE);
+  }
+
+  private static createIntroRng(seed: number): () => number {
+    let s = seed >>> 0;
+    return () => {
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  private updateIntro(dt: number): void {
+    this.introTimer += dt;
+    if (this.introPhase === "crystal") {
+      if (this.introTimer >= 5.2 && !this.introImpactTriggered) {
+        this.introImpactTriggered = true;
+        this.spawnIntroSplash();
+        if (!this.introSimulating) this.engine.triggerScreenShake(2.5, 0.35);
+      }
+      if (this.introImpactTriggered && this.introTimer < 5.6) {
+        this.introBubbleTimer -= dt;
+        if (this.introBubbleTimer <= 0) {
+          this.introBubbleTimer = 0.07;
+          this.introParticles.push({
+            type: "bubble",
+            x: this.player.x + (this.introRand() - 0.5) * 12,
+            y: this.player.y - 56 + this.introRand() * 6,
+            vx: 0, vy: -(12 + this.introRand() * 14),
+            life: 0, maxLife: 0.45 + this.introRand() * 0.4, delay: 0,
+            angle: this.introRand() * Math.PI * 2,
+          });
+        }
+      }
+      this.updateIntroParticles(dt);
+      if (this.introTimer >= 5.7) {
+        this.introPhase = "particles";
+        this.introTimer = 0;
+        this.initIntroParticles();
+      }
+    } else if (this.introPhase === "particles") {
+      this.updateIntroParticles(dt);
+      if (this.introTimer >= 2.0) {
+        this.introPhase = "none";
+        if (!this.introSimulating) {
+          audio.setMusicPaused(false);
+          this.engine.input.suppressUntilReleased();
+          this.engine.worldNotices.showRegion(t(this.language, this.currentZoneKey as Parameters<typeof t>[1]));
+        }
+      }
+    }
+
+    let targetCamY = this.player.y;
+    if (this.introPhase === "crystal") {
+      targetCamY = this.player.y - 90;
+    } else if (this.introPhase === "particles") {
+      const panProgress = Math.min(1, this.introTimer / 1.5);
+      const t = panProgress * panProgress * (3 - 2 * panProgress);
+      targetCamY = (this.player.y - 90) * (1 - t) + this.player.y * t;
+    }
+
+    const worldSize = getWorldSize(this.map);
+    this.camera.snapTo(this.player.x, targetCamY, worldSize.width, worldSize.height);
+  }
+
+  public qaSetIntro(phase: "crystal" | "particles", time: number): boolean {
+    if (!this.engine.debugMode || !Number.isFinite(time) || time < 0) return false;
+    if (!this.qaFocusAnchor("rebirth_spring")) return false;
+
+    const loadout = this.engine.data.getHubLoadout();
+    this.player.characterId = (CHARACTERS[loadout.characterId] ?? CHARACTERS.knight).id;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.animState = "idle";
+    this.player.animFrame = 0;
+    this.player.animTimer = 0;
+    this.player.facing = "right";
+    this.player.facingLeft = false;
+    this.player.hitFlash = 0;
+    this.mode = "world";
+    this.selectedIndex = 0;
+    this.refundArmed = false;
+    this.confirmationAction = null;
+    this.interactionTarget = null;
+    this.qaPresentationTime = null;
+    this.time = 0;
+    this.debugOverlayVisible = false;
+    this.occlusionController.reset();
+    this.engine.worldNotices.clear();
+    this.engine.input.suppressUntilReleased();
+    audio.setMusicPaused(true);
+    this.resetIntro();
+
+    const target = phase === "crystal" ? Math.min(time, 5.699) : 5.7 + Math.min(time, 1.999);
+    const step = 1 / 60;
+    this.introSimulating = true;
+    try {
+      let elapsed = 0;
+      while (elapsed < target) {
+        const frameDt = Math.min(step, target - elapsed);
+        this.time += frameDt;
+        this.updateIntro(frameDt);
+        elapsed += frameDt;
+      }
+    } finally {
+      this.introSimulating = false;
+    }
+    return true;
   }
 
   private updateUpgrades(): void {
@@ -661,7 +751,7 @@ export class HubState extends GameState {
         ctx,
         object,
         this.time,
-        this.occlusionController.getAlpha(object.occlusionGroupId),
+        this.occlusionController.getAlpha(object.occlusionGroupId) * this.introObjectAlpha(object),
       ),
     }));
     
@@ -676,24 +766,37 @@ export class HubState extends GameState {
         draw: () => {
           ctx.save();
           const progress = Math.min(1, this.introTimer / 1.5);
-          
+          const ease = progress * progress * (3 - 2 * progress);
+
           // Draw shadow
-          ctx.fillStyle = `rgba(0,0,0,${0.3 * progress})`;
+          ctx.fillStyle = `rgba(0,0,0,${0.3 * ease})`;
           ctx.beginPath();
           ctx.ellipse(this.player.x, this.player.y, 8, 4, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          if (progress > 0) {
+          const height = 40;
+          const revealY = this.player.y - (ease * height);
+          if (ease > 0) {
             ctx.save();
-            const height = 40;
-            const revealY = this.player.y - (progress * height);
             ctx.beginPath();
             ctx.rect(this.player.x - 30, revealY, 60, height + 10);
             ctx.clip();
-            
+
             HubPlayerRenderer.draw(ctx, this.player, this.engine.data.settings.reducedFlashing);
-            
+
             ctx.restore();
+          }
+
+          // Materialization scanline sweeping up along the reveal edge
+          if (ease > 0.02 && ease < 1) {
+            const lineAlpha = 0.85 * (1 - progress * 0.4);
+            ctx.fillStyle = `rgba(214,252,255,${lineAlpha})`;
+            ctx.fillRect(Math.round(this.player.x) - 11, Math.round(revealY), 22, 1);
+            ctx.fillStyle = `rgba(0,242,254,${lineAlpha * 0.5})`;
+            ctx.fillRect(Math.round(this.player.x) - 8, Math.round(revealY) + 1, 16, 1);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(Math.round(this.player.x) - 12, Math.round(revealY), 1, 1);
+            ctx.fillRect(Math.round(this.player.x) + 11, Math.round(revealY), 1, 1);
           }
           ctx.restore();
         },
@@ -713,12 +816,24 @@ export class HubState extends GameState {
     ctx.globalAlpha = prevAlpha;
     if (this.introPhase === "crystal") {
       this.drawCrystal(ctx);
+      this.drawParticles(ctx);
       this.drawIntroText(ctx);
     } else if (this.introPhase === "particles") {
       this.drawParticles(ctx);
     }
 
     this.camera.end(ctx);
+
+    if (this.introPhase === "crystal" && this.introTimer > 5.2) {
+      const flash = (this.introTimer - 5.2) / 0.4;
+      if (flash < 1) {
+        const cap = this.engine.data.settings.reducedFlashing ? 0.25 : 0.6;
+        ctx.globalAlpha = cap * (1 - flash) * (1 - flash);
+        ctx.fillStyle = "#EAFFFF";
+        ctx.fillRect(0, 0, 320, 240);
+        ctx.globalAlpha = 1;
+      }
+    }
 
     if (this.introPhase === "none") {
       this.drawHubHud(ctx);
@@ -727,6 +842,13 @@ export class HubState extends GameState {
       else if (this.mode === "expedition") this.drawExpeditionPanel(ctx);
       else this.drawTrialPanel(ctx);
     }
+  }
+
+  /** During the splash intro the spring's floating crystal only appears once the falling crystal has landed. */
+  private introObjectAlpha(object: WorldObjectDefinition): number {
+    if (this.introPhase === "none" || object.id !== "rebirth_spring:crystal") return 1;
+    if (this.introPhase === "particles") return 1;
+    return Math.max(0, Math.min(1, (this.introTimer - 5.25) / 0.45));
   }
 
   private drawHubHud(ctx: CanvasRenderingContext2D): void {
@@ -744,28 +866,61 @@ export class HubState extends GameState {
   private spawnIntroSplash() {
     const poolX = this.player.x;
     const poolY = this.player.y - 60; // Center of pool
-    
-    // Ripples
-    for (let i = 0; i < 3; i++) {
+
+    // Impact glow flash
+    this.introParticles.push({
+      type: "light",
+      x: poolX, y: poolY, vx: 0, vy: 0,
+      life: 0, maxLife: 0.4, delay: 0,
+    });
+
+    // Ripple rings, staggered
+    for (let i = 0; i < 4; i++) {
       this.introParticles.push({
         type: "ripple",
         x: poolX, y: poolY, vx: 0, vy: 0,
-        life: 0, maxLife: 0.8 + i * 0.2, delay: i * 0.1,
+        life: 0, maxLife: 0.75 + i * 0.18, delay: i * 0.11,
         radius: 0
       });
     }
 
-    // Splash drops
-    for (let i = 0; i < 40; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 40 + Math.random() * 80;
+    // Crown splash drops: ring of droplets kicked up and outward
+    for (let i = 0; i < 34; i++) {
+      const angle = (i / 34) * Math.PI * 2 + (this.introRand() - 0.5) * 0.5;
+      const speed = 30 + this.introRand() * 55;
       this.introParticles.push({
         type: "splash",
-        x: poolX + Math.cos(angle) * 5,
+        x: poolX + Math.cos(angle) * (4 + this.introRand() * 3),
         y: poolY + Math.sin(angle) * 2,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed * 0.5 - (80 + Math.random() * 60),
-        life: 0, maxLife: 1.0 + Math.random() * 0.5, delay: 0
+        vy: Math.sin(angle) * speed * 0.35 - (95 + this.introRand() * 75),
+        life: 0, maxLife: 0.9 + this.introRand() * 0.5, delay: 0,
+        size: this.introRand() < 0.35 ? 2 : 1,
+      });
+    }
+
+    // Central water spout shooting straight up
+    for (let i = 0; i < 10; i++) {
+      this.introParticles.push({
+        type: "spout",
+        x: poolX + (this.introRand() - 0.5) * 5,
+        y: poolY,
+        vx: (this.introRand() - 0.5) * 22,
+        vy: -(150 + this.introRand() * 85),
+        life: 0, maxLife: 0.75 + this.introRand() * 0.25, delay: this.introRand() * 0.06,
+      });
+    }
+
+    // Slow drifting mist
+    for (let i = 0; i < 12; i++) {
+      const angle = this.introRand() * Math.PI * 2;
+      this.introParticles.push({
+        type: "mist",
+        x: poolX + Math.cos(angle) * (6 + this.introRand() * 6),
+        y: poolY + Math.sin(angle) * 3 - 2,
+        vx: Math.cos(angle) * (8 + this.introRand() * 14),
+        vy: -(4 + this.introRand() * 10),
+        life: 0, maxLife: 1.1 + this.introRand() * 0.6, delay: this.introRand() * 0.15,
       });
     }
   }
@@ -774,17 +929,20 @@ export class HubState extends GameState {
     const poolX = this.player.x;
     const poolY = this.player.y - 60; // Center of pool
     
-    // Soul motes
+    // Soul motes: burst out of the pool, then spiral down into the player
     for (let i = 0; i < 45; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 10 + Math.random() * 30;
+      const angle = this.introRand() * Math.PI * 2;
+      const dist = 8 + this.introRand() * 28;
+      const outward = 16 + this.introRand() * 36;
+      // Tangential push so the swarm swirls instead of scattering
+      const swirl = 26 + this.introRand() * 30;
       this.introParticles.push({
         type: "soul",
         x: poolX + Math.cos(angle) * dist,
         y: poolY + Math.sin(angle) * dist * 0.5,
-        vx: Math.cos(angle) * (20 + Math.random() * 40),
-        vy: Math.sin(angle) * (10 + Math.random() * 20) - 30,
-        life: 0, maxLife: 1.5 + Math.random() * 0.5, delay: Math.random() * 0.2,
+        vx: Math.cos(angle) * outward - Math.sin(angle) * swirl,
+        vy: Math.sin(angle) * outward * 0.5 + Math.cos(angle) * swirl * 0.5 - 34,
+        life: 0, maxLife: 1.4 + this.introRand() * 0.5, delay: this.introRand() * 0.25,
         angle: angle
       });
     }
@@ -810,112 +968,229 @@ export class HubState extends GameState {
         if (p.y > this.player.y - 60 && p.vy > 0) {
           p.vy *= -0.3; // bounce on water
         }
+      } else if (p.type === "spout") {
+        p.vy += 430 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.y > this.player.y - 58 && p.vy > 0) p.life = p.maxLife; // vanish on re-entry
+      } else if (p.type === "mist") {
+        p.vx *= Math.pow(0.85, dt * 60);
+        p.vy -= 4 * dt; // gentle rise
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      } else if (p.type === "bubble") {
+        p.y += p.vy * dt;
+        if (p.y < this.player.y - 66) p.life = p.maxLife; // pop at the surface
       } else if (p.type === "ripple") {
-        p.radius = (p.radius || 0) + 60 * dt;
+        p.radius = 30 * (1 - Math.pow(1 - Math.min(1, lifeRatio), 2));
       } else if (p.type === "soul") {
         const targetX = this.player.x;
         const targetY = this.player.y - 8;
         const dx = targetX - p.x;
         const dy = targetY - p.y;
-        
-        if (lifeRatio > 0.3) {
-          p.vx += dx * dt * 15.0;
-          p.vy += dy * dt * 15.0;
+        const dist = Math.hypot(dx, dy) || 1;
+
+        if (lifeRatio > 0.25) {
+          // Radial pull that ramps up, plus a decaying tangential swirl → spiral convergence
+          const pull = (lifeRatio - 0.25) / 0.75;
+          const radial = 50 + 380 * pull * pull;
+          const swirl = 70 * (1 - pull);
+          p.vx += ((dx / dist) * radial - (dy / dist) * swirl) * dt;
+          p.vy += ((dy / dist) * radial + (dx / dist) * swirl) * dt;
         } else {
-          p.vy += 80 * dt; // gravity before homing
+          p.vy += 70 * dt; // gravity before homing kicks in
         }
         p.vx *= friction;
         p.vy *= friction;
         p.x += p.vx * dt;
         p.y += p.vy * dt;
+        if (dist < 2.5 && lifeRatio > 0.5) p.life = p.maxLife; // absorbed
       }
     }
   }
 
+  private static hexToRgb(hex: string): [number, number, number] {
+    return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+  }
+
+  private static mixColor(a: string, b: string, t: number): string {
+    const ca = HubState.hexToRgb(a);
+    const cb = HubState.hexToRgb(b);
+    const m = Math.max(0, Math.min(1, t));
+    return `rgb(${Math.round(ca[0] + (cb[0] - ca[0]) * m)},${Math.round(ca[1] + (cb[1] - ca[1]) * m)},${Math.round(ca[2] + (cb[2] - ca[2]) * m)})`;
+  }
+
   private drawCrystal(ctx: CanvasRenderingContext2D): void {
-    const spinDuration = 4.5;
-    const fallDuration = 0.7;
-    const sinkDuration = 0.5;
-    
-    const fallProgress = Math.max(0, Math.min(1, (this.introTimer - spinDuration) / fallDuration));
-    const sinkProgress = Math.max(0, Math.min(1, (this.introTimer - spinDuration - fallDuration) / sinkDuration));
-    
+    const spinEnd = 3.5;   // full-speed spin ends, weightless rise begins
+    const decelEnd = 4.5;  // rotation stops, crystal hangs at its apex
+    const hangEnd = 4.75;  // gravity takes over
+    const fallEnd = 5.2;   // water impact
+    const tSec = this.introTimer;
+
     const targetY = this.player.y - 60; // Pool center
     const startY = targetY - 60; // Crystal starts above pool
-    
-    const currentY = startY + (targetY - startY) * (fallProgress * fallProgress) + (sinkProgress * 12);
-    
+
+    const smooth = (v: number) => v * v * (3 - 2 * v);
+    const riseEase = smooth(Math.max(0, Math.min(1, (tSec - spinEnd) / (decelEnd - spinEnd))));
+    const fallProgress = Math.max(0, Math.min(1, (tSec - hangEnd) / (fallEnd - hangEnd)));
+    const fallEase = fallProgress * fallProgress * fallProgress;
+    const sinkProgress = Math.max(0, Math.min(1, (tSec - fallEnd) / 0.5));
+    const sinkEase = 1 - Math.pow(1 - sinkProgress, 2);
+
+    const appearProgress = Math.max(0, Math.min(1, (tSec - 0.3) / 0.3));
+
+    // Idle levitation bob that fades as the crystal drifts up weightless
+    const bob = Math.sin(tSec * 2.4) * 1.5 * appearProgress * (1 - riseEase);
+    const apexY = startY - 7 * riseEase;
+    const currentY = apexY + bob * (1 - fallEase) + (targetY - apexY) * fallEase + sinkEase * 12;
+    // Faint tremble while hanging weightless at the apex
+    const tremble = tSec > decelEnd && tSec < hangEnd ? Math.sin(tSec * 70) * 0.5 : 0;
+
     ctx.save();
-    
+
     // Mask to water surface (pool center + slight offset) so crystal sinks "into" it
     ctx.beginPath();
     ctx.rect(this.player.x - 50, targetY - 150, 100, 150 + 2);
     ctx.clip();
-    
-    ctx.translate(this.player.x, currentY);
-    
-    // Tilt like a top losing energy
-    if (fallProgress > 0) {
-      const tilt = (fallProgress * fallProgress) * (Math.PI / 2.5);
-      const wobble = Math.sin(fallProgress * Math.PI * 8) * (fallProgress * 0.15);
-      ctx.rotate(tilt + wobble);
+
+    // Ambient motes drifting on the black backdrop
+    const worldFade = Math.max(0, Math.min(1, (tSec - 4.5) / 0.7));
+    if (worldFade < 1 && appearProgress > 0) {
+      this.drawIntroMotes(ctx, tSec, this.player.x, startY, appearProgress * (1 - worldFade));
     }
-    
-    // Continuous rotation that slows down
+
+    ctx.translate(this.player.x + tremble, currentY);
+
+    // Aura: pulsing glow that charges up while weightless and falters before the drop
+    let auraAlpha = 0.2 * (0.75 + 0.25 * Math.sin(tSec * 3.1)) * appearProgress * (1 - sinkEase);
+    auraAlpha *= 1 + 0.9 * riseEase;
+    if (tSec > decelEnd && tSec < hangEnd) auraAlpha *= 0.55;
+    if (auraAlpha > 0.01) {
+      const auraR = 24 * (1 + 0.4 * riseEase);
+      const aura = ctx.createRadialGradient(0, 0, 2, 0, 0, auraR);
+      aura.addColorStop(0, "rgba(0,242,254,0.6)");
+      aura.addColorStop(0.55, "rgba(0,131,176,0.22)");
+      aura.addColorStop(1, "rgba(0,131,176,0)");
+      ctx.globalAlpha = auraAlpha;
+      ctx.fillStyle = aura;
+      ctx.fillRect(-auraR, -auraR, auraR * 2, auraR * 2);
+      ctx.globalAlpha = 1;
+    }
+
+    // Continuous rotation that spins up, cruises, then decelerates to rest
     let angle = 0;
     const V = (14 * Math.PI) / 3.55;
-    const t_sec = this.introTimer;
-    if (t_sec <= 0.3) {
+    if (tSec <= 0.3) {
       angle = 0;
-    } else if (t_sec <= 0.6) {
-      const dt_sec = t_sec - 0.3;
-      angle = 0.5 * dt_sec * (dt_sec / 0.3 * V);
-    } else if (t_sec <= 3.5) {
-      angle = 0.15 * V + (t_sec - 0.6) * V;
-    } else if (t_sec <= 4.5) {
-      const dt_sec = t_sec - 3.5;
-      angle = 0.15 * V + 2.9 * V + (V * dt_sec - 0.5 * V * dt_sec * dt_sec / 1.0);
+    } else if (tSec <= 0.6) {
+      const dtSec = tSec - 0.3;
+      angle = 0.5 * dtSec * (dtSec / 0.3 * V);
+    } else if (tSec <= 3.5) {
+      angle = 0.15 * V + (tSec - 0.6) * V;
+    } else if (tSec <= 4.5) {
+      const dtSec = tSec - 3.5;
+      angle = 0.15 * V + 2.9 * V + (V * dtSec - 0.5 * V * dtSec * dtSec / 1.0);
     } else {
       angle = 3.55 * V;
     }
-    
-    const halfWidths = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1];
-    const h = halfWidths.length;
-    
+
     const baseAlpha = 1 - sinkProgress * 0.8;
 
-    const angles = [angle, angle + Math.PI/2, angle + Math.PI, angle + Math.PI * 1.5];
+    // Tilt like a top losing energy + squash & stretch
+    const tilt = fallEase * (Math.PI / 2.5) + Math.sin(fallProgress * Math.PI * 8) * (fallProgress * 0.15);
+    let sx = 1, sy = 1;
+    if (fallProgress > 0 && sinkProgress <= 0) {
+      sy = 1 + 0.3 * fallEase;  // stretch along the fall
+      sx = 1 - 0.14 * fallEase;
+    } else if (sinkProgress > 0) {
+      const squash = Math.max(0, 1 - sinkProgress / 0.3);
+      sy = 1 - 0.22 * squash;   // impact squash
+      sx = 1 + 0.18 * squash;
+    }
+
+    // Motion-trail afterimages while falling
+    if (fallEase > 0.05 && sinkProgress <= 0) {
+      for (let g = 2; g >= 1; g--) {
+        ctx.save();
+        ctx.translate(0, -8 * g * fallEase);
+        ctx.rotate(tilt * (1 - g * 0.15));
+        ctx.scale(sx, sy);
+        this.drawCrystalBody(ctx, angle, baseAlpha * (g === 1 ? 0.18 : 0.08), 1, tSec);
+        ctx.restore();
+      }
+    }
+
+    ctx.save();
+    ctx.rotate(tilt);
+    ctx.scale(sx, sy);
+    this.drawCrystalBody(ctx, angle, baseAlpha, appearProgress, tSec);
+    ctx.restore();
+
+    // Screen-aligned sparkle glints on the spinning surface
+    if (tSec > 0.7 && tSec < 4.6) {
+      const period = 0.65;
+      const phaseIdx = Math.floor(tSec / period);
+      const phaseT = (tSec % period) / period;
+      if (phaseT < 0.5) {
+        const hash = (phaseIdx * 2654435761) >>> 0;
+        const gx = Math.round(((hash & 0xff) / 255 - 0.5) * 8);
+        const gy = Math.round((((hash >> 8) & 0xff) / 255 - 0.5) * 16);
+        const ga = Math.sin((phaseT / 0.5) * Math.PI) * baseAlpha;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.globalAlpha = ga;
+        ctx.fillRect(gx, gy, 1, 1);
+        ctx.globalAlpha = ga * 0.55;
+        ctx.fillRect(gx - 1, gy, 1, 1);
+        ctx.fillRect(gx + 1, gy, 1, 1);
+        ctx.fillRect(gx, gy - 1, 1, 1);
+        ctx.fillRect(gx, gy + 1, 1, 1);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    ctx.restore();
+  }
+
+  private drawCrystalBody(ctx: CanvasRenderingContext2D, angle: number, baseAlpha: number, appearProgress: number, tSec: number): void {
+    const halfWidths = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1];
+    const h = halfWidths.length;
+
+    const angles = [angle, angle + Math.PI / 2, angle + Math.PI, angle + Math.PI * 1.5];
     const points = angles.map(a => ({ x: Math.cos(a), z: Math.sin(a) }));
-    
-    const faceColors = ["#00F2FE", "#00B4DB", "#0083B0", "#005C8A"];
-    const visibleFaces: { left: number, right: number, color: string }[] = [];
-    
+
+    // Light from the viewer's upper-left; face brightness follows its rotating normal
+    const lightX = -0.45, lightZ = 0.89;
+    const visibleFaces: { left: number; right: number; color: string; bright: number }[] = [];
     for (let i = 0; i < 4; i++) {
       const p1 = points[i];
       const p2 = points[(i + 1) % 4];
       if (p1.z + p2.z > 0) {
+        const mid = angle + i * (Math.PI / 2) + Math.PI / 4;
+        const facing = Math.max(0, Math.cos(mid) * lightX + Math.sin(mid) * lightZ);
+        const bright = 0.18 + 0.82 * facing;
         visibleFaces.push({
           left: Math.min(p1.x, p2.x),
           right: Math.max(p1.x, p2.x),
-          color: faceColors[i]
+          color: HubState.mixColor("#054B6B", "#8DF6FF", bright),
+          bright,
         });
       }
     }
 
     let maxZ = -100;
-    let maxZ_X = 0;
+    let maxZX = 0;
     for (const p of points) {
       if (p.z > maxZ) {
         maxZ = p.z;
-        maxZ_X = p.x;
+        maxZX = p.x;
       }
     }
 
-    const appearProgress = Math.max(0, Math.min(1, (this.introTimer - 0.3) / 0.3));
+    const corePulse = 0.5 + 0.35 * Math.sin(tSec * 5.2);
 
     for (let py = 0; py < h; py++) {
       const pw = halfWidths[py];
-      
+
       for (const face of visibleFaces) {
         const lx = Math.round(face.left * pw);
         const rx = Math.round(face.right * pw);
@@ -933,69 +1208,114 @@ export class HubState extends GameState {
           } else {
             ctx.globalAlpha = baseAlpha;
             ctx.fillRect(lx, py - h / 2, drawW, 1);
+            // Facet edge shine on the brightest face
+            if (face.bright > 0.86 && drawW > 1) {
+              ctx.globalAlpha = baseAlpha * ((face.bright - 0.86) / 0.14) * 0.8;
+              ctx.fillStyle = "#D9FCFF";
+              ctx.fillRect(lx, py - h / 2, 1, 1);
+              ctx.fillStyle = face.color;
+            }
           }
         }
       }
 
       ctx.globalAlpha = baseAlpha;
+      // Specular edge column facing the viewer
       if (maxZ > 0.5 && pw > 1) {
-        const hx = Math.round(maxZ_X * pw);
+        const hx = Math.round(maxZX * pw);
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(hx, py - h / 2, 1, 1);
       }
+      // Inner energy core
+      if (pw >= 3 && appearProgress > 0.5) {
+        ctx.globalAlpha = baseAlpha * corePulse * ((appearProgress - 0.5) / 0.5);
+        ctx.fillStyle = "#EAFFFF";
+        ctx.fillRect(0, py - h / 2, 1, 1);
+      }
     }
-    
-    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  private drawIntroMotes(ctx: CanvasRenderingContext2D, tSec: number, cx: number, cy: number, alpha: number): void {
+    for (let i = 0; i < 16; i++) {
+      const drift = (tSec * (4 + (i % 5) * 2) + i * 23) % 110;
+      const mx = cx + Math.sin(i * 2.4) * (14 + (i * 13) % 42) + Math.sin(tSec * 0.6 + i) * 3;
+      const my = cy + 55 - drift;
+      const twinkle = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(tSec * 2.2 + i * 1.7));
+      const edgeFade = Math.max(0, Math.min(1, (110 - drift) / 30)) * Math.max(0, Math.min(1, drift / 15));
+      ctx.globalAlpha = alpha * 0.5 * twinkle * edgeFade;
+      ctx.fillStyle = i % 3 === 0 ? "#FFFFFF" : "#7EF4FF";
+      ctx.fillRect(Math.round(mx), Math.round(my), 1, 1);
+    }
+    ctx.globalAlpha = 1;
   }
 
   private drawIntroText(ctx: CanvasRenderingContext2D): void {
-    const t = this.introTimer;
-    if (t > 3.5) return;
+    const tSec = this.introTimer;
+    if (tSec > 3.55) return;
 
     // Text position relative to screen center
     const textX = this.player.x;
     const textY = this.player.y - 15;
 
+    const exitProgress = tSec >= 3.0 ? Math.min(1, (tSec - 3.0) / 0.5) : 0;
+    const exitEase = exitProgress * exitProgress;
+
     ctx.save();
-    
-    let alpha = 1;
-    let shrink = 0;
-    let showCyan = false;
-
-    if (t < 0.3) {
-      alpha = t / 0.3; // fade in
-    } else if (t >= 3.0) {
-      const exitProgress = (t - 3.0) / 0.5; // 0 to 1
-      alpha = 1 - exitProgress * exitProgress; // nonlinear fade
-      shrink = exitProgress * 15; // move up slightly and shrink
-      showCyan = true;
-    }
-
-    ctx.globalAlpha = alpha;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    const drawText = (offsetX: number, offsetY: number, color: string) => {
-      ctx.fillStyle = color;
-      ctx.font = `bold ${11 - shrink * 0.4}px Arial`;
-      ctx.fillText("DRAGON EDUCATION", textX + offsetX, textY - shrink + offsetY);
-      ctx.font = `normal ${6 - shrink * 0.2}px Arial`;
-      // fake letter spacing by adding spaces
-      ctx.fillText("P  R  E  S  E  N  T  S", textX + offsetX, textY + 14 - shrink * 1.5 + offsetY);
+    const drawLetters = (
+      text: string,
+      font: string,
+      y: number,
+      tracking: number,
+      appearStart: number,
+      stagger: number,
+      baseColor: string,
+      spreadScale: number,
+    ) => {
+      ctx.font = font;
+      const adv = ctx.measureText("M").width + tracking;
+      const mid = (text.length - 1) / 2;
+      const startX = textX - mid * adv;
+      for (let i = 0; i < text.length; i++) {
+        const appear = Math.max(0, Math.min(1, (tSec - appearStart - i * stagger) / 0.3));
+        if (appear <= 0) continue;
+        const easeIn = 1 - Math.pow(1 - appear, 2);
+        const spread = exitEase * (i - mid) * spreadScale;
+        const lx = startX + i * adv + spread;
+        const ly = y - 4 * (1 - easeIn) - exitEase * 10;
+        const alpha = easeIn * (1 - exitEase);
+        if (alpha <= 0) continue;
+
+        // Shimmer sweep passing across the letters
+        let color = baseColor;
+        if (tSec > 1.1 && tSec < 2.6) {
+          const sweepX = textX - 70 + ((tSec - 1.1) / 1.5) * 140;
+          const boost = Math.max(0, 1 - Math.abs(lx - sweepX) / 12);
+          if (boost > 0) color = HubState.mixColor(baseColor, "#FFFFFF", boost);
+        }
+
+        // Chromatic cyan ghosts while dissolving out
+        if (exitEase > 0) {
+          ctx.globalAlpha = alpha * 0.7;
+          ctx.fillStyle = "#00F2FE";
+          ctx.fillText(text[i], lx - exitEase * 3, ly);
+          ctx.fillText(text[i], lx + exitEase * 3, ly);
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.fillText(text[i], lx, ly);
+      }
     };
 
-    if (showCyan) {
-      // cyan trailing shadows
-      ctx.globalAlpha = alpha * 0.8;
-      drawText(-shrink * 0.5, 0, "#00F2FE");
-      drawText(shrink * 0.5, 0, "#00F2FE");
-      ctx.globalAlpha = alpha;
-    }
+    drawLetters("DRAGON EDUCATION", "bold 11px monospace", textY, 0.4, 0.15, 0.05, "#F2FDFF", 2.4);
+    drawLetters("PRESENTS", "6px monospace", textY + 14, 4, 0.65, 0.05, "#9ADCE8", 1.4);
 
-    // Main text
-    drawText(0, 0, showCyan ? "#E0F7FA" : "#FFFFFF");
-    
     ctx.restore();
+    ctx.globalAlpha = 1;
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D): void {
@@ -1004,40 +1324,112 @@ export class HubState extends GameState {
       const lifeRatio = p.life / p.maxLife;
       const alpha = Math.max(0, 1 - lifeRatio);
       if (alpha <= 0) continue;
-      
+
       const currentAlpha = Math.min(1, lifeRatio * 5) * alpha;
       ctx.globalAlpha = currentAlpha;
-      
+
       if (p.type === "splash") {
+        // White-hot droplet cooling into cyan
+        ctx.fillStyle = lifeRatio < 0.25 ? "#F4FEFF" : "#8DF6FF";
+        const s = p.size ?? 1;
+        ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, s + 1, s + 1);
+      } else if (p.type === "spout") {
+        // Vertical streak of the water column
+        ctx.fillStyle = "#E8FEFF";
+        ctx.fillRect(Math.round(p.x), Math.round(p.y) - 1, 1, 3);
+        ctx.globalAlpha = currentAlpha * 0.5;
         ctx.fillStyle = "#8DF6FF";
-        ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 2, 2);
+        ctx.fillRect(Math.round(p.x), Math.round(p.y) + 2, 1, 2);
+      } else if (p.type === "mist") {
+        ctx.globalAlpha = currentAlpha * 0.35;
+        ctx.fillStyle = "#BFF9FF";
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+      } else if (p.type === "bubble") {
+        const wobbleX = p.x + Math.sin(p.life * 9 + (p.angle ?? 0)) * 1.5;
+        ctx.globalAlpha = currentAlpha * 0.8;
+        ctx.fillStyle = "#CFF8FF";
+        ctx.fillRect(Math.round(wobbleX), Math.round(p.y), 1, 1);
+      } else if (p.type === "light") {
+        // Impact glow flash
+        const r = 8 + 26 * lifeRatio;
+        const fade = Math.pow(alpha, 2);
+        const glow = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, r);
+        glow.addColorStop(0, `rgba(244,254,255,${0.85 * fade})`);
+        glow.addColorStop(0.5, `rgba(0,242,254,${0.4 * fade})`);
+        glow.addColorStop(1, "rgba(0,242,254,0)");
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = glow;
+        ctx.fillRect(p.x - r, p.y - r * 0.6, r * 2, r * 1.2);
       } else if (p.type === "ripple") {
+        const r = p.radius || 1;
         ctx.strokeStyle = `rgba(141, 246, 255, ${currentAlpha * 0.8})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.ellipse(Math.round(p.x), Math.round(p.y), p.radius || 1, (p.radius || 1) * 0.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(Math.round(p.x), Math.round(p.y), r, r * 0.45, 0, 0, Math.PI * 2);
         ctx.stroke();
+        if (r > 3) {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${currentAlpha * 0.35})`;
+          ctx.beginPath();
+          ctx.ellipse(Math.round(p.x), Math.round(p.y), r - 2, (r - 2) * 0.45, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       } else if (p.type === "soul") {
-        ctx.fillStyle = "#FFFFFF";
+        // Cyan → white → gold as the mote closes in on the hero
+        const dist = Math.hypot(this.player.x - p.x, this.player.y - 8 - p.y);
+        const heat = Math.max(0, Math.min(1, 1 - dist / 26));
+        const coreColor = HubState.mixColor(heat < 0.5 ? "#C9FBFF" : "#FFFFFF", "#FFE9A8", Math.max(0, heat - 0.5) * 2);
+        ctx.fillStyle = coreColor;
         ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 2, 2);
-        
+
         const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
         if (speed > 10) {
           const nx = p.vx / speed;
           const ny = p.vy / speed;
-          
-          ctx.fillStyle = "#00F2FE";
+
+          ctx.fillStyle = heat > 0.6 ? "#FFD98A" : "#00F2FE";
           ctx.fillRect(Math.round(p.x - nx * 3) - 1, Math.round(p.y - ny * 3) - 1, 2, 2);
-          
+
           ctx.fillStyle = "#0083B0";
           ctx.fillRect(Math.round(p.x - nx * 6), Math.round(p.y - ny * 6), 1, 1);
-          
+
           ctx.fillStyle = `rgba(0, 131, 176, ${currentAlpha * 0.5})`;
           ctx.fillRect(Math.round(p.x - nx * 9), Math.round(p.y - ny * 9), 1, 1);
         }
       }
     }
     ctx.globalAlpha = 1;
+
+    // Formation burst once the swarm has condensed into the hero
+    if (this.introPhase === "particles" && this.introTimer > 1.35) {
+      const fp = Math.min(1, (this.introTimer - 1.35) / 0.45);
+      const fpEase = 1 - Math.pow(1 - fp, 2);
+      const ringR = 4 + fpEase * 15;
+      ctx.globalAlpha = (1 - fp) * 0.7;
+      ctx.strokeStyle = "#BFF9FF";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(this.player.x, this.player.y + 4, ringR, ringR * 0.45, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const glow = ctx.createRadialGradient(this.player.x, this.player.y - 10, 1, this.player.x, this.player.y - 10, 16);
+      glow.addColorStop(0, `rgba(255,244,214,${0.5 * (1 - fp)})`);
+      glow.addColorStop(1, "rgba(255,244,214,0)");
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = glow;
+      ctx.fillRect(this.player.x - 16, this.player.y - 26, 32, 32);
+
+      // Golden glints rising off the freshly-formed hero
+      for (let i = 0; i < 5; i++) {
+        const gAge = fp * 0.45 - i * 0.06;
+        if (gAge <= 0 || gAge > 0.34) continue;
+        const gx = this.player.x + Math.sin(i * 2.7) * (4 + i * 2);
+        const gy = this.player.y - 12 - gAge * 44;
+        ctx.globalAlpha = Math.max(0, 1 - gAge / 0.34) * 0.85;
+        ctx.fillStyle = i % 2 === 0 ? "#FFE9A8" : "#FFFFFF";
+        ctx.fillRect(Math.round(gx), Math.round(gy), 1, 1);
+      }
+      ctx.globalAlpha = 1;
+    }
   }
 
   private drawWorldOverlay(ctx: CanvasRenderingContext2D): void {
