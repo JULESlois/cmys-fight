@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#11161b"/>
+  <rect x="30" y="30" width="1140" height="740" rx="18" fill="#1a2128" stroke="#56616c" stroke-width="3"/>
+  <text x="60" y="78" fill="#f2e3bd" font-family="sans-serif" font-size="30" font-weight="700">Reforge Stone / 重铸石 — 美术重画概念板</text>
+  <text x="60" y="108" fill="#9aa7b2" font-family="sans-serif" font-size="16">Hub Workshop interactable · 64×64 footprint · meta refund / reforge interaction</text>
+
+  <g transform="translate(70 150)">
+    <text x="0" y="0" fill="#e8edf2" font-family="sans-serif" font-size="20" font-weight="700">A. 主轮廓：裂炉砧台</text>
+    <ellipse cx="210" cy="470" rx="150" ry="28" fill="#090c0f" opacity="0.65"/>
+    <path d="M80 410 L110 345 L310 345 L340 410 L325 450 L95 450 Z" fill="#262d34" stroke="#0d1115" stroke-width="8"/>
+    <path d="M118 338 L145 168 L275 168 L302 338 Z" fill="#4b535c" stroke="#20262c" stroke-width="8"/>
+    <path d="M145 168 L175 128 L245 128 L275 168 Z" fill="#313941" stroke="#20262c" stroke-width="7"/>
+    <path d="M158 144 L262 144" stroke="#8e9aa5" stroke-width="6"/>
+    <path d="M177 195 L243 195 L231 325 L189 325 Z" fill="#1e1713" stroke="#16110e" stroke-width="5"/>
+    <path d="M210 185 L210 330 M177 258 L243 258" stroke="#e58945" stroke-width="14"/>
+    <path d="M210 190 L210 330 M179 258 L241 258" stroke="#ffd36b" stroke-width="5"/>
+    <circle cx="210" cy="258" r="14" fill="#fff1b4"/>
+    <path d="M132 362 L286 362" stroke="#d8b45c" stroke-width="8" stroke-dasharray="12 8"/>
+    <path d="M147 183 L135 242 L150 275 M273 184 L286 235 L272 292" fill="none" stroke="#1d2329" stroke-width="5"/>
+    <path d="M152 182 L142 240" stroke="#7b858e" stroke-width="2"/>
+    <g fill="#ffb35c">
+      <rect x="150" y="120" width="6" height="6"/><rect x="280" y="208" width="5" height="5"/><rect x="126" y="286" width="4" height="4"/>
+    </g>
+    <text x="0" y="520" fill="#b9c4cd" font-family="sans-serif" font-size="15">轮廓关键词：宽砧肩、内凹炉芯、低重心阶梯基座、双侧裂纹</text>
+  </g>
+
+  <g transform="translate(500 150)">
+    <text x="0" y="0" fill="#e8edf2" font-family="sans-serif" font-size="20" font-weight="700">B. 状态拆分</text>
+    <g transform="translate(0 35)">
+      <rect x="0" y="0" width="145" height="170" rx="10" fill="#202830" stroke="#4d5964"/>
+      <text x="14" y="26" fill="#f2e3bd" font-family="sans-serif" font-size="16">待机</text>
+      <path d="M36 132 L54 68 L92 68 L110 132 Z" fill="#4b535c" stroke="#20262c" stroke-width="5"/>
+      <path d="M72 73 L72 127 M53 102 L91 102" stroke="#b85c33" stroke-width="7"/>
+      <circle cx="72" cy="102" r="6" fill="#e58945"/>
+      <text x="14" y="156" fill="#9aa7b2" font-family="sans-serif" font-size="12">低频余烬脉冲</text>
+    </g>
+    <g transform="translate(165 35)">
+      <rect x="0" y="0" width="145" height="170" rx="10" fill="#202830" stroke="#4d5964"/>
+      <text x="14" y="26" fill="#f2e3bd" font-family="sans-serif" font-size="16">玩家接近</text>
+      <path d="M36 132 L54 68 L92 68 L110 132 Z" fill="#4b535c" stroke="#20262c" stroke-width="5"/>
+      <path d="M72 73 L72 127 M53 102 L91 102" stroke="#ffd36b" stroke-width="8"/>
+      <circle cx="72" cy="102" r="18" fill="none" stroke="#e58945" stroke-width="3" opacity="0.7"/>
+      <text x="14" y="156" fill="#9aa7b2" font-family="sans-serif" font-size="12">炉芯增亮 + 金钉点亮</text>
+    </g>
+    <g transform="translate(330 35)">
+      <rect x="0" y="0" width="145" height="170" rx="10" fill="#202830" stroke="#4d5964"/>
+      <text x="14" y="26" fill="#f2e3bd" font-family="sans-serif" font-size="16">确认重铸</text>
+      <path d="M36 132 L54 68 L92 68 L110 132 Z" fill="#4b535c" stroke="#20262c" stroke-width="5"/>
+      <path d="M72 73 L72 127 M53 102 L91 102" stroke="#fff1b4" stroke-width="10"/>
+      <path d="M31 84 L15 72 M113 85 L130 72 M29 118 L10 127 M115 118 L135 130" stroke="#ffb35c" stroke-width="4"/>
+      <text x="14" y="156" fill="#9aa7b2" font-family="sans-serif" font-size="12">0.35s 压缩—爆燃—冷却</text>
+    </g>
+
+    <text x="0" y="250" fill="#e8edf2" font-family="sans-serif" font-size="20" font-weight="700">C. 配色与材质</text>
+    <g transform="translate(0 275)">
+      <rect x="0" y="0" width="74" height="54" fill="#20262c"/><text x="0" y="76" fill="#9aa7b2" font-family="sans-serif" font-size="12">深缝</text>
+      <rect x="92" y="0" width="74" height="54" fill="#4b535c"/><text x="92" y="76" fill="#9aa7b2" font-family="sans-serif" font-size="12">主体石材</text>
+      <rect x="184" y="0" width="74" height="54" fill="#8e9aa5"/><text x="184" y="76" fill="#9aa7b2" font-family="sans-serif" font-size="12">磨损高光</text>
+      <rect x="276" y="0" width="74" height="54" fill="#e58945"/><text x="276" y="76" fill="#9aa7b2" font-family="sans-serif" font-size="12">余烬橙</text>
+      <rect x="368" y="0" width="74" height="54" fill="#ffd36b"/><text x="368" y="76" fill="#9aa7b2" font-family="sans-serif" font-size="12">确认亮点</text>
+    </g>
+
+    <text x="0" y="395" fill="#e8edf2" font-family="sans-serif" font-size="20" font-weight="700">D. 低分辨率可读性</text>
+    <g transform="translate(0 420)">
+      <rect x="0" y="0" width="475" height="130" rx="10" fill="#151b20" stroke="#38434c"/>
+      <text x="18" y="30" fill="#cbd4dc" font-family="sans-serif" font-size="14">• 主体宽度保持 46 px，交互占位仍为 64×64</text>
+      <text x="18" y="56" fill="#cbd4dc" font-family="sans-serif" font-size="14">• 发光集中在十字炉芯，不与 Waystone 顶部晶体混淆</text>
+      <text x="18" y="82" fill="#cbd4dc" font-family="sans-serif" font-size="14">• 接近状态只提升亮度，不扩大整体轮廓</text>
+      <text x="18" y="108" fill="#cbd4dc" font-family="sans-serif" font-size="14">• 爆燃粒子不超过 8 枚，持续 ≤ 0.45 秒</text>
+    </g>
+  </g>
+
+  <g transform="translate(60 720)">
+    <text x="0" y="0" fill="#9aa7b2" font-family="sans-serif" font-size="14">本轮对象：Reforge Stone。下一步评审：砧肩宽度、炉芯亮度、确认爆燃时长、与 Workshop 建筑暖色的对比。</text>
+  </g>
+</svg>
