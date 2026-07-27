@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#10141b"/>
+  <rect x="28" y="28" width="1144" height="744" rx="18" fill="#171d27" stroke="#3b4658" stroke-width="3"/>
+  <text x="60" y="78" fill="#f4e6b4" font-family="sans-serif" font-size="34" font-weight="700">Ding-Dong Repeater / 铃响连发枪</text>
+  <text x="60" y="112" fill="#9ea9b8" font-family="sans-serif" font-size="17">27×16 px weapon redesign concept · rapid tracer rifle · magazine resource</text>
+
+  <g transform="translate(70 155)">
+    <text x="0" y="0" fill="#f4e6b4" font-family="sans-serif" font-size="22" font-weight="700">A. 主轮廓</text>
+    <rect x="0" y="22" width="650" height="295" rx="14" fill="#0d1118" stroke="#303b4c"/>
+    <ellipse cx="338" cy="251" rx="275" ry="28" fill="#090c11" opacity="0.8"/>
+
+    <!-- stock -->
+    <path d="M88 170 L154 124 L218 134 L230 176 L184 218 L102 210 L72 192 Z" fill="#6b4a32" stroke="#18120f" stroke-width="8"/>
+    <path d="M103 174 L158 143 L205 149 L207 171 L170 194 L111 190 Z" fill="#a97845"/>
+    <path d="M92 164 L128 142 L142 151 L112 177 Z" fill="#d8aa63" opacity="0.75"/>
+
+    <!-- bell receiver -->
+    <circle cx="268" cy="166" r="58" fill="#9c6a20" stroke="#21180e" stroke-width="9"/>
+    <circle cx="268" cy="166" r="42" fill="#d4a438" stroke="#6b4614" stroke-width="6"/>
+    <circle cx="268" cy="166" r="22" fill="#f2d273" stroke="#7f571c" stroke-width="5"/>
+    <circle cx="268" cy="166" r="8" fill="#fff3b0"/>
+    <path d="M230 117 Q268 94 306 117" fill="none" stroke="#f2d273" stroke-width="8"/>
+    <path d="M237 207 Q268 226 299 207" fill="none" stroke="#6b4614" stroke-width="8"/>
+
+    <!-- receiver bridge and barrel -->
+    <rect x="308" y="133" width="92" height="63" rx="10" fill="#394451" stroke="#151a20" stroke-width="8"/>
+    <rect x="320" y="143" width="70" height="12" fill="#68798a"/>
+    <rect x="382" y="138" width="184" height="38" rx="7" fill="#4e5966" stroke="#151a20" stroke-width="8"/>
+    <rect x="399" y="145" width="148" height="9" fill="#8a99a8"/>
+    <rect x="409" y="163" width="131" height="7" fill="#222a33"/>
+
+    <!-- tuning forks / muzzle -->
+    <path d="M554 132 L609 132 L627 146 L627 158 L574 158 L574 172 L627 172 L627 186 L609 198 L554 198 Z" fill="#c78f27" stroke="#1b150c" stroke-width="8"/>
+    <rect x="575" y="141" width="42" height="8" fill="#f7d76f"/>
+    <rect x="575" y="181" width="42" height="8" fill="#f7d76f"/>
+    <circle cx="627" cy="165" r="9" fill="#fff3b0"/>
+
+    <!-- grip and magazine -->
+    <path d="M246 211 L301 211 L293 285 L256 285 Z" fill="#313944" stroke="#151a20" stroke-width="8"/>
+    <path d="M258 223 L286 223 L282 271 L263 271 Z" fill="#56616e"/>
+    <path d="M318 199 L370 199 L355 261 L326 261 Z" fill="#836022" stroke="#151a20" stroke-width="8"/>
+    <rect x="329" y="212" width="27" height="10" fill="#d8aa3c"/>
+    <rect x="327" y="232" width="25" height="8" fill="#5f4318"/>
+
+    <!-- ringing arcs -->
+    <path d="M236 84 Q268 62 300 84" fill="none" stroke="#f4d35e" stroke-width="6" opacity="0.9"/>
+    <path d="M220 68 Q268 32 316 68" fill="none" stroke="#f4d35e" stroke-width="4" opacity="0.55"/>
+  </g>
+
+  <g transform="translate(760 155)">
+    <text x="0" y="0" fill="#f4e6b4" font-family="sans-serif" font-size="22" font-weight="700">B. 配色与材质</text>
+    <rect x="0" y="22" width="370" height="295" rx="14" fill="#0d1118" stroke="#303b4c"/>
+    <g font-family="sans-serif" font-size="17" fill="#d7dde6">
+      <rect x="24" y="56" width="48" height="32" rx="5" fill="#17120d" stroke="#697585"/><text x="88" y="79">轮廓黑钢 #17120D</text>
+      <rect x="24" y="104" width="48" height="32" rx="5" fill="#6b4a32"/><text x="88" y="127">旧木枪托 #6B4A32</text>
+      <rect x="24" y="152" width="48" height="32" rx="5" fill="#d4a438"/><text x="88" y="175">钟铜主体 #D4A438</text>
+      <rect x="24" y="200" width="48" height="32" rx="5" fill="#4e5966"/><text x="88" y="223">冷灰枪管 #4E5966</text>
+      <rect x="24" y="248" width="48" height="32" rx="5" fill="#f1c40f"/><text x="88" y="271">示踪高光 #F1C40F</text>
+    </g>
+  </g>
+
+  <g transform="translate(70 520)">
+    <text x="0" y="0" fill="#f4e6b4" font-family="sans-serif" font-size="22" font-weight="700">C. 动作状态</text>
+    <rect x="0" y="22" width="1060" height="190" rx="14" fill="#0d1118" stroke="#303b4c"/>
+    <g font-family="sans-serif" text-anchor="middle">
+      <g transform="translate(130 58)"><circle cx="0" cy="42" r="30" fill="#9c6a20" stroke="#f2d273" stroke-width="5"/><path d="M-24 3 Q0 -13 24 3" fill="none" stroke="#f4d35e" stroke-width="4"/><text x="0" y="105" fill="#d7dde6" font-size="16">待机：钟芯微摆</text></g>
+      <g transform="translate(390 58)"><circle cx="0" cy="42" r="30" fill="#d4a438" stroke="#fff3b0" stroke-width="7"/><path d="M-44 3 Q0 -30 44 3" fill="none" stroke="#f4d35e" stroke-width="6"/><text x="0" y="105" fill="#d7dde6" font-size="16">连射：每3发一次强铃光</text></g>
+      <g transform="translate(650 58)"><circle cx="0" cy="42" r="30" fill="#6b4614" stroke="#9c6a20" stroke-width="4"/><rect x="-22" y="29" width="44" height="26" fill="#302617"/><text x="0" y="105" fill="#d7dde6" font-size="16">低弹：钟芯暗化</text></g>
+      <g transform="translate(910 58)"><circle cx="0" cy="42" r="30" fill="#9c6a20" stroke="#f2d273" stroke-width="5"/><path d="M-36 42 L36 42" stroke="#fff3b0" stroke-width="8"/><text x="0" y="105" fill="#d7dde6" font-size="16">装填：钟轮翻转复位</text></g>
+    </g>
+  </g>
+
+  <text x="600" y="758" fill="#7f8a99" font-family="sans-serif" font-size="15" text-anchor="middle">Design focus: bell-shaped receiver, tuning-fork muzzle, readable 25-round magazine, restrained acoustic VFX</text>
+</svg>
