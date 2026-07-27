@@ -18,6 +18,13 @@ import { WEAPONS } from "../data/weapons";
 import { ProjectileArtRenderer } from "./ProjectileArtRenderer";
 
 export class EntityRenderer {
+  private static hexToRgbTriplet(color: string): string {
+    const value = color.replace("#", "");
+    if (!/^[0-9a-f]{6}$/i.test(value)) return "231,76,60";
+    const number = Number.parseInt(value, 16);
+    return `${(number >> 16) & 255},${(number >> 8) & 255},${number & 255}`;
+  }
+
   private static adjustHex(color: string, amount: number): string {
     const value = color.replace("#", "");
     if (!/^[0-9a-f]{6}$/i.test(value)) return color;
@@ -435,12 +442,26 @@ export class EntityRenderer {
     const nativeMonsterArt = usesNativeMonsterArt(enemy.enemyId);
     const enemyDefinition = getEnemyDefinition(enemy.enemyId);
     const renderScale = getEnemyRenderScale(enemyDefinition, enemy.isElite);
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
     const authoredShadowWidth = enemyDefinition.shadowWidth ?? (nativeMonsterArt
       ? enemy.type === "boss" ? 36 : 19
       : enemy.type === "boss" ? 23 : 13);
     const shadowWidth = Math.max(enemy.type === "boss" ? 26 : 13, Math.round(authoredShadowWidth * renderScale));
-    ctx.fillRect(-shadowWidth / 2, enemy.radius - 4, shadowWidth, 5);
+
+    // Boss / elite presence: soft pulsing ground glow beneath the model.
+    if (enemy.type === "boss" || enemy.isElite) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 3.1 + enemy.x * 0.05);
+      const glowRgb = enemy.isElite ? "241,196,15" : EntityRenderer.hexToRgbTriplet(enemy.displayColor);
+      ctx.fillStyle = `rgba(${glowRgb},${(0.06 + 0.05 * pulse).toFixed(3)})`;
+      ctx.fillRect(-shadowWidth / 2 - 5, enemy.radius - 8, shadowWidth + 10, 11);
+      ctx.fillStyle = `rgba(${glowRgb},${(0.09 + 0.07 * pulse).toFixed(3)})`;
+      ctx.fillRect(-shadowWidth / 2 - 2, enemy.radius - 7, shadowWidth + 4, 9);
+    }
+
+    // Two-tone soft contact shadow: wide faint skirt with a darker core.
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    ctx.fillRect(-shadowWidth / 2 - 1, enemy.radius - 4, shadowWidth + 2, 5);
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.fillRect(-shadowWidth / 2, enemy.radius - 3, shadowWidth, 3);
 
     // Native pixel models author their own idle, walk and attack body motion.
     // Adding the legacy sine offset makes grounded enemies appear to float.

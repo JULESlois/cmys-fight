@@ -185,6 +185,19 @@ export class PixelFxSystem {
     }
   }
 
+  emitEnemyDeath(x: number, y: number, color: string, boss = false, lowFx = false) {
+    this.emitPulse(x, y, boss ? 18 : 10, color, "ring", boss ? 0.4 : 0.26);
+    if (!lowFx) this.emitPulse(x, y, boss ? 11 : 6, "#FFFFFF", "cross", 0.16);
+    this.emit(x, y, lowFx ? 5 : boss ? 16 : 10, color, boss ? 86 : 58, 0.38, {
+      spread: Math.PI * 2,
+      gravity: 26,
+      glow: true,
+      size: 2,
+      shape: "streak",
+    });
+    this.emit(x, y, lowFx ? 3 : 6, "#675B55", 26, 0.48, { gravity: -14, size: 3, shape: "smoke" });
+  }
+
   emitImpact(x: number, y: number, color: string, critical = false, lowFx = false) {
     this.emit(x, y, lowFx ? 4 : critical ? 14 : 8, critical ? "#FFF3B0" : color, critical ? 86 : 62, critical ? 0.36 : 0.25, {
       gravity: 40,

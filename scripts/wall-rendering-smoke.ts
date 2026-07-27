@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
-import { getBaseTheme } from "../src/game/render/RoomRenderer";
+import { getAmbientParticleBudget, getBaseTheme } from "../src/game/render/RoomRenderer";
 import { PALETTES } from "../src/game/data/palettes";
 
 const expectedMappings: Record<string, string> = {
+  overgrown_archive: "forest",
   sealed_library: "dungeon",
   cooling_canal: "snow",
-  forge_core: "lava",
-  overgrown_archive: "forest",
   sealed_armory: "dungeon",
   observatory: "snow",
+  forge_core: "lava",
+  ash_catacombs: "dungeon",
+  deep_prison: "dungeon",
+  deep_archive: "dungeon",
 };
 
 console.log("Checking baseTheme mappings...");
@@ -24,5 +27,8 @@ for (const nodeId of Object.keys(expectedMappings)) {
   assert.ok(p, `Palette should be resolved for ${nodeId}`);
   assert.equal(p.wall, (PALETTES[baseTheme] as any).wall, `Palette wall color for ${nodeId} should match ${baseTheme}`);
 }
+
+assert.equal(getAmbientParticleBudget(false), 15, "full effects keep the authored ambience budget");
+assert.equal(getAmbientParticleBudget(true), 5, "low effects reduce ambience to one third");
 
 console.log("Wall rendering and theme fallbacks passed.");

@@ -1036,9 +1036,14 @@ export function getBaseTheme(theme: string): string {
   return theme;
 }
 
+export function getAmbientParticleBudget(lowFx: boolean): number {
+  return lowFx ? 5 : 15;
+}
+
 export class RoomRenderer {
   private particles: Particle[] = [];
   private windTime: number = 0;
+  private ambientParticleLimit: number = 15;
 
   constructor() {
     this.spawnParticles(15);
@@ -1068,23 +1073,41 @@ export class RoomRenderer {
     });
   }
 
-  public update(dt: number) {
+  public update(dt: number, theme: string = "forest", lowFx = false) {
     this.windTime += dt;
-    for (const p of this.particles) {
-      p.x += p.vx * dt * 60;
-      p.y += p.vy * dt * 60;
-      p.angle += p.spin * dt * 60;
-      if (p.x < -10 || p.y > 250) {
-        p.x = 330;
-        p.y = -10;
+    const base = getBaseTheme(theme);
+    this.ambientParticleLimit = getAmbientParticleBudget(lowFx);
+    for (let index = 0; index < this.ambientParticleLimit; index++) {
+      const p = this.particles[index];
+      const sway = Math.sin(this.windTime * 1.8 + p.angle * 3) * 0.18;
+      if (base === "lava") {
+        // Embers ride hot updrafts.
+        p.x += (p.vx * 0.4 + sway) * dt * 60;
+        p.y -= p.vy * 1.05 * dt * 60;
+      } else if (base === "dungeon") {
+        // Soul motes hang in the still crypt air, drifting faintly upward.
+        p.x += (p.vx * 0.25 + sway * 0.6) * dt * 60;
+        p.y -= p.vy * 0.22 * dt * 60;
+      } else if (base === "snow") {
+        // Flakes fall slowly with a strong horizontal waft.
+        p.x += (p.vx + sway * 1.6) * dt * 60;
+        p.y += p.vy * 0.8 * dt * 60;
+      } else {
+        // Petals tumble down-left with a light sway.
+        p.x += (p.vx + sway) * dt * 60;
+        p.y += p.vy * dt * 60;
       }
+      p.angle += p.spin * dt * 60;
+      if (p.x < -10) p.x = 330;
+      else if (p.x > 330) p.x = -10;
+      if (p.y > 250) p.y = -10;
+      else if (p.y < -10) p.y = 250;
     }
   }
 
   public drawBackground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string) {
-    const mapData = getMapData(currentRoom, theme);
-
     const baseTheme = getBaseTheme(theme);
+    const mapData = getMapData(currentRoom, baseTheme);
     const p = PALETTES[theme] || PALETTES[baseTheme] || PALETTES["forest"];
     ctx.fillStyle = p.bg;
     ctx.fillRect(0, 0, 320, 240);
@@ -1153,15 +1176,15 @@ export class RoomRenderer {
             ctx.fillRect(tx + TILE_SIZE - 1, ty, 1, TILE_SIZE);
           }
         } else if (tileId === 3) {
-          if (theme === "forest") {
+          if (baseTheme === "forest") {
             drawForestStreamTile(ctx, mapData, x, y, this.windTime);
-          } else if (theme === "snow") {
+          } else if (baseTheme === "snow") {
         // ruptured glacier containment seal
             drawSnowCrevasseTile(ctx, mapData, x, y, this.windTime);
-          } else if (theme === "dungeon") {
+          } else if (baseTheme === "dungeon") {
         // broken ossuary seal
             drawDungeonAbyssTile(ctx, mapData, x, y, this.windTime);
-          } else if (theme === "lava") {
+          } else if (baseTheme === "lava") {
         // ruptured foundry crucible
             drawLavaFlowTile(ctx, mapData, x, y, this.windTime);
           }
@@ -1169,8 +1192,32 @@ export class RoomRenderer {
       }
     }
 
+    // Ambient occlusion: floor tiles tucked against walls catch a soft cast shadow.
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+      for (let x = 0; x < MAP_WIDTH; x++) {
+        const tileId = mapData[y * MAP_WIDTH + x];
+        if (tileId !== 0 && tileId !== 2 && tileId !== TILE_PROP && tileId !== TILE_BREAKABLE) continue;
+        const tx = x * TILE_SIZE;
+        const ty = y * TILE_SIZE;
+        if (y > 0 && mapData[(y - 1) * MAP_WIDTH + x] === 1) {
+          ctx.fillStyle = "rgba(0,0,0,0.18)";
+          ctx.fillRect(tx, ty, TILE_SIZE, 3);
+          ctx.fillStyle = "rgba(0,0,0,0.09)";
+          ctx.fillRect(tx, ty + 3, TILE_SIZE, 2);
+        }
+        if (x > 0 && mapData[y * MAP_WIDTH + x - 1] === 1) {
+          ctx.fillStyle = "rgba(0,0,0,0.10)";
+          ctx.fillRect(tx, ty, 2, TILE_SIZE);
+        }
+        if (x < MAP_WIDTH - 1 && mapData[y * MAP_WIDTH + x + 1] === 1) {
+          ctx.fillStyle = "rgba(0,0,0,0.10)";
+          ctx.fillRect(tx + TILE_SIZE - 2, ty, 2, TILE_SIZE);
+        }
+      }
+    }
+
     if (currentRoom?.type === "boss") {
-      if (theme === "forest") {
+      if (baseTheme === "forest") {
         // Root veins curve around the hollow center
         ctx.fillStyle = "#33442F";
         ctx.fillRect(144, 84, 32, 4);
@@ -1238,7 +1285,7 @@ export class RoomRenderer {
         ctx.fillStyle = "#FFE47A";
         ctx.fillRect(138, 100, 1, 1);
         ctx.fillRect(186, 137, 1, 1);
-      } else if (theme === "dungeon") {
+      } else if (baseTheme === "dungeon") {
         // broken ossuary seal
         ctx.fillStyle = "#141C2A";
         ctx.fillRect(144, 82, 32, 4);
@@ -1321,7 +1368,7 @@ export class RoomRenderer {
           ctx.fillStyle = "#C69BDA";
           ctx.fillRect(x + 1, y - 3, 1, 2);
         }
-      } else if (theme === "snow") {
+      } else if (baseTheme === "snow") {
         // ruptured glacier containment seal
         ctx.fillStyle = "#355C70";
         ctx.fillRect(146, 82, 28, 4);
@@ -1393,7 +1440,7 @@ export class RoomRenderer {
         ctx.fillRect(138, 134, 4, 5);
         ctx.fillRect(171, 133, 9, 2);
         ctx.fillRect(179, 135, 3, 5);
-      } else if (theme === "lava") {
+      } else if (baseTheme === "lava") {
         // ruptured foundry crucible
         ctx.fillStyle = "#20181F";
         ctx.fillRect(146, 82, 28, 4);
@@ -1487,11 +1534,13 @@ export class RoomRenderer {
         ctx.strokeRect(140, 100, 40, 40);
         ctx.fillRect(156, 116, 8, 8);
       }
+      SpecialRoomRenderer.drawRoomStage(ctx, "boss", theme, this.windTime, currentRoom.cleared === true);
     } else if (
       currentRoom?.type === "exit" ||
       currentRoom?.type === "npc" ||
-      false ||
-      false
+      currentRoom?.type === "treasure" ||
+      currentRoom?.type === "hidden" ||
+      currentRoom?.type === "start"
     ) {
       SpecialRoomRenderer.drawRoomStage(
         ctx,
@@ -1500,15 +1549,6 @@ export class RoomRenderer {
         this.windTime,
         currentRoom.interactionCompleted === true,
       );
-    } else if (currentRoom?.type === "treasure") {
-      ctx.strokeStyle = "rgba(241, 196, 15, 0.3)";
-      ctx.strokeRect(136, 96, 48, 48);
-      ctx.strokeRect(142, 102, 36, 36);
-    } else if (currentRoom?.type === "start") {
-      ctx.strokeStyle = "rgba(0, 242, 254, 0.22)";
-      ctx.beginPath();
-      ctx.moveTo(160, 101); ctx.lineTo(178, 120); ctx.lineTo(160, 139); ctx.lineTo(142, 120); ctx.closePath();
-      ctx.stroke();
     }
 
     for (let x = 0; x < MAP_WIDTH; x++) {
@@ -1516,7 +1556,7 @@ export class RoomRenderer {
       if (tileIdY10 === 3 && (x === 9 || x === 10)) {
         const tx = x * TILE_SIZE;
         const ty = 10 * TILE_SIZE;
-        if (theme === "snow") {
+        if (baseTheme === "snow") {
           ctx.fillStyle = "#294A5B";
           ctx.fillRect(tx, ty - 1, TILE_SIZE, TILE_SIZE + 2);
           ctx.fillStyle = "#6D919E";
@@ -1528,7 +1568,7 @@ export class RoomRenderer {
           ctx.fillRect(tx + 11, ty, 2, TILE_SIZE);
           ctx.fillStyle = "#DFF1F3";
           ctx.fillRect(tx + 5, ty + 2, 5, 1);
-        } else if (theme === "lava") {
+        } else if (baseTheme === "lava") {
         // ruptured foundry crucible
           ctx.fillStyle = "#171319";
           ctx.fillRect(tx, ty - 1, TILE_SIZE, TILE_SIZE + 2);
@@ -1560,22 +1600,26 @@ export class RoomRenderer {
   }
 
   public drawForeground(ctx: CanvasRenderingContext2D, currentRoom: Room | undefined, theme: string, isLocked: boolean = false) {
-    const mapData = getMapData(currentRoom, theme);
     const baseTheme = getBaseTheme(theme);
+    const mapData = getMapData(currentRoom, baseTheme);
     const p = PALETTES[theme] ?? PALETTES[baseTheme] ?? PALETTES["forest"];
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    // Two-tone contact shadows: darker core with a soft skirt.
     for (let y = 0; y < MAP_HEIGHT; y++) {
       for (let x = 0; x < MAP_WIDTH; x++) {
         const tileId = mapData[y * MAP_WIDTH + x];
         const tx = x * TILE_SIZE + 8;
         const ty = y * TILE_SIZE + 14;
         if (tileId === 1 || tileId === TILE_STRUCTURE) {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.34)";
           ctx.fillRect(tx - 9, ty, 18, 5);
-          ctx.fillRect(tx - 6, ty + 5, 12, 2);
+          ctx.fillStyle = "rgba(0, 0, 0, 0.17)";
+          ctx.fillRect(tx - 6, ty + 5, 12, 3);
         } else if (tileId === TILE_PROP || tileId === TILE_BREAKABLE) {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.30)";
           ctx.fillRect(tx - 6, ty - 1, 12, 4);
-          ctx.fillRect(tx - 3, ty + 3, 6, 2);
+          ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+          ctx.fillRect(tx - 3, ty + 3, 6, 3);
         }
       }
     }
@@ -1720,7 +1764,7 @@ export class RoomRenderer {
             ctx.fillStyle = "#D9E9EC";
             ctx.fillRect(tx + 4, ty + 2, 9, 2);
             ctx.fillRect(tx + 6, ty + 1, 5, 2);
-          } else if (theme === "lava") {
+          } else if (baseTheme === "lava") {
         // ruptured foundry crucible
             // Pressure vent: an iron cage contains a pulsing furnace core.
             ctx.fillStyle = "#171219";
@@ -1764,7 +1808,7 @@ export class RoomRenderer {
     if (currentRoom) {
       for (const orientation of DOOR_ORIENTATIONS) {
         if (!currentRoom.doors[orientation]) continue;
-        DoorRenderer.draw(ctx, getDoorGeometry(orientation), theme, isLocked);
+        DoorRenderer.draw(ctx, getDoorGeometry(orientation), theme, isLocked, this.windTime);
       }
     }
 
@@ -1778,15 +1822,18 @@ export class RoomRenderer {
           const lY = y * TILE_SIZE + 5;
 
           const glowSize = Math.round(lanternPulse);
-          const outerGlow = theme === "dungeon" ? "rgba(166, 91, 208, 0.06)"
-            : theme === "snow" ? "rgba(98, 208, 226, 0.07)"
-              : "rgba(254, 211, 48, 0.05)";
-          const middleGlow = theme === "dungeon" ? "rgba(181, 103, 221, 0.12)"
-            : theme === "snow" ? "rgba(112, 222, 236, 0.13)"
-              : "rgba(254, 211, 48, 0.1)";
-          const innerGlow = theme === "dungeon" ? "rgba(224, 181, 245, 0.2)"
-            : theme === "snow" ? "rgba(218, 255, 255, 0.22)"
-              : "rgba(254, 211, 48, 0.2)";
+          const outerGlow = baseTheme === "dungeon" ? "rgba(166, 91, 208, 0.06)"
+            : baseTheme === "snow" ? "rgba(98, 208, 226, 0.07)"
+              : baseTheme === "lava" ? "rgba(255, 110, 46, 0.06)"
+                : "rgba(254, 211, 48, 0.05)";
+          const middleGlow = baseTheme === "dungeon" ? "rgba(181, 103, 221, 0.12)"
+            : baseTheme === "snow" ? "rgba(112, 222, 236, 0.13)"
+              : baseTheme === "lava" ? "rgba(255, 138, 66, 0.12)"
+                : "rgba(254, 211, 48, 0.1)";
+          const innerGlow = baseTheme === "dungeon" ? "rgba(224, 181, 245, 0.2)"
+            : baseTheme === "snow" ? "rgba(218, 255, 255, 0.22)"
+              : baseTheme === "lava" ? "rgba(255, 196, 120, 0.22)"
+                : "rgba(254, 211, 48, 0.2)";
           ctx.fillStyle = outerGlow;
           ctx.fillRect(lX - glowSize, lY - glowSize, glowSize * 2, glowSize * 2);
           ctx.fillStyle = middleGlow;
@@ -1797,29 +1844,40 @@ export class RoomRenderer {
       }
     }
 
-    if (theme === "forest" || theme === "snow" || theme === "lava" || theme === "dungeon") {
-      for (const p of this.particles) {
+    if (baseTheme === "forest" || baseTheme === "snow" || baseTheme === "lava" || baseTheme === "dungeon") {
+      const snowParticle = theme === "cooling_canal" ? "rgba(105, 224, 238, 0.78)"
+        : theme === "observatory" ? "rgba(202, 226, 255, 0.78)"
+          : "rgba(255, 255, 255, 0.8)";
+      const dungeonParticle = theme === "sealed_armory" ? "rgba(197, 139, 75, 0.48)"
+        : theme === "ash_catacombs" ? "rgba(174, 151, 139, 0.42)"
+          : theme === "deep_prison" ? "rgba(175, 92, 112, 0.44)"
+            : theme === "deep_archive" ? "rgba(196, 76, 219, 0.48)"
+              : "rgba(164, 101, 199, 0.45)";
+      for (let index = 0; index < this.ambientParticleLimit; index++) {
+        const p = this.particles[index];
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.angle);
-        
-        if (theme === "forest") {
+
+        if (baseTheme === "forest") {
           ctx.fillStyle = "rgba(232, 130, 164, 0.8)";
           ctx.fillRect(-Math.max(1, Math.round(p.size)), -1, Math.max(2, Math.round(p.size * 2)), 2);
-        } else if (theme === "snow") {
+        } else if (baseTheme === "snow") {
         // ruptured glacier containment seal
-          ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+          ctx.fillStyle = snowParticle;
           const flake = Math.max(1, Math.round(p.size));
           ctx.fillRect(-Math.floor(flake / 2), -Math.floor(flake / 2), flake, flake);
-        } else if (theme === "lava") {
+        } else if (baseTheme === "lava") {
         // ruptured foundry crucible
           ctx.fillStyle = "rgba(243, 156, 18, 0.8)";
           ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
-        } else if (theme === "dungeon") {
+          ctx.fillStyle = "rgba(255, 224, 163, 0.7)";
+          ctx.fillRect(0, 0, 1, 1);
+        } else if (baseTheme === "dungeon") {
         // broken ossuary seal
           // Slow rectangular dust and soul motes suit the still crypt air.
           const mote = Math.max(1, Math.round(p.size / 2));
-          ctx.fillStyle = "rgba(164, 101, 199, 0.45)";
+          ctx.fillStyle = dungeonParticle;
           ctx.fillRect(-mote, -1, mote * 2 + 1, 2);
           ctx.fillStyle = "rgba(216, 184, 235, 0.38)";
           ctx.fillRect(0, -1, 1, 1);

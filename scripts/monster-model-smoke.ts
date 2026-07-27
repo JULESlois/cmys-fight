@@ -150,6 +150,8 @@ assert.match(source, /!nativePixelArt && state === "attack"/, "legacy attack blo
 assert.match(source, /role === "boss" \? 0\.78 : 1/, "native codex previews use integer-scale regular art and bounded bosses");
 assert.match(source, /function drawAuthoredMonsterDetail/, "native monsters receive a deterministic authored detail pass");
 assert.match(source, /nativePixelArt\) drawAuthoredMonsterDetail/, "authored detail pass follows the native model transform");
+assert.match(source, /Ink stays dark during the flash/, "hit flashes preserve the monster silhouette outline");
+assert.doesNotMatch(source, /ink: hitFlash \? "#FFFFFF"/, "hit flashes must not wash the outline to white");
 assert.doesNotMatch(
   source.slice(source.indexOf("function drawAuthoredMonsterDetail"), source.indexOf("const models:")),
   /Math\.random|tileHash/,
@@ -205,6 +207,8 @@ assert.match(renderer, /const animOffset = nativeMonsterArt \? 0/, "native groun
 assert.match(renderer, /enemyDefinition\.shadowWidth/, "authored monster shadows should be used");
 assert.match(renderer, /const renderScale = getEnemyRenderScale/, "runtime monster scale should come from the compact chapter contract");
 assert.match(renderer, /nativeMonsterArt \? renderScale/, "native monsters should use the compact authored scale");
+assert.match(renderer, /Boss \/ elite presence:[\s\S]*soft pulsing ground glow/, "bosses and elites receive a restrained presence glow");
+assert.match(renderer, /Two-tone soft contact shadow/, "monster feet retain a layered contact shadow");
 assert.match(renderer, /enemy\.type === "boss" \? 36 : 14/, "health bars should shrink with the revised monster footprint");
 assert.doesNotMatch(renderer, /drawEnemyAccent/);
 assert.doesNotMatch(renderer, /enemy_\$\{enemy\.type\}_idle/);
@@ -218,6 +222,9 @@ for (const kind of ["needle", "shell", "orbit", "support"] as const) {
 
 const dungeonState = fs.readFileSync("src/game/states/DungeonState.ts", "utf8");
 assert.match(dungeonState, /radius \* \(enemy\.type === "boss" \? 0\.72 : 0\.68\)/, "enemy projectile collision radii should shrink at spawn");
+assert.match(dungeonState, /emitEnemyDeath\(enemy\.x, enemy\.y/, "enemy removal emits its authored death burst");
+const pixelFx = fs.readFileSync("src/game/render/PixelFxSystem.ts", "utf8");
+assert.match(pixelFx, /emitEnemyDeath[\s\S]*lowFx \? 5 : boss \? 16 : 10/, "enemy death bursts retain a low-effects budget");
 assert.match(dungeonState, /destroyBreakableTileAt/, "player projectiles should destroy authored room props");
 assert.match(dungeonState, /destroyedPropTiles/, "destroyed combat props must persist on room state");
 for (const behavior of ["sniper", "lob", "support", "orbit"] as const) {

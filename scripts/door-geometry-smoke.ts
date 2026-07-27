@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   DOOR_ORIENTATIONS,
   DUNGEON_ROOM_HEIGHT,
@@ -13,6 +14,7 @@ import {
 } from "../src/game/dungeon/DoorGeometry";
 import { getMapData, isSolid, MAP_WIDTH } from "../src/game/MapData";
 import { DoorRenderer } from "../src/game/render/DoorRenderer";
+import { WORLD_NODES } from "../src/game/world/WorldNodes";
 
 interface FillCall extends DoorRect { color: string }
 
@@ -47,6 +49,7 @@ const themes = ["forest", "dungeon", "snow", "lava"] as const;
 let renderChecks = 0;
 let mapChecks = 0;
 let roomCombinationChecks = 0;
+let worldNodeRenderChecks = 0;
 
 for (const orientation of DOOR_ORIENTATIONS) {
   const geometry = getDoorGeometry(orientation, 6);
@@ -181,6 +184,37 @@ for (const orientation of DOOR_ORIENTATIONS) {
   }
 }
 
+// --- Every route node keeps a deterministic identity on every orientation ---
+const worldNodeThemes = Object.keys(WORLD_NODES);
+for (const orientation of DOOR_ORIENTATIONS) {
+  const geometry = getDoorGeometry(orientation);
+  const signatures = new Set<string>();
+  for (const theme of worldNodeThemes) {
+    const first = createCanvasRecorder();
+    const second = createCanvasRecorder();
+    DoorRenderer.draw(first.ctx, geometry, theme, true, 3.25);
+    DoorRenderer.draw(second.ctx, geometry, theme, true, 3.25);
+    assert.deepEqual(first.fills, second.fills, `${orientation}/${theme} is deterministic at a fixed presentation time`);
+
+    for (const fill of first.fills) {
+      const vb = geometry.visualBounds;
+      if (orientation === "down") assert.ok(fill.y >= vb.y && fill.y + fill.height <= vb.y + vb.height, `${theme}/down accent stays in bounds`);
+      if (orientation === "left" || orientation === "right") assert.ok(fill.x >= vb.x && fill.x + fill.width <= vb.x + vb.width, `${theme}/${orientation} accent stays in bounds`);
+    }
+
+    signatures.add(first.fills.map(fill => `${fill.color}:${fill.x}:${fill.y}:${fill.width}:${fill.height}`).join("|"));
+    worldNodeRenderChecks++;
+  }
+  assert.equal(signatures.size, worldNodeThemes.length, `${orientation} exposes all route-node door identities`);
+}
+
+const forgeAtStart = createCanvasRecorder();
+const forgeAfterVent = createCanvasRecorder();
+DoorRenderer.draw(forgeAtStart.ctx, getDoorGeometry("up"), "forge_core", true, 0);
+DoorRenderer.draw(forgeAfterVent.ctx, getDoorGeometry("up"), "forge_core", true, 0.21);
+assert.notDeepEqual(forgeAtStart.fills, forgeAfterVent.fills, "forge vents animate from the supplied render clock");
+assert.doesNotMatch(readFileSync("src/game/render/DoorRenderer.ts", "utf8"), /Date\.now\(/, "door rendering must not depend on wall-clock time");
+
 // --- Verify three distinct model types (not horizontal/boolean) ---
 const upFills = createCanvasRecorder();
 DoorRenderer.draw(upFills.ctx, getDoorGeometry("up"), "dungeon", true);
@@ -236,6 +270,8 @@ console.log(JSON.stringify({
   states: ["open", "locked"],
   renderChecks,
   mapChecks,
+  worldNodeRenderChecks,
+  worldNodeThemes,
   roomCombinationChecks,
   threeModelTypes: ["top-facade", "bottom-wall-embedded", "side-narrow"],
   physicsUnchanged: ["aperture", "triggerBounds", "entryPoint", "barrier", "wallDepth"],
