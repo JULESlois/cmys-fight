@@ -68,6 +68,11 @@ export class Projectile {
   public criticalExplosionDamageMultiplier = 0.5;
   public closeRangeDamageMultiplier = 1;
   public closeRangeFalloffDistance = 0;
+  // Visual-only Code Scanner readout state.
+  public scanMarkX = 0;
+  public scanMarkY = 0;
+  public scanMarkAge = -1;
+  public scanMarkIndex = 0;
 
 
   private static nextId = 0;
@@ -173,6 +178,10 @@ export class Projectile {
     this.criticalExplosionDamageMultiplier = profile?.criticalExplosionDamageMultiplier ?? 0.5;
     this.closeRangeDamageMultiplier = profile?.closeRangeDamageMultiplier ?? 1;
     this.closeRangeFalloffDistance = profile?.closeRangeFalloffDistance ?? 0;
+    this.scanMarkX = x;
+    this.scanMarkY = y;
+    this.scanMarkAge = -1;
+    this.scanMarkIndex = 0;
     this.hitEnemyIds.clear();
     return this;
   }

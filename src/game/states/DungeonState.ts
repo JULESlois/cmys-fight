@@ -3460,6 +3460,12 @@ export class DungeonState extends GameState {
           }
           const result = DamageSystem.damageEnemy(e, directDamage, this.player, p.critical, p.source);
           p.hitEnemyIds.add(e.id);
+          if (result.applied && p.weaponId === "code_scanner") {
+            p.scanMarkX = hitX;
+            p.scanMarkY = hitY;
+            p.scanMarkAge = p.age;
+            p.scanMarkIndex = p.hitEnemyIds.size;
+          }
           directEnemyId = e.id;
           if (result.applied) {
             this.applyProjectileKnockback(e, p);
