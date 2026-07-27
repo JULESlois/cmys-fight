@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#0b1214"/>
+  <rect x="24" y="24" width="1152" height="752" rx="18" fill="#141d21" stroke="#33434a" stroke-width="2"/>
+  <text x="60" y="72" fill="#e9f3f2" font-family="sans-serif" font-size="30" font-weight="700">CMYS-FIGHT — Training Marker Redesign</text>
+  <text x="60" y="104" fill="#8fa9ad" font-family="sans-serif" font-size="16">Hub scene object / collaborative concept sheet / 2026-07-27</text>
+
+  <g transform="translate(70 145)">
+    <text x="0" y="0" fill="#72e0e8" font-family="sans-serif" font-size="20" font-weight="700">A. 主体轮廓</text>
+    <ellipse cx="235" cy="510" rx="150" ry="28" fill="#071012" opacity="0.75"/>
+    <polygon points="110,475 145,440 325,440 360,475 325,515 145,515" fill="#252b35" stroke="#697482" stroke-width="8"/>
+    <polygon points="140,465 170,445 300,445 330,465 300,490 170,490" fill="#3a4349"/>
+    <path d="M235 438 L235 210" stroke="#68472e" stroke-width="28"/>
+    <path d="M235 438 L235 210" stroke="#9b6a3e" stroke-width="8"/>
+    <path d="M165 290 L305 290" stroke="#68472e" stroke-width="24"/>
+    <path d="M165 290 L305 290" stroke="#9b6a3e" stroke-width="7"/>
+    <polygon points="180,315 290,315 305,405 275,438 195,438 165,405" fill="#3f4a4f" stroke="#252b35" stroke-width="10"/>
+    <polygon points="190,328 280,328 291,395 268,420 202,420 179,395" fill="#273239"/>
+    <circle cx="235" cy="370" r="42" fill="#8f2f38" stroke="#d8b45c" stroke-width="8"/>
+    <circle cx="235" cy="370" r="20" fill="#ffd36b"/>
+    <path d="M235 338 L235 402 M203 370 L267 370" stroke="#fff3b8" stroke-width="7"/>
+    <path d="M190 225 L235 180 L280 225 L260 270 L210 270 Z" fill="#5b2736" stroke="#d8b45c" stroke-width="7"/>
+    <path d="M235 193 L235 255 M215 223 L255 223" stroke="#72e0e8" stroke-width="7"/>
+    <circle cx="235" cy="223" r="11" fill="#b7faf5"/>
+    <text x="40" y="560" fill="#c4d5d7" font-family="sans-serif" font-size="16">八角石座 + 木制训练架 + 发光命中核心</text>
+    <text x="40" y="585" fill="#8fa9ad" font-family="sans-serif" font-size="14">轮廓优先表达“可攻击 / 可交互 / 训练用途”</text>
+  </g>
+
+  <g transform="translate(520 145)">
+    <text x="0" y="0" fill="#72e0e8" font-family="sans-serif" font-size="20" font-weight="700">B. 状态与动画</text>
+    <g transform="translate(0 45)">
+      <rect width="285" height="145" rx="12" fill="#10181b" stroke="#34464b"/>
+      <text x="18" y="30" fill="#e9f3f2" font-family="sans-serif" font-size="17" font-weight="700">待机 Idle</text>
+      <circle cx="70" cy="86" r="27" fill="#8f2f38" stroke="#d8b45c" stroke-width="5"/>
+      <circle cx="70" cy="86" r="9" fill="#ffd36b"/>
+      <path d="M115 70 C155 50 205 50 245 70" fill="none" stroke="#54666a" stroke-width="3" stroke-dasharray="7 7"/>
+      <text x="115" y="100" fill="#8fa9ad" font-family="sans-serif" font-size="14">核心缓慢呼吸</text>
+      <text x="115" y="121" fill="#8fa9ad" font-family="sans-serif" font-size="14">木架轻微摆动</text>
+    </g>
+    <g transform="translate(310 45)">
+      <rect width="285" height="145" rx="12" fill="#10181b" stroke="#34464b"/>
+      <text x="18" y="30" fill="#e9f3f2" font-family="sans-serif" font-size="17" font-weight="700">接近 Proximity</text>
+      <circle cx="70" cy="86" r="38" fill="none" stroke="#72e0e8" stroke-width="4" opacity="0.7"/>
+      <circle cx="70" cy="86" r="27" fill="#8f2f38" stroke="#d8b45c" stroke-width="5"/>
+      <circle cx="70" cy="86" r="13" fill="#b7faf5"/>
+      <text x="125" y="82" fill="#8fa9ad" font-family="sans-serif" font-size="14">外圈点亮</text>
+      <text x="125" y="104" fill="#8fa9ad" font-family="sans-serif" font-size="14">提示可交互</text>
+    </g>
+    <g transform="translate(0 215)">
+      <rect width="285" height="145" rx="12" fill="#10181b" stroke="#34464b"/>
+      <text x="18" y="30" fill="#e9f3f2" font-family="sans-serif" font-size="17" font-weight="700">受击 Hit</text>
+      <circle cx="70" cy="86" r="27" fill="#c6554e" stroke="#fff3b8" stroke-width="7"/>
+      <path d="M100 53 L130 30 M104 83 L145 83 M99 114 L132 136" stroke="#ffd36b" stroke-width="7"/>
+      <text x="155" y="76" fill="#8fa9ad" font-family="sans-serif" font-size="14">2 帧压缩</text>
+      <text x="155" y="98" fill="#8fa9ad" font-family="sans-serif" font-size="14">命中火花定向喷出</text>
+    </g>
+    <g transform="translate(310 215)">
+      <rect width="285" height="145" rx="12" fill="#10181b" stroke="#34464b"/>
+      <text x="18" y="30" fill="#e9f3f2" font-family="sans-serif" font-size="17" font-weight="700">重击 Heavy Hit</text>
+      <circle cx="70" cy="86" r="27" fill="#273239" stroke="#d8b45c" stroke-width="5"/>
+      <path d="M52 64 L85 105 M84 62 L53 108" stroke="#ffd36b" stroke-width="7"/>
+      <path d="M108 42 L155 18 M112 82 L175 82 M108 122 L155 146" stroke="#72e0e8" stroke-width="5"/>
+      <text x="178" y="76" fill="#8fa9ad" font-family="sans-serif" font-size="14">短暂停顿 60–90ms</text>
+      <text x="178" y="98" fill="#8fa9ad" font-family="sans-serif" font-size="14">显示伤害分级</text>
+    </g>
+
+    <text x="0" y="410" fill="#72e0e8" font-family="sans-serif" font-size="20" font-weight="700">C. 配色规范</text>
+    <g transform="translate(0 435)">
+      <rect x="0" y="0" width="70" height="42" rx="6" fill="#252b35"/><text x="0" y="64" fill="#8fa9ad" font-family="sans-serif" font-size="13">石座</text>
+      <rect x="95" y="0" width="70" height="42" rx="6" fill="#68472e"/><text x="95" y="64" fill="#8fa9ad" font-family="sans-serif" font-size="13">木架</text>
+      <rect x="190" y="0" width="70" height="42" rx="6" fill="#8f2f38"/><text x="190" y="64" fill="#8fa9ad" font-family="sans-serif" font-size="13">靶面</text>
+      <rect x="285" y="0" width="70" height="42" rx="6" fill="#d8b45c"/><text x="285" y="64" fill="#8fa9ad" font-family="sans-serif" font-size="13">金属边</text>
+      <rect x="380" y="0" width="70" height="42" rx="6" fill="#72e0e8"/><text x="380" y="64" fill="#8fa9ad" font-family="sans-serif" font-size="13">交互光</text>
+      <rect x="475" y="0" width="70" height="42" rx="6" fill="#ffd36b"/><text x="475" y="64" fill="#8fa9ad" font-family="sans-serif" font-size="13">命中闪</text>
+    </g>
+  </g>
+
+  <g transform="translate(70 730)">
+    <text x="0" y="0" fill="#8fa9ad" font-family="sans-serif" font-size="14">Implementation target: HubWorldRenderer.drawTrainingMarker — keep 80×80 footprint and preserve low-resolution readability.</text>
+  </g>
+</svg>
