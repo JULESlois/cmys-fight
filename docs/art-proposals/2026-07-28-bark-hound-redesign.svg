@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#15181d"/>
+  <rect x="32" y="32" width="1136" height="736" rx="18" fill="#20252c" stroke="#59636f" stroke-width="3"/>
+  <text x="64" y="82" fill="#f2f4f6" font-family="sans-serif" font-size="32" font-weight="700">Bark Hound / 树皮猎犬 — 重画概念板</text>
+  <text x="64" y="112" fill="#aeb8c2" font-family="sans-serif" font-size="16">Dungeon charge enemy · 0.42s windup · 66px charge distance</text>
+
+  <g transform="translate(80 165)">
+    <rect width="500" height="360" rx="14" fill="#171b20" stroke="#3d4650"/>
+    <text x="24" y="38" fill="#e6e9ec" font-family="sans-serif" font-size="20" font-weight="700">主轮廓：低背、长躯、笼嘴、断木尾</text>
+    <ellipse cx="250" cy="296" rx="180" ry="24" fill="#0b0d10" opacity="0.7"/>
+
+    <g transform="translate(130 130) scale(3)">
+      <!-- tail -->
+      <rect x="-18" y="-12" width="10" height="5" fill="#1f1715"/>
+      <rect x="-17" y="-11" width="8" height="3" fill="#684638"/>
+      <rect x="-22" y="-17" width="7" height="6" fill="#1f1715"/>
+      <rect x="-21" y="-16" width="5" height="4" fill="#8a5f48"/>
+      <!-- legs -->
+      <g fill="#1f1715">
+        <rect x="-12" y="-4" width="6" height="15"/><rect x="-4" y="-4" width="6" height="15"/>
+        <rect x="8" y="-4" width="6" height="15"/><rect x="16" y="-4" width="6" height="15"/>
+      </g>
+      <g fill="#6a4739">
+        <rect x="-11" y="-3" width="4" height="12"/><rect x="-3" y="-3" width="4" height="12"/>
+        <rect x="9" y="-3" width="4" height="12"/><rect x="17" y="-3" width="4" height="12"/>
+      </g>
+      <g fill="#9b735b"><rect x="-13" y="8" width="8" height="3"/><rect x="-5" y="8" width="8" height="3"/><rect x="7" y="8" width="8" height="3"/><rect x="15" y="8" width="8" height="3"/></g>
+      <!-- body -->
+      <rect x="-15" y="-17" width="34" height="17" fill="#1f1715"/>
+      <rect x="-14" y="-16" width="32" height="15" fill="#5a392f"/>
+      <rect x="-10" y="-15" width="18" height="11" fill="#805744"/>
+      <rect x="8" y="-15" width="8" height="12" fill="#3b2b2a"/>
+      <!-- bark ribs -->
+      <rect x="-8" y="-14" width="1" height="8" fill="#ae8267"/><rect x="-2" y="-13" width="1" height="7" fill="#ae8267"/><rect x="4" y="-13" width="1" height="7" fill="#ae8267"/>
+      <!-- harness -->
+      <rect x="-12" y="-10" width="29" height="4" fill="#2a2020"/>
+      <rect x="-11" y="-9" width="27" height="2" fill="#c69a3b"/>
+      <rect x="0" y="-11" width="6" height="6" fill="#1f1715"/><rect x="1" y="-10" width="4" height="4" fill="#edc253"/>
+      <!-- bone plates -->
+      <rect x="-9" y="-19" width="7" height="5" fill="#1f1715"/><rect x="-8" y="-18" width="5" height="3" fill="#aab4b5"/>
+      <rect x="0" y="-19" width="7" height="5" fill="#1f1715"/><rect x="1" y="-18" width="5" height="3" fill="#aab4b5"/>
+      <!-- head -->
+      <rect x="17" y="-22" width="18" height="16" fill="#1f1715"/>
+      <rect x="18" y="-21" width="16" height="13" fill="#71493a"/>
+      <rect x="20" y="-19" width="9" height="8" fill="#a2765d"/>
+      <!-- ears -->
+      <rect x="18" y="-29" width="7" height="9" fill="#1f1715"/><rect x="19" y="-28" width="5" height="7" fill="#49302d"/>
+      <rect x="29" y="-28" width="7" height="9" fill="#1f1715"/><rect x="30" y="-27" width="5" height="7" fill="#49302d"/>
+      <rect x="28" y="-17" width="3" height="3" fill="#ffb34f"/>
+      <!-- muzzle -->
+      <rect x="31" y="-16" width="15" height="10" fill="#1f1715"/><rect x="32" y="-15" width="13" height="7" fill="#332727"/>
+      <rect x="34" y="-16" width="2" height="11" fill="#87949a"/><rect x="39" y="-16" width="2" height="11" fill="#87949a"/><rect x="44" y="-14" width="2" height="9" fill="#87949a"/>
+      <rect x="32" y="-7" width="15" height="3" fill="#52616a"/>
+    </g>
+
+    <text x="24" y="330" fill="#aeb8c2" font-family="sans-serif" font-size="14">结构重点：背线保持低平；头部前伸；金属笼嘴形成唯一高对比焦点。</text>
+  </g>
+
+  <g transform="translate(610 165)">
+    <rect width="510" height="170" rx="14" fill="#171b20" stroke="#3d4650"/>
+    <text x="24" y="36" fill="#e6e9ec" font-family="sans-serif" font-size="20" font-weight="700">配色与材质</text>
+    <g transform="translate(24 58)">
+      <rect width="72" height="48" rx="6" fill="#5a392f"/><text x="0" y="70" fill="#b8c1c9" font-family="sans-serif" font-size="12">湿暗树皮</text>
+      <rect x="92" width="72" height="48" rx="6" fill="#805744"/><text x="92" y="70" fill="#b8c1c9" font-family="sans-serif" font-size="12">磨损木纹</text>
+      <rect x="184" width="72" height="48" rx="6" fill="#87949a"/><text x="184" y="70" fill="#b8c1c9" font-family="sans-serif" font-size="12">笼嘴冷铁</text>
+      <rect x="276" width="72" height="48" rx="6" fill="#c69a3b"/><text x="276" y="70" fill="#b8c1c9" font-family="sans-serif" font-size="12">束缚黄铜</text>
+      <rect x="368" width="72" height="48" rx="6" fill="#ffb34f"/><text x="368" y="70" fill="#b8c1c9" font-family="sans-serif" font-size="12">攻击警示</text>
+    </g>
+  </g>
+
+  <g transform="translate(610 355)">
+    <rect width="510" height="170" rx="14" fill="#171b20" stroke="#3d4650"/>
+    <text x="24" y="36" fill="#e6e9ec" font-family="sans-serif" font-size="20" font-weight="700">0.42 秒冲锋前摇</text>
+    <line x1="30" y1="92" x2="470" y2="92" stroke="#65717c" stroke-width="4"/>
+    <circle cx="55" cy="92" r="12" fill="#805744"/><circle cx="180" cy="92" r="12" fill="#c69a3b"/><circle cx="315" cy="92" r="12" fill="#ffb34f"/><circle cx="455" cy="92" r="12" fill="#e7edf1"/>
+    <text x="32" y="126" fill="#b8c1c9" font-family="sans-serif" font-size="12">压低肩背</text>
+    <text x="145" y="126" fill="#b8c1c9" font-family="sans-serif" font-size="12">四足收束</text>
+    <text x="278" y="126" fill="#b8c1c9" font-family="sans-serif" font-size="12">眼与锁扣亮起</text>
+    <text x="424" y="126" fill="#b8c1c9" font-family="sans-serif" font-size="12">离地冲出</text>
+  </g>
+
+  <g transform="translate(80 555)">
+    <rect width="1040" height="170" rx="14" fill="#171b20" stroke="#3d4650"/>
+    <text x="24" y="36" fill="#e6e9ec" font-family="sans-serif" font-size="20" font-weight="700">玩法可读性与实现拆分</text>
+    <text x="24" y="70" fill="#c4ccd3" font-family="sans-serif" font-size="15">• 充锋方向用贴地的断续黄铜刮痕线表达，不使用大面积红色扇形。</text>
+    <text x="24" y="98" fill="#c4ccd3" font-family="sans-serif" font-size="15">• attack 4 帧：收腿 → 压肩 → 头部前送 8px / 张嘴 4px → 回弹；保留现有 66px 机制距离。</text>
+    <text x="24" y="126" fill="#c4ccd3" font-family="sans-serif" font-size="15">• 命中墙体：笼嘴火星 3–5 粒、短暂颈部后折；命中玩家：不增加遮挡性血雾。</text>
+    <text x="24" y="154" fill="#8f9aa4" font-family="sans-serif" font-size="13">下一步评审：头身比例、笼嘴宽度、预警线长度、四足收束幅度、与 Frost Hound 的去色区分。</text>
+  </g>
+</svg>
