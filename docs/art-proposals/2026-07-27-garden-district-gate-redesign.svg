@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#101619"/>
+  <rect x="24" y="24" width="1152" height="752" rx="18" fill="#182126" stroke="#40535A" stroke-width="2"/>
+  <text x="56" y="72" fill="#EAF6F2" font-family="sans-serif" font-size="30" font-weight="700">Garden District Gate / 花园区门廊重画提案</text>
+  <text x="56" y="104" fill="#91A6A5" font-family="sans-serif" font-size="16">Scope: Hub scene prop · 80×64 px target · shared district-gate renderer specialization</text>
+
+  <rect x="52" y="136" width="310" height="572" rx="12" fill="#121A1E" stroke="#32454B"/>
+  <text x="76" y="170" fill="#D8B45C" font-family="sans-serif" font-size="20" font-weight="700">CURRENT READ</text>
+  <text x="76" y="200" fill="#B7C7C4" font-family="sans-serif" font-size="15">Shared stone gate + green accent</text>
+  <g transform="translate(96 246)">
+    <ellipse cx="110" cy="286" rx="102" ry="18" fill="#080C0E" opacity="0.55"/>
+    <rect x="18" y="72" width="34" height="214" fill="#242B33"/>
+    <rect x="24" y="80" width="22" height="196" fill="#4B5260"/>
+    <rect x="168" y="72" width="34" height="214" fill="#242B33"/>
+    <rect x="174" y="80" width="22" height="196" fill="#4B5260"/>
+    <rect x="38" y="50" width="144" height="32" fill="#252B35"/>
+    <rect x="46" y="56" width="128" height="15" fill="#4B5260"/>
+    <rect x="84" y="34" width="52" height="38" fill="#20242E" stroke="#7ECF8A" stroke-width="3"/>
+    <path d="M104 62 L104 45 M96 54 L112 54" stroke="#7ECF8A" stroke-width="4"/>
+    <rect x="25" y="43" width="20" height="25" fill="#7ECF8A" opacity="0.75"/>
+    <rect x="175" y="43" width="20" height="25" fill="#7ECF8A" opacity="0.75"/>
+  </g>
+  <text x="76" y="586" fill="#B7C7C4" font-family="sans-serif" font-size="14">Problem:</text>
+  <text x="76" y="612" fill="#91A6A5" font-family="sans-serif" font-size="14">• Same silhouette as other district gates</text>
+  <text x="76" y="636" fill="#91A6A5" font-family="sans-serif" font-size="14">• Garden identity depends mostly on hue</text>
+  <text x="76" y="660" fill="#91A6A5" font-family="sans-serif" font-size="14">• No proximity / confirmation response</text>
+
+  <rect x="386" y="136" width="500" height="572" rx="12" fill="#121A1E" stroke="#32454B"/>
+  <text x="410" y="170" fill="#7ECF8A" font-family="sans-serif" font-size="20" font-weight="700">PROPOSED SILHOUETTE</text>
+  <text x="410" y="200" fill="#B7C7C4" font-family="sans-serif" font-size="15">Split-root pillars · vine arch · seed-lantern crest</text>
+  <g transform="translate(470 224)">
+    <ellipse cx="170" cy="350" rx="154" ry="22" fill="#080C0E" opacity="0.6"/>
+    <path d="M34 332 L34 138 L57 100 L78 136 L72 332 Z" fill="#28322F" stroke="#506056" stroke-width="5"/>
+    <path d="M266 332 L272 136 L293 100 L316 138 L316 332 Z" fill="#28322F" stroke="#506056" stroke-width="5"/>
+    <path d="M70 150 Q170 48 274 150" fill="none" stroke="#303A35" stroke-width="30"/>
+    <path d="M78 149 Q170 70 266 149" fill="none" stroke="#60705F" stroke-width="8"/>
+    <path d="M84 146 Q170 86 260 146" fill="none" stroke="#7ECF8A" stroke-width="5" stroke-dasharray="16 10"/>
+    <path d="M54 320 L28 354 L68 343 L93 360 L87 320" fill="#34433A" stroke="#1C2522" stroke-width="4"/>
+    <path d="M286 320 L253 360 L293 343 L330 354 L316 320" fill="#34433A" stroke="#1C2522" stroke-width="4"/>
+    <path d="M57 118 C83 152 74 194 56 225 C87 203 98 165 82 131" fill="#456A49"/>
+    <path d="M283 118 C258 153 266 194 285 225 C254 203 243 165 259 131" fill="#456A49"/>
+    <path d="M170 48 L188 80 L170 102 L152 80 Z" fill="#B7FAF5" stroke="#7ECF8A" stroke-width="5"/>
+    <circle cx="170" cy="78" r="34" fill="none" stroke="#7ECF8A" stroke-width="4" opacity="0.65"/>
+    <path d="M150 110 Q170 126 190 110" fill="none" stroke="#D8B45C" stroke-width="5"/>
+    <circle cx="77" cy="138" r="11" fill="#FFD36B" stroke="#6C7A55" stroke-width="5"/>
+    <circle cx="263" cy="138" r="11" fill="#FFD36B" stroke="#6C7A55" stroke-width="5"/>
+    <path d="M118 208 C92 186 86 170 90 145 M222 208 C248 186 254 170 250 145" fill="none" stroke="#6DBB78" stroke-width="6"/>
+    <path d="M105 194 l-18 -8 l10 18 z M235 194 l18 -8 l-10 18 z" fill="#A8D98D"/>
+    <rect x="128" y="331" width="84" height="8" fill="#46534B"/>
+    <rect x="142" y="339" width="56" height="7" fill="#2B3631"/>
+  </g>
+  <text x="420" y="625" fill="#D8E5E0" font-family="sans-serif" font-size="14">Primary palette</text>
+  <rect x="420" y="643" width="42" height="24" fill="#28322F"/><rect x="470" y="643" width="42" height="24" fill="#60705F"/>
+  <rect x="520" y="643" width="42" height="24" fill="#7ECF8A"/><rect x="570" y="643" width="42" height="24" fill="#B7FAF5"/>
+  <rect x="620" y="643" width="42" height="24" fill="#D8B45C"/><rect x="670" y="643" width="42" height="24" fill="#FFD36B"/>
+  <text x="420" y="689" fill="#91A6A5" font-family="sans-serif" font-size="13">Stone 55% · moss/vine 25% · cyan seed glow 12% · gold 8%</text>
+
+  <rect x="910" y="136" width="238" height="572" rx="12" fill="#121A1E" stroke="#32454B"/>
+  <text x="934" y="170" fill="#72E0E8" font-family="sans-serif" font-size="20" font-weight="700">STATE NOTES</text>
+  <text x="934" y="213" fill="#D8E5E0" font-family="sans-serif" font-size="15" font-weight="700">IDLE</text>
+  <text x="934" y="238" fill="#91A6A5" font-family="sans-serif" font-size="13">Seed core breathes at 1.2 Hz;</text>
+  <text x="934" y="258" fill="#91A6A5" font-family="sans-serif" font-size="13">two leaf motes max.</text>
+  <text x="934" y="305" fill="#D8E5E0" font-family="sans-serif" font-size="15" font-weight="700">PROXIMITY</text>
+  <text x="934" y="330" fill="#91A6A5" font-family="sans-serif" font-size="13">Vine dashes fill inward;</text>
+  <text x="934" y="350" fill="#91A6A5" font-family="sans-serif" font-size="13">lanterns brighten one step.</text>
+  <text x="934" y="397" fill="#D8E5E0" font-family="sans-serif" font-size="15" font-weight="700">CONFIRM</text>
+  <text x="934" y="422" fill="#91A6A5" font-family="sans-serif" font-size="13">0.35 s seed flash, then a</text>
+  <text x="934" y="442" fill="#91A6A5" font-family="sans-serif" font-size="13">single leaf sweep across arch.</text>
+  <text x="934" y="489" fill="#D8E5E0" font-family="sans-serif" font-size="15" font-weight="700">READABILITY</text>
+  <text x="934" y="514" fill="#91A6A5" font-family="sans-serif" font-size="13">Open center remains clear.</text>
+  <text x="934" y="534" fill="#91A6A5" font-family="sans-serif" font-size="13">Glow stays above walk lane.</text>
+  <text x="934" y="554" fill="#91A6A5" font-family="sans-serif" font-size="13">Root feet match collider width.</text>
+  <text x="934" y="601" fill="#D8E5E0" font-family="sans-serif" font-size="15" font-weight="700">NEXT REVIEW</text>
+  <text x="934" y="626" fill="#91A6A5" font-family="sans-serif" font-size="13">Arch height, vine density,</text>
+  <text x="934" y="646" fill="#91A6A5" font-family="sans-serif" font-size="13">seed-core brightness, and</text>
+  <text x="934" y="666" fill="#91A6A5" font-family="sans-serif" font-size="13">1× silhouette separation.</text>
+
+  <text x="56" y="748" fill="#657A7C" font-family="monospace" font-size="13">docs/art-proposals/2026-07-27-garden-district-gate-redesign.svg · CMYS-FIGHT art proposal</text>
+</svg>
