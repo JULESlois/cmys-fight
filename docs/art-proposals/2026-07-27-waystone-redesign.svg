@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#10151b"/>
+  <rect x="30" y="30" width="1140" height="740" rx="18" fill="#171e27" stroke="#394656" stroke-width="3"/>
+  <text x="60" y="78" fill="#f2f5f7" font-family="sans-serif" font-size="30" font-weight="700">WAYSTONE 重画提案</text>
+  <text x="60" y="110" fill="#95a6b8" font-family="sans-serif" font-size="16">Hub 导航地标 · 3×4 tile · 北/南成对使用</text>
+
+  <g transform="translate(70 145)">
+    <text x="0" y="0" fill="#72e0e8" font-family="sans-serif" font-size="18" font-weight="700">A. 主体轮廓</text>
+    <ellipse cx="215" cy="500" rx="125" ry="28" fill="#090d12" opacity=".65"/>
+    <path d="M120 500 L310 500 L292 458 L138 458 Z" fill="#252b35"/>
+    <path d="M142 458 L288 458 L274 432 L156 432 Z" fill="#4b5260"/>
+    <path d="M174 432 L256 432 L244 246 L186 246 Z" fill="#252b35"/>
+    <path d="M188 420 L244 420 L234 262 L198 262 Z" fill="#4b5260"/>
+    <path d="M198 262 L234 262 L250 230 L182 230 Z" fill="#9b74d5"/>
+    <path d="M172 352 L258 352 L246 326 L184 326 Z" fill="#9b74d5"/>
+    <path d="M212 246 L218 246 L218 408 L212 408 Z" fill="#d8b45c"/>
+    <path d="M191 333 L239 333 L239 341 L191 341 Z" fill="#d8b45c"/>
+    <path d="M176 214 L215 164 L254 214 L238 238 L192 238 Z" fill="#49345f" opacity=".8"/>
+    <path d="M190 210 L215 178 L240 210 L228 229 L202 229 Z" fill="#9b74d5"/>
+    <path d="M205 196 L214 184 L214 220 L205 220 Z" fill="#b7faf5"/>
+    <circle cx="215" cy="204" r="45" fill="none" stroke="#9b74d5" stroke-width="3" opacity=".35"/>
+    <circle cx="215" cy="204" r="58" fill="none" stroke="#72e0e8" stroke-width="2" stroke-dasharray="8 12" opacity=".6"/>
+    <path d="M172 452 L258 452" stroke="#697482" stroke-width="4"/>
+    <path d="M188 402 L200 390 M236 380 L245 368 M201 300 L207 290" stroke="#202630" stroke-width="3"/>
+    <text x="45" y="555" fill="#d8e1e8" font-family="sans-serif" font-size="15">断裂双阶基座 · 收腰石柱 · 悬浮晶核 · 横向导航环</text>
+  </g>
+
+  <g transform="translate(520 145)">
+    <text x="0" y="0" fill="#72e0e8" font-family="sans-serif" font-size="18" font-weight="700">B. 状态与动效</text>
+    <rect x="0" y="35" width="600" height="150" rx="12" fill="#111820" stroke="#2d3947"/>
+    <text x="20" y="65" fill="#f2f5f7" font-family="sans-serif" font-size="16" font-weight="700">待机</text>
+    <text x="150" y="65" fill="#b3c0cc" font-family="sans-serif" font-size="15">晶核上下浮动 1–2 px；符文分相呼吸；轨道光点低速旋转</text>
+    <text x="20" y="100" fill="#f2f5f7" font-family="sans-serif" font-size="16" font-weight="700">接近</text>
+    <text x="150" y="100" fill="#b3c0cc" font-family="sans-serif" font-size="15">横向导航环展开至 1.25×；柱身金色通道亮度提升</text>
+    <text x="20" y="135" fill="#f2f5f7" font-family="sans-serif" font-size="16" font-weight="700">交互确认</text>
+    <text x="150" y="135" fill="#b3c0cc" font-family="sans-serif" font-size="15">晶核下压 3 px 后弹起；环形扫光 0.35 秒完成一次</text>
+    <text x="20" y="170" fill="#f2f5f7" font-family="sans-serif" font-size="16" font-weight="700">禁用/未解锁</text>
+    <text x="150" y="170" fill="#b3c0cc" font-family="sans-serif" font-size="15">晶核降饱和；导航环断成三段；去除高亮轨道点</text>
+
+    <text x="0" y="235" fill="#72e0e8" font-family="sans-serif" font-size="18" font-weight="700">C. 配色与材质</text>
+    <g transform="translate(0 260)">
+      <rect x="0" y="0" width="95" height="48" rx="6" fill="#252b35"/><text x="10" y="72" fill="#b3c0cc" font-family="sans-serif" font-size="13">阴影石</text>
+      <rect x="110" y="0" width="95" height="48" rx="6" fill="#4b5260"/><text x="120" y="72" fill="#b3c0cc" font-family="sans-serif" font-size="13">主体石</text>
+      <rect x="220" y="0" width="95" height="48" rx="6" fill="#697482"/><text x="230" y="72" fill="#b3c0cc" font-family="sans-serif" font-size="13">倒角高光</text>
+      <rect x="330" y="0" width="95" height="48" rx="6" fill="#9b74d5"/><text x="340" y="72" fill="#b3c0cc" font-family="sans-serif" font-size="13">导航紫</text>
+      <rect x="440" y="0" width="95" height="48" rx="6" fill="#d8b45c"/><text x="450" y="72" fill="#b3c0cc" font-family="sans-serif" font-size="13">符文金</text>
+    </g>
+
+    <text x="0" y="380" fill="#72e0e8" font-family="sans-serif" font-size="18" font-weight="700">D. 可读性约束</text>
+    <text x="0" y="415" fill="#b3c0cc" font-family="sans-serif" font-size="15">· 1× 缩放时，晶核与横向环必须形成独立于普通路灯/祭坛的轮廓。</text>
+    <text x="0" y="445" fill="#b3c0cc" font-family="sans-serif" font-size="15">· 北/南 Waystone 保持同一造型，仅通过环形朝向和地面箭头区分方向。</text>
+    <text x="0" y="475" fill="#b3c0cc" font-family="sans-serif" font-size="15">· 光晕不得超过交互物宽度 1.5×，避免误判为传送门或伤害区域。</text>
+    <text x="0" y="505" fill="#b3c0cc" font-family="sans-serif" font-size="15">· 接近态与确认态需在 320×240 视口内有明显亮度与运动差异。</text>
+  </g>
+
+  <rect x="60" y="720" width="1080" height="1" fill="#394656"/>
+  <text x="60" y="748" fill="#7f90a3" font-family="sans-serif" font-size="13">Implementation target: src/game/hub/HubWorldRenderer.ts · drawWaystone()</text>
+</svg>
