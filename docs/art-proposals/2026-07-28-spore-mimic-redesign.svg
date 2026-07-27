@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820">
+  <rect width="1200" height="820" fill="#11151b"/>
+  <rect x="36" y="36" width="1128" height="748" rx="18" fill="#19212a" stroke="#394653" stroke-width="3"/>
+  <text x="72" y="92" fill="#f4f1df" font-family="monospace" font-size="34" font-weight="700">SPORE MIMIC / 孢子拟态怪</text>
+  <text x="74" y="126" fill="#9ccc65" font-family="monospace" font-size="18">Forest area-control enemy redesign concept</text>
+
+  <g transform="translate(90 180)">
+    <text x="0" y="0" fill="#f4f1df" font-family="monospace" font-size="22">1. SILHOUETTE</text>
+    <ellipse cx="170" cy="176" rx="128" ry="45" fill="#0b0e12" opacity="0.55"/>
+    <path d="M66 101 Q86 31 170 22 Q255 32 276 102 Q234 85 194 97 Q158 108 119 94 Q88 84 66 101Z" fill="#5b2936" stroke="#22131a" stroke-width="8"/>
+    <path d="M82 94 Q111 56 169 50 Q223 55 260 96 Q221 80 188 90 Q150 101 113 87Z" fill="#b34b5d"/>
+    <circle cx="115" cy="69" r="9" fill="#f6c85a"/><circle cx="171" cy="51" r="7" fill="#f6c85a"/><circle cx="226" cy="73" r="10" fill="#f6c85a"/>
+    <path d="M119 102 Q113 128 126 159 L112 203 L151 196 L170 223 L189 196 L230 203 L213 159 Q226 126 218 101 Q168 118 119 102Z" fill="#6f8f4d" stroke="#202a1b" stroke-width="8"/>
+    <path d="M145 118 L145 177 M194 116 L194 176" stroke="#a9ca78" stroke-width="8"/>
+    <path d="M130 160 Q170 145 211 160 Q202 186 170 190 Q139 186 130 160Z" fill="#24151a"/>
+    <path d="M145 161 L151 174 L160 162 L170 176 L180 162 L190 174 L196 161" fill="none" stroke="#fff7d8" stroke-width="5"/>
+    <circle cx="151" cy="140" r="5" fill="#fff7d8"/><circle cx="190" cy="140" r="5" fill="#fff7d8"/>
+    <path d="M117 201 L95 228 M223 201 L246 228" stroke="#7ca255" stroke-width="10"/>
+    <text x="0" y="270" fill="#b6c1cc" font-family="monospace" font-size="16">Wide cap + narrow stalk + hidden jaw</text>
+    <text x="0" y="294" fill="#b6c1cc" font-family="monospace" font-size="16">Readable as mushroom before it attacks</text>
+  </g>
+
+  <g transform="translate(470 180)">
+    <text x="0" y="0" fill="#f4f1df" font-family="monospace" font-size="22">2. COLOR SYSTEM</text>
+    <rect x="0" y="40" width="130" height="58" rx="8" fill="#5b2936"/><text x="148" y="76" fill="#e6e2d2" font-family="monospace" font-size="16">cap shadow</text>
+    <rect x="0" y="112" width="130" height="58" rx="8" fill="#b34b5d"/><text x="148" y="148" fill="#e6e2d2" font-family="monospace" font-size="16">cap body</text>
+    <rect x="0" y="184" width="130" height="58" rx="8" fill="#6f8f4d"/><text x="148" y="220" fill="#e6e2d2" font-family="monospace" font-size="16">stalk / moss</text>
+    <rect x="0" y="256" width="130" height="58" rx="8" fill="#f6c85a"/><text x="148" y="292" fill="#e6e2d2" font-family="monospace" font-size="16">toxic spores</text>
+    <rect x="0" y="328" width="130" height="58" rx="8" fill="#fff7d8"/><text x="148" y="364" fill="#e6e2d2" font-family="monospace" font-size="16">teeth / warning</text>
+  </g>
+
+  <g transform="translate(800 180)">
+    <text x="0" y="0" fill="#f4f1df" font-family="monospace" font-size="22">3. STATE READABILITY</text>
+    <g transform="translate(0 52)">
+      <text x="0" y="0" fill="#9ccc65" font-family="monospace" font-size="17">IDLE</text>
+      <path d="M18 47 Q48 8 89 47 Q51 36 18 47Z" fill="#9d4253"/><rect x="42" y="47" width="24" height="45" fill="#6f8f4d"/>
+    </g>
+    <g transform="translate(145 52)">
+      <text x="0" y="0" fill="#f6c85a" font-family="monospace" font-size="17">WINDUP 0.82s</text>
+      <path d="M18 57 Q48 4 89 57 Q51 42 18 57Z" fill="#c45163"/><rect x="42" y="57" width="24" height="39" fill="#6f8f4d"/>
+      <circle cx="12" cy="30" r="5" fill="#f6c85a"/><circle cx="57" cy="20" r="6" fill="#f6c85a"/><circle cx="99" cy="31" r="5" fill="#f6c85a"/>
+    </g>
+    <g transform="translate(0 180)">
+      <text x="0" y="0" fill="#ff8a65" font-family="monospace" font-size="17">RELEASE</text>
+      <path d="M18 32 Q48 72 89 32 Q51 48 18 32Z" fill="#8f394a"/><rect x="42" y="32" width="24" height="64" fill="#6f8f4d"/>
+      <circle cx="10" cy="65" r="7" fill="#f6c85a"/><circle cx="100" cy="60" r="7" fill="#f6c85a"/><circle cx="57" cy="15" r="8" fill="#f6c85a"/>
+    </g>
+    <g transform="translate(145 180)">
+      <text x="0" y="0" fill="#b0bec5" font-family="monospace" font-size="17">COOLDOWN</text>
+      <path d="M18 47 Q48 18 89 47 Q51 39 18 47Z" fill="#763040"/><rect x="42" y="47" width="24" height="49" fill="#5f7843"/>
+      <path d="M19 103 Q55 90 91 103" stroke="#d9e8a7" stroke-width="4" stroke-dasharray="5 7" fill="none"/>
+    </g>
+  </g>
+
+  <g transform="translate(70 570)">
+    <rect width="1060" height="170" rx="12" fill="#121820" stroke="#394653" stroke-width="2"/>
+    <text x="24" y="34" fill="#f4f1df" font-family="monospace" font-size="20">CONCRETE IMPLEMENTATION NOTES</text>
+    <text x="24" y="66" fill="#b6c1cc" font-family="monospace" font-size="16">• Keep native footprint near current hitboxRadius 19 / shadowWidth 27.</text>
+    <text x="24" y="92" fill="#b6c1cc" font-family="monospace" font-size="16">• Split attack: cap swell → warning spores → cap inversion → 20 px poison field.</text>
+    <text x="24" y="118" fill="#b6c1cc" font-family="monospace" font-size="16">• Telegraph area edge with sparse yellow-green motes; no dense opaque fog.</text>
+    <text x="24" y="144" fill="#b6c1cc" font-family="monospace" font-size="16">• Death: cap deflates first, then stalk folds; avoid explosive gore silhouette.</text>
+  </g>
+</svg>
