@@ -154,6 +154,35 @@ export class ProjectileArtRenderer {
     ctx.globalAlpha = 1;
   }
 
+  private static drawSwabLanceProjectile(
+    ctx: CanvasRenderingContext2D,
+    p: Projectile,
+    reducedFlashing: boolean,
+  ): void {
+    const speed = Math.hypot(p.vx, p.vy);
+    const accelerationProgress = Math.max(0, Math.min(1, (speed - 128) / 90));
+    const trailLength = Math.round(4 + accelerationProgress * Math.max(0, p.trailLength - 4));
+    const trailSteps = reducedFlashing ? 3 : 5;
+    for (let index = trailSteps; index >= 1; index--) {
+      const progress = index / trailSteps;
+      const distance = Math.round(trailLength * progress);
+      ctx.globalAlpha = (reducedFlashing ? 0.28 : 0.48) * (1 - progress * 0.65);
+      ctx.fillStyle = accelerationProgress > 0.45 ? "#63D7FF" : "#C8D5DE";
+      ctx.fillRect(-distance - 1, 0, 2, 1);
+    }
+    ctx.globalAlpha = 1;
+
+    const bodyLength = Math.round(7 + accelerationProgress * 5);
+    ctx.fillStyle = "#0B1017";
+    ctx.fillRect(-bodyLength + 1, -2, bodyLength + 2, 5);
+    ctx.fillStyle = accelerationProgress > 0.45 ? "#63D7FF" : "#C8D5DE";
+    ctx.fillRect(-bodyLength, -1, bodyLength + 1, 3);
+    ctx.fillStyle = "#E8F5FB";
+    ctx.fillRect(-Math.max(3, Math.floor(bodyLength * 0.45)), -1, Math.max(5, Math.floor(bodyLength * 0.6)), 1);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(1, 0, 3, 1);
+  }
+
   private static drawEnemyProjectile(ctx: CanvasRenderingContext2D, p: Projectile, palette: ProjectilePalette, reducedFlashing: boolean): void {
     ctx.save();
     ctx.translate(Math.round(p.x), Math.round(p.y));
@@ -316,6 +345,12 @@ export class ProjectileArtRenderer {
     ctx.save();
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(Math.atan2(p.vy, p.vx));
+
+    if (p.weaponId === "swab_lance") {
+      ProjectileArtRenderer.drawSwabLanceProjectile(ctx, p, reducedFlashing);
+      ctx.restore();
+      return;
+    }
 
     if (p.style === "sword") {
       if (p.weaponId !== "zenith") {

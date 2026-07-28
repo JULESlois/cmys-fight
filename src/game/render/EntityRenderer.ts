@@ -295,6 +295,9 @@ export class EntityRenderer {
     const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
+    if (layer === "front" && player.currentWeaponId === "swab_lance") {
+      EntityRenderer.drawSwabLanceState(ctx, player, renderX, renderY);
+    }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
@@ -329,6 +332,58 @@ export class EntityRenderer {
       }
     }
     ctx.restore();
+  }
+
+  private static drawSwabLanceState(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    renderX: number,
+    renderY: number,
+  ): void {
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    const charges = Math.max(0, Math.min(3, Math.floor(slot?.resourceState.value ?? 0)));
+    const recovery = Math.max(0, Math.min(1, (slot?.customState.chargeTimer ?? 0) / 3.5));
+    const pulse = 0.82 + Math.sin(player.animTimer * 4.2) * 0.08;
+
+    for (let index = 0; index < 3; index++) {
+      const x = renderX + 11 + index * 4;
+      const y = renderY + 11;
+      ctx.fillStyle = "#0B1017";
+      ctx.fillRect(x, y, 3, 3);
+      if (index < charges) {
+        const previousAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = previousAlpha * pulse;
+        ctx.fillStyle = "#63D7FF";
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+        ctx.globalAlpha = previousAlpha;
+      } else if (index === charges && charges < 3 && recovery > 0) {
+        ctx.fillStyle = "#23303D";
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+        ctx.fillStyle = "#63D7FF";
+        if (recovery >= 0.25) ctx.fillRect(x, y, 1, 1);
+        if (recovery >= 0.5) ctx.fillRect(x + 2, y, 1, 1);
+        if (recovery >= 0.75) ctx.fillRect(x + 2, y + 2, 1, 1);
+      } else {
+        ctx.fillStyle = charges === 0 ? "#F0B35A" : "#23303D";
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+      }
+    }
+
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * pulse;
+    ctx.fillStyle = charges > 0 ? "#E8F5FB" : "#F0B35A";
+    ctx.fillRect(renderX + 27, renderY + 8, 2, 1);
+    ctx.globalAlpha = previousAlpha;
+
+    if (player.muzzleFlash > 0) {
+      ctx.globalAlpha = previousAlpha * Math.max(0, Math.min(1, player.muzzleFlash));
+      ctx.fillStyle = "#E8F5FB";
+      ctx.fillRect(renderX - 2, renderY + 7, 3, 1);
+      ctx.fillStyle = "#8FA6B3";
+      ctx.fillRect(renderX - 5, renderY + 6, 2, 1);
+      ctx.fillRect(renderX - 4, renderY + 9, 2, 1);
+      ctx.globalAlpha = previousAlpha;
+    }
   }
 
   private static drawPixelAttackLine(ctx: CanvasRenderingContext2D, angle: number, length: number, color: string): void {
