@@ -13,6 +13,7 @@ import {
 import { usesDetailedCharacterArt } from "../data/characters";
 import { getEnemyDefinition, getEnemyRenderScale } from "../data/enemies";
 import { SpriteRenderer } from "./SpriteRenderer";
+import { drawBellRepeaterArtFx } from "./BellRepeaterArt";
 import { MonsterModelRenderer, usesNativeMonsterArt } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
 import { ProjectileArtRenderer } from "./ProjectileArtRenderer";
@@ -176,7 +177,7 @@ export class EntityRenderer {
     ctx.restore();
   }
 
-  public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
+  public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string, time = player.animTimer) {
     if (player.hp <= 0) return;
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
@@ -264,7 +265,7 @@ export class EntityRenderer {
     const activeWeapon = WEAPONS[player.currentWeaponId];
     const yoyoDeployed = activeWeapon?.attackMode === "yoyo" && player.activeYoyoWeaponId === activeWeapon.id;
     if (activeWeapon?.dualWield && !yoyoDeployed) {
-      EntityRenderer.drawPlayerWeapon(ctx, player, "back");
+      EntityRenderer.drawPlayerWeapon(ctx, player, "back", time, engine.data.settings.reducedFlashing);
     }
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, hasExtendedPlayerAnimation ? 1 : 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
@@ -274,7 +275,7 @@ export class EntityRenderer {
     });
     // Normal weapons are drawn in front of the body. Akimbo weapons split the
     // pair across the body layers, while a deployed yoyo hides its held copy.
-    if (!yoyoDeployed) EntityRenderer.drawPlayerWeapon(ctx, player);
+    if (!yoyoDeployed) EntityRenderer.drawPlayerWeapon(ctx, player, "front", time, engine.data.settings.reducedFlashing);
     ctx.restore();
   }
 
@@ -282,6 +283,8 @@ export class EntityRenderer {
     ctx: CanvasRenderingContext2D,
     player: Player,
     layer: "front" | "back" = "front",
+    time = player.animTimer,
+    reducedFlashing = false,
   ) {
     ctx.save();
     ctx.translate(0, player.effectiveWeaponHandOffsetY);
@@ -296,7 +299,28 @@ export class EntityRenderer {
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
     if (player.currentWeaponId === "code_scanner" && layer === "front") {
-      EntityRenderer.drawCodeScannerState(ctx, player, renderX, renderY);
+      EntityRenderer.drawCodeScannerState(ctx, player, renderX, renderY, time);
+    } else if (player.currentWeaponId === "bell_repeater" && layer === "front" && weapon) {
+      const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+      const resourceRatio = slot?.resourceState.max > 0 ? slot.resourceState.value / slot.resourceState.max : 1;
+      const reloadTimer = Math.max(0, Number(slot?.customState.reloadTimer) || 0);
+      const reloadProgress = reloadTimer > 0
+        ? 1 - reloadTimer / Math.max(0.1, weapon.reloadTime ?? 1.5)
+        : 0;
+      ctx.save();
+      drawBellRepeaterArtFx(ctx, renderX, renderY, {
+        time,
+        resourceRatio,
+        reloadProgress,
+        shotCount: Number(slot?.customState.bellRepeaterShotCount) || 0,
+        muzzleFlash: player.muzzleFlash,
+        reducedFlashing,
+      });
+      ctx.restore();
+    } else if (player.currentWeaponId === "mask_sprayer" && layer === "front") {
+      EntityRenderer.drawMaskSprayerState(ctx, player, renderX, renderY, time);
+    } else if (player.currentWeaponId === "swab_lance" && layer === "front") {
+      EntityRenderer.drawSwabLanceState(ctx, player, renderX, renderY, time);
     }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
@@ -320,6 +344,13 @@ export class EntityRenderer {
         ctx.fillRect(mx + 4, my - 3, 5, 6);
         ctx.fillStyle = "#FF7043";
         ctx.fillRect(mx + 9, my - 1, 4, 3);
+      } else if (player.currentWeaponId === "mask_sprayer") {
+        ctx.fillStyle = "rgba(217,248,255,0.9)";
+        ctx.fillRect(mx, my - 1, 4, 3); ctx.fillRect(mx + 4, my - 2, 3, 2);
+        ctx.fillStyle = "rgba(127,231,243,0.72)";
+        ctx.fillRect(mx + 3, my + 2, 3, 2); ctx.fillRect(mx + 7, my - 4, 2, 2); ctx.fillRect(mx + 8, my + 2, 2, 2);
+        ctx.fillStyle = "rgba(217,248,255,0.45)";
+        ctx.fillRect(mx + 11, my - 3, 1, 1); ctx.fillRect(mx + 12, my + 3, 1, 1);
       } else if (effect === "rocket" || effect === "smoke") {
         ctx.fillStyle = effect === "rocket" ? "#FFB347" : "#E6E6E6";
         ctx.fillRect(mx, my - 2, 4, 4);
@@ -339,6 +370,7 @@ export class EntityRenderer {
     player: Player,
     renderX: number,
     renderY: number,
+    time: number,
   ): void {
     const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
     if (!slot || slot.weaponId !== "code_scanner") return;
@@ -349,7 +381,7 @@ export class EntityRenderer {
     const isRecharging = delay <= 0 && ratio < 1;
     const left = Math.round(renderX - 12);
     const top = Math.round(renderY - 8.5);
-    const pulse = 0.5 + 0.5 * Math.sin(player.animTimer * 4.2);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 4.2);
 
     ctx.save();
     ctx.globalAlpha *= delay > 0 ? 0.28 : 0.72 + pulse * 0.18;
@@ -368,7 +400,7 @@ export class EntityRenderer {
     ctx.fillStyle = ratio < 0.2 ? "#F0C96A" : "#2ECC71";
     if (fillHeight > 0) ctx.fillRect(left + 10, top + 15 - fillHeight, 3, fillHeight);
     if (isRecharging) {
-      const activeDot = Math.floor(player.animTimer * 9) % 3;
+      const activeDot = Math.floor(time * 9) % 3;
       ctx.fillStyle = "#CAFFDF";
       for (let dot = 0; dot <= activeDot; dot++) ctx.fillRect(left + 10 + dot, top + 14 - dot, 1, 1);
     }
@@ -387,6 +419,126 @@ export class EntityRenderer {
       const sweep = Math.min(8, Math.floor((1 - fullFlash / 0.18) * 9));
       ctx.fillStyle = "#CAFFDF";
       ctx.fillRect(left + 7 + sweep, top + 5, 2, 1);
+    }
+  }
+
+  private static drawMaskSprayerState(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    renderX: number,
+    renderY: number,
+    time: number,
+  ): void {
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (!slot || slot.weaponId !== "mask_sprayer") return;
+    const heatRatio = slot.resourceState.max > 0
+      ? Math.max(0, Math.min(1, slot.resourceState.value / slot.resourceState.max))
+      : 0;
+    const overheatTimer = Math.max(0, Number(slot.customState.overheatTimer) || 0);
+    const overheated = overheatTimer > 0;
+    const highHeat = heatRatio >= 0.7 && !overheated;
+    const cooling = heatRatio > 0 && !overheated && player.muzzleFlash <= 0;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 3.5);
+    const left = Math.round(renderX) + Math.round(-25 / 2);
+    const top = Math.round(renderY) + Math.round(-18 / 2);
+
+    ctx.save();
+    if (overheated) {
+      ctx.fillStyle = "#0B1116";
+      ctx.fillRect(left + 21, top + 6, 4, 5);
+      ctx.fillStyle = "#EF6B63";
+      ctx.fillRect(left + 22, top + 7, 3, 2);
+      const lockout = WEAPONS.mask_sprayer.overheatLockout ?? 2.5;
+      const phase = 1 - Math.min(1, overheatTimer / lockout);
+      const ringPhase = phase % 0.2;
+      const radius = 6 + Math.floor(ringPhase * 20);
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * Math.max(0.2, 1 - ringPhase * 4);
+      ctx.strokeStyle = "#EF6B63";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left + 7 - radius, top + 7 - radius, radius * 2, radius * 2);
+      ctx.globalAlpha = previousAlpha;
+      const ventPhase = overheatTimer % 0.45;
+      if (ventPhase < 0.18) {
+        const rise = Math.floor(ventPhase / 0.06);
+        ctx.fillStyle = "rgba(217,248,255,0.65)";
+        ctx.fillRect(left + 13, top + 3 - rise, 2, 1);
+        ctx.fillRect(left + 15, top + 1 - rise, 1, 1);
+      }
+    } else {
+      const eyeColor = highHeat ? "#F2C35F" : pulse > 0.58 ? "#D9F8FF" : "#7FE7F3";
+      ctx.fillStyle = eyeColor;
+      ctx.fillRect(left + 6, top + 5, 1, 1); ctx.fillRect(left + 9, top + 5, 1, 1);
+      ctx.fillStyle = highHeat ? "#F2C35F" : "#7FE7F3";
+      const gaugeHeight = Math.max(1, Math.ceil(heatRatio * 4));
+      ctx.fillRect(left + 11, top + 16 - gaugeHeight, 2, gaugeHeight);
+      if (highHeat && player.muzzleFlash > 0) {
+        ctx.fillStyle = "#F2C35F";
+        ctx.fillRect(left + 3, top + 4, 1, 6); ctx.fillRect(left + 10, top + 4, 1, 6);
+      }
+      if (cooling) {
+        const travel = Math.floor((time * 10) % 6);
+        ctx.fillStyle = "rgba(127,231,243,0.72)";
+        ctx.fillRect(left + 20 - travel, top + 6, 1, 1);
+        ctx.fillRect(left + 18 - ((travel + 2) % 6), top + 9, 1, 1);
+        if (heatRatio > 0.35) ctx.fillRect(left + 22 - ((travel + 4) % 7), top + 8, 1, 1);
+      }
+    }
+    ctx.restore();
+  }
+
+  private static drawSwabLanceState(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    renderX: number,
+    renderY: number,
+    time: number,
+  ): void {
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (!slot || slot.weaponId !== "swab_lance") return;
+    const charges = Math.max(0, Math.min(3, Math.floor(slot.resourceState.value ?? 0)));
+    const chargeTime = WEAPONS.swab_lance.chargeTime ?? 3.5;
+    const recovery = Math.max(0, Math.min(1, (Number(slot.customState.chargeTimer) || 0) / chargeTime));
+    const pulse = 0.82 + Math.sin(time * 4.2) * 0.08;
+    const left = Math.round(renderX) + Math.round(-30 / 2);
+    const top = Math.round(renderY) + Math.round(-16 / 2);
+
+    for (let index = 0; index < 3; index++) {
+      const x = left + 11 + index * 4;
+      const y = top + 11;
+      ctx.fillStyle = "#0B1017";
+      ctx.fillRect(x, y, 3, 3);
+      if (index < charges) {
+        const previousAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = previousAlpha * pulse;
+        ctx.fillStyle = "#63D7FF";
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+        ctx.globalAlpha = previousAlpha;
+      } else if (index === charges && charges < 3 && recovery > 0) {
+        ctx.fillStyle = "#23303D";
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+        ctx.fillStyle = "#63D7FF";
+        if (recovery >= 0.25) ctx.fillRect(x, y, 1, 1);
+        if (recovery >= 0.5) ctx.fillRect(x + 2, y, 1, 1);
+        if (recovery >= 0.75) ctx.fillRect(x + 2, y + 2, 1, 1);
+      } else {
+        ctx.fillStyle = charges === 0 ? "#F0B35A" : "#23303D";
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+      }
+    }
+
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * pulse;
+    ctx.fillStyle = charges > 0 ? "#E8F5FB" : "#F0B35A";
+    ctx.fillRect(left + 27, top + 8, 2, 1);
+    ctx.globalAlpha = previousAlpha;
+    if (player.muzzleFlash > 0) {
+      ctx.globalAlpha = previousAlpha * Math.max(0, Math.min(1, player.muzzleFlash));
+      ctx.fillStyle = "#E8F5FB";
+      ctx.fillRect(left - 2, top + 7, 3, 1);
+      ctx.fillStyle = "#8FA6B3";
+      ctx.fillRect(left - 5, top + 6, 2, 1); ctx.fillRect(left - 4, top + 9, 2, 1);
+      ctx.globalAlpha = previousAlpha;
     }
   }
 

@@ -251,6 +251,10 @@ export class WeaponController {
     }
 
     player.weaponLoadout.slots[player.weaponLoadout.activeSlot].fireCooldown = nextFireCooldown;
+    if (weapon.id === "bell_repeater") {
+      const visualCount = Number(slot.customState.bellRepeaterShotCount) || 0;
+      slot.customState.bellRepeaterShotCount = (visualCount + 1) % 3000;
+    }
     player.muzzleFlash = 1;
     player.aimAngle = aimAngle;
     player.facing = Math.cos(aimAngle) >= 0 ? "right" : "left";

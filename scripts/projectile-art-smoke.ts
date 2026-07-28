@@ -175,7 +175,7 @@ assert.ok((impactCounts.get("explosion") ?? 0) > (impactCounts.get("spark") ?? 0
 
 const entitySource = fs.readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 const bodyDrawIndex = entitySource.indexOf("SpriteRenderer.drawPixelSprite(ctx, spriteName");
-const weaponDrawIndex = entitySource.indexOf("EntityRenderer.drawPlayerWeapon(ctx, player);", bodyDrawIndex);
+const weaponDrawIndex = entitySource.indexOf("EntityRenderer.drawPlayerWeapon(ctx, player, \"front\"", bodyDrawIndex);
 assert.ok(bodyDrawIndex >= 0 && weaponDrawIndex > bodyDrawIndex, "player weapon must always render after the player body");
 assert.doesNotMatch(entitySource, /weaponBehindBody/);
 assert.match(entitySource, /ProjectileArtRenderer\.draw\(ctx, p, reducedFlashing\)/);

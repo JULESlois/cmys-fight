@@ -4245,7 +4245,7 @@ export class DungeonState extends GameState {
       depthRenderables.push({
         id: "player",
         sortY: this.player.y + this.player.radius,
-        draw: () => EntityRenderer.drawPlayer(ctx, this.player, this.engine, theme),
+        draw: () => EntityRenderer.drawPlayer(ctx, this.player, this.engine, theme, time),
       });
     }
     depthRenderables.sort((a, b) => a.sortY - b.sortY || a.id.localeCompare(b.id));

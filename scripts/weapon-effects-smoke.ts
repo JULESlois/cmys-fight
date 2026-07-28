@@ -710,7 +710,7 @@ const projectileRendererSource = fs.readFileSync("src/game/render/ProjectileArtR
 const fxSource = fs.readFileSync("src/game/render/PixelFxSystem.ts", "utf8");
 const audioSource = fs.readFileSync("src/game/audio/AudioManager.ts", "utf8");
 assert.match(dungeonSource, /heldYoyo[\s\S]*updateTerrarianYoyo[\s\S]*terrarian_orb/);
-assert.match(rendererSource, /dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back"\)[\s\S]*drawPlayerWeapon\(ctx, player\)/);
+assert.match(rendererSource, /dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back",[\s\S]*drawPlayerWeapon\(ctx, player, "front",/);
 assert.match(rendererSource, /activeYoyoWeaponId[\s\S]*!yoyoDeployed/);
 assert.match(dungeonSource, /updateProjectileHoming[\s\S]*rotateVelocityToward/);
 assert.match(dungeonSource, /projectile\.style === "sword"[\s\S]*projectile\.weaponId === "zenith"/);
@@ -722,7 +722,7 @@ assert.match(dungeonSource, /highHealthDamageThreshold[\s\S]*highHealthDamageMul
 assert.match(dungeonSource, /criticalExplosionRadius[\s\S]*criticalExplosionDamageMultiplier/);
 assert.match(dungeonSource, /weaponRecoilVisual = Math\.min/);
 assert.match(rendererSource, /ProjectileArtRenderer\.draw/);
-assert.match(rendererSource, /activeWeapon\?\.dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back"\)/);
+assert.match(rendererSource, /activeWeapon\?\.dualWield[\s\S]*drawPlayerWeapon\(ctx, player, "back",/);
 assert.match(rendererSource, /weaponRecoilVisual/);
 assert.match(projectileRendererSource, /p\.style === "beam"[\s\S]*p\.style === "prism"/);
 assert.match(projectileRendererSource, /p\.style === "yoyo"[\s\S]*p\.style === "sword"[\s\S]*p\.style === "dragon"/);
