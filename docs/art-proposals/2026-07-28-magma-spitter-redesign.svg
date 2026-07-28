@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<rect width="960" height="540" fill="#171412"/>
+<text x="40" y="52" fill="#f2e6d5" font-family="monospace" font-size="28">Magma Spitter — Redesign Concept</text>
+<text x="40" y="82" fill="#b8a99b" font-family="monospace" font-size="14">low furnace body / split jaw / five-shot fan / heat-state readability</text>
+<rect x="38" y="110" width="884" height="380" rx="8" fill="#211b18" stroke="#5d463a"/>
+<g transform="translate(210 315) scale(5)">
+<rect x="-18" y="-9" width="31" height="15" fill="#281b17"/>
+<rect x="-16" y="-8" width="27" height="12" fill="#7b2d1e"/>
+<rect x="-14" y="-6" width="20" height="8" fill="#b94b24"/>
+<rect x="-9" y="-13" width="15" height="6" fill="#3b2720"/>
+<rect x="-7" y="-11" width="11" height="4" fill="#d8622d"/>
+<rect x="6" y="-7" width="9" height="3" fill="#2a1915"/>
+<rect x="8" y="-6" width="8" height="1" fill="#ffb347"/>
+<rect x="8" y="-2" width="8" height="1" fill="#ff8a3d"/>
+<rect x="-13" y="5" width="5" height="4" fill="#2a201d"/>
+<rect x="4" y="5" width="5" height="4" fill="#2a201d"/>
+<rect x="-5" y="-4" width="3" height="3" fill="#fff1b0"/>
+<rect x="1" y="-4" width="3" height="3" fill="#fff1b0"/>
+</g>
+<g font-family="monospace" font-size="18" fill="#ead8c7">
+<text x="430" y="160">Silhouette</text><text x="430" y="190" fill="#c7b4a4" font-size="15">• broad furnace abdomen</text><text x="430" y="214" fill="#c7b4a4" font-size="15">• low six-point stance</text><text x="430" y="238" fill="#c7b4a4" font-size="15">• split horizontal jaw</text>
+<text x="430" y="282">Palette</text><rect x="430" y="300" width="42" height="24" fill="#7b2d1e"/><rect x="482" y="300" width="42" height="24" fill="#b94b24"/><rect x="534" y="300" width="42" height="24" fill="#ff8a3d"/><rect x="586" y="300" width="42" height="24" fill="#fff1b0"/><rect x="638" y="300" width="42" height="24" fill="#281b17"/>
+<text x="430" y="362">Attack read</text><text x="430" y="390" fill="#c7b4a4" font-size="15">jaw opens in 3 beats; five embers mark spread</text><text x="430" y="414" fill="#c7b4a4" font-size="15">white-hot throat flashes only at release</text>
+</g>
+<text x="40" y="522" fill="#9e8d80" font-family="monospace" font-size="13">docs/art-proposals/2026-07-28-magma-spitter-redesign.svg</text>
+</svg>
