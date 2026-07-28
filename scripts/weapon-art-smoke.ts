@@ -205,6 +205,16 @@ assert.equal(WEAPON_PALETTES.ultimate["6"], "#39CFE8");
 assert.equal(WEAPON_PALETTES.ultimate["7"], "#9B6CFF");
 assert.equal(WEAPON_PALETTES.zeroth_sense["6"], "#BDA7FF");
 assert.equal(WEAPON_PALETTES.colucci_claws["5"], "#FF668F");
+assert.equal(WEAPON_PALETTES.shotgun["2"], "#211A17", "Rusty Shotgun keeps the authored deep shadow");
+assert.equal(WEAPON_PALETTES.shotgun["5"], "#B99170", "Rusty Shotgun exposes worn metal highlights");
+assert.equal(WEAPON_PALETTES.shotgun["8"], "#C96B45", "Rusty Shotgun uses localized oxidation accents");
+
+const shotgunRows = WEAPON_SPRITES.shotgun;
+const shotgunUsed = new Set(shotgunRows.join("").replace(/[.1]/g, ""));
+assert.ok(shotgunUsed.size >= 7, "Rusty Shotgun must retain separate steel, wood, repair and rust regions");
+assert.notEqual(shotgunRows[11][17], ".", "Rusty Shotgun receiver and pump must remain visually connected");
+assert.equal(shotgunRows[10][21], "1", "Rusty Shotgun pump gap must remain a dark outlined separation at native scale");
+assert.notEqual(shotgunRows[6][29], ".", "Rusty Shotgun muzzle anchor must terminate on the square barrel edge");
 
 const renderedColors = new Set<string>();
 const ctx = {

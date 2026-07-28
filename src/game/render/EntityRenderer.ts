@@ -295,6 +295,9 @@ export class EntityRenderer {
     const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
+    if (player.currentWeaponId === "code_scanner" && layer === "front") {
+      EntityRenderer.drawCodeScannerState(ctx, player, renderX, renderY);
+    }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
@@ -329,6 +332,62 @@ export class EntityRenderer {
       }
     }
     ctx.restore();
+  }
+
+  private static drawCodeScannerState(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    renderX: number,
+    renderY: number,
+  ): void {
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (!slot || slot.weaponId !== "code_scanner") return;
+    const ratio = slot.resourceState.max > 0
+      ? Math.max(0, Math.min(1, slot.resourceState.value / slot.resourceState.max))
+      : 1;
+    const delay = Math.max(0, Number(slot.customState.rechargeDelayTimer) || 0);
+    const isRecharging = delay <= 0 && ratio < 1;
+    const left = Math.round(renderX - 12);
+    const top = Math.round(renderY - 8.5);
+    const pulse = 0.5 + 0.5 * Math.sin(player.animTimer * 4.2);
+
+    ctx.save();
+    ctx.globalAlpha *= delay > 0 ? 0.28 : 0.72 + pulse * 0.18;
+    ctx.fillStyle = ratio < 0.2 ? "#F0C96A" : "#2ECC71";
+    const scanWidth = player.muzzleFlash > 0
+      ? Math.max(2, Math.min(9, 9 - Math.round(player.muzzleFlash * 7)))
+      : 8;
+    ctx.fillRect(left + 7, top + 4, scanWidth, 2);
+    ctx.fillStyle = "#CAFFDF";
+    ctx.fillRect(left + 8 + Math.min(6, Math.floor(pulse * 7)), top + 4, 1, 1);
+    ctx.restore();
+
+    ctx.fillStyle = "#071016";
+    ctx.fillRect(left + 10, top + 10, 3, 5);
+    const fillHeight = Math.max(0, Math.round(ratio * 5));
+    ctx.fillStyle = ratio < 0.2 ? "#F0C96A" : "#2ECC71";
+    if (fillHeight > 0) ctx.fillRect(left + 10, top + 15 - fillHeight, 3, fillHeight);
+    if (isRecharging) {
+      const activeDot = Math.floor(player.animTimer * 9) % 3;
+      ctx.fillStyle = "#CAFFDF";
+      for (let dot = 0; dot <= activeDot; dot++) ctx.fillRect(left + 10 + dot, top + 14 - dot, 1, 1);
+    }
+
+    if (player.muzzleFlash > 0) {
+      ctx.fillStyle = "#2ECC71";
+      ctx.fillRect(left + 20, top + 6, 3, 1);
+      ctx.fillRect(left + 20, top + 8, 3, 1);
+    } else {
+      ctx.fillStyle = "#176B43";
+      ctx.fillRect(left + 23, top + 7, 1, 1);
+    }
+
+    const fullFlash = Math.max(0, Number(slot.customState.fullRechargeFlashTimer) || 0);
+    if (ratio >= 1 && fullFlash > 0) {
+      const sweep = Math.min(8, Math.floor((1 - fullFlash / 0.18) * 9));
+      ctx.fillStyle = "#CAFFDF";
+      ctx.fillRect(left + 7 + sweep, top + 5, 2, 1);
+    }
   }
 
   private static drawPixelAttackLine(ctx: CanvasRenderingContext2D, angle: number, length: number, color: string): void {

@@ -69,7 +69,27 @@ export class ProjectileArtRenderer {
     const startY = p.y - uy * p.trailLength;
     const width = Math.max(1, p.beamWidth);
 
-    if (prism) {
+    if (p.weaponId === "code_scanner") {
+      // Keep the gameplay beam one pixel wide while adding restrained contrast.
+      ProjectileArtRenderer.drawPixelLine(ctx, startX, startY, p.x, p.y, "#2ECC71", 3, reducedFlashing ? 0.12 : 0.2, 2);
+      ProjectileArtRenderer.drawPixelLine(ctx, startX, startY, p.x, p.y, "#2ECC71", 1, 0.78, 1);
+      ProjectileArtRenderer.drawPixelLine(ctx, startX + ux * 2, startY + uy * 2, p.x, p.y, "#CAFFDF", 1, 1, 1);
+      const markLife = p.scanMarkAge < 0 ? 1 : p.age - p.scanMarkAge;
+      if (markLife >= 0 && markLife <= 0.16) {
+        const scale = p.scanMarkIndex <= 1 ? 1 : p.scanMarkIndex === 2 ? 0.75 : 0.55;
+        const half = Math.max(3, Math.round(5 * scale));
+        ctx.save();
+        ctx.globalAlpha *= Math.max(0, 1 - markLife / 0.16) * (reducedFlashing ? 0.65 : 0.9);
+        ctx.fillStyle = p.scanMarkIndex <= 1 ? "#CAFFDF" : "#2ECC71";
+        ctx.fillRect(Math.round(p.scanMarkX) - half, Math.round(p.scanMarkY) - half, 3, 1);
+        ctx.fillRect(Math.round(p.scanMarkX) + half - 2, Math.round(p.scanMarkY) - half, 3, 1);
+        ctx.fillRect(Math.round(p.scanMarkX) - half, Math.round(p.scanMarkY) + half, 3, 1);
+        ctx.fillRect(Math.round(p.scanMarkX) + half - 2, Math.round(p.scanMarkY) + half, 3, 1);
+        ctx.fillRect(Math.round(p.scanMarkX) - half, Math.round(p.scanMarkY) - half, 1, 3);
+        ctx.fillRect(Math.round(p.scanMarkX) + half, Math.round(p.scanMarkY) - half, 1, 3);
+        ctx.restore();
+      }
+    } else if (prism) {
       const rayCount = reducedFlashing ? 3 : 5;
       for (let index = 0; index < rayCount; index++) {
         const centered = index - (rayCount - 1) / 2;
@@ -94,10 +114,17 @@ export class ProjectileArtRenderer {
       ProjectileArtRenderer.drawPixelLine(ctx, startX + ux * 3, startY + uy * 3, p.x, p.y, palette.highlight, Math.max(1, width - 1), 0.94, 1);
     }
 
-    ctx.fillStyle = palette.shadow;
-    ctx.fillRect(Math.round(p.x) - 2, Math.round(p.y) - 2, 5, 5);
-    ctx.fillStyle = palette.highlight;
-    ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 3, 3);
+    if (p.weaponId === "code_scanner") {
+      ctx.fillStyle = "#2ECC71";
+      ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 3, 3);
+      ctx.fillStyle = "#CAFFDF";
+      ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+    } else {
+      ctx.fillStyle = palette.shadow;
+      ctx.fillRect(Math.round(p.x) - 2, Math.round(p.y) - 2, 5, 5);
+      ctx.fillStyle = palette.highlight;
+      ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 3, 3);
+    }
   }
 
   private static drawLightning(ctx: CanvasRenderingContext2D, p: Projectile, palette: ProjectilePalette, reducedFlashing: boolean): void {

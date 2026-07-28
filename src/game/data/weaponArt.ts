@@ -726,8 +726,17 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(7, 8, 7, 2, "2"); c.polygon([[8,9],[13,9],[12,14],[8,14]], "6"); c.rect(9, 10, 2, 3, "7");
   }),
   shotgun: drawWeapon(30, 16, c => {
-    c.polygon([[1,8],[7,5],[11,6],[11,10],[6,13],[1,12]], "6"); c.rect(8, 6, 9, 5, "3");
-    c.rect(16, 5, 13, 2, "2"); c.rect(16, 8, 13, 2, "4"); c.rect(18, 10, 7, 2, "7"); c.rect(11, 10, 4, 3, "5");
+    // Worn wood stock with a two-tone wear strip.
+    c.polygon([[1,8],[6,5],[11,6],[12,9],[8,13],[2,13],[1,11]], "6");
+    c.polygon([[2,9],[7,6],[10,7],[10,9],[7,11],[3,11]], "7");
+    c.rect(4, 12, 4, 1, "8");
+    // Patched receiver with bright edge wear and localized oxidation.
+    c.polygon([[9,5],[19,5],[22,7],[20,11],[10,11],[8,9]], "3");
+    c.rect(10, 6, 10, 4, "4"); c.rect(11, 6, 8, 1, "5"); c.rect(10, 9, 9, 1, "2");
+    c.rect(13, 7, 5, 2, "6"); c.set(14, 7, "8"); c.set(18, 9, "8"); c.set(20, 8, "8");
+    // Separate pump and square twin-barrel mass.
+    c.rect(18, 11, 7, 2, "6"); c.rect(19, 11, 5, 1, "7");
+    c.rect(21, 5, 9, 5, "2"); c.rect(22, 6, 8, 1, "5"); c.rect(22, 8, 8, 1, "4"); c.rect(27, 9, 3, 1, "8");
   }),
   laser: drawWeapon(25, 16, c => {
     c.polygon([[3,6],[6,3],[17,3],[20,6],[18,10],[6,10]], "2"); c.rect(7, 5, 10, 3, "4");
@@ -745,9 +754,14 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(12, 12, 2, 3, "6");
   }),
   code_scanner: drawWeapon(24, 17, c => {
-    c.polygon([[3,4],[14,4],[17,7],[14,10],[4,9]], "5"); c.rect(5, 5, 8, 2, "7");
-    c.rect(14, 6, 9, 2, "2"); c.rect(20, 6, 3, 1, "8"); c.polygon([[8,9],[13,9],[12,15],[9,15]], "3");
-    c.rect(9, 11, 2, 2, "6");
+    c.polygon([[2,8],[5,6],[7,7],[7,10],[4,11],[2,10]], "2");
+    c.polygon([[5,4],[8,2],[16,2],[19,5],[17,9],[7,10],[4,8]], "3");
+    c.rect(7, 4, 9, 3, "4"); c.rect(8, 4, 7, 1, "5"); c.rect(7, 7, 8, 1, "8");
+    // Split emitter forks leave a one-pixel beam channel.
+    c.polygon([[17,4],[23,4],[23,6],[18,6]], "2"); c.polygon([[17,8],[23,8],[23,10],[18,10]], "2");
+    c.rect(20, 5, 3, 1, "4"); c.rect(20, 8, 3, 1, "4"); c.rect(23, 7, 1, 1, "5");
+    // Vertical battery grip exposes runtime charge state.
+    c.polygon([[8,9],[14,9],[13,16],[9,16]], "2"); c.rect(10, 10, 3, 5, "7"); c.rect(10, 14, 3, 1, "6");
   }),
   swab_lance: drawWeapon(30, 16, c => {
     c.rect(4, 7, 22, 2, "4"); c.rect(8, 6, 14, 1, "6"); c.circle(27, 8, 2, "9");
@@ -972,11 +986,11 @@ const BASE_OUTLINE = { ".": "transparent", "1": "#080B10" };
 
 export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   pistol: { ...BASE_OUTLINE, "2":"#292D33","3":"#4B535E","4":"#8D98A4","5":"#D3DAE2","6":"#5B3527","7":"#A85E36" },
-  shotgun: { ...BASE_OUTLINE, "2":"#171A1F","3":"#3B424A","4":"#6C7781","5":"#AEB8C0","6":"#5A2D1E","7":"#9A5532" },
+  shotgun: { ...BASE_OUTLINE, "2":"#211A17","3":"#3B2D28","4":"#5D493E","5":"#B99170","6":"#7A4127","7":"#A85A34","8":"#C96B45" },
   laser: { ...BASE_OUTLINE, "2":"#17243A","3":"#2F4C68","4":"#00B8D9","5":"#B8E7F2","6":"#38F5FF","7":"#F2FCFF","9":"#FFFFFF" },
   bell_repeater: { ...BASE_OUTLINE, "2":"#261A10","3":"#5D4630","4":"#A87321","5":"#E6B84B","6":"#6D3A20","7":"#FFE081","8":"#FFF3B0" },
   mask_sprayer: { ...BASE_OUTLINE, "2":"#20242B","3":"#324C39","4":"#5D6A62","5":"#7EC25A","6":"#71492B","7":"#E7D35D","8":"#E85D44" },
-  code_scanner: { ...BASE_OUTLINE, "2":"#252A31","3":"#3B4652","4":"#6AAFC8","5":"#D9E1E8","6":"#2B79A8","7":"#71E5F2","8":"#FF4057" },
+  code_scanner: { ...BASE_OUTLINE, "1":"#071016","2":"#18242C","3":"#31505B","4":"#2ECC71","5":"#CAFFDF","6":"#F0C96A","7":"#2ECC71","8":"#176B43" },
   swab_lance: { ...BASE_OUTLINE, "2":"#2C333B","3":"#66727E","4":"#B6DCE3","5":"#F5FBFC","6":"#4CAAC4","7":"#9DECF2","9":"#FFFFFF" },
   vat_horse_cannon: { ...BASE_OUTLINE, "2":"#33251B","3":"#4B6849","4":"#7D8B72","5":"#9AC56A","6":"#6B3B24","7":"#D39B52","8":"#E16E4B" },
   service_revolver: { ...BASE_OUTLINE, "2":"#191B20","3":"#30343C","4":"#555D67","5":"#AAB3BC","6":"#5F2F2B","8":"#E34747" },
@@ -1045,7 +1059,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   laser: { grip: [10, 11], muzzle: [24, 6] },
   bell_repeater: { grip: [11, 11], muzzle: [26, 6] },
   mask_sprayer: { grip: [12, 13], muzzle: [24, 7] },
-  code_scanner: { grip: [10, 12], muzzle: [23, 6] },
+  code_scanner: { grip: [11, 13], muzzle: [23, 7] },
   swab_lance: { grip: [10, 11], muzzle: [29, 8] },
   vat_horse_cannon: { grip: [10, 14], muzzle: [29, 8] },
   service_revolver: { grip: [9, 13], muzzle: [22, 6] },

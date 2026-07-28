@@ -63,6 +63,7 @@ export const BatteryStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value = runtime.resourceState.max;
     runtime.customState.rechargeDelayTimer = 0;
     runtime.customState.isEmpowered = false;
+    runtime.customState.fullRechargeFlashTimer = 0;
   },
   canFire(runtime, weapon, player) {
     return runtime.resourceState.value >= (weapon.manaCost || 1);
@@ -72,8 +73,12 @@ export const BatteryStrategy: WeaponResourceStrategy = {
     runtime.resourceState.value -= (weapon.manaCost || 1);
     runtime.customState.rechargeDelayTimer = weapon.batteryRechargeDelay ?? 1.0;
     runtime.customState.isEmpowered = false;
+    runtime.customState.fullRechargeFlashTimer = 0;
   },
   update(runtime, weapon, player, dt, isActive) {
+    if (runtime.customState.fullRechargeFlashTimer > 0) {
+      runtime.customState.fullRechargeFlashTimer = Math.max(0, runtime.customState.fullRechargeFlashTimer - dt);
+    }
     if (runtime.customState.rechargeDelayTimer > 0) {
       runtime.customState.rechargeDelayTimer -= dt;
     } else if (runtime.resourceState.value < runtime.resourceState.max) {
@@ -81,6 +86,7 @@ export const BatteryStrategy: WeaponResourceStrategy = {
       runtime.resourceState.value = Math.min(runtime.resourceState.max, runtime.resourceState.value + rechargeRate * dt);
       if (runtime.resourceState.value >= runtime.resourceState.max) {
         runtime.customState.isEmpowered = true; // Empowered when naturally recovered to full
+        runtime.customState.fullRechargeFlashTimer = 0.18;
       }
     }
   },
