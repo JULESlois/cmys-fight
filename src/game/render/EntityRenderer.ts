@@ -295,6 +295,29 @@ export class EntityRenderer {
     const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
+    if (player.currentWeaponId === "vat_horse_cannon" && layer === "front") {
+      const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+      const reloadTime = Math.max(0.1, weapon?.reloadTime ?? 2.2);
+      const reloadTimer = Math.max(0, slot?.customState.reloadTimer ?? 0);
+      const reloadProgress = reloadTimer > 0 ? 1 - reloadTimer / reloadTime : 0;
+      const loaded = reloadTimer > 0
+        ? Math.min(3, Math.floor(reloadProgress * 3 + 0.001))
+        : Math.max(0, Math.min(3, Math.floor(slot?.resourceState.value ?? 0)));
+      for (let chamber = 0; chamber < 3; chamber++) {
+        const chamberX = renderX - 4 + chamber * 4;
+        const chamberY = renderY - 7 + (chamber === 2 ? 1 : 0);
+        ctx.fillStyle = chamber < loaded ? "#FF8A65" : "#202733";
+        ctx.fillRect(chamberX, chamberY, 3, 3);
+        if (reloadTimer > 0 && chamber === loaded && reloadProgress * 3 - loaded > 0.55) {
+          ctx.fillStyle = "#8FE3FF";
+          ctx.fillRect(chamberX, chamberY - 1, 3, 1);
+        }
+      }
+      if (Math.sin(player.animTimer * 4.2) > 0.92) {
+        ctx.fillStyle = "#FFE0C1";
+        ctx.fillRect(renderX - 9, renderY - 4, 1, 3);
+      }
+    }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
@@ -318,11 +341,17 @@ export class EntityRenderer {
         ctx.fillStyle = "#FF7043";
         ctx.fillRect(mx + 9, my - 1, 4, 3);
       } else if (effect === "rocket" || effect === "smoke") {
-        ctx.fillStyle = effect === "rocket" ? "#FFB347" : "#E6E6E6";
-        ctx.fillRect(mx, my - 2, 4, 4);
-        ctx.fillStyle = effect === "rocket" ? "#FF7043" : "#8E9EAB";
-        ctx.fillRect(mx + 4, my - 3, 3, 3);
-        ctx.fillRect(mx + 6, my + 1, 3, 3);
+        if (player.currentWeaponId === "vat_horse_cannon") {
+          ctx.fillStyle = "#FFE0C1"; ctx.fillRect(mx, my - 2, 3, 5);
+          ctx.fillStyle = "#FFB07D"; ctx.fillRect(mx + 3, my - 3, 3, 7);
+          ctx.fillStyle = "#FF8A65"; ctx.fillRect(mx + 6, my - 1, 3, 3);
+        } else {
+          ctx.fillStyle = effect === "rocket" ? "#FFB347" : "#E6E6E6";
+          ctx.fillRect(mx, my - 2, 4, 4);
+          ctx.fillStyle = effect === "rocket" ? "#FF7043" : "#8E9EAB";
+          ctx.fillRect(mx + 4, my - 3, 3, 3);
+          ctx.fillRect(mx + 6, my + 1, 3, 3);
+        }
       } else {
         ctx.fillStyle = "#F1C40F";
         ctx.fillRect(mx, my - 2, 4, 4); ctx.fillRect(mx + 4, my - 4, 2, 8); ctx.fillRect(mx + 6, my, 2, 4);

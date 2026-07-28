@@ -753,10 +753,12 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(4, 7, 22, 2, "4"); c.rect(8, 6, 14, 1, "6"); c.circle(27, 8, 2, "9");
     c.rect(2, 6, 5, 4, "3"); c.polygon([[8,9],[13,9],[12,14],[9,14]], "2"); c.rect(10, 10, 2, 3, "7");
   }),
-  vat_horse_cannon: drawWeapon(30, 18, c => {
-    c.polygon([[2,8],[7,4],[14,5],[16,9],[13,13],[5,13]], "6"); c.circle(13, 8, 4, "3");
-    c.circle(13, 8, 2, "5"); c.rect(16, 6, 10, 5, "4"); c.polygon([[25,5],[29,7],[27,9],[29,11],[24,11]], "7");
-    c.polygon([[8,12],[13,12],[12,17],[9,17]], "2"); c.rect(20, 7, 4, 2, "8");
+  vat_horse_cannon: drawWeapon(31, 18, c => {
+    // Wide pressure vat, three independent chambers, then a narrow sealed rail.
+    c.circle(7, 8, 5, "2"); c.circle(7, 8, 4, "6"); c.rect(5, 5, 2, 5, "5");
+    c.rect(10, 6, 10, 6, "3"); c.rect(11, 4, 4, 4, "8"); c.rect(15, 4, 4, 4, "8"); c.rect(19, 5, 4, 4, "8");
+    c.rect(20, 7, 10, 3, "4"); c.rect(21, 8, 9, 1, "5"); c.rect(29, 7, 2, 3, "7");
+    c.polygon([[8,12],[13,12],[12,17],[9,17]], "2"); c.polygon([[15,11],[19,11],[18,15],[16,15]], "3");
   }),
   service_revolver: drawWeapon(24, 18, c => {
     c.rect(3, 5, 10, 4, "3"); c.rect(12, 5, 10, 2, "5"); c.circle(11, 8, 3, "4");
@@ -978,7 +980,7 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   mask_sprayer: { ...BASE_OUTLINE, "2":"#20242B","3":"#324C39","4":"#5D6A62","5":"#7EC25A","6":"#71492B","7":"#E7D35D","8":"#E85D44" },
   code_scanner: { ...BASE_OUTLINE, "2":"#252A31","3":"#3B4652","4":"#6AAFC8","5":"#D9E1E8","6":"#2B79A8","7":"#71E5F2","8":"#FF4057" },
   swab_lance: { ...BASE_OUTLINE, "2":"#2C333B","3":"#66727E","4":"#B6DCE3","5":"#F5FBFC","6":"#4CAAC4","7":"#9DECF2","9":"#FFFFFF" },
-  vat_horse_cannon: { ...BASE_OUTLINE, "2":"#33251B","3":"#4B6849","4":"#7D8B72","5":"#9AC56A","6":"#6B3B24","7":"#D39B52","8":"#E16E4B" },
+  vat_horse_cannon: { ...BASE_OUTLINE, "2":"#0A0D12","3":"#2B3542","4":"#667484","5":"#FFE0C1","6":"#8A6B4E","7":"#8FE3FF","8":"#FF8A65" },
   service_revolver: { ...BASE_OUTLINE, "2":"#191B20","3":"#30343C","4":"#555D67","5":"#AAB3BC","6":"#5F2F2B","8":"#E34747" },
   vector_9: { ...BASE_OUTLINE, "2":"#111419","3":"#282D34","4":"#4D555E","5":"#9DA6AE","6":"#6E5B43","7":"#B59A70","8":"#E1CBA4" },
   nail_driver: { ...BASE_OUTLINE, "2":"#191D22","3":"#424A52","4":"#E2A91D","5":"#806015","6":"#FFD34D","7":"#F3E6B4","9":"#EAF0F3" },
@@ -1047,7 +1049,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   mask_sprayer: { grip: [12, 13], muzzle: [24, 7] },
   code_scanner: { grip: [10, 12], muzzle: [23, 6] },
   swab_lance: { grip: [10, 11], muzzle: [29, 8] },
-  vat_horse_cannon: { grip: [10, 14], muzzle: [29, 8] },
+  vat_horse_cannon: { grip: [10, 14], muzzle: [30, 8] },
   service_revolver: { grip: [9, 13], muzzle: [22, 6] },
   vector_9: { grip: [11, 13], muzzle: [27, 6] },
   nail_driver: { grip: [11, 13], muzzle: [24, 6] },

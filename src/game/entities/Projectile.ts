@@ -22,6 +22,9 @@ export class Projectile {
   public critical = false;
   public pierceRemaining = 0;
   public wallBouncesRemaining = 0;
+  public bounceFlashTimer = 0;
+  public bounceNormalX = 0;
+  public bounceNormalY = 0;
   public statusEffect?: StatusEffectId;
   public statusDuration = 0;
   public sourceBoss = false;
@@ -126,6 +129,9 @@ export class Projectile {
     this.critical = critical;
     this.pierceRemaining = pierceRemaining;
     this.wallBouncesRemaining = wallBouncesRemaining;
+    this.bounceFlashTimer = 0;
+    this.bounceNormalX = 0;
+    this.bounceNormalY = 0;
     this.statusEffect = statusEffect;
     this.statusDuration = statusDuration;
     this.sourceBoss = sourceBoss;
@@ -180,6 +186,7 @@ export class Projectile {
   update(dt: number) {
     this.previousX = this.x;
     this.previousY = this.y;
+    this.bounceFlashTimer = Math.max(0, this.bounceFlashTimer - dt);
 
     if (this.stuck) {
       this.life -= dt;

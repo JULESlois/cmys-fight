@@ -3576,8 +3576,15 @@ export class DungeonState extends GameState {
         if (!destroyedBreakable && p.wallBouncesRemaining > 0) {
           const blockedX = proposedX < 0 || proposedX > 320 || this.isCircleBlocked(proposedX, p.previousY, p.radius, "projectile");
           const blockedY = proposedY < 0 || proposedY > 240 || this.isCircleBlocked(p.previousX, proposedY, p.radius, "projectile");
+          const oldVx = p.vx;
+          const oldVy = p.vy;
           if (blockedX || (!blockedX && !blockedY)) p.vx *= -1;
           if (blockedY || (!blockedX && !blockedY)) p.vy *= -1;
+          if (p.weaponId === "vat_horse_cannon") {
+            p.bounceFlashTimer = 0.1;
+            p.bounceNormalX = p.vx === oldVx ? 0 : Math.sign(p.vx);
+            p.bounceNormalY = p.vy === oldVy ? 0 : Math.sign(p.vy);
+          }
           p.x = p.previousX;
           p.y = p.previousY;
           p.wallBouncesRemaining--;

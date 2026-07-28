@@ -287,6 +287,33 @@ export class ProjectileArtRenderer {
       return;
     }
 
+    if (p.weaponId === "vat_horse_cannon" && p.bounceFlashTimer > 0) {
+      const alpha = Math.min(1, p.bounceFlashTimer / 0.1);
+      const speed = Math.max(1, Math.hypot(p.vx, p.vy));
+      const ux = p.vx / speed;
+      const uy = p.vy / speed;
+      ctx.save();
+      ctx.globalAlpha *= reducedFlashing ? alpha * 0.55 : alpha;
+      ctx.translate(Math.round(p.x), Math.round(p.y));
+      ctx.fillStyle = "#FFE0C1";
+      if (Math.abs(p.bounceNormalX) > Math.abs(p.bounceNormalY)) {
+        ctx.fillRect(-1, -7, 2, 15);
+        ctx.fillStyle = "#FFB07D";
+        ctx.fillRect(-2, -5, 1, 11);
+        ctx.fillRect(1, -5, 1, 11);
+      } else {
+        ctx.fillRect(-7, -1, 15, 2);
+        ctx.fillStyle = "#FFB07D";
+        ctx.fillRect(-5, -2, 11, 1);
+        ctx.fillRect(-5, 1, 11, 1);
+      }
+      ctx.fillStyle = "#FF8A65";
+      for (let step = 1; step <= 3; step++) {
+        ctx.fillRect(Math.round(ux * step * 3), Math.round(uy * step * 3), 2, 2);
+      }
+      ctx.restore();
+    }
+
     if (p.style === "beam" || p.style === "prism") {
       ProjectileArtRenderer.drawBeam(ctx, p, palette, reducedFlashing, p.style === "prism");
       return;
