@@ -10,6 +10,45 @@ function midiToFrequency(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
+export const MUSIC_SCHEDULER_LOOKAHEAD_SECONDS = 0.2;
+export const MUSIC_SCHEDULER_DRIFT_LIMIT_SECONDS = 0.18;
+export const MUSIC_SCENE_CROSSFADE_SECONDS = 0.24;
+
+export interface MusicClockRecovery {
+  step: number;
+  nextStepTime: number;
+  droppedSteps: number;
+  lagSeconds: number;
+}
+
+export function getMusicStepDuration(bpm: number): number {
+  return 60 / Math.max(1, bpm) / 4;
+}
+
+export function getMusicSwingOffset(step: number, secondsPerStep: number, swing = 0): number {
+  return step % 2 === 1 ? secondsPerStep * Math.max(0, Math.min(0.45, swing)) : 0;
+}
+
+export function recoverMusicClock(
+  step: number,
+  nextStepTime: number,
+  currentTime: number,
+  secondsPerStep: number,
+  patternLength = 64,
+): MusicClockRecovery {
+  const lagSeconds = Math.max(0, currentTime - nextStepTime);
+  if (lagSeconds <= MUSIC_SCHEDULER_DRIFT_LIMIT_SECONDS) {
+    return { step, nextStepTime, droppedSteps: 0, lagSeconds };
+  }
+  const droppedSteps = Math.max(1, Math.ceil(lagSeconds / Math.max(0.001, secondsPerStep)));
+  return {
+    step: (step + droppedSteps) % Math.max(1, patternLength),
+    nextStepTime: currentTime + 0.04,
+    droppedSteps,
+    lagSeconds,
+  };
+}
+
 export type AudioSourceStatus = "unsupported" | "blocked" | "off" | "procedural" | "idle";
 
 export interface AudioDiagnostics {
@@ -17,16 +56,26 @@ export interface AudioDiagnostics {
   contextState: string;
   unlocked: boolean;
   scene: MusicScene;
+  activeScene: MusicScene;
+  pendingScene: MusicScene | null;
   mode: MusicMode;
   source: AudioSourceStatus;
   masterVolume: number;
   musicVolume: number;
+  schedulerLagMs: number;
+  droppedSteps: number;
+}
+
+interface RetiredMusicBus {
+  node: GainNode;
+  disconnectAt: number;
 }
 
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
+  private limiter: DynamicsCompressorNode | null = null;
   private enabled = true;
   private masterVolume = 1;
   private musicVolume = 0.55;
@@ -34,9 +83,16 @@ export class AudioManager {
   private unlocked = false;
   private musicPaused = false;
   private scene: MusicScene = "title";
+  private activeScene: MusicScene = "title";
+  private pendingScene: MusicScene | null = null;
   private musicTimer: ReturnType<typeof setInterval> | null = null;
   private nextStepTime = 0;
   private step = 0;
+  private currentMusicBus: GainNode | null = null;
+  private retiredMusicBuses: RetiredMusicBus[] = [];
+  private readonly musicSources = new Set<AudioScheduledSourceNode>();
+  private schedulerLagMs = 0;
+  private droppedSteps = 0;
 
   constructor() {
     try {
@@ -46,8 +102,15 @@ export class AudioManager {
       if (this.ctx) {
         this.masterGain = this.ctx.createGain();
         this.musicGain = this.ctx.createGain();
+        this.limiter = this.ctx.createDynamicsCompressor();
+        this.limiter.threshold.value = -7;
+        this.limiter.knee.value = 12;
+        this.limiter.ratio.value = 8;
+        this.limiter.attack.value = 0.004;
+        this.limiter.release.value = 0.16;
         this.musicGain.connect(this.masterGain);
-        this.masterGain.connect(this.ctx.destination);
+        this.masterGain.connect(this.limiter);
+        this.limiter.connect(this.ctx.destination);
         this.applyVolumes();
       }
       const unlockOnce = () => {
@@ -62,7 +125,11 @@ export class AudioManager {
     }
   }
 
-  private applyVolumes() {
+  private wantsMusic(): boolean {
+    return !this.musicPaused && this.musicMode === "adaptive" && this.masterVolume > 0 && this.musicVolume > 0;
+  }
+
+  private applyVolumes(): void {
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.03);
     }
@@ -71,31 +138,48 @@ export class AudioManager {
     }
   }
 
-  private async unlock() {
+  private updateMusicForAudibility(wasAudible: boolean): void {
+    const audible = this.wantsMusic();
+    if (!audible && this.musicTimer) {
+      this.stopMusic();
+    } else if (audible && !wasAudible && this.unlocked && !this.musicTimer) {
+      this.startProceduralMusic();
+    }
+  }
+
+  private async unlock(): Promise<void> {
     if (!this.ctx) return;
     try {
       if (this.ctx.state !== "running") await this.ctx.resume();
       this.unlocked = this.ctx.state === "running";
-      if (this.unlocked && !this.musicTimer) this.restartMusic();
+      if (this.unlocked && this.wantsMusic() && !this.musicTimer) this.startProceduralMusic();
     } catch {
       this.unlocked = false;
     }
   }
 
-  setMasterVolume(value: number) {
+  setMasterVolume(value: number): void {
+    const wasAudible = this.wantsMusic();
     this.masterVolume = Math.max(0, Math.min(1, Number(value) || 0));
     this.applyVolumes();
+    this.updateMusicForAudibility(wasAudible);
   }
 
-  setMusicVolume(value: number) {
+  setMusicVolume(value: number): void {
+    const wasAudible = this.wantsMusic();
     this.musicVolume = Math.max(0, Math.min(1, Number(value) || 0));
     this.applyVolumes();
+    this.updateMusicForAudibility(wasAudible);
   }
 
-  setMusicMode(mode: MusicMode) {
-    if (this.musicMode === mode) return;
+  setMusicMode(mode: MusicMode): void {
+    if (this.musicMode === mode) {
+      if (mode === "adaptive" && this.unlocked && this.wantsMusic() && !this.musicTimer) this.startProceduralMusic();
+      return;
+    }
     this.musicMode = mode;
-    this.restartMusic();
+    if (mode === "off") this.stopMusic();
+    else this.restartMusic();
   }
 
   getMusicScene(): MusicScene {
@@ -105,7 +189,7 @@ export class AudioManager {
   getDiagnostics(): AudioDiagnostics {
     let source: AudioSourceStatus = "idle";
     if (!this.ctx) source = "unsupported";
-    else if (this.musicMode === "off" || this.masterVolume <= 0 || this.musicVolume <= 0) source = "off";
+    else if (!this.wantsMusic()) source = "off";
     else if (!this.unlocked || this.ctx.state !== "running") source = "blocked";
     else if (this.musicTimer) source = "procedural";
     return {
@@ -113,51 +197,131 @@ export class AudioManager {
       contextState: this.ctx?.state ?? "unavailable",
       unlocked: this.unlocked,
       scene: this.scene,
+      activeScene: this.activeScene,
+      pendingScene: this.pendingScene,
       mode: this.musicMode,
       source,
       masterVolume: this.masterVolume,
       musicVolume: this.musicVolume,
+      schedulerLagMs: this.schedulerLagMs,
+      droppedSteps: this.droppedSteps,
     };
   }
 
-  setMusicScene(scene: MusicScene) {
+  setMusicScene(scene: MusicScene): void {
     if (this.scene === scene) return;
     this.scene = scene;
-    this.restartMusic();
+    if (!this.musicTimer) {
+      this.activeScene = scene;
+      this.pendingScene = null;
+      if (this.unlocked && this.wantsMusic()) this.startProceduralMusic();
+      return;
+    }
+    this.pendingScene = scene === this.activeScene ? null : scene;
   }
 
   /** Fully silences music (e.g. during the splash intro) until unpaused. */
-  setMusicPaused(paused: boolean) {
+  setMusicPaused(paused: boolean): void {
     if (this.musicPaused === paused) return;
     this.musicPaused = paused;
     if (paused) this.stopMusic();
     else this.restartMusic();
   }
 
-  private stopMusic() {
-    if (this.musicTimer) clearInterval(this.musicTimer);
-    this.musicTimer = null;
+  private trackMusicSource(source: AudioScheduledSourceNode): void {
+    this.musicSources.add(source);
+    source.onended = () => this.musicSources.delete(source);
   }
 
-  private restartMusic() {
+  private stopMusic(): void {
+    if (this.musicTimer) clearInterval(this.musicTimer);
+    this.musicTimer = null;
+    this.pendingScene = null;
+    const stopAt = (this.ctx?.currentTime ?? 0) + 0.02;
+    for (const source of this.musicSources) {
+      try { source.stop(stopAt); } catch { /* Already stopped. */ }
+    }
+    this.musicSources.clear();
+    this.currentMusicBus?.disconnect();
+    this.currentMusicBus = null;
+    for (const retired of this.retiredMusicBuses) retired.node.disconnect();
+    this.retiredMusicBuses = [];
+    this.activeScene = this.scene;
+  }
+
+  private restartMusic(): void {
     this.stopMusic();
-    if (this.musicPaused) return;
-    if (!this.unlocked || this.musicMode === "off" || this.masterVolume <= 0 || this.musicVolume <= 0) return;
+    if (!this.unlocked || !this.wantsMusic()) return;
     this.startProceduralMusic();
   }
 
-  private startProceduralMusic() {
-    if (!this.ctx || !this.musicGain || this.musicMode === "off") return;
+  private createMusicBus(initialGain: number, time: number): GainNode | null {
+    if (!this.ctx || !this.musicGain) return null;
+    const bus = this.ctx.createGain();
+    bus.gain.setValueAtTime(Math.max(0.0001, initialGain), time);
+    bus.connect(this.musicGain);
+    return bus;
+  }
+
+  private transitionToPendingScene(time: number): void {
+    if (!this.ctx || !this.pendingScene) return;
+    const oldBus = this.currentMusicBus;
+    const newBus = this.createMusicBus(0.0001, time);
+    this.activeScene = this.pendingScene;
+    this.pendingScene = null;
+    if (!newBus) return;
+    newBus.gain.exponentialRampToValueAtTime(1, time + MUSIC_SCENE_CROSSFADE_SECONDS);
+    this.currentMusicBus = newBus;
+    if (oldBus) {
+      oldBus.gain.cancelScheduledValues(time);
+      oldBus.gain.setValueAtTime(Math.max(0.0001, oldBus.gain.value), time);
+      oldBus.gain.exponentialRampToValueAtTime(0.0001, time + MUSIC_SCENE_CROSSFADE_SECONDS);
+      this.retiredMusicBuses.push({ node: oldBus, disconnectAt: time + MUSIC_SCENE_CROSSFADE_SECONDS + 0.08 });
+    }
+  }
+
+  private cleanupRetiredMusicBuses(currentTime: number): void {
+    this.retiredMusicBuses = this.retiredMusicBuses.filter(retired => {
+      if (retired.disconnectAt > currentTime) return true;
+      retired.node.disconnect();
+      return false;
+    });
+  }
+
+  private startProceduralMusic(): void {
+    if (!this.ctx || !this.musicGain || !this.wantsMusic()) return;
+    this.activeScene = this.scene;
+    this.pendingScene = null;
     this.step = 0;
     this.nextStepTime = this.ctx.currentTime + 0.06;
-    const schedule = () => {
-      if (!this.ctx || !this.musicGain || !this.unlocked || this.musicMode === "off") return;
-      const track = PROCEDURAL_TRACKS[this.scene];
-      while (this.nextStepTime < this.ctx.currentTime + 0.24) {
-        this.scheduleStep(track, this.step, this.nextStepTime);
-        const secondsPerStep = 60 / track.bpm / 4;
-        const swing = track.swing && this.step % 2 === 1 ? secondsPerStep * track.swing : 0;
-        this.nextStepTime += secondsPerStep + swing;
+    this.schedulerLagMs = 0;
+    this.droppedSteps = 0;
+    this.currentMusicBus = this.createMusicBus(1, this.ctx.currentTime);
+    const schedule = (): void => {
+      if (!this.ctx || !this.musicGain || !this.unlocked || !this.wantsMusic() || !this.currentMusicBus) return;
+      this.cleanupRetiredMusicBuses(this.ctx.currentTime);
+      let track = PROCEDURAL_TRACKS[this.activeScene];
+      const recovery = recoverMusicClock(
+        this.step,
+        this.nextStepTime,
+        this.ctx.currentTime,
+        getMusicStepDuration(track.bpm),
+      );
+      this.step = recovery.step;
+      this.nextStepTime = recovery.nextStepTime;
+      if (recovery.droppedSteps > 0) {
+        this.schedulerLagMs = Math.round(recovery.lagSeconds * 1000);
+        this.droppedSteps += recovery.droppedSteps;
+      }
+      while (this.nextStepTime < this.ctx.currentTime + MUSIC_SCHEDULER_LOOKAHEAD_SECONDS) {
+        if (this.pendingScene && this.step % 4 === 0) {
+          this.transitionToPendingScene(this.nextStepTime);
+          track = PROCEDURAL_TRACKS[this.activeScene];
+        }
+        const secondsPerStep = getMusicStepDuration(track.bpm);
+        const scheduledTime = this.nextStepTime + getMusicSwingOffset(this.step, secondsPerStep, track.swing);
+        this.scheduleStep(track, this.step, scheduledTime, this.currentMusicBus);
+        this.nextStepTime += secondsPerStep;
         this.step = (this.step + 1) % 64;
       }
     };
@@ -165,23 +329,24 @@ export class AudioManager {
     this.musicTimer = setInterval(schedule, 70);
   }
 
-  private scheduleStep(track: ProceduralTrack, step: number, time: number) {
+  private scheduleStep(track: ProceduralTrack, step: number, time: number, bus: GainNode): void {
     const index = step % track.melody.length;
     const melodyDegree = track.melody[index];
     const bassDegree = track.bass[index % track.bass.length];
     const chordRoot = track.chord[Math.floor(step / 4) % track.chord.length];
+    const secondsPerStep = getMusicStepDuration(track.bpm);
 
     if (melodyDegree > -90) {
       const midi = this.degreeToMidi(track, melodyDegree + chordRoot, 12);
-      this.scheduleTone(midiToFrequency(midi), track.leadWave, time, 0.105, track.leadGain, 0.008);
+      this.scheduleTone(midiToFrequency(midi), track.leadWave, time, secondsPerStep * 0.72, track.leadGain, 0.008, bus);
     }
     if (bassDegree > -90 && step % 2 === 0) {
       const midi = this.degreeToMidi(track, bassDegree + chordRoot, -12);
-      this.scheduleTone(midiToFrequency(midi), track.bassWave, time, 0.22, track.bassGain, 0.012);
+      this.scheduleTone(midiToFrequency(midi), track.bassWave, time, secondsPerStep * 1.55, track.bassGain, 0.012, bus);
     }
-    if (step % 4 === 0) this.scheduleKick(time, track.drumGain);
-    if (step % 4 === 2) this.scheduleHat(time, track.drumGain * 0.72);
-    if (step % 8 === 4 && track.drumGain > 0.04) this.scheduleSnare(time, track.drumGain * 0.68);
+    if (step % 4 === 0) this.scheduleKick(time, track.drumGain, bus);
+    if (step % 4 === 2) this.scheduleHat(time, track.drumGain * 0.72, bus);
+    if (step % 8 === 4 && track.drumGain > 0.04) this.scheduleSnare(time, track.drumGain * 0.68, bus);
   }
 
   private degreeToMidi(track: ProceduralTrack, degree: number, octaveOffset: number): number {
@@ -191,8 +356,16 @@ export class AudioManager {
     return track.rootMidi + track.scale[wrapped] + octave * 12 + octaveOffset;
   }
 
-  private scheduleTone(freq: number, wave: OscillatorType, time: number, duration: number, gainValue: number, attack: number) {
-    if (!this.ctx || !this.musicGain) return;
+  private scheduleTone(
+    freq: number,
+    wave: OscillatorType,
+    time: number,
+    duration: number,
+    gainValue: number,
+    attack: number,
+    bus: GainNode,
+  ): void {
+    if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = wave;
@@ -201,13 +374,14 @@ export class AudioManager {
     gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, gainValue), time + attack);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     osc.connect(gain);
-    gain.connect(this.musicGain);
+    gain.connect(bus);
+    this.trackMusicSource(osc);
     osc.start(time);
     osc.stop(time + duration + 0.02);
   }
 
-  private scheduleKick(time: number, amount: number) {
-    if (!this.ctx || !this.musicGain || amount <= 0) return;
+  private scheduleKick(time: number, amount: number, bus: GainNode): void {
+    if (!this.ctx || amount <= 0) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = "sine";
@@ -216,18 +390,19 @@ export class AudioManager {
     gain.gain.setValueAtTime(amount, time);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.13);
     osc.connect(gain);
-    gain.connect(this.musicGain);
+    gain.connect(bus);
+    this.trackMusicSource(osc);
     osc.start(time);
     osc.stop(time + 0.15);
   }
 
-  private scheduleHat(time: number, amount: number) {
-    this.scheduleTone(2600, "square", time, 0.025, Math.max(0.002, amount), 0.002);
+  private scheduleHat(time: number, amount: number, bus: GainNode): void {
+    this.scheduleTone(2600, "square", time, 0.025, Math.max(0.002, amount), 0.002, bus);
   }
 
-  private scheduleSnare(time: number, amount: number) {
-    this.scheduleTone(190, "sawtooth", time, 0.07, Math.max(0.003, amount), 0.002);
-    this.scheduleTone(820, "square", time, 0.035, Math.max(0.002, amount * 0.5), 0.002);
+  private scheduleSnare(time: number, amount: number, bus: GainNode): void {
+    this.scheduleTone(190, "sawtooth", time, 0.07, Math.max(0.003, amount), 0.002, bus);
+    this.scheduleTone(820, "square", time, 0.035, Math.max(0.002, amount * 0.5), 0.002, bus);
   }
 
   playBeep(freq: number, type: OscillatorType, duration: number, vol = 0.1, slideTo?: number) {

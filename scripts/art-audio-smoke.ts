@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { AudioManager } from "../src/game/audio/AudioManager";
+import {
+  AudioManager,
+  MUSIC_SCENE_CROSSFADE_SECONDS,
+  getMusicStepDuration,
+  getMusicSwingOffset,
+  recoverMusicClock,
+} from "../src/game/audio/AudioManager";
 import {
   PROCEDURAL_TRACKS,
   type MusicScene,
@@ -34,6 +40,44 @@ const clamped = normalizeSettings({ musicVolume: 999, musicMode: "external" });
 assert.equal(clamped.musicVolume, 100);
 assert.equal(clamped.musicMode, "adaptive", "legacy external mode migrates to pure Web Audio");
 assert.equal(createDefaultSettings().musicMode, "adaptive");
+
+assert.equal(getMusicStepDuration(120), 0.125);
+assert.equal(getMusicSwingOffset(1, 0.125, 0.1), 0.0125);
+assert.equal(getMusicSwingOffset(2, 0.125, 0.1), 0);
+assert.ok(MUSIC_SCENE_CROSSFADE_SECONDS >= 0.15 && MUSIC_SCENE_CROSSFADE_SECONDS <= 0.35);
+const currentClock = recoverMusicClock(7, 1, 1.1, 0.125);
+assert.equal(currentClock.step, 7);
+assert.equal(currentClock.nextStepTime, 1);
+assert.equal(currentClock.droppedSteps, 0);
+assert.ok(Math.abs(currentClock.lagSeconds - 0.1) < 1e-9);
+const recoveredClock = recoverMusicClock(7, 1, 2, 0.125);
+assert.equal(recoveredClock.step, 15);
+assert.equal(recoveredClock.nextStepTime, 2.04);
+assert.equal(recoveredClock.droppedSteps, 8);
+
+const audibilityAudio = new AudioManager() as any;
+let musicStarts = 0;
+let musicStops = 0;
+audibilityAudio.ctx = { state: "running" };
+audibilityAudio.unlocked = true;
+audibilityAudio.startProceduralMusic = () => {
+  musicStarts++;
+  audibilityAudio.musicTimer = 1;
+};
+audibilityAudio.stopMusic = () => {
+  musicStops++;
+  audibilityAudio.musicTimer = null;
+};
+audibilityAudio.setMusicVolume(0);
+audibilityAudio.setMusicVolume(0.4);
+assert.equal(musicStarts, 1, "music restarts when volume rises from zero");
+audibilityAudio.setMusicVolume(0);
+assert.equal(musicStops, 1, "muting stops the procedural scheduler");
+audibilityAudio.setMusicVolume(0.4);
+audibilityAudio.setMusicScene("boss");
+assert.equal(audibilityAudio.pendingScene, "boss", "running music queues scene changes on a beat");
+audibilityAudio.setMusicScene("title");
+assert.equal(audibilityAudio.pendingScene, null, "returning to the active scene cancels a queued transition");
 
 const audio = new AudioManager();
 audio.setMusicScene("boss");
@@ -141,6 +185,9 @@ assert.doesNotMatch(sw, /music-tracks\.json/);
 console.log(JSON.stringify({
   proceduralThemes: "ok",
   pureWebAudioMusic: "ok",
+  schedulerRecovery: "ok",
+  quantizedCrossfade: "ok",
+  zeroVolumeRecovery: "ok",
   settingsMigration: "ok",
   particleFx: "ok",
   spriteOutlines: "ok",
