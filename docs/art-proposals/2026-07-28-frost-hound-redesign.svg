@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<rect width="1200" height="760" fill="#101820"/>
+<rect x="28" y="28" width="1144" height="704" rx="18" fill="#172632" stroke="#5d8998" stroke-width="3"/>
+<text x="60" y="76" fill="#eefcff" font-family="monospace" font-size="30" font-weight="700">FROST HOUND — ART REDESIGN CONCEPT</text>
+<text x="60" y="108" fill="#9bcddd" font-family="monospace" font-size="16">low snow predator / charge telegraph / crystal mane separation</text>
+
+<g transform="translate(80 160)">
+<text x="0" y="0" fill="#dff8ff" font-family="monospace" font-size="20" font-weight="700">PRIMARY SILHOUETTE</text>
+<ellipse cx="250" cy="350" rx="190" ry="32" fill="#0b1117" opacity=".75"/>
+<!-- tail -->
+<path d="M120 292 L70 270 L52 235 L82 246 L105 225 L129 271 Z" fill="#83cada" stroke="#071117" stroke-width="8" stroke-linejoin="round"/>
+<path d="M63 239 L80 228 L75 252" fill="#efffff"/>
+<!-- legs -->
+<g stroke="#071117" stroke-width="8" stroke-linejoin="round">
+<path d="M150 315 L148 365 L120 370 L128 348 L130 310 Z" fill="#4e8da5"/>
+<path d="M215 316 L208 371 L179 371 L190 347 L193 310 Z" fill="#6db5ca"/>
+<path d="M330 312 L339 369 L308 369 L311 345 L305 307 Z" fill="#72bdd0"/>
+<path d="M390 305 L410 360 L378 366 L379 340 L366 304 Z" fill="#8acddd"/>
+</g>
+<!-- body -->
+<path d="M116 263 L146 219 L226 207 L315 218 L365 250 L350 314 L267 328 L166 315 L122 295 Z" fill="#4f91aa" stroke="#071117" stroke-width="10" stroke-linejoin="round"/>
+<path d="M145 245 L215 222 L287 226 L326 247 L310 289 L236 306 L164 294 Z" fill="#73bfd2"/>
+<path d="M240 226 L316 239 L341 267 L319 303 L287 306 Z" fill="#376f89"/>
+<!-- separated crystal mane -->
+<g fill="#bdeef6" stroke="#071117" stroke-width="7" stroke-linejoin="round">
+<path d="M130 250 L142 188 L165 232 L181 170 L203 226 L225 181 L242 230 L263 190 L278 236 Z"/>
+</g>
+<g fill="#f3ffff">
+<path d="M147 218 L153 196 L159 225 Z"/><path d="M187 203 L192 180 L198 218 Z"/><path d="M234 212 L240 193 L245 225 Z"/>
+</g>
+<!-- head lowered for charge -->
+<path d="M335 231 L401 209 L456 225 L480 262 L455 304 L385 309 L344 282 Z" fill="#67adc2" stroke="#071117" stroke-width="10" stroke-linejoin="round"/>
+<path d="M375 232 L425 225 L455 246 L442 274 L391 283 L364 266 Z" fill="#9edbe7"/>
+<!-- ears -->
+<path d="M365 230 L372 180 L400 220 Z" fill="#9edbe7" stroke="#071117" stroke-width="8"/>
+<path d="M420 218 L451 179 L450 236 Z" fill="#85c9d9" stroke="#071117" stroke-width="8"/>
+<!-- muzzle / jaw negative space -->
+<path d="M437 257 L500 257 L522 278 L500 300 L448 294 Z" fill="#396f86" stroke="#071117" stroke-width="9" stroke-linejoin="round"/>
+<path d="M455 278 L504 278 L491 292 L450 290 Z" fill="#09151d"/>
+<path d="M460 261 L466 278 L473 261 M490 261 L496 278 L502 261" fill="#f5ffff" stroke="#f5ffff" stroke-width="3"/>
+<rect x="430" y="241" width="9" height="9" fill="#efffff" stroke="#071117" stroke-width="4"/>
+<!-- collar telegraph -->
+<path d="M325 240 L348 221 L360 311 L332 302 Z" fill="#193847" stroke="#071117" stroke-width="8"/>
+<rect x="331" y="246" width="17" height="12" fill="#e8ffff"/>
+<rect x="333" y="270" width="13" height="9" fill="#8fe7f3"/>
+<!-- charge line -->
+<path d="M475 337 H590" stroke="#90e8f4" stroke-width="5" stroke-dasharray="14 10"/>
+<path d="M590 337 l-20 -12 v24 z" fill="#efffff"/>
+<text x="0" y="425" fill="#a9dce8" font-family="monospace" font-size="16">Low shoulder line, forward jaw wedge, separated mane spikes, broken-ice tail.</text>
+</g>
+
+<g transform="translate(700 150)">
+<text x="0" y="0" fill="#dff8ff" font-family="monospace" font-size="20" font-weight="700">PALETTE</text>
+<g font-family="monospace" font-size="15" fill="#dff8ff">
+<rect x="0" y="26" width="48" height="48" fill="#071117"/><text x="60" y="56">outline #071117</text>
+<rect x="0" y="86" width="48" height="48" fill="#376f89"/><text x="60" y="116">deep ice #376F89</text>
+<rect x="0" y="146" width="48" height="48" fill="#67adc2"/><text x="60" y="176">body #67ADC2</text>
+<rect x="0" y="206" width="48" height="48" fill="#9edbe7"/><text x="60" y="236">facet #9EDBE7</text>
+<rect x="0" y="266" width="48" height="48" fill="#efffff"/><text x="60" y="296">warning #EFFFFF</text>
+</g>
+
+<text x="0" y="360" fill="#dff8ff" font-family="monospace" font-size="20" font-weight="700">0.50s CHARGE READ</text>
+<g font-family="monospace" font-size="14" fill="#b8e7ef">
+<text x="0" y="395">A  0.00–0.14  shoulder compresses</text>
+<text x="0" y="423">B  0.14–0.30  claws brace; collar fills</text>
+<text x="0" y="451">C  0.30–0.43  dashed 60px path appears</text>
+<text x="0" y="479">D  0.43–0.50  eye + collar white flash</text>
+</g>
+
+<text x="0" y="536" fill="#dff8ff" font-family="monospace" font-size="20" font-weight="700">READABILITY RULES</text>
+<g font-family="monospace" font-size="14" fill="#b8e7ef">
+<text x="0" y="570">• keep ground path thin; no full cone</text>
+<text x="0" y="598">• preserve 1px gaps between mane shards</text>
+<text x="0" y="626">• Bark Hound = muzzle cage; Frost = collar core</text>
+<text x="0" y="654">• death: facets break outward, body drops inward</text>
+</g>
+</g>
+</svg>
