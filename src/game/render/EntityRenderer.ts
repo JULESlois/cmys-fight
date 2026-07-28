@@ -13,11 +13,13 @@ import {
 import { usesDetailedCharacterArt } from "../data/characters";
 import { getEnemyDefinition, getEnemyRenderScale } from "../data/enemies";
 import { SpriteRenderer } from "./SpriteRenderer";
+import { drawBellRepeaterArtFx } from "./BellRepeaterArt";
 import { MonsterModelRenderer, usesNativeMonsterArt } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
 import { ProjectileArtRenderer } from "./ProjectileArtRenderer";
 
 export class EntityRenderer {
+  private static reducedFlashing = false;
   private static hexToRgbTriplet(color: string): string {
     const value = color.replace("#", "");
     if (!/^[0-9a-f]{6}$/i.test(value)) return "231,76,60";
@@ -178,6 +180,7 @@ export class EntityRenderer {
 
   public static drawPlayer(ctx: CanvasRenderingContext2D, player: Player, engine: any, theme: string) {
     if (player.hp <= 0) return;
+    EntityRenderer.reducedFlashing = engine.data.settings.reducedFlashing;
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
     const hasExtendedPlayerAnimation = usesDetailedCharacterArt(player.characterId);
@@ -295,6 +298,26 @@ export class EntityRenderer {
     const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
+    if (weapon?.id === "bell_repeater" && layer === "front") {
+      const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+      const resourceRatio = slot?.resourceState.max > 0
+        ? slot.resourceState.value / slot.resourceState.max
+        : 1;
+      const reloadTimer = Math.max(0, Number(slot?.customState.reloadTimer) || 0);
+      const reloadProgress = reloadTimer > 0
+        ? 1 - reloadTimer / Math.max(0.1, weapon.reloadTime ?? 1.5)
+        : 0;
+      ctx.save();
+      drawBellRepeaterArtFx(ctx, renderX, renderY, {
+        time: player.animTimer,
+        resourceRatio,
+        reloadProgress,
+        shotCount: Number(slot?.customState.bellRepeaterShotCount) || 0,
+        muzzleFlash: player.muzzleFlash,
+        reducedFlashing: EntityRenderer.reducedFlashing,
+      });
+      ctx.restore();
+    }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;

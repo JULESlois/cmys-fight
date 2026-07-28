@@ -734,10 +734,32 @@ const ORIGINAL_SPRITES: Record<string, string[]> = {
     c.rect(9, 5, 6, 2, "6"); c.rect(18, 5, 6, 3, "7"); c.rect(21, 6, 3, 1, "9");
     c.polygon([[8,10],[13,10],[12,14],[9,14]], "3");
   }),
-  bell_repeater: drawWeapon(27, 16, c => {
-    c.polygon([[2,8],[7,5],[11,6],[11,10],[6,12],[2,11]], "6"); c.circle(12, 7, 4, "4");
-    c.circle(12, 7, 2, "7"); c.rect(15, 5, 11, 3, "3"); c.rect(18, 6, 8, 1, "8");
-    c.polygon([[9,10],[14,10],[13,14],[10,14]], "5");
+  bell_repeater: drawWeapon(28, 17, c => {
+    // Short flared stock with a separate steel neck.
+    c.polygon([[1,8],[5,5],[10,5],[12,7],[10,10],[5,12],[1,11]], "2");
+    c.polygon([[3,8],[6,6],[10,6],[10,8],[7,10],[3,10]], "3");
+    c.rect(9, 7, 3, 3, "5");
+
+    // Crown, bell-shaped receiver, thick lower lip and independently readable clapper.
+    c.rect(12, 3, 5, 2, "6");
+    c.rect(13, 2, 3, 1, "7");
+    c.polygon([[11,5],[17,5],[19,8],[18,11],[10,11],[9,8]], "6");
+    c.polygon([[12,5],[16,5],[18,8],[17,10],[11,10],[10,8]], "7");
+    c.rect(10, 11, 9, 2, "5");
+    c.rect(13, 7, 3, 3, "8");
+
+    // Cold-grey barrel terminating in two separated tuning-fork tines.
+    c.rect(18, 6, 7, 4, "4");
+    c.rect(19, 6, 6, 1, "5");
+    c.rect(24, 4, 4, 3, "6");
+    c.rect(24, 9, 4, 3, "6");
+    c.rect(25, 5, 3, 1, "7");
+    c.rect(25, 10, 3, 1, "7");
+
+    // Grip and short, wide 25-round box magazine remain visually separate.
+    c.polygon([[9,11],[13,11],[12,16],[9,16]], "4");
+    c.polygon([[15,12],[20,12],[19,16],[15,16]], "6");
+    c.rect(16, 13, 3, 1, "7");
   }),
   mask_sprayer: drawWeapon(25, 18, c => {
     c.circle(8, 7, 5, "3"); c.circle(8, 7, 3, "5"); c.rect(12, 5, 10, 5, "4");
@@ -974,7 +996,7 @@ export const WEAPON_PALETTES: Record<string, WeaponSpritePalette> = {
   pistol: { ...BASE_OUTLINE, "2":"#292D33","3":"#4B535E","4":"#8D98A4","5":"#D3DAE2","6":"#5B3527","7":"#A85E36" },
   shotgun: { ...BASE_OUTLINE, "2":"#171A1F","3":"#3B424A","4":"#6C7781","5":"#AEB8C0","6":"#5A2D1E","7":"#9A5532" },
   laser: { ...BASE_OUTLINE, "2":"#17243A","3":"#2F4C68","4":"#00B8D9","5":"#B8E7F2","6":"#38F5FF","7":"#F2FCFF","9":"#FFFFFF" },
-  bell_repeater: { ...BASE_OUTLINE, "2":"#261A10","3":"#5D4630","4":"#A87321","5":"#E6B84B","6":"#6D3A20","7":"#FFE081","8":"#FFF3B0" },
+  bell_repeater: { ...BASE_OUTLINE, "2":"#6B4A32","3":"#A97845","4":"#4E5966","5":"#778493","6":"#9C6A20","7":"#D4A438","8":"#FFF3B0" },
   mask_sprayer: { ...BASE_OUTLINE, "2":"#20242B","3":"#324C39","4":"#5D6A62","5":"#7EC25A","6":"#71492B","7":"#E7D35D","8":"#E85D44" },
   code_scanner: { ...BASE_OUTLINE, "2":"#252A31","3":"#3B4652","4":"#6AAFC8","5":"#D9E1E8","6":"#2B79A8","7":"#71E5F2","8":"#FF4057" },
   swab_lance: { ...BASE_OUTLINE, "2":"#2C333B","3":"#66727E","4":"#B6DCE3","5":"#F5FBFC","6":"#4CAAC4","7":"#9DECF2","9":"#FFFFFF" },
@@ -1043,7 +1065,7 @@ export const WEAPON_ART_ANCHORS: Record<string, WeaponArtAnchor> = {
   pistol: { grip: [10, 11], muzzle: [20, 6] },
   shotgun: { grip: [13, 11], muzzle: [29, 6] },
   laser: { grip: [10, 11], muzzle: [24, 6] },
-  bell_repeater: { grip: [11, 11], muzzle: [26, 6] },
+  bell_repeater: { grip: [11, 12], muzzle: [27, 8] },
   mask_sprayer: { grip: [12, 13], muzzle: [24, 7] },
   code_scanner: { grip: [10, 12], muzzle: [23, 6] },
   swab_lance: { grip: [10, 11], muzzle: [29, 8] },
