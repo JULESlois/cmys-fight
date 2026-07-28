@@ -8,6 +8,7 @@ import {
   recoverMusicClock,
 } from "../src/game/audio/AudioManager";
 import {
+  getProceduralTrackLoopSeconds,
   PROCEDURAL_TRACKS,
   type MusicScene,
 } from "../src/game/audio/MusicLibrary";
@@ -27,9 +28,29 @@ for (const scene of expectedScenes) {
   const track = PROCEDURAL_TRACKS[scene];
   assert.ok(track.bpm >= 60 && track.bpm <= 180, `${scene} bpm`);
   assert.ok(track.scale.length >= 5, `${scene} scale`);
-  assert.ok(track.melody.length >= 16, `${scene} melody`);
-  assert.ok(track.bass.length >= 16, `${scene} bass`);
+  assert.equal(track.melody.length, 64, `${scene} has a four-bar melody`);
+  assert.equal(track.bass.length, 64, `${scene} has a four-bar bass line`);
+  assert.equal(track.chord.length, 16, `${scene} has a four-bar chord progression`);
+  assert.equal(track.arpeggio.length, 16, `${scene} arpeggio grid`);
+  assert.equal(track.kick.length, 16, `${scene} kick grid`);
+  assert.equal(track.snare.length, 16, `${scene} snare grid`);
+  assert.equal(track.hat.length, 16, `${scene} hat grid`);
+  assert.ok(getProceduralTrackLoopSeconds(track) >= 6, `${scene} loop duration`);
+  assert.ok(track.intensity >= 0 && track.intensity <= 1, `${scene} intensity`);
+  assert.ok(track.filterHz >= 600 && track.filterHz <= 8000, `${scene} filter`);
   assert.ok(track.leadGain > 0 && track.bassGain > 0, `${scene} gains`);
+  for (const velocity of [...track.kick, ...track.snare, ...track.hat]) {
+    assert.ok(velocity >= 0 && velocity <= 1, `${scene} drum velocity`);
+  }
+}
+
+for (const family of ["forest", "dungeon", "snow", "lava"] as const) {
+  const exploration = PROCEDURAL_TRACKS[family];
+  const combat = PROCEDURAL_TRACKS[`combat_${family}`];
+  assert.equal(combat.family, exploration.family, `${family} combat keeps its theme family`);
+  assert.ok(combat.intensity > exploration.intensity, `${family} combat raises intensity`);
+  assert.ok(combat.bpm > exploration.bpm, `${family} combat raises tempo`);
+  assert.equal(combat.melody[0], exploration.melody[0], `${family} combat retains the motif opening`);
 }
 
 const migrated = normalizeSettings({ version: 1, masterVolume: 80 });
@@ -181,10 +202,18 @@ assert.match(entityRenderer, /flipX: player\.facing === "left"/);
 
 const sw = readFileSync("public/sw.js", "utf8");
 assert.doesNotMatch(sw, /music-tracks\.json/);
+const audioManagerSource = readFileSync("src/game/audio/AudioManager.ts", "utf8");
+assert.doesNotMatch(audioManagerSource, /HTMLAudioElement|new Audio\(|music-tracks|netease|externalAudio/);
+assert.match(audioManagerSource, /createConvolver\(\)/, "music uses an in-memory Web Audio reverb");
+assert.match(audioManagerSource, /createBufferSource\(\)/, "percussion uses generated Web Audio noise");
+assert.match(audioManagerSource, /createBiquadFilter\(\)/, "voices use native Web Audio filtering");
+assert.match(audioManagerSource, /createStereoPanner\(\)/, "voices use native Web Audio panning");
 
 console.log(JSON.stringify({
-  proceduralThemes: "ok",
+  proceduralThemes: "four-bar-families",
   pureWebAudioMusic: "ok",
+  synthesizedPercussion: "ok",
+  nativeFilteringAndSpace: "ok",
   schedulerRecovery: "ok",
   quantizedCrossfade: "ok",
   zeroVolumeRecovery: "ok",

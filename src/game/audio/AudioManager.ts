@@ -76,6 +76,9 @@ export class AudioManager {
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private limiter: DynamicsCompressorNode | null = null;
+  private musicReverb: ConvolverNode | null = null;
+  private reverbReturn: GainNode | null = null;
+  private noiseBuffer: AudioBuffer | null = null;
   private enabled = true;
   private masterVolume = 1;
   private musicVolume = 0.55;
@@ -103,12 +106,19 @@ export class AudioManager {
         this.masterGain = this.ctx.createGain();
         this.musicGain = this.ctx.createGain();
         this.limiter = this.ctx.createDynamicsCompressor();
+        this.musicReverb = this.ctx.createConvolver();
+        this.reverbReturn = this.ctx.createGain();
+        this.noiseBuffer = this.createDeterministicNoiseBuffer(0.32, 0x51f15e);
+        this.musicReverb.buffer = this.createReverbImpulse(0.58, 0x4d555349);
+        this.reverbReturn.gain.value = 0.065;
         this.limiter.threshold.value = -7;
         this.limiter.knee.value = 12;
         this.limiter.ratio.value = 8;
         this.limiter.attack.value = 0.004;
         this.limiter.release.value = 0.16;
         this.musicGain.connect(this.masterGain);
+        this.musicReverb.connect(this.reverbReturn);
+        this.reverbReturn.connect(this.musicGain);
         this.masterGain.connect(this.limiter);
         this.limiter.connect(this.ctx.destination);
         this.applyVolumes();
@@ -260,6 +270,7 @@ export class AudioManager {
     const bus = this.ctx.createGain();
     bus.gain.setValueAtTime(Math.max(0.0001, initialGain), time);
     bus.connect(this.musicGain);
+    if (this.musicReverb) bus.connect(this.musicReverb);
     return bus;
   }
 
@@ -334,19 +345,46 @@ export class AudioManager {
     const melodyDegree = track.melody[index];
     const bassDegree = track.bass[index % track.bass.length];
     const chordRoot = track.chord[Math.floor(step / 4) % track.chord.length];
+    const arpDegree = track.arpeggio[step % track.arpeggio.length];
+    const kickVelocity = track.kick[step % track.kick.length];
+    const snareVelocity = track.snare[step % track.snare.length];
+    const hatVelocity = track.hat[step % track.hat.length];
     const secondsPerStep = getMusicStepDuration(track.bpm);
 
     if (melodyDegree > -90) {
       const midi = this.degreeToMidi(track, melodyDegree + chordRoot, 12);
-      this.scheduleTone(midiToFrequency(midi), track.leadWave, time, secondsPerStep * 0.72, track.leadGain, 0.008, bus);
+      this.scheduleTone(
+        midiToFrequency(midi), track.leadWave, time, secondsPerStep * track.leadGate,
+        track.leadGain, 0.008, track.filterHz, Math.sin(step * 0.71) * 0.22, bus,
+      );
     }
-    if (bassDegree > -90 && step % 2 === 0) {
+    if (bassDegree > -90) {
       const midi = this.degreeToMidi(track, bassDegree + chordRoot, -12);
-      this.scheduleTone(midiToFrequency(midi), track.bassWave, time, secondsPerStep * 1.55, track.bassGain, 0.012, bus);
+      this.scheduleTone(
+        midiToFrequency(midi), track.bassWave, time, secondsPerStep * track.bassGate,
+        track.bassGain, 0.012, Math.min(960, track.filterHz * 0.48), 0, bus,
+      );
     }
-    if (step % 4 === 0) this.scheduleKick(time, track.drumGain, bus);
-    if (step % 4 === 2) this.scheduleHat(time, track.drumGain * 0.72, bus);
-    if (step % 8 === 4 && track.drumGain > 0.04) this.scheduleSnare(time, track.drumGain * 0.68, bus);
+    if (arpDegree > -90 && track.arpGain > 0) {
+      const midi = this.degreeToMidi(track, arpDegree + chordRoot, 12);
+      this.scheduleTone(
+        midiToFrequency(midi), track.arpWave, time, secondsPerStep * track.arpGate,
+        track.arpGain, 0.004, Math.min(5200, track.filterHz * 1.2), step % 2 === 0 ? -0.34 : 0.34, bus,
+      );
+    }
+    if (step % 4 === 0 && track.padGain > 0) {
+      const padDuration = secondsPerStep * track.padGate;
+      [0, 2, 4].forEach((degree, voice) => {
+        const midi = this.degreeToMidi(track, chordRoot + degree, 0);
+        this.scheduleTone(
+          midiToFrequency(midi), track.padWave, time, padDuration,
+          track.padGain / 2.4, 0.055, Math.min(3400, track.filterHz * 0.76), (voice - 1) * 0.32, bus,
+        );
+      });
+    }
+    if (kickVelocity > 0) this.scheduleKick(time, track.drumGain * kickVelocity, bus);
+    if (hatVelocity > 0) this.scheduleHat(time, track.drumGain * hatVelocity, bus);
+    if (snareVelocity > 0) this.scheduleSnare(time, track.drumGain * snareVelocity, bus);
   }
 
   private degreeToMidi(track: ProceduralTrack, degree: number, octaveOffset: number): number {
@@ -363,18 +401,28 @@ export class AudioManager {
     duration: number,
     gainValue: number,
     attack: number,
+    filterHz: number,
+    pan: number,
     bus: GainNode,
   ): void {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
+    const panner = this.ctx.createStereoPanner();
     osc.type = wave;
     osc.frequency.setValueAtTime(freq, time);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(Math.max(120, Math.min(this.ctx.sampleRate * 0.45, filterHz)), time);
+    filter.Q.value = 0.65;
+    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), time);
     gain.gain.setValueAtTime(0.0001, time);
     gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, gainValue), time + attack);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-    osc.connect(gain);
-    gain.connect(bus);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(panner);
+    panner.connect(bus);
     this.trackMusicSource(osc);
     osc.start(time);
     osc.stop(time + duration + 0.02);
@@ -397,12 +445,72 @@ export class AudioManager {
   }
 
   private scheduleHat(time: number, amount: number, bus: GainNode): void {
-    this.scheduleTone(2600, "square", time, 0.025, Math.max(0.002, amount), 0.002, bus);
+    this.scheduleNoise(time, 0.032, amount, "highpass", 5200, 0.38, bus);
   }
 
   private scheduleSnare(time: number, amount: number, bus: GainNode): void {
-    this.scheduleTone(190, "sawtooth", time, 0.07, Math.max(0.003, amount), 0.002, bus);
-    this.scheduleTone(820, "square", time, 0.035, Math.max(0.002, amount * 0.5), 0.002, bus);
+    this.scheduleNoise(time, 0.11, amount, "bandpass", 1850, -0.12, bus);
+    this.scheduleTone(175, "triangle", time, 0.075, Math.max(0.002, amount * 0.45), 0.002, 720, -0.08, bus);
+  }
+
+  private scheduleNoise(
+    time: number,
+    duration: number,
+    gainValue: number,
+    filterType: BiquadFilterType,
+    filterHz: number,
+    pan: number,
+    bus: GainNode,
+  ): void {
+    if (!this.ctx || !this.noiseBuffer || gainValue <= 0) return;
+    const source = this.ctx.createBufferSource();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+    const panner = this.ctx.createStereoPanner();
+    source.buffer = this.noiseBuffer;
+    filter.type = filterType;
+    filter.frequency.setValueAtTime(filterHz, time);
+    filter.Q.value = filterType === "bandpass" ? 0.8 : 0.35;
+    panner.pan.setValueAtTime(pan, time);
+    gain.gain.setValueAtTime(Math.max(0.0002, gainValue), time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(panner);
+    panner.connect(bus);
+    this.trackMusicSource(source);
+    source.start(time);
+    source.stop(time + duration + 0.01);
+  }
+
+  private createDeterministicNoiseBuffer(durationSeconds: number, seed: number): AudioBuffer | null {
+    if (!this.ctx) return null;
+    const frameCount = Math.max(1, Math.ceil(this.ctx.sampleRate * durationSeconds));
+    const buffer = this.ctx.createBuffer(1, frameCount, this.ctx.sampleRate);
+    const samples = buffer.getChannelData(0);
+    let state = seed >>> 0;
+    for (let index = 0; index < frameCount; index++) {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      samples[index] = state / 0x80000000 - 1;
+    }
+    return buffer;
+  }
+
+  private createReverbImpulse(durationSeconds: number, seed: number): AudioBuffer | null {
+    if (!this.ctx) return null;
+    const frameCount = Math.max(1, Math.ceil(this.ctx.sampleRate * durationSeconds));
+    const buffer = this.ctx.createBuffer(2, frameCount, this.ctx.sampleRate);
+    let state = seed >>> 0;
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const samples = buffer.getChannelData(channel);
+      for (let index = 0; index < frameCount; index++) {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        const noise = state / 0x80000000 - 1;
+        const envelope = Math.pow(1 - index / frameCount, 2.7);
+        samples[index] = noise * envelope;
+      }
+    }
+    return buffer;
   }
 
   playBeep(freq: number, type: OscillatorType, duration: number, vol = 0.1, slideTo?: number) {
@@ -490,6 +598,12 @@ export class AudioManager {
     this.stopMusic();
     void this.ctx?.close();
     this.ctx = null;
+    this.masterGain = null;
+    this.musicGain = null;
+    this.musicReverb = null;
+    this.reverbReturn = null;
+    this.noiseBuffer = null;
+    this.limiter = null;
   }
 }
 
