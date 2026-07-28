@@ -295,6 +295,9 @@ export class EntityRenderer {
     const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
+    if (player.currentWeaponId === "mask_sprayer" && layer === "front") {
+      EntityRenderer.drawMaskSprayerState(ctx, player, renderX, renderY);
+    }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
@@ -317,6 +320,17 @@ export class EntityRenderer {
         ctx.fillRect(mx + 4, my - 3, 5, 6);
         ctx.fillStyle = "#FF7043";
         ctx.fillRect(mx + 9, my - 1, 4, 3);
+      } else if (player.currentWeaponId === "mask_sprayer") {
+        ctx.fillStyle = "rgba(217,248,255,0.9)";
+        ctx.fillRect(mx, my - 1, 4, 3);
+        ctx.fillRect(mx + 4, my - 2, 3, 2);
+        ctx.fillStyle = "rgba(127,231,243,0.72)";
+        ctx.fillRect(mx + 3, my + 2, 3, 2);
+        ctx.fillRect(mx + 7, my - 4, 2, 2);
+        ctx.fillRect(mx + 8, my + 2, 2, 2);
+        ctx.fillStyle = "rgba(217,248,255,0.45)";
+        ctx.fillRect(mx + 11, my - 3, 1, 1);
+        ctx.fillRect(mx + 12, my + 3, 1, 1);
       } else if (effect === "rocket" || effect === "smoke") {
         ctx.fillStyle = effect === "rocket" ? "#FFB347" : "#E6E6E6";
         ctx.fillRect(mx, my - 2, 4, 4);
@@ -326,6 +340,75 @@ export class EntityRenderer {
       } else {
         ctx.fillStyle = "#F1C40F";
         ctx.fillRect(mx, my - 2, 4, 4); ctx.fillRect(mx + 4, my - 4, 2, 8); ctx.fillRect(mx + 6, my, 2, 4);
+      }
+    }
+    ctx.restore();
+  }
+
+  private static drawMaskSprayerState(
+    ctx: CanvasRenderingContext2D,
+    player: Player,
+    renderX: number,
+    renderY: number,
+  ): void {
+    const slot = player.weaponLoadout.slots[player.weaponLoadout.activeSlot];
+    if (!slot || slot.weaponId !== "mask_sprayer") return;
+    const heatRatio = slot.resourceState.max > 0
+      ? Math.max(0, Math.min(1, slot.resourceState.value / slot.resourceState.max))
+      : 0;
+    const overheatTimer = Math.max(0, Number(slot.customState.overheatTimer) || 0);
+    const overheated = overheatTimer > 0;
+    const highHeat = heatRatio >= 0.7 && !overheated;
+    const cooling = heatRatio > 0 && !overheated && player.muzzleFlash <= 0;
+    const pulse = 0.5 + 0.5 * Math.sin(player.animTimer * 3.5);
+    const left = Math.round(renderX) - 12;
+    const top = Math.round(renderY) - 9;
+
+    ctx.save();
+    if (overheated) {
+      ctx.fillStyle = "#0B1116";
+      ctx.fillRect(left + 21, top + 6, 4, 5);
+      ctx.fillStyle = "#EF6B63";
+      ctx.fillRect(left + 22, top + 7, 3, 2);
+      const lockout = WEAPONS.mask_sprayer.overheatLockout ?? 2.5;
+      const phase = 1 - Math.min(1, overheatTimer / lockout);
+      const ringPhase = phase % 0.2;
+      const radius = 6 + Math.floor(ringPhase * 20);
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * Math.max(0.2, 1 - ringPhase * 4);
+      ctx.strokeStyle = "#EF6B63";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left + 7 - radius, top + 7 - radius, radius * 2, radius * 2);
+      ctx.globalAlpha = previousAlpha;
+
+      const ventPhase = overheatTimer % 0.45;
+      if (ventPhase < 0.18) {
+        const rise = Math.floor(ventPhase / 0.06);
+        ctx.fillStyle = "rgba(217,248,255,0.65)";
+        ctx.fillRect(left + 13, top + 3 - rise, 2, 1);
+        ctx.fillRect(left + 15, top + 1 - rise, 1, 1);
+      }
+    } else {
+      const eyeColor = highHeat ? "#F2C35F" : pulse > 0.58 ? "#D9F8FF" : "#7FE7F3";
+      ctx.fillStyle = eyeColor;
+      ctx.fillRect(left + 6, top + 5, 1, 1);
+      ctx.fillRect(left + 9, top + 5, 1, 1);
+      ctx.fillStyle = highHeat ? "#F2C35F" : "#7FE7F3";
+      const gaugeHeight = Math.max(1, Math.ceil(heatRatio * 4));
+      ctx.fillRect(left + 11, top + 16 - gaugeHeight, 2, gaugeHeight);
+
+      if (highHeat && player.muzzleFlash > 0) {
+        ctx.fillStyle = "#F2C35F";
+        ctx.fillRect(left + 3, top + 4, 1, 6);
+        ctx.fillRect(left + 10, top + 4, 1, 6);
+      }
+
+      if (cooling) {
+        const travel = Math.floor((player.animTimer * 10) % 6);
+        ctx.fillStyle = "rgba(127,231,243,0.72)";
+        ctx.fillRect(left + 20 - travel, top + 6, 1, 1);
+        ctx.fillRect(left + 18 - ((travel + 2) % 6), top + 9, 1, 1);
+        if (heatRatio > 0.35) ctx.fillRect(left + 22 - ((travel + 4) % 7), top + 8, 1, 1);
       }
     }
     ctx.restore();
