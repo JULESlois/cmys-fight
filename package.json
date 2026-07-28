@@ -7,7 +7,7 @@
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('server.js',{force:true});\"",
     "lint": "tsc --noEmit",
     "test:release": "node --import tsx scripts/release-smoke.ts",
@@ -52,7 +52,8 @@
     "test:wall-rendering": "node --import tsx scripts/wall-rendering-smoke.ts",
     "test:castlevania": "node --import tsx scripts/castlevania-smoke.ts",
     "test:castlevania-integration": "node --import tsx scripts/castlevania-integration-smoke.ts",
-    "test:story": "node --import tsx scripts/story-smoke.ts"
+    "test:story": "node --import tsx scripts/story-smoke.ts",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@babel/parser": "^8.0.4",
+    "@cloudflare/vite-plugin": "^1.47.0",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.0.0",
@@ -76,6 +78,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "wrangler": "^4.114.0"
   }
 }
