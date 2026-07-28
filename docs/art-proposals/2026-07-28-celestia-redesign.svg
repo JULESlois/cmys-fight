@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<rect width="960" height="540" fill="#0f1724"/>
+<text x="44" y="54" fill="#eaf6ff" font-family="sans-serif" font-size="28" font-weight="700">Celestia — Star Sanctuary Director</text>
+<text x="44" y="84" fill="#9ccbfF" font-family="sans-serif" font-size="15">Silhouette / palette / armor-recharge readability concept</text>
+<g transform="translate(90 130)">
+<ellipse cx="170" cy="340" rx="120" ry="24" fill="#09101a" opacity=".75"/>
+<path d="M125 70 L155 35 L185 70 L207 64 L226 105 L212 145 L222 265 L192 335 L145 335 L116 265 L126 145 L110 105 Z" fill="#d8e9f6" stroke="#26374b" stroke-width="8"/>
+<path d="M126 145 L78 185 L94 245 L138 220 Z" fill="#8fb8d9" stroke="#26374b" stroke-width="8"/>
+<path d="M212 145 L260 185 L246 245 L204 220 Z" fill="#8fb8d9" stroke="#26374b" stroke-width="8"/>
+<path d="M140 112 L170 88 L200 112 L190 156 L150 156 Z" fill="#1a2c42" stroke="#26374b" stroke-width="6"/>
+<circle cx="170" cy="128" r="13" fill="#f5fbff"/>
+<path d="M170 28 L178 48 L200 50 L183 64 L189 85 L170 73 L151 85 L157 64 L140 50 L162 48 Z" fill="#9ed8ff" stroke="#eaf7ff" stroke-width="4"/>
+<path d="M127 164 L92 198 L104 218 L139 191" fill="none" stroke="#eff8ff" stroke-width="10" stroke-linecap="round"/>
+<path d="M211 164 L246 198 L234 218 L199 191" fill="none" stroke="#eff8ff" stroke-width="10" stroke-linecap="round"/>
+<path d="M142 172 L198 172 L205 246 L135 246 Z" fill="#6f98bb" stroke="#26374b" stroke-width="7"/>
+<path d="M142 248 L124 320 L154 336 L170 278 L186 336 L216 320 L198 248 Z" fill="#bfd7ea" stroke="#26374b" stroke-width="7"/>
+<circle cx="98" cy="203" r="18" fill="none" stroke="#9ed8ff" stroke-width="5"/>
+<circle cx="242" cy="203" r="18" fill="none" stroke="#9ed8ff" stroke-width="5"/>
+<path d="M109 250 C75 270 63 300 70 332" fill="none" stroke="#9ed8ff" stroke-width="5" stroke-dasharray="7 7"/>
+<path d="M231 250 C265 270 277 300 270 332" fill="none" stroke="#9ed8ff" stroke-width="5" stroke-dasharray="7 7"/>
+<g transform="translate(250 145) rotate(-8)">
+<path d="M0 34 L32 8 L150 8 L174 24 L152 43 L34 43 Z" fill="#dcecf8" stroke="#26374b" stroke-width="7"/>
+<path d="M45 14 L100 14 L114 37 L58 37 Z" fill="#7bbce8"/>
+<path d="M151 12 L190 18 L190 33 L151 40 Z" fill="#9ed8ff" stroke="#26374b" stroke-width="5"/>
+<path d="M72 42 L88 68 L108 66 L104 42 Z" fill="#45647e" stroke="#26374b" stroke-width="6"/>
+<circle cx="26" cy="25" r="9" fill="#f8fdff"/>
+</g>
+</g>
+<g transform="translate(515 130)" font-family="sans-serif">
+<text x="0" y="0" fill="#ffffff" font-size="20" font-weight="700">Design read</text>
+<text x="0" y="34" fill="#c8d8e8" font-size="16">• Crown star + broad sanctuary sleeves</text>
+<text x="0" y="62" fill="#c8d8e8" font-size="16">• Narrow waist, split coat-tail, stable vertical axis</text>
+<text x="0" y="90" fill="#c8d8e8" font-size="16">• Polaris: compact white-blue bullpup silhouette</text>
+<text x="0" y="132" fill="#ffffff" font-size="20" font-weight="700">Armor feedback</text>
+<text x="0" y="164" fill="#c8d8e8" font-size="16">1. Recharge-ready: wrist halos appear</text>
+<text x="0" y="192" fill="#c8d8e8" font-size="16">2. Recharging: dotted arcs climb toward chest star</text>
+<text x="0" y="220" fill="#c8d8e8" font-size="16">3. Guardian Star: four-point shield flash, 0.25 s</text>
+<text x="0" y="262" fill="#ffffff" font-size="20" font-weight="700">Palette</text>
+<rect x="0" y="282" width="54" height="28" fill="#26374b"/><rect x="62" y="282" width="54" height="28" fill="#6f98bb"/><rect x="124" y="282" width="54" height="28" fill="#9ed8ff"/><rect x="186" y="282" width="54" height="28" fill="#eff8ff"/>
+<text x="0" y="338" fill="#9ed8ff" font-size="14">Focus next: halo size, coat-tail spread, shield flash priority.</text>
+</g>
+</svg>
