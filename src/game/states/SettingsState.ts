@@ -329,7 +329,7 @@ export class SettingsState extends GameState {
     } else if (option === "musicVolume") {
       settings.musicVolume = Math.max(0, Math.min(100, settings.musicVolume + direction * 10));
     } else if (option === "musicSource") {
-      const modes: MusicMode[] = ["adaptive", "external", "off"];
+      const modes: MusicMode[] = ["adaptive", "off"];
       const index = modes.indexOf(settings.musicMode);
       settings.musicMode = modes[(index + direction + modes.length) % modes.length];
     } else if (option === "uiScale") {
@@ -380,7 +380,7 @@ export class SettingsState extends GameState {
     if (option === "language") return t(language, language === "zh-CN" ? "language.chinese" : "language.english");
     if (option === "masterVolume") return `${settings.masterVolume}%`;
     if (option === "musicVolume") return `${settings.musicVolume}%`;
-    if (option === "musicSource") return t(language, settings.musicMode === "adaptive" ? "value.adaptive" : settings.musicMode === "external" ? "value.external" : "common.off");
+    if (option === "musicSource") return t(language, settings.musicMode === "adaptive" ? "value.adaptive" : "common.off");
     if (option === "uiScale") return `${Math.round(settings.uiScale * 100)}%`;
     if (option === "screenShake") return bool(settings.screenShake);
     if (option === "reducedFlash") return bool(settings.reducedFlashing);

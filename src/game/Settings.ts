@@ -97,7 +97,7 @@ export const DEFAULT_KEY_BINDINGS: Record<InputAction, string> = {
 };
 
 export type ColorblindMode = "off" | "deuteranopia" | "tritanopia";
-export type MusicMode = "adaptive" | "external" | "off";
+export type MusicMode = "adaptive" | "off";
 export type TouchHandedness = "right" | "left";
 export type TouchLabelMode = "gamepad" | "keyboard";
 export type Language = "en" | "zh-CN";
@@ -174,7 +174,7 @@ export function normalizeSettings(value: unknown): GameSettings {
   const masterVolume = Number(raw.masterVolume);
   const musicVolume = Number(raw.musicVolume);
   const touchScale = Number(raw.touchScale);
-  const musicMode: MusicMode = raw.musicMode === "external" || raw.musicMode === "off" ? raw.musicMode : "adaptive";
+  const musicMode: MusicMode = raw.musicMode === "off" ? "off" : "adaptive";
   const colorblindMode: ColorblindMode = raw.colorblindMode === "deuteranopia" || raw.colorblindMode === "tritanopia"
     ? raw.colorblindMode
     : "off";

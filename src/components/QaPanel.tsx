@@ -34,7 +34,7 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
   const [snapshot, setSnapshot] = useState<QaSnapshot>(() => createQaSnapshot(engine, canvas));
   const [checks, setChecks] = useState<QaCheck[]>([]);
   const [runningChecks, setRunningChecks] = useState(false);
-  const [probeStatus, setProbeStatus] = useState("NOT RUN");
+  const [actionStatus, setActionStatus] = useState("");
   const [selectedScene, setSelectedScene] = useState<MusicScene>(snapshot.audio.scene);
 
   useEffect(() => {
@@ -89,10 +89,10 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
     const report = JSON.stringify({ snapshot: createQaSnapshot(engine, canvas), checks }, null, 2);
     try {
       await navigator.clipboard.writeText(report);
-      setProbeStatus("REPORT COPIED");
+      setActionStatus("REPORT COPIED");
     } catch {
       downloadBlob(new Blob([report], { type: "application/json" }), `cmys-qa-${Date.now()}.json`);
-      setProbeStatus("REPORT DOWNLOADED");
+      setActionStatus("REPORT DOWNLOADED");
     }
   };
 
@@ -147,7 +147,7 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
       <section className="mt-3">
         <div className="mb-1 text-fuchsia-200">AUDIO</div>
         <div className="flex gap-1">
-          {(["adaptive", "external", "off"] as MusicMode[]).map(mode => (
+          {(["adaptive", "off"] as MusicMode[]).map(mode => (
             <button
               key={mode}
               className={`${buttonClass} ${engine.data.settings.musicMode === mode ? "border-fuchsia-300 text-fuchsia-100" : ""}`}
@@ -172,20 +172,6 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
           </select>
           <button className={buttonClass} onClick={playSfxDemo}>SFX DEMO</button>
         </div>
-        <div className="mt-1 flex gap-1">
-          <button
-            data-testid="qa-audio-fallback"
-            className={buttonClass}
-            onClick={async () => {
-              setProbeStatus("RUNNING");
-              const probe = await audio.probeExternalFallback();
-              setProbeStatus(probe.passed ? `PASS · ${probe.source}` : `FAIL · ${probe.source}`);
-            }}
-          >
-            EXTERNAL FALLBACK
-          </button>
-          <span className={probeStatus.startsWith("FAIL") ? "self-center text-red-300" : "self-center text-slate-400"}>{probeStatus}</span>
-        </div>
       </section>
 
       <section className="mt-3">
@@ -199,6 +185,7 @@ export function QaPanel({ engine, canvas }: QaPanelProps) {
           </button>
           <button className={buttonClass} onClick={captureScreenshot}>SCREENSHOT</button>
           <button className={buttonClass} onClick={copyReport}>COPY REPORT</button>
+          {actionStatus && <span className="self-center text-slate-400">{actionStatus}</span>}
         </div>
         {checks.length > 0 && (
           <div className="mt-2 space-y-1 rounded border border-slate-700 bg-black/30 p-2">

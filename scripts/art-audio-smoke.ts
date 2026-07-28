@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { AudioManager } from "../src/game/audio/AudioManager";
 import {
   PROCEDURAL_TRACKS,
-  resolveExternalMusicUrl,
   type MusicScene,
 } from "../src/game/audio/MusicLibrary";
 import { createDefaultSettings, normalizeSettings, SETTINGS_VERSION } from "../src/game/Settings";
@@ -27,21 +26,13 @@ for (const scene of expectedScenes) {
   assert.ok(track.leadGain > 0 && track.bassGain > 0, `${scene} gains`);
 }
 
-assert.equal(
-  resolveExternalMusicUrl("netease:123456"),
-  "https://music.163.com/song/media/outer/url?id=123456.mp3",
-);
-assert.equal(resolveExternalMusicUrl("https://example.com/theme.mp3"), "https://example.com/theme.mp3");
-assert.equal(resolveExternalMusicUrl("ftp://example.com/theme.mp3"), undefined);
-assert.equal(resolveExternalMusicUrl("netease:not-a-number"), undefined);
-
 const migrated = normalizeSettings({ version: 1, masterVolume: 80 });
 assert.equal(migrated.version, SETTINGS_VERSION);
 assert.equal(migrated.musicVolume, 55);
 assert.equal(migrated.musicMode, "adaptive");
 const clamped = normalizeSettings({ musicVolume: 999, musicMode: "external" });
 assert.equal(clamped.musicVolume, 100);
-assert.equal(clamped.musicMode, "external");
+assert.equal(clamped.musicMode, "adaptive", "legacy external mode migrates to pure Web Audio");
 assert.equal(createDefaultSettings().musicMode, "adaptive");
 
 const audio = new AudioManager();
@@ -53,7 +44,7 @@ audio.setMusicScene("hub");
 assert.equal((audio as any).musicTimer, null, "paused music stays stopped across scene changes");
 audio.setMusicPaused(false);
 assert.equal((audio as any).musicPaused, false);
-audio.setMusicMode("external");
+audio.setMusicMode("off");
 audio.setMusicVolume(0.4);
 audio.setMasterVolume(0.75);
 audio.cleanup();
@@ -144,18 +135,15 @@ assert.ok(
 const entityRenderer = readFileSync("src/game/render/EntityRenderer.ts", "utf8");
 assert.match(entityRenderer, /flipX: player\.facing === "left"/);
 
-const externalConfig = JSON.parse(readFileSync("public/music-tracks.json", "utf8"));
-assert.equal(typeof externalConfig.attribution, "string");
-for (const scene of expectedScenes) assert.ok(scene in externalConfig.tracks, `${scene} external slot`);
 const sw = readFileSync("public/sw.js", "utf8");
-assert.match(sw, /music-tracks\.json/);
+assert.doesNotMatch(sw, /music-tracks\.json/);
 
 console.log(JSON.stringify({
   proceduralThemes: "ok",
-  externalMusicResolver: "ok",
+  pureWebAudioMusic: "ok",
   settingsMigration: "ok",
   particleFx: "ok",
   spriteOutlines: "ok",
   twoEyeChibiFaces: "distinct-mirrored-left-right-no-nose-no-glare",
-  pwaMusicConfig: "ok",
+  pwaPureWebAudio: "ok",
 }));

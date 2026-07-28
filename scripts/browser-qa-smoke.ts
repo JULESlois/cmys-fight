@@ -14,14 +14,9 @@ assert.equal(new Set(QA_MUSIC_SCENES).size, 16);
 assert.ok(QA_MUSIC_SCENES.includes("boss"));
 assert.ok(QA_MUSIC_SCENES.includes("combat_lava"));
 
-const musicConfig = JSON.parse(fs.readFileSync("public/music-tracks.json", "utf8"));
-assert.equal(typeof musicConfig.tracks, "object");
-for (const scene of QA_MUSIC_SCENES) assert.ok(scene in musicConfig.tracks, `Missing music slot: ${scene}`);
-
 const diagnostics = audio.getDiagnostics();
 assert.equal(diagnostics.supported, false);
 assert.equal(diagnostics.source, "unsupported");
-assert.deepEqual(await audio.probeExternalFallback(), { passed: false, source: "unsupported" });
 
 Object.defineProperty(globalThis, "window", {
   configurable: true,
@@ -85,13 +80,13 @@ for (const scene of [
 
 const qaPanel = fs.readFileSync("src/components/QaPanel.tsx", "utf8");
 assert.match(qaPanel, /data-testid="qa-run-checks"/);
-assert.match(qaPanel, /EXTERNAL FALLBACK/);
+assert.doesNotMatch(qaPanel, /EXTERNAL FALLBACK|qa-audio-fallback/);
 assert.match(qaPanel, /SCREENSHOT/);
 assert.match(qaPanel, /window\.__CMYS_QA__/);
 
 const serviceWorker = fs.readFileSync("public/sw.js", "utf8");
 assert.match(serviceWorker, new RegExp(`cmys-fight-v${APP_VERSION.replaceAll(".", "\\.")}`));
-assert.match(serviceWorker, /music-tracks\.json/);
+assert.doesNotMatch(serviceWorker, /music-tracks\.json/);
 
 const server = fs.readFileSync("server.ts", "utf8");
 assert.match(server, /APP_VERSION/);
@@ -101,6 +96,6 @@ console.log(JSON.stringify({
   screenshotScenes: "chest-door-prompt-notice-debug",
   qaPanel: "ok",
   audioDiagnostics: "ok",
-  externalFallbackContract: "ok",
+  pureWebAudioContract: "ok",
   versionContract: APP_VERSION,
 }));

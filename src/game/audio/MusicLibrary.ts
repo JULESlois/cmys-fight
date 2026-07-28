@@ -1,4 +1,4 @@
-export type MusicMode = "adaptive" | "external" | "off";
+export type MusicMode = "adaptive" | "off";
 
 export type MusicScene =
   | "title"
@@ -53,20 +53,3 @@ export const PROCEDURAL_TRACKS: Record<MusicScene, ProceduralTrack> = {
   defeat: { bpm: 68, rootMidi: 43, scale: [0,1,3,5,7,8,10], melody: [4,REST,3,REST,2,REST,1,REST,0,REST,-1,REST,0,REST,REST,REST], bass: [0,REST,REST,REST,3,REST,REST,REST,1,REST,REST,REST,0,REST,REST,REST], chord: [0,3,1,0], leadWave: "triangle", bassWave: "sine", leadGain: .055, bassGain: .09, drumGain: .01 },
   legacy: { bpm: 82, rootMidi: 47, scale: [0,2,3,6,7,9], melody: [0,REST,3,2,REST,4,3,REST,0,REST,5,4,3,REST,2,REST], bass: [0,REST,REST,REST,3,REST,REST,REST,4,REST,REST,REST,2,REST,REST,REST], chord: [0,3,4,2], leadWave: "square", bassWave: "triangle", leadGain: .05, bassGain: .085, drumGain: .018 },
 };
-
-export interface ExternalMusicConfig {
-  attribution?: string;
-  tracks?: Partial<Record<MusicScene, string>>;
-}
-
-export function resolveExternalMusicUrl(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  if (/^netease:\d+$/i.test(trimmed)) {
-    const id = trimmed.slice(trimmed.indexOf(":") + 1);
-    return `https://music.163.com/song/media/outer/url?id=${id}.mp3`;
-  }
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return undefined;
-}

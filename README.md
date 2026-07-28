@@ -12,7 +12,7 @@ The game renders at a fixed 320 × 240 logical resolution and scales to desktop 
 - Eight playable characters, 57 weapons, 36 enemies, talents, challenges, achievements, codex progression, and run settlement.
 - Keyboard, gamepad, and touch input with rebinding and device-aware prompts.
 - Versioned Run, Meta, and Settings saves with backups, migration, export, import, and checksum validation.
-- Adaptive Web Audio music with optional external tracks.
+- Adaptive music synthesized entirely with Web Audio; no streamed or bundled audio tracks are required.
 - Installable PWA with offline navigation support after the first successful online load.
 - Optional Gemini-generated Old Memory NPC dialogue with a built-in fallback when no API key is configured.
 

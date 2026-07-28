@@ -138,7 +138,7 @@ export async function runBrowserQaChecks(engine: Engine, canvas: HTMLCanvasEleme
   const settingsValid = settings.version >= 2
     && settings.masterVolume >= 0 && settings.masterVolume <= 100
     && settings.musicVolume >= 0 && settings.musicVolume <= 100
-    && ["adaptive", "external", "off"].includes(settings.musicMode);
+    && ["adaptive", "off"].includes(settings.musicMode);
   checks.push(settingsValid
     ? result("settings", "Settings normalization", "pass", `v${settings.version} / ${settings.musicMode}`)
     : result("settings", "Settings normalization", "fail", "Invalid settings values"));
@@ -164,11 +164,6 @@ export async function runBrowserQaChecks(engine: Engine, canvas: HTMLCanvasEleme
   checks.push(manifest.ok && manifest.body?.short_name === "CMYS Fight"
     ? result("manifest", "Web manifest", "pass", manifest.body.short_name)
     : result("manifest", "Web manifest", "fail", manifest.error ?? "Unexpected manifest"));
-
-  const musicConfig = await fetchJson("/music-tracks.json");
-  checks.push(musicConfig.ok && musicConfig.body?.tracks && typeof musicConfig.body.tracks === "object"
-    ? result("music-config", "Music config", "pass", `${Object.keys(musicConfig.body.tracks).length} configured tracks`)
-    : result("music-config", "Music config", "fail", musicConfig.error ?? "tracks object missing"));
 
   if (!("serviceWorker" in navigator)) {
     checks.push(result("service-worker", "Service worker", "warn", "Unsupported by browser"));
@@ -228,7 +223,6 @@ export interface QaBridge {
   toggleDebugOverlay: () => boolean;
   setMusicScene: (scene: MusicScene) => void;
   setMusicMode: (mode: MusicMode) => void;
-  probeExternalFallback: () => Promise<{ passed: boolean; source: string }>;
   capturePng: () => string;
 }
 
@@ -261,7 +255,6 @@ export function installQaBridge(engine: Engine, canvas: HTMLCanvasElement): () =
       engine.data.saveSettings();
       engine.applySettings();
     },
-    probeExternalFallback: () => audio.probeExternalFallback(),
     capturePng: () => canvas.toDataURL("image/png"),
   };
   (window as any).__CMYS_QA__ = bridge;

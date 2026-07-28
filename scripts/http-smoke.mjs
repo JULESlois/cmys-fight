@@ -42,8 +42,6 @@ try {
   assert.equal(manifest.short_name, "CMYS Fight");
   const sw = await (await verify("/sw.js", /javascript/)).text();
   assert.match(sw, /CACHE_NAME/);
-  const musicConfig = await (await verify("/music-tracks.json", /json/)).json();
-  assert.equal(typeof musicConfig.attribution, "string");
   const dialogResponse = await fetch(`${base}/api/generate-dialog`, {
     method: "POST",
     headers: { "content-type": "application/json" },

@@ -1,7 +1,5 @@
 import {
   PROCEDURAL_TRACKS,
-  resolveExternalMusicUrl,
-  type ExternalMusicConfig,
   type MusicMode,
   type MusicScene,
   type ProceduralTrack,
@@ -12,7 +10,7 @@ function midiToFrequency(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-export type AudioSourceStatus = "unsupported" | "blocked" | "off" | "external" | "procedural" | "idle";
+export type AudioSourceStatus = "unsupported" | "blocked" | "off" | "procedural" | "idle";
 
 export interface AudioDiagnostics {
   supported: boolean;
@@ -23,9 +21,6 @@ export interface AudioDiagnostics {
   source: AudioSourceStatus;
   masterVolume: number;
   musicVolume: number;
-  externalConfigured: boolean;
-  externalFailed: boolean;
-  attribution?: string;
 }
 
 export class AudioManager {
@@ -42,9 +37,6 @@ export class AudioManager {
   private musicTimer: ReturnType<typeof setInterval> | null = null;
   private nextStepTime = 0;
   private step = 0;
-  private externalConfig: ExternalMusicConfig = {};
-  private externalAudio: HTMLAudioElement | null = null;
-  private externalFailedScene: MusicScene | null = null;
 
   constructor() {
     try {
@@ -65,22 +57,8 @@ export class AudioManager {
       };
       window.addEventListener("pointerdown", unlockOnce, { passive: true });
       window.addEventListener("keydown", unlockOnce);
-      void this.loadExternalConfig();
     } catch {
       console.warn("WebAudio not supported");
-    }
-  }
-
-  private async loadExternalConfig() {
-    if (typeof fetch === "undefined") return;
-    try {
-      const response = await fetch("/music-tracks.json", { cache: "no-store" });
-      if (!response.ok) return;
-      const parsed = await response.json();
-      if (parsed && typeof parsed === "object") this.externalConfig = parsed;
-      if (this.unlocked && this.musicMode === "external") this.restartMusic();
-    } catch {
-      // Procedural music remains the deterministic fallback.
     }
   }
 
@@ -91,9 +69,6 @@ export class AudioManager {
     if (this.musicGain && this.ctx) {
       this.musicGain.gain.setTargetAtTime(this.musicVolume, this.ctx.currentTime, 0.08);
     }
-    if (this.externalAudio) {
-      this.externalAudio.volume = Math.max(0, Math.min(1, this.masterVolume * this.musicVolume));
-    }
   }
 
   private async unlock() {
@@ -101,7 +76,7 @@ export class AudioManager {
     try {
       if (this.ctx.state !== "running") await this.ctx.resume();
       this.unlocked = this.ctx.state === "running";
-      if (this.unlocked && !this.musicTimer && !this.externalAudio) this.restartMusic();
+      if (this.unlocked && !this.musicTimer) this.restartMusic();
     } catch {
       this.unlocked = false;
     }
@@ -128,12 +103,10 @@ export class AudioManager {
   }
 
   getDiagnostics(): AudioDiagnostics {
-    const externalConfigured = Boolean(resolveExternalMusicUrl(this.externalConfig.tracks?.[this.scene]));
     let source: AudioSourceStatus = "idle";
     if (!this.ctx) source = "unsupported";
     else if (this.musicMode === "off" || this.masterVolume <= 0 || this.musicVolume <= 0) source = "off";
     else if (!this.unlocked || this.ctx.state !== "running") source = "blocked";
-    else if (this.externalAudio) source = "external";
     else if (this.musicTimer) source = "procedural";
     return {
       supported: Boolean(this.ctx),
@@ -144,56 +117,12 @@ export class AudioManager {
       source,
       masterVolume: this.masterVolume,
       musicVolume: this.musicVolume,
-      externalConfigured,
-      externalFailed: this.externalFailedScene === this.scene,
-      attribution: this.externalConfig.attribution,
     };
-  }
-
-  async probeExternalFallback(timeoutMs = 2400): Promise<{ passed: boolean; source: string }> {
-    if (typeof Audio === "undefined") return { passed: false, source: "unsupported" };
-    await this.unlock();
-    if (!this.ctx || !this.unlocked) return { passed: false, source: this.getDiagnostics().source };
-
-    const previousConfig = this.externalConfig;
-    const previousMode = this.musicMode;
-    const previousScene = this.scene;
-    const previousFailure = this.externalFailedScene;
-    const probeScene = this.scene;
-
-    this.externalConfig = {
-      attribution: "QA failure probe",
-      tracks: { [probeScene]: "http://127.0.0.1:9/__cmys_missing_audio__.mp3" },
-    };
-    this.musicMode = "external";
-    this.externalFailedScene = null;
-    this.restartMusic();
-
-    const deadline = Date.now() + timeoutMs;
-    let passed = false;
-    while (Date.now() < deadline) {
-      const diagnostics = this.getDiagnostics();
-      if (diagnostics.source === "procedural" && diagnostics.externalFailed) {
-        passed = true;
-        break;
-      }
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-    const source = this.getDiagnostics().source;
-
-    this.stopMusic();
-    this.externalConfig = previousConfig;
-    this.musicMode = previousMode;
-    this.scene = previousScene;
-    this.externalFailedScene = previousFailure;
-    this.restartMusic();
-    return { passed, source };
   }
 
   setMusicScene(scene: MusicScene) {
     if (this.scene === scene) return;
     this.scene = scene;
-    this.externalFailedScene = null;
     this.restartMusic();
   }
 
@@ -208,44 +137,13 @@ export class AudioManager {
   private stopMusic() {
     if (this.musicTimer) clearInterval(this.musicTimer);
     this.musicTimer = null;
-    if (this.externalAudio) {
-      this.externalAudio.pause();
-      this.externalAudio.src = "";
-      this.externalAudio = null;
-    }
   }
 
   private restartMusic() {
     this.stopMusic();
     if (this.musicPaused) return;
     if (!this.unlocked || this.musicMode === "off" || this.masterVolume <= 0 || this.musicVolume <= 0) return;
-    if (this.musicMode === "external" && this.tryExternalMusic()) return;
     this.startProceduralMusic();
-  }
-
-  private tryExternalMusic(): boolean {
-    if (typeof Audio === "undefined" || this.externalFailedScene === this.scene) return false;
-    const configured = this.externalConfig.tracks?.[this.scene];
-    const url = resolveExternalMusicUrl(configured);
-    if (!url) return false;
-    const player = new Audio(url);
-    player.loop = true;
-    player.preload = "auto";
-    player.volume = this.masterVolume * this.musicVolume;
-    player.addEventListener("error", () => {
-      if (this.externalAudio !== player) return;
-      this.externalFailedScene = this.scene;
-      this.externalAudio = null;
-      this.startProceduralMusic();
-    }, { once: true });
-    this.externalAudio = player;
-    void player.play().catch(() => {
-      if (this.externalAudio !== player) return;
-      this.externalFailedScene = this.scene;
-      this.externalAudio = null;
-      this.startProceduralMusic();
-    });
-    return true;
   }
 
   private startProceduralMusic() {
