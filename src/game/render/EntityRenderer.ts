@@ -295,6 +295,27 @@ export class EntityRenderer {
     const renderX = (weapon?.renderOffsetX ?? PLAYER_WEAPON_OFFSET_X) + (layer === "back" ? -2 : 0);
     const renderY = weapon?.renderOffsetY ?? PLAYER_WEAPON_OFFSET_Y;
     SpriteRenderer.drawPixelSprite(ctx, `weapon_${player.currentWeaponId}`, renderX, renderY, 1);
+    if (player.currentWeaponId === "ballistic_knife" && layer === "front") {
+      const release = Math.max(0, Math.min(1, player.muzzleFlash));
+      const fired = release > 0.18;
+      // The warm collar is the loaded cue. During release it opens around a
+      // visible dark rail gap while the rear spring cap compresses by one pixel.
+      ctx.fillStyle = fired ? "#111820" : "#EFB54A";
+      ctx.fillRect(renderX + 8, renderY - 1, 2, 3);
+      if (fired) {
+        ctx.fillStyle = "#D08B45";
+        ctx.fillRect(renderX + 7, renderY - 2, 1, 5);
+        ctx.fillRect(renderX + 10, renderY - 2, 1, 5);
+        ctx.fillStyle = "#111820";
+        ctx.fillRect(renderX + 11, renderY - 1, 5, 3);
+        ctx.fillStyle = "#C8D1D8";
+        ctx.fillRect(renderX + 18, renderY - 1, 8, 2);
+        ctx.fillStyle = "#F2F5F7";
+        ctx.fillRect(renderX + 22, renderY - 1, 5, 1);
+        ctx.fillStyle = "#5F6E79";
+        ctx.fillRect(renderX - 8, renderY - 1, 1, 3);
+      }
+    }
     if (player.muzzleFlash > 0) {
       const mx = weapon?.muzzleOffsetX ?? PLAYER_MUZZLE_OFFSET_X;
       const my = weapon?.muzzleOffsetY ?? PLAYER_MUZZLE_OFFSET_Y;
@@ -323,6 +344,12 @@ export class EntityRenderer {
         ctx.fillStyle = effect === "rocket" ? "#FF7043" : "#8E9EAB";
         ctx.fillRect(mx + 4, my - 3, 3, 3);
         ctx.fillRect(mx + 6, my + 1, 3, 3);
+      } else if (player.currentWeaponId === "ballistic_knife") {
+        // Silent spring release: a narrow guide-line, never a firearm flash.
+        ctx.fillStyle = "#EFB54A";
+        ctx.fillRect(mx, my, 3, 1);
+        ctx.fillStyle = "#F2F5F7";
+        ctx.fillRect(mx + 3, my, 2, 1);
       } else {
         ctx.fillStyle = "#F1C40F";
         ctx.fillRect(mx, my - 2, 4, 4); ctx.fillRect(mx + 4, my - 4, 2, 8); ctx.fillRect(mx + 6, my, 2, 4);

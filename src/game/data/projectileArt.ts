@@ -89,7 +89,7 @@ export const PROJECTILE_WEAPON_PALETTES: Record<string, Partial<ProjectilePalett
   finale: { shadow: "#2A1B26", base: "#F06CA8", highlight: "#FFF1F8", accent: "#8FD9FF", glow: "rgba(240,108,168,0.32)" },
 
   minishark: { shadow: "#77531E", base: "#E0B95D", highlight: "#FFF0AD", accent: "#AAB8C1", glow: "rgba(224,185,93,0.22)" },
-  ballistic_knife: { shadow: "#303941", base: "#A9B4BD", highlight: "#F7FBFD", accent: "#69747D", glow: "rgba(169,180,189,0.2)" },
+  ballistic_knife: { shadow: "#111820", base: "#C8D1D8", highlight: "#F2F5F7", accent: "#5F6E79", glow: "rgba(200,209,216,0.2)" },
 };
 
 function clampChannel(value: number): number {

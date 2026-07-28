@@ -317,6 +317,37 @@ export class ProjectileArtRenderer {
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(Math.atan2(p.vy, p.vx));
 
+    if (p.weaponId === "ballistic_knife") {
+      const pierceIndex = Math.min(3, p.hitEnemyIds.size);
+      const trailPixels = Math.max(2, p.trailLength - pierceIndex);
+      const faceLight = Math.cos(p.spinAngle * 0.5) >= 0;
+      for (let step = 1; step <= trailPixels; step++) {
+        const alpha = (1 - step / (trailPixels + 1)) * (reducedFlashing ? 0.32 : 0.56);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = step === 1 ? palette.highlight : palette.base;
+        ctx.fillRect(-7 - step * 2, step % 2 === 0 ? 0 : -1, step > trailPixels - 2 ? 1 : 2, 1);
+      }
+      ctx.globalAlpha = 1;
+      // The blade remains locked to velocity. spinRate only flips the face
+      // brightness, preventing the generic disc renderer's circular silhouette.
+      ctx.fillStyle = palette.shadow;
+      ctx.fillRect(-6, -2, 10, 5);
+      ctx.fillRect(4, -1, 3, 3);
+      ctx.fillStyle = faceLight ? palette.base : palette.accent;
+      ctx.fillRect(-5, -1, 10, 3);
+      ctx.fillStyle = faceLight ? palette.highlight : palette.base;
+      ctx.fillRect(-2, -1, 8, 1);
+      ctx.fillRect(5, 0, 3, 1);
+      ctx.fillStyle = palette.accent;
+      ctx.fillRect(-7, -1, 2, 3);
+      if (p.critical && !reducedFlashing) {
+        ctx.fillStyle = "#FFF6B8";
+        ctx.fillRect(3, -3, 2, 1);
+      }
+      ctx.restore();
+      return;
+    }
+
     if (p.style === "sword") {
       if (p.weaponId !== "zenith") {
         const progress = p.maxLife > 0 ? Math.max(0, Math.min(1, p.age / p.maxLife)) : 0;
