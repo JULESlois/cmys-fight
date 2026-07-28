@@ -39,6 +39,42 @@ const COLORS = {
   sand: "#76664A",
 } as const;
 
+export const TRAINING_MARKER_COLORS = {
+  stoneDark: "#252B35",
+  stone: "#4B5260",
+  woodDark: "#68472E",
+  woodWear: "#9B6A3E",
+  target: "#8F2F38",
+  gold: "#D8B45C",
+  proximity: "#72E0E8",
+  core: "#FFD36B",
+} as const;
+
+export interface TrainingMarkerRenderState {
+  proximity?: number;
+}
+
+export type ReforgeStonePhase = "idle" | "confirm" | "cooldown";
+
+export interface ReforgeStoneRenderState {
+  proximity?: number;
+  phase?: ReforgeStonePhase;
+  phaseTime?: number;
+  reducedMotion?: boolean;
+}
+
+export type DistrictGateVisualState = "idle" | "nearby";
+
+export interface DistrictGateRenderState {
+  visualState?: DistrictGateVisualState;
+}
+
+export interface HubObjectRenderState {
+  trainingMarker?: TrainingMarkerRenderState;
+  reforgeStone?: ReforgeStoneRenderState;
+  districtGate?: DistrictGateRenderState;
+}
+
 function kindOf(object: WorldObjectDefinition): string {
   const value = object.properties?.kind;
   return typeof value === "string" ? value : object.id;
@@ -505,11 +541,12 @@ export class HubWorldRenderer {
     object: WorldObjectDefinition,
     time: number,
     alpha = 1,
+    state?: HubObjectRenderState,
   ): void {
     if (!object) return;
     ctx.save();
     ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
-    this.drawObject(ctx, object, time);
+    this.drawObject(ctx, object, time, state);
     ctx.restore();
   }
 
@@ -691,15 +728,20 @@ export class HubWorldRenderer {
     else ctx.fillRect(x, y, 5, 16);
   };
 
-  private drawObject(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawObject(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state?: HubObjectRenderState,
+  ): void {
     if (object.properties?.visible === false) return;
     if (HubArchitectureRenderer.draw(ctx, object, time)) return;
     const kind = kindOf(object);
     if (kind === "plaza_banners") this.drawPlazaBanners(ctx, object, time);
-    else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time);
+    else if (kind === "district_gate") this.drawDistrictGate(ctx, object, time, state?.districtGate);
     else if (kind === "waystone") this.drawWaystone(ctx, object, time);
-    else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time);
-    else if (kind === "training_marker") this.drawTrainingMarker(ctx, object);
+    else if (kind === "reforge_stone") this.drawReforgeStone(ctx, object, time, state?.reforgeStone);
+    else if (kind === "training_marker") this.drawTrainingMarker(ctx, object, time, state?.trainingMarker);
     else if (kind === "garden_wish") this.drawGardenWish(ctx, object, time);
   }
 
@@ -749,7 +791,12 @@ export class HubWorldRenderer {
     }
   }
 
-  private drawDistrictGate(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawDistrictGate(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state?: DistrictGateRenderState,
+  ): void {
     const { x, y } = object;
     const width = object.width ?? 80;
     const height = object.height ?? 80;
@@ -757,6 +804,11 @@ export class HubWorldRenderer {
     const bottom = y + height;
     const accent = typeof object.properties?.accent === "string" ? object.properties.accent : COLORS.gold;
     const emblem = typeof object.properties?.emblem === "string" ? object.properties.emblem : "archive";
+
+    if (emblem === "garden") {
+      this.drawGardenDistrictGate(ctx, object, time, state);
+      return;
+    }
 
     drawGroundShadow(ctx, x + 3, bottom - 5, width - 6, 7);
 
@@ -866,6 +918,93 @@ export class HubWorldRenderer {
     drawBanner(ctx, x + width - 13, y + 29, 12, 25, accent, COLORS.gold, -sway);
   }
 
+  private drawGardenDistrictGate(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state: DistrictGateRenderState = {},
+  ): void {
+    const { x, y } = object;
+    const width = object.width ?? 80;
+    const height = object.height ?? 64;
+    const centerX = x + width / 2;
+    const bottom = y + height;
+    const nearby = state.visualState === "nearby";
+    const seedPulse = 0.5 + 0.5 * Math.sin(time * Math.PI * 2 * 1.2);
+    const vineSegments = nearby ? 6 : 2;
+
+    drawGroundShadow(ctx, x + 2, bottom - 5, width - 4, 7);
+    ctx.fillStyle = "rgba(4,7,8,0.16)";
+    ctx.fillRect(x + 24, bottom - 7, width - 48, 4);
+
+    const drawRootPillar = (left: boolean): void => {
+      const outer = left ? x : x + width - 24;
+      const inner = left ? outer + 18 : outer + 6;
+      ctx.fillStyle = "#28322F";
+      ctx.fillRect(outer + 5, y + 20, 14, height - 29);
+      ctx.fillRect(outer, bottom - 12, 24, 12);
+      ctx.fillRect(left ? outer : outer + 14, bottom - 18, 10, 9);
+      ctx.fillStyle = "#60705F";
+      ctx.fillRect(left ? outer + 8 : outer + 14, y + 23, 3, height - 36);
+      ctx.fillRect(left ? outer + 2 : outer + 16, bottom - 10, 6, 2);
+      ctx.fillRect(left ? outer + 15 : outer + 2, bottom - 7, 7, 2);
+      ctx.fillStyle = "#456A49";
+      ctx.fillRect(left ? inner - 1 : inner - 5, y + 29, 6, 5);
+      ctx.fillRect(inner - 3, y + 34, 5, 7);
+      ctx.fillStyle = "#7ECF8A";
+      ctx.fillRect(left ? inner + 1 : inner - 4, y + 31, 2, 4);
+    };
+    drawRootPillar(true);
+    drawRootPillar(false);
+
+    const archRows = [
+      { inset: 18, yy: y + 18, span: width - 36 },
+      { inset: 22, yy: y + 14, span: width - 44 },
+      { inset: 28, yy: y + 10, span: width - 56 },
+    ];
+    ctx.fillStyle = "#28322F";
+    for (const row of archRows) ctx.fillRect(x + row.inset, row.yy, row.span, 5);
+    ctx.fillStyle = "#60705F";
+    for (const row of archRows) ctx.fillRect(x + row.inset + 2, row.yy, Math.max(0, row.span - 4), 1);
+
+    const segmentXs = [x + 17, x + 24, x + 31, x + width - 35, x + width - 28, x + width - 21];
+    const segmentYs = [y + 19, y + 15, y + 12, y + 12, y + 15, y + 19];
+    ctx.fillStyle = "#7ECF8A";
+    for (let index = 0; index < vineSegments; index++) {
+      const segment = nearby ? (index % 2 === 0 ? Math.floor(index / 2) : 5 - Math.floor(index / 2)) : index * 5;
+      ctx.fillRect(segmentXs[segment], segmentYs[segment], 4, 2);
+    }
+
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(x + 12, y + 23, 6, 3);
+    ctx.fillRect(x + width - 18, y + 23, 6, 3);
+    ctx.fillStyle = nearby ? "#FFE39A" : COLORS.fire;
+    ctx.fillRect(x + 13, y + 26, 4, 5);
+    ctx.fillRect(x + width - 17, y + 26, 4, 5);
+
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(centerX - 8, y + 15, 16, 2);
+    ctx.fillRect(centerX - 5, y + 17, 10, 2);
+    ctx.fillStyle = nearby ? COLORS.cyan : "#456A49";
+    ctx.fillRect(centerX - 11, y + 6, 3, 8);
+    ctx.fillRect(centerX + 8, y + 6, 3, 8);
+    ctx.fillRect(centerX - 8, y + 3, 16, 2);
+    ctx.fillStyle = seedPulse > 0.62 ? COLORS.cyanSoft : COLORS.cyan;
+    ctx.fillRect(centerX - 2, y + 3, 4, 12);
+    ctx.fillRect(centerX - 4, y + 6, 8, 6);
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.fillRect(centerX - 1, y + 5, 2, 5);
+
+    for (let mote = 0; mote < 2; mote++) {
+      const cycle = (time * 0.16 + mote * 0.5) % 1;
+      const moteX = Math.round(x + 18 + cycle * (width - 38));
+      const moteY = Math.round(y + 12 - Math.sin(cycle * Math.PI) * 5 + mote * 2);
+      ctx.fillStyle = mote === 0 ? "#7ECF8A" : "#A8D98D";
+      ctx.fillRect(moteX, moteY, 2, 1);
+      ctx.fillRect(moteX + (mote === 0 ? 1 : -1), moteY + 1, 1, 1);
+    }
+  }
+
   private drawWaystone(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
     const centerX = object.x + (object.width ?? 48) / 2;
     const bottom = object.y + (object.height ?? 64);
@@ -912,6 +1051,15 @@ export class HubWorldRenderer {
     ctx.fillStyle = "rgba(255,255,255,0.35)";
     ctx.fillRect(centerX - 1, bottom - 49, 1, 10);
 
+    // The paired stones share a silhouette, so the plinth carries a stable
+    // cardinal cue instead of introducing an interaction state with no owner.
+    const direction = object.properties?.direction === "south" ? 1 : -1;
+    const arrowY = bottom - 7;
+    ctx.fillStyle = COLORS.gold;
+    ctx.fillRect(centerX - 1, arrowY - 2, 2, 5);
+    ctx.fillRect(centerX - 3, arrowY + direction * 2, 6, 2);
+    ctx.fillRect(centerX - 2, arrowY + direction * 3, 4, 1);
+
     // Shaft runes breathe on offset phases (replaces the old 4Hz flicker).
     const runeRamp = accentRamp(accent, 0.8);
     for (let rune = 0; rune < 3; rune++) {
@@ -943,9 +1091,19 @@ export class HubWorldRenderer {
     }
   }
 
-  private drawReforgeStone(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
+  private drawReforgeStone(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state: ReforgeStoneRenderState = {},
+  ): void {
     const cx = object.x + (object.width ?? 64) / 2;
     const cy = object.y + (object.height ?? 64) / 2;
+    const proximity = Math.max(0, Math.min(1, state.proximity ?? 0));
+    const phase = state.phase ?? "idle";
+    const phaseTime = Math.max(0, state.phaseTime ?? 0);
+    const confirmProgress = phase === "confirm" ? Math.min(1, phaseTime / 0.42) : 0;
+    const cooldownGlow = phase === "cooldown" ? Math.max(0, 1 - phaseTime / 0.5) : 0;
     ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(cx - 25, cy + 23, 50, 8);
 
     // Layered anvil-slab: plinth, block, beveled top rim, masonry joints.
@@ -967,15 +1125,50 @@ export class HubWorldRenderer {
     ctx.fillStyle = "#1E1713";
     ctx.fillRect(cx - 3, cy - 13, 6, 26); ctx.fillRect(cx - 11, cy - 3, 22, 6);
     const emberPulse = 0.5 + 0.5 * Math.sin(time * 1.2);
-    ctx.fillStyle = rampAt(EMBER_RAMP, emberPulse);
-    ctx.fillRect(cx - 2, cy - 12, 4, 24); ctx.fillRect(cx - 10, cy - 2, 20, 4);
+    const glyphColor = cooldownGlow > 0.35
+      ? COLORS.cyanSoft
+      : confirmProgress > 0
+        ? COLORS.fire
+        : rampAt(EMBER_RAMP, emberPulse);
+    const compression = confirmProgress > 0.62 ? 1 : 0;
+    ctx.fillStyle = glyphColor;
+    ctx.fillRect(cx - 2, cy - 12 + compression, 4, 24 - compression * 2);
+    ctx.fillRect(cx - 10 + compression, cy - 2, 20 - compression * 2, 4);
     ctx.fillStyle = "rgba(255,255,255,0.4)";
     ctx.fillRect(cx - 1, cy - 1, 2, 2);
 
-    // Gold inlay studs at the glyph's cardinal points.
-    ctx.fillStyle = COLORS.gold;
-    ctx.fillRect(cx - 1, cy - 15, 2, 2); ctx.fillRect(cx - 1, cy + 13, 2, 2);
-    ctx.fillRect(cx - 13, cy - 1, 2, 2); ctx.fillRect(cx + 11, cy - 1, 2, 2);
+    // Proximity lights the inlay studs in sequence; a successful refund lights
+    // the whole cross before it cools back to the normal ember ramp.
+    const studs = [[cx - 1, cy - 15], [cx + 11, cy - 1], [cx - 1, cy + 13], [cx - 13, cy - 1]];
+    for (let index = 0; index < studs.length; index++) {
+      const lit = proximity * studs.length > index || phase !== "idle";
+      ctx.fillStyle = lit ? COLORS.gold : "#6E5A35";
+      ctx.fillRect(studs[index][0], studs[index][1], 2, 2);
+    }
+
+    if (proximity > 0) {
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * proximity * 0.58;
+      ctx.fillStyle = COLORS.cyan;
+      ctx.fillRect(cx - 20, cy - 20, 5, 1); ctx.fillRect(cx - 20, cy - 20, 1, 5);
+      ctx.fillRect(cx + 15, cy - 20, 5, 1); ctx.fillRect(cx + 19, cy - 20, 1, 5);
+      ctx.globalAlpha = previousAlpha;
+    }
+
+    if (phase === "confirm" && !state.reducedMotion) {
+      const burst = Math.sin(confirmProgress * Math.PI);
+      ctx.fillStyle = COLORS.fire;
+      for (let index = 0; index < 6; index++) {
+        const angle = index * Math.PI / 3;
+        const distance = 13 + Math.round(burst * 10);
+        ctx.fillRect(
+          Math.round(cx + Math.cos(angle) * distance),
+          Math.round(cy + Math.sin(angle) * distance),
+          index % 2 === 0 ? 2 : 1,
+          1,
+        );
+      }
+    }
 
     // Resting embers at the foot plus two deterministic rising flecks.
     ctx.fillStyle = COLORS.orange;
@@ -997,13 +1190,127 @@ export class HubWorldRenderer {
     }
   }
 
-  private drawTrainingMarker(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition): void {
-    const cx = object.x + (object.width ?? 80) / 2;
-    const bottom = object.y + (object.height ?? 80);
-    ctx.fillStyle = COLORS.wood; ctx.fillRect(cx - 4, bottom - 62, 8, 60); ctx.fillRect(cx - 24, bottom - 52, 48, 7);
-    ctx.fillStyle = "#82624A"; ctx.fillRect(cx - 15, bottom - 47, 30, 29);
-    ctx.fillStyle = COLORS.red; ctx.fillRect(cx - 8, bottom - 42, 16, 16);
-    ctx.fillStyle = COLORS.fire; ctx.fillRect(cx - 3, bottom - 37, 6, 6);
+  private drawTrainingMarker(
+    ctx: CanvasRenderingContext2D,
+    object: WorldObjectDefinition,
+    time: number,
+    state: TrainingMarkerRenderState = {},
+  ): void {
+    const cx = Math.round(object.x + (object.width ?? 80) / 2);
+    const bottom = Math.round(object.y + (object.height ?? 80));
+    const proximity = Math.max(0, Math.min(1, state.proximity ?? 0));
+    const emblemSwing = Math.round(Math.sin(time * Math.PI * 2 / 2.8));
+    const idlePulse = 0.5 + 0.5 * Math.sin(time * Math.PI * 2 / 2.6);
+
+    this.drawTrainingMarkerBase(ctx, cx, bottom);
+    this.drawTrainingMarkerFrame(ctx, cx, bottom, emblemSwing, idlePulse, proximity);
+    this.drawTrainingMarkerTarget(ctx, cx, bottom - 36, idlePulse, proximity);
+  }
+
+  private drawTrainingMarkerBase(ctx: CanvasRenderingContext2D, cx: number, bottom: number): void {
+    ctx.fillStyle = "rgba(4,7,8,0.38)";
+    ctx.fillRect(cx - 31, bottom - 7, 62, 5);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stoneDark;
+    ctx.fillRect(cx - 23, bottom - 18, 46, 2);
+    ctx.fillRect(cx - 29, bottom - 16, 58, 10);
+    ctx.fillRect(cx - 25, bottom - 6, 50, 4);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stone;
+    ctx.fillRect(cx - 20, bottom - 15, 40, 2);
+    ctx.fillRect(cx - 25, bottom - 13, 50, 6);
+    ctx.fillRect(cx - 21, bottom - 7, 42, 2);
+    ctx.fillStyle = COLORS.stoneLight;
+    ctx.fillRect(cx - 19, bottom - 14, 38, 1);
+    ctx.fillRect(cx - 24, bottom - 12, 2, 4);
+    ctx.fillStyle = "rgba(18,22,29,0.48)";
+    ctx.fillRect(cx - 13, bottom - 9, 11, 1);
+    ctx.fillRect(cx + 6, bottom - 12, 13, 1);
+  }
+
+  private drawTrainingMarkerFrame(
+    ctx: CanvasRenderingContext2D,
+    cx: number,
+    bottom: number,
+    emblemSwing: number,
+    idlePulse: number,
+    proximity: number,
+  ): void {
+    ctx.fillStyle = TRAINING_MARKER_COLORS.woodDark;
+    ctx.fillRect(cx - 5, bottom - 65, 10, 49);
+    ctx.fillRect(cx - 28, bottom - 58, 56, 9);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.woodWear;
+    ctx.fillRect(cx - 2, bottom - 63, 2, 45);
+    ctx.fillRect(cx - 25, bottom - 55, 47, 2);
+    ctx.fillRect(cx + 19, bottom - 57, 5, 1);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.gold;
+    ctx.fillRect(cx - 7, bottom - 52, 3, 5);
+    ctx.fillRect(cx + 4, bottom - 52, 3, 5);
+    ctx.fillRect(cx - 2, bottom - 20, 4, 3);
+
+    const emblemX = cx + emblemSwing;
+    const emblemTop = bottom - 72;
+    ctx.fillStyle = TRAINING_MARKER_COLORS.gold;
+    ctx.fillRect(emblemX - 2, emblemTop, 4, 2);
+    ctx.fillRect(emblemX - 5, emblemTop + 2, 10, 2);
+    ctx.fillRect(emblemX - 7, emblemTop + 4, 14, 5);
+    ctx.fillRect(emblemX - 5, emblemTop + 9, 10, 2);
+    ctx.fillRect(emblemX - 2, emblemTop + 11, 4, 2);
+    ctx.fillStyle = "#5B2736";
+    ctx.fillRect(emblemX - 4, emblemTop + 3, 8, 7);
+
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * Math.min(1, 0.72 + idlePulse * 0.18 + proximity * 0.1);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.proximity;
+    ctx.fillRect(emblemX - 1, emblemTop + 3, 2, 7);
+    ctx.fillRect(emblemX - 4, emblemTop + 6, 8, 2);
+    ctx.fillStyle = COLORS.cyanSoft;
+    ctx.fillRect(emblemX, emblemTop + 6, 1, 1);
+    ctx.globalAlpha = previousAlpha;
+  }
+
+  private drawTrainingMarkerTarget(
+    ctx: CanvasRenderingContext2D,
+    targetX: number,
+    targetY: number,
+    idlePulse: number,
+    proximity: number,
+  ): void {
+    if (proximity > 0) {
+      const previousAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = previousAlpha * proximity * 0.68;
+      ctx.fillStyle = TRAINING_MARKER_COLORS.proximity;
+      ctx.fillRect(targetX - 16, targetY - 14, 32, 1);
+      ctx.fillRect(targetX - 18, targetY - 11, 1, 22);
+      ctx.fillRect(targetX + 17, targetY - 11, 1, 22);
+      ctx.fillRect(targetX - 13, targetY + 14, 26, 1);
+      ctx.globalAlpha = previousAlpha;
+    }
+
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stoneDark;
+    ctx.fillRect(targetX - 19, targetY - 17, 38, 18);
+    ctx.fillRect(targetX - 16, targetY + 1, 32, 5);
+    ctx.fillRect(targetX - 12, targetY + 6, 24, 4);
+    ctx.fillRect(targetX - 7, targetY + 10, 14, 3);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.stone;
+    ctx.fillRect(targetX - 16, targetY - 14, 32, 14);
+    ctx.fillRect(targetX - 13, targetY, 26, 4);
+    ctx.fillRect(targetX - 9, targetY + 4, 18, 3);
+    ctx.fillRect(targetX - 5, targetY + 7, 10, 2);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.gold;
+    ctx.fillRect(targetX - 8, targetY - 12, 16, 2);
+    ctx.fillRect(targetX - 11, targetY - 10, 22, 16);
+    ctx.fillRect(targetX - 8, targetY + 6, 16, 2);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.target;
+    ctx.fillRect(targetX - 7, targetY - 9, 14, 14);
+    ctx.fillRect(targetX - 9, targetY - 7, 18, 10);
+
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * Math.min(1, 0.82 + idlePulse * 0.18);
+    ctx.fillStyle = TRAINING_MARKER_COLORS.core;
+    ctx.fillRect(targetX - 4, targetY - 4, 8, 8);
+    ctx.fillStyle = "#FFF3B8";
+    ctx.fillRect(targetX - 1, targetY - 5, 2, 10);
+    ctx.fillRect(targetX - 5, targetY - 1, 10, 2);
+    ctx.globalAlpha = previousAlpha;
   }
 
   private drawGardenWish(ctx: CanvasRenderingContext2D, object: WorldObjectDefinition, time: number): void {
