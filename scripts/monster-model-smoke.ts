@@ -164,7 +164,7 @@ for (const id of enemyIds) {
     `${id} authored material detail`,
   );
 }
-assert.match(source, /const bite = state === "attack" \? \[0, 1, 4, 2\]/, "spore mimic bite remains controlled");
+assert.match(source, /capOffsetY[\s\S]*capSpread[\s\S]*jawOpen[\s\S]*stalkCompress/, "spore mimic separates cap, jaw and stalk motion");
 assert.match(source, /Irregular heartwood fractures/, "guardian phase three uses organic fractures instead of a generic cross");
 assert.match(source, /dingdong_fowl[\s\S]*#E53935[\s\S]*#F9A825/, "ding-dong fowl comb and beak");
 assert.match(source, /bark_hound[\s\S]*#E57373/, "bark hound open mouth/tongue");

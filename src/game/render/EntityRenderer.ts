@@ -629,14 +629,31 @@ export class EntityRenderer {
         ctx.strokeStyle = lineColor;
         ctx.strokeRect(Math.round(Math.cos(enemy.attackAngle) * enemy.chargeDistance) - 5, Math.round(Math.sin(enemy.attackAngle) * enemy.chargeDistance) - 5, 10, 10);
       } else if (enemy.behavior === "area") {
-        EntityRenderer.drawAreaTiles(
-          ctx,
-          enemy.attackTargetX - enemy.x,
-          enemy.attackTargetY - enemy.y,
-          enemy.areaRadius,
-          tileColor,
-          lineColor,
-        );
+        const localX = enemy.attackTargetX - enemy.x;
+        const localY = enemy.attackTargetY - enemy.y;
+        if (enemy.enemyId === "spore_mimic") {
+          // Sparse, regular points expose the true 20px damage radius without painting a toxic cloud.
+          const duration = Math.max(0.001, enemy.attackAnimationDuration);
+          const progress = Math.max(0, Math.min(1, 1 - enemy.attackTimer / duration));
+          const pointCount = progress < 0.34 ? 8 : progress < 0.72 ? 12 : 16;
+          const previousAlpha = ctx.globalAlpha;
+          ctx.globalAlpha = previousAlpha * (progress < 0.72 ? 0.58 : 0.92);
+          for (let index = 0; index < pointCount; index++) {
+            const angle = index * Math.PI * 2 / pointCount;
+            const x = Math.round(localX + Math.cos(angle) * enemy.areaRadius);
+            const y = Math.round(localY + Math.sin(angle) * enemy.areaRadius);
+            ctx.fillStyle = progress < 0.72 ? "#F6C85A" : index % 2 === 0 ? "#FFF7D8" : "#F6C85A";
+            if (progress < 0.72) {
+              ctx.fillRect(x, y, 1, 1);
+            } else {
+              ctx.fillRect(x - 1, y, 3, 1);
+              ctx.fillRect(x, y - 1, 1, 3);
+            }
+          }
+          ctx.globalAlpha = previousAlpha;
+        } else {
+          EntityRenderer.drawAreaTiles(ctx, localX, localY, enemy.areaRadius, tileColor, lineColor);
+        }
       } else if (enemy.behavior === "summon") {
         ctx.fillStyle = tileColor;
         for (const [x, y] of [[0, -18], [18, 0], [0, 18], [-18, 0], [0, 0]] as const) ctx.fillRect(x - 4, y - 4, 8, 8);

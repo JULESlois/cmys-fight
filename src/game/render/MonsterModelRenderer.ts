@@ -810,42 +810,75 @@ const models: Record<string, ModelDraw> = {
   },
   spore_mimic(ctx, p, _limbFrame, state, stateFrame) {
     const phase = phaseOf(state, stateFrame);
-    const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
-    const bite = state === "attack" ? [0, 1, 4, 2][phase] : 0;
+    const idleBreath = state === "idle" ? [0, -1][phase] : 0;
+    const walkBob = state === "walk" ? [0, 1, 0, -1][phase] : 0;
     const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
+    const capLag = state === "walk" ? [0, 0, 1, -1][phase] : 0;
+    const attackPose = state === "attack"
+      ? [
+          { capOffsetY: -1, capSpread: 0, jawOpen: 1, stalkCompress: 1, spores: 0 },
+          { capOffsetY: -2, capSpread: 1, jawOpen: 2, stalkCompress: 1, spores: 3 },
+          { capOffsetY: -3, capSpread: 3, jawOpen: 5, stalkCompress: 2, spores: 5 },
+          { capOffsetY: 1, capSpread: 1, jawOpen: 2, stalkCompress: 1, spores: 0 },
+        ][phase]
+      : { capOffsetY: 0, capSpread: 0, jawOpen: 0, stalkCompress: 0, spores: 0 };
+    const bodyBob = idleBreath + walkBob;
+    const stalkTop = -18 + bodyBob + attackPose.stalkCompress;
+    const capY = -31 + bodyBob + capLag + attackPose.capOffsetY;
 
-    // Root tendrils behind the stalk.
-    rect(ctx, p.ink, -9 - stride, -1, 7, 7);
-    rect(ctx, p.dark, -8 - stride, 0, 5, 5);
-    rect(ctx, p.ink, 3 + stride, -1, 7, 7);
-    rect(ctx, p.dark, 4 + stride, 0, 5, 5);
+    // Split roots keep the creature planted while the cap moves independently.
+    rect(ctx, p.ink, -10 - stride, -1, 8, 7);
+    rect(ctx, "#202A1B", -9 - stride, 0, 6, 5);
+    rect(ctx, p.ink, 3 + stride, -1, 8, 7);
+    rect(ctx, "#202A1B", 4 + stride, 0, 6, 5);
     rect(ctx, p.ink, -2, 2, 5, 5);
-    rect(ctx, p.base, -1, 3, 3, 3);
+    rect(ctx, "#6F8F4D", -1, 3, 3, 3);
 
-    // Thick pale stalk with shadowed underside.
-    rect(ctx, p.ink, -7, -18 + bob, 15, 20);
-    rect(ctx, "#D9D1B5", -6, -17 + bob, 13, 18);
-    rect(ctx, "#F1EBD2", -4, -16 + bob, 6, 15);
-    rect(ctx, "#B9AE91", 3, -15 + bob, 3, 14);
+    // Narrow mossy stalk compresses during windup but never changes the hitbox.
+    rect(ctx, p.ink, -7, stalkTop, 15, 20 - attackPose.stalkCompress);
+    rect(ctx, "#6F8F4D", -6, stalkTop + 1, 13, 18 - attackPose.stalkCompress);
+    rect(ctx, "#91A967", -4, stalkTop + 2, 6, 14 - attackPose.stalkCompress);
+    rect(ctx, "#405A31", 3, stalkTop + 3, 3, 13 - attackPose.stalkCompress);
 
-    // Cap separates into upper and lower jaws during the bite.
-    rect(ctx, p.ink, -15, -31 + bob - Math.trunc(bite / 2), 31, 13);
-    rect(ctx, p.base, -14, -30 + bob - Math.trunc(bite / 2), 29, 11);
-    rect(ctx, p.light, -10, -32 + bob - Math.trunc(bite / 2), 8, 5);
-    rect(ctx, p.light, 3, -31 + bob - Math.trunc(bite / 2), 7, 4);
-    rect(ctx, p.dark, -13, -22 + bob - Math.trunc(bite / 2), 27, 3);
-    rect(ctx, p.ink, -12, -18 + bob + bite, 25, 9);
-    rect(ctx, "#6C1F28", -11, -17 + bob + bite, 23, 7);
-    rect(ctx, "#E9E1C8", -9, -17 + bob + bite, 4, 3);
-    rect(ctx, "#E9E1C8", -2, -17 + bob + bite, 4, 3);
-    rect(ctx, "#E9E1C8", 5, -17 + bob + bite, 4, 3);
-    rect(ctx, "#C93C49", -5, -12 + bob + bite, 11, 2);
+    // Wide cap reads as a harmless mushroom until the hidden horizontal mouth opens.
+    const capLeft = -16 - attackPose.capSpread;
+    const capWidth = 33 + attackPose.capSpread * 2;
+    rect(ctx, "#22131A", capLeft, capY, capWidth, 13);
+    rect(ctx, "#B34B5D", capLeft + 1, capY + 1, capWidth - 2, 10);
+    rect(ctx, "#D46572", capLeft + 5, capY - 1, 9, 5);
+    rect(ctx, "#D46572", capLeft + capWidth - 13, capY, 7, 4);
+    rect(ctx, "#5B2936", capLeft + 2, capY + 9, capWidth - 4, 3);
 
-    // False friendly eyes above the jaw make the mimic readable.
-    drawPixelEye(ctx, p, -5, -24 + bob - Math.trunc(bite / 2), "#FFF4C5");
-    drawPixelEye(ctx, p, 5, -24 + bob - Math.trunc(bite / 2), "#FFF4C5");
-    rect(ctx, "#F4D35E", -12, -27 + bob, 2, 2);
-    rect(ctx, "#F4D35E", 10, -25 + bob, 2, 2);
+    const jawY = capY + 11 + attackPose.jawOpen;
+    if (attackPose.jawOpen === 0) {
+      rect(ctx, "#22131A", -10, jawY, 21, 2);
+    } else {
+      rect(ctx, "#22131A", -13 - attackPose.capSpread, jawY - 1, 27 + attackPose.capSpread * 2, 8);
+      rect(ctx, "#5B1722", -12 - attackPose.capSpread, jawY, 25 + attackPose.capSpread * 2, 6);
+      rect(ctx, "#FFF7D8", -10, jawY, 4, 2);
+      rect(ctx, "#FFF7D8", -2, jawY, 4, 2);
+      rect(ctx, "#FFF7D8", 6, jawY, 4, 2);
+      if (attackPose.jawOpen >= 5) rect(ctx, "#F6C85A", -4, jawY + 4, 9, 1);
+    }
+
+    // Deterministic warning spores increase from three hollow marks to five solid marks.
+    const sporePoints = [[-15, -25], [-8, -34], [0, -36], [9, -33], [16, -24]] as const;
+    for (let index = 0; index < attackPose.spores; index++) {
+      const [x, y] = sporePoints[index];
+      if (attackPose.spores < 5) {
+        rect(ctx, "#F6C85A", x - 1, y, 3, 1);
+        rect(ctx, "#F6C85A", x, y - 1, 1, 3);
+        rect(ctx, "#22131A", x, y, 1, 1);
+      } else {
+        rect(ctx, "#F6C85A", x - 1, y - 1, 3, 3);
+        rect(ctx, "#FFF7D8", x, y, 1, 1);
+      }
+    }
+
+    // Static cap spots remain stable; only attack spores carry warning brightness.
+    rect(ctx, "#F6C85A", -10, capY + 3, 2, 2);
+    rect(ctx, "#F6C85A", -2, capY + 1, 1, 1);
+    rect(ctx, "#F6C85A", 8, capY + 4, 2, 1);
   },
   forest_guardian(ctx, p, _limbFrame, state, stateFrame, bossPhase = 1) {
     const phase = phaseOf(state, stateFrame);
