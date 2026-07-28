@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640">
+  <rect width="960" height="640" fill="#171b1a"/>
+  <text x="48" y="58" fill="#f2f1e8" font-family="sans-serif" font-size="30" font-weight="700">Bramble Boar — Redesign Concept</text>
+  <text x="48" y="88" fill="#aeb9ad" font-family="sans-serif" font-size="16">Forest charge unit · silhouette, telegraph and root readability</text>
+
+  <g transform="translate(70 145)">
+    <text x="0" y="0" fill="#d9e5d5" font-family="sans-serif" font-size="20" font-weight="700">Silhouette</text>
+    <ellipse cx="185" cy="250" rx="150" ry="28" fill="#0d1110" opacity="0.65"/>
+    <path d="M55 190 L78 137 L112 154 L152 114 L191 143 L232 119 L265 158 L305 154 L335 190 L320 232 L283 244 L236 236 L190 246 L137 235 L90 240 L57 220 Z" fill="#4f382c" stroke="#201814" stroke-width="10"/>
+    <path d="M68 186 L92 150 L122 169 L153 132 L185 161 L219 139 L253 169 L287 164 L319 192 L297 204 L259 198 L224 210 L180 203 L137 211 L100 202 Z" fill="#4f7037"/>
+    <path d="M286 169 L342 179 L374 205 L351 229 L309 224 L287 207 Z" fill="#6b4a35" stroke="#201814" stroke-width="9"/>
+    <path d="M330 204 L378 200 L369 220 L333 224 Z" fill="#3a2923"/>
+    <path d="M362 211 L392 205 L378 227 Z" fill="#f4e4be" stroke="#201814" stroke-width="5"/>
+    <rect x="106" y="224" width="32" height="48" rx="8" fill="#3d2d26" stroke="#201814" stroke-width="8"/>
+    <rect x="237" y="224" width="32" height="48" rx="8" fill="#3d2d26" stroke="#201814" stroke-width="8"/>
+    <path d="M74 165 Q45 155 41 181 Q43 199 64 194" fill="none" stroke="#37271f" stroke-width="12"/>
+    <circle cx="331" cy="191" r="5" fill="#f0c85a"/>
+    <path d="M88 145 L103 115 M151 130 L165 96 M220 139 L236 103 M277 158 L301 128" stroke="#819a43" stroke-width="10" stroke-linecap="square"/>
+  </g>
+
+  <g transform="translate(520 135)">
+    <text x="0" y="0" fill="#d9e5d5" font-family="sans-serif" font-size="20" font-weight="700">Charge language</text>
+    <rect x="0" y="30" width="365" height="90" rx="10" fill="#222927"/>
+    <text x="18" y="57" fill="#f2f1e8" font-family="sans-serif" font-size="16" font-weight="700">1. Brace</text>
+    <text x="18" y="82" fill="#aeb9ad" font-family="sans-serif" font-size="14">Forelegs compress; shoulder bramble lowers.</text>
+    <text x="18" y="104" fill="#aeb9ad" font-family="sans-serif" font-size="14">Dust and root flecks stay behind the front hoof.</text>
+
+    <rect x="0" y="138" width="365" height="90" rx="10" fill="#222927"/>
+    <text x="18" y="165" fill="#f2f1e8" font-family="sans-serif" font-size="16" font-weight="700">2. Lock</text>
+    <text x="18" y="190" fill="#aeb9ad" font-family="sans-serif" font-size="14">54 px broken root line marks the path.</text>
+    <text x="18" y="212" fill="#aeb9ad" font-family="sans-serif" font-size="14">Tusks flash once in the final 0.10–0.12 s.</text>
+
+    <rect x="0" y="246" width="365" height="90" rx="10" fill="#222927"/>
+    <text x="18" y="273" fill="#f2f1e8" font-family="sans-serif" font-size="16" font-weight="700">3. Charge</text>
+    <text x="18" y="298" fill="#aeb9ad" font-family="sans-serif" font-size="14">Body flattens; bramble ridge trails backward.</text>
+    <text x="18" y="320" fill="#aeb9ad" font-family="sans-serif" font-size="14">Impact uses root shards, not a circular blast.</text>
+
+    <text x="0" y="382" fill="#d9e5d5" font-family="sans-serif" font-size="20" font-weight="700">Palette</text>
+    <g transform="translate(0 402)">
+      <rect width="62" height="42" fill="#201814"/><rect x="72" width="62" height="42" fill="#4f382c"/><rect x="144" width="62" height="42" fill="#6b4a35"/><rect x="216" width="62" height="42" fill="#4f7037"/><rect x="288" width="62" height="42" fill="#819a43"/>
+      <text x="0" y="62" fill="#aeb9ad" font-family="sans-serif" font-size="12">ink</text><text x="72" y="62" fill="#aeb9ad" font-family="sans-serif" font-size="12">bark</text><text x="144" y="62" fill="#aeb9ad" font-family="sans-serif" font-size="12">hide</text><text x="216" y="62" fill="#aeb9ad" font-family="sans-serif" font-size="12">moss</text><text x="288" y="62" fill="#aeb9ad" font-family="sans-serif" font-size="12">thorn</text>
+    </g>
+  </g>
+
+  <text x="48" y="604" fill="#8fa294" font-family="sans-serif" font-size="14">Next review: shoulder height · tusk negative space · 54 px telegraph alignment · root VFX density · grayscale distinction from hounds</text>
+</svg>
