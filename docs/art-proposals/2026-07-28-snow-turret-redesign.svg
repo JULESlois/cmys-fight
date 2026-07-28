@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640">
+<rect width="960" height="640" fill="#111923"/>
+<text x="48" y="58" fill="#e8fbff" font-family="monospace" font-size="30" font-weight="700">SNOW TURRET / 雪地炮塔</text>
+<text x="48" y="88" fill="#8fb6c8" font-family="monospace" font-size="16">crawler silhouette · twin cryo fork · readable four-shot scatter</text>
+<g transform="translate(84 142) scale(6)" shape-rendering="crispEdges">
+<rect x="0" y="0" width="72" height="58" fill="#17232e"/>
+<rect x="5" y="43" width="37" height="9" fill="#15212a"/><rect x="7" y="44" width="33" height="7" fill="#405968"/>
+<rect x="9" y="46" width="6" height="5" fill="#90adba"/><rect x="18" y="46" width="6" height="5" fill="#90adba"/><rect x="27" y="46" width="6" height="5" fill="#90adba"/>
+<rect x="12" y="32" width="24" height="13" fill="#243642"/><rect x="14" y="33" width="20" height="11" fill="#75adbf"/><rect x="17" y="30" width="14" height="5" fill="#d7f6fa"/>
+<rect x="20" y="35" width="8" height="5" fill="#132a38"/><rect x="25" y="36" width="2" height="2" fill="#8ff3ff"/>
+<rect x="34" y="34" width="24" height="8" fill="#22333f"/><rect x="36" y="35" width="20" height="6" fill="#547f91"/>
+<rect x="43" y="30" width="6" height="6" fill="#6fc9df"/><rect x="47" y="28" width="4" height="4" fill="#dfffff"/>
+<rect x="56" y="31" width="5" height="6" fill="#e8fdff"/><rect x="56" y="39" width="5" height="6" fill="#b8edf5"/>
+<rect x="61" y="31" width="6" height="4" fill="#14212b"/><rect x="61" y="41" width="6" height="4" fill="#14212b"/>
+<rect x="61" y="32" width="5" height="2" fill="#dfffff"/><rect x="61" y="42" width="5" height="2" fill="#a7e8f3"/>
+</g>
+<g font-family="monospace">
+<text x="548" y="154" fill="#e8fbff" font-size="22" font-weight="700">具体概念方案</text>
+<text x="548" y="190" fill="#b8d5df" font-size="16">• 低矮履带底盘，避免误读成人形枪手</text>
+<text x="548" y="220" fill="#b8d5df" font-size="16">• 炮塔上盖形成冰脊，机身保持后重前窄</text>
+<text x="548" y="250" fill="#b8d5df" font-size="16">• 双层冷冻发射叉分别承担上下散射轴</text>
+<text x="548" y="280" fill="#b8d5df" font-size="16">• 四发预警用两组分叉亮点，不画连续扇面</text>
+<text x="548" y="310" fill="#b8d5df" font-size="16">• 受击时履带不位移，炮塔短促偏转 1–2 px</text>
+<text x="548" y="364" fill="#e8fbff" font-size="22" font-weight="700">状态节奏</text>
+<text x="548" y="400" fill="#b8d5df" font-size="16">IDLE  冷凝窗慢脉冲；上盖轻浮 1 px</text>
+<text x="548" y="430" fill="#b8d5df" font-size="16">WINDUP 0.42s  炮叉收束 → 四点锁定</text>
+<text x="548" y="460" fill="#b8d5df" font-size="16">FIRE  双叉后坐 4–5 px，喷出短霜晶</text>
+<text x="548" y="490" fill="#b8d5df" font-size="16">RECOVER  排汽一次，炮叉分离复位</text>
+</g>
+<g transform="translate(55 520)" font-family="monospace">
+<rect width="850" height="78" rx="8" fill="#17232e" stroke="#365365"/>
+<text x="20" y="28" fill="#dfffff" font-size="16" font-weight="700">配色：</text>
+<rect x="88" y="13" width="24" height="24" fill="#354e5d"/><text x="120" y="31" fill="#b8d5df" font-size="14">履带深钢</text>
+<rect x="224" y="13" width="24" height="24" fill="#79b7c8"/><text x="256" y="31" fill="#b8d5df" font-size="14">冷冻机壳</text>
+<rect x="376" y="13" width="24" height="24" fill="#d7f6fa"/><text x="408" y="31" fill="#b8d5df" font-size="14">冰霜高光</text>
+<rect x="536" y="13" width="24" height="24" fill="#7de3f5"/><text x="568" y="31" fill="#b8d5df" font-size="14">锁定青光</text>
+<text x="20" y="58" fill="#8fb6c8" font-size="14">目标：1× 缩放下先读出履带、炮塔和双叉，再读出冰霜材质与四发散射。</text>
+</g>
+</svg>
