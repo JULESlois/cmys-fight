@@ -3,6 +3,7 @@ import { Enemy } from "../entities/Enemy";
 import { Projectile } from "../entities/Projectile";
 import { Pickup } from "../entities/Pickup";
 import {
+  ARCANE_PLAYER_PALETTE,
   CELESTIA_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
@@ -248,6 +249,7 @@ export class EntityRenderer {
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
     const detailedArt = {
+      mage: { prefix: "player_arcane_side", palette: ARCANE_PLAYER_PALETTE },
       michele: { prefix: "player_michele_side", palette: MICHELE_PLAYER_PALETTE },
       kanami: { prefix: "player_kanami_side", palette: KANAMI_PLAYER_PALETTE },
       celestia: { prefix: "player_celestia_side", palette: CELESTIA_PLAYER_PALETTE },
@@ -267,15 +269,52 @@ export class EntityRenderer {
     if (activeWeapon?.dualWield && !yoyoDeployed) {
       EntityRenderer.drawPlayerWeapon(ctx, player, "back", time, engine.data.settings.reducedFlashing);
     }
+    if (player.characterId === "mage") EntityRenderer.drawArcanePrisms(ctx, player, false);
     SpriteRenderer.drawPixelSprite(ctx, spriteName, 0, -8, hasExtendedPlayerAnimation ? 1 : 2, {
       hitFlash: player.hitFlash > 0 && !engine.data.settings.reducedFlashing,
       flipX: player.facing === "left",
       paletteOverride: playerPalette,
       outlineColor: "#09101A",
     });
+    if (player.characterId === "mage") EntityRenderer.drawArcanePrisms(ctx, player, true);
     // Normal weapons are drawn in front of the body. Akimbo weapons split the
     // pair across the body layers, while a deployed yoyo hides its held copy.
     if (!yoyoDeployed) EntityRenderer.drawPlayerWeapon(ctx, player, "front", time, engine.data.settings.reducedFlashing);
+    ctx.restore();
+  }
+
+  private static drawArcanePrisms(ctx: CanvasRenderingContext2D, player: Player, foreground: boolean): void {
+    const phase = player.animFrame % 4;
+    const moveOffset = player.animState === "walk" ? (phase < 2 ? -1 : 1) : 0;
+    const charge = Math.max(0, Math.min(1, player.mageArcaneCharge / 12));
+    const prisms = [
+      { x: -13 - moveOffset, y: -17 + (phase % 2), front: false },
+      { x: -11 - moveOffset, y: -9 + ((phase + 1) % 2), front: true },
+      { x: 13 - moveOffset, y: -17 + ((phase + 1) % 2), front: false },
+      { x: 11 - moveOffset, y: -9 + (phase % 2), front: true },
+    ];
+    ctx.save();
+    for (const prism of prisms) {
+      if (prism.front !== foreground) continue;
+      ctx.fillStyle = "#07101F";
+      ctx.fillRect(prism.x - 2, prism.y - 3, 4, 6);
+      ctx.fillStyle = charge > 0.65 ? "#6FE6FF" : "#243B70";
+      ctx.fillRect(prism.x - 1, prism.y - 2, 2, 4);
+      if (charge > 0.9) {
+        ctx.fillStyle = "#DFFCFF";
+        ctx.fillRect(prism.x, prism.y - 1, 1, 2);
+      }
+    }
+    if (foreground) {
+      ctx.globalAlpha = 0.45 + charge * 0.45;
+      ctx.fillStyle = charge >= 0.95 ? "#DFFCFF" : "#6FE6FF";
+      ctx.fillRect(-1, 7, 2, 2);
+      if (player.muzzleFlash > 0 && charge < 0.35) {
+        ctx.globalAlpha = Math.min(0.42, player.muzzleFlash * 0.35);
+        ctx.fillStyle = "#7A4DFF";
+        ctx.fillRect(player.facing === "left" ? 4 : -8, -18, 4, 20);
+      }
+    }
     ctx.restore();
   }
 

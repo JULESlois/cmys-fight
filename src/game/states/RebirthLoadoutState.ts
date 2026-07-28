@@ -2,6 +2,7 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { audio } from "../audio/AudioManager";
 import {
+  ARCANE_PLAYER_PALETTE,
   CELESTIA_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
@@ -180,6 +181,7 @@ export class RebirthLoadoutState extends GameState {
 
   private getArt(characterId: string, color: string): { sprite: string; palette: Record<string, string>; scale: number } {
     const detailed = {
+      mage: { sprite: "player_arcane_side_idle", palette: ARCANE_PLAYER_PALETTE },
       michele: { sprite: "player_michele_side_idle", palette: MICHELE_PLAYER_PALETTE },
       kanami: { sprite: "player_kanami_side_idle", palette: KANAMI_PLAYER_PALETTE },
       celestia: { sprite: "player_celestia_side_idle", palette: CELESTIA_PLAYER_PALETTE },

@@ -1,4 +1,5 @@
 import {
+  ARCANE_PLAYER_PALETTE,
   CELESTIA_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
@@ -13,6 +14,7 @@ import { SpriteRenderer } from "../render/SpriteRenderer";
 export class HubPlayerRenderer {
   public static draw(ctx: CanvasRenderingContext2D, player: Player, reducedFlashing: boolean): void {
     const detailed = {
+      mage: { prefix: "player_arcane_side", palette: ARCANE_PLAYER_PALETTE },
       michele: { prefix: "player_michele_side", palette: MICHELE_PLAYER_PALETTE },
       kanami: { prefix: "player_kanami_side", palette: KANAMI_PLAYER_PALETTE },
       celestia: { prefix: "player_celestia_side", palette: CELESTIA_PLAYER_PALETTE },

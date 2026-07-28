@@ -1,4 +1,5 @@
 import { WEAPON_PALETTES, WEAPON_SPRITES } from "./weaponArt";
+import { ARCANE_CHARACTER_PALETTE, ARCANE_CHARACTER_SPRITES } from "./arcaneCharacterArt";
 import {
   CELESTIA_CHARACTER_PALETTE,
   CELESTIA_CHARACTER_SPRITES,
@@ -74,6 +75,7 @@ export const SPRITES: Record<string, SpriteData> = {
     "................"
   ],
 
+  ...ARCANE_CHARACTER_SPRITES,
   ...MICHELE_CHARACTER_SPRITES,
   ...KANAMI_CHARACTER_SPRITES,
   ...CELESTIA_CHARACTER_SPRITES,
@@ -342,6 +344,9 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
     "9": "#D8FBFF",
   },
   ...Object.fromEntries(
+    Object.keys(ARCANE_CHARACTER_SPRITES).map(spriteName => [spriteName, ARCANE_CHARACTER_PALETTE]),
+  ),
+  ...Object.fromEntries(
     Object.keys(MICHELE_CHARACTER_SPRITES).map(spriteName => [spriteName, MICHELE_CHARACTER_PALETTE]),
   ),
   ...Object.fromEntries(
@@ -358,6 +363,8 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
   ),
 };
 
+
+export const ARCANE_PLAYER_PALETTE: Record<string, string> = ARCANE_CHARACTER_PALETTE;
 
 export const KANAMI_PLAYER_PALETTE: Record<string, string> = KANAMI_CHARACTER_PALETTE;
 
