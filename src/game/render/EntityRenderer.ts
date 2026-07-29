@@ -588,6 +588,24 @@ export class EntityRenderer {
     }
   }
 
+  private static drawDingDongFowlScatterAxes(ctx: CanvasRenderingContext2D, enemy: Enemy, blink: boolean): void {
+    const count = Math.max(2, enemy.projectileCount);
+    const core = blink ? "#FFF1A6" : "#F1C40F";
+    const outline = "rgba(38,50,56,0.9)";
+    for (let index = 0; index < count; index++) {
+      const offset = (index - (count - 1) / 2) * enemy.projectileSpread;
+      const angle = enemy.attackAngle + offset;
+      for (let distance = 7; distance <= 12; distance += 2) {
+        const x = Math.round(Math.cos(angle) * distance);
+        const y = Math.round(Math.sin(angle) * distance);
+        ctx.fillStyle = outline;
+        ctx.fillRect(x - 1, y - 1, 3, 3);
+        ctx.fillStyle = core;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+
   private static drawAreaTiles(
     ctx: CanvasRenderingContext2D,
     localX: number,
@@ -643,8 +661,12 @@ export class EntityRenderer {
       } else if (enemy.behavior === "melee") {
         for (const offset of [-0.45, 0, 0.45]) EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle + offset, 22, lineColor);
       } else if (enemy.behavior === "scatter") {
-        const spread = Math.max(0.18, enemy.projectileSpread * Math.max(1, enemy.projectileCount - 1));
-        for (const offset of [-spread / 2, 0, spread / 2]) EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle + offset, 34, lineColor);
+        if (enemy.enemyId === "dingdong_fowl") {
+          EntityRenderer.drawDingDongFowlScatterAxes(ctx, enemy, blink);
+        } else {
+          const spread = Math.max(0.18, enemy.projectileSpread * Math.max(1, enemy.projectileCount - 1));
+          for (const offset of [-spread / 2, 0, spread / 2]) EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle + offset, 34, lineColor);
+        }
       } else if (enemy.behavior === "sniper") {
         EntityRenderer.drawPixelAttackLine(ctx, enemy.attackAngle, Math.min(150, enemy.attackRange), lineColor);
         const endX = Math.round(Math.cos(enemy.attackAngle) * Math.min(150, enemy.attackRange));

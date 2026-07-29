@@ -227,9 +227,9 @@ function drawAuthoredMonsterDetail(
       drawDetailPixels(ctx, "#FFF3C5", [[18, -3 + bob, 2, 1], [15, 0 + bob]]);
       break;
     case "dingdong_fowl":
-      drawDetailPixels(ctx, "#D7C99F", [[-3, -17 + bob, 1, 4], [2, -15 + bob, 1, 5], [6, -11 + bob, 1, 3]]);
-      drawDetailPixels(ctx, "#FFFBEA", [[-2, -28 + bob, 4, 1], [-6, -18 + bob, 2, 1]]);
-      drawDetailPixels(ctx, "#8A5A16", [[-2, -9 + bob, 5, 1], [0, -5 + bob]]);
+      drawDetailPixels(ctx, "#D7C99F", [[-4, -18 + bob, 1, 4], [3, -17 + bob, 1, 4], [7, -12 + bob, 1, 3]]);
+      drawDetailPixels(ctx, "#FFF8E1", [[-2, -29 + bob, 5, 1], [-7, -19 + bob, 2, 1]]);
+      drawDetailPixels(ctx, "#8A5A16", [[-2, -8 + bob, 5, 1], [0, -3 + bob]]);
       break;
     case "spore_mimic":
       drawDetailPixels(ctx, "#F6C85A", [[-9, -28 + bob, 2, 2], [-2, -30 + bob], [7, -27 + bob, 2, 1]]);
@@ -762,45 +762,91 @@ const models: Record<string, ModelDraw> = {
   dingdong_fowl(ctx, p, _limbFrame, state, stateFrame) {
     const phase = phaseOf(state, stateFrame);
     const bob = state === "walk" ? [0, 1, 0, -1][phase] : state === "idle" ? [0, -1][phase] : 0;
-    const flap = state === "attack" ? [0, -3, -7, -2][phase] : state === "walk" ? [0, -2, 0, 2][phase] : 0;
     const stride = state === "walk" ? [-2, -1, 2, 1][phase] : 0;
+    const wingLift = state === "attack" ? [0, 3, 7, 2][phase] : state === "walk" ? [0, 1, 0, -1][phase] : 0;
+    const wingSpread = state === "attack" ? [0, 2, 5, 2][phase] : state === "walk" ? [0, 1, 0, -1][phase] : 0;
+    const bellCompression = state === "attack" ? [0, 0, 1, 0][phase] : 0;
+    const bellBounce = state === "attack" ? [1, 0, 0, -2][phase] : 0;
+    const hurtBellLag = state === "hurt" ? [2, -1][phase] : 0;
+    const clapperOffset = state === "attack"
+      ? [1, -1, -2, 2][phase]
+      : state === "idle"
+        ? [1, -1][phase]
+        : state === "walk"
+          ? [1, 0, -1, 0][phase]
+          : state === "hurt"
+            ? [-1, 1][phase]
+            : 0;
+    const tailTuck = state === "idle" ? phase : 0;
+    const combDrop = state === "hurt" ? 2 : 0;
 
-    // Tail fan behind the bell-shaped body.
-    rect(ctx, p.ink, -15, -15 + bob, 8, 12);
-    rect(ctx, "#B76A16", -14, -14 + bob, 6, 10);
-    rect(ctx, "#E39A24", -16, -12 + bob, 4, 7);
-    rect(ctx, p.ink, -10, -20 + bob, 8, 6);
-    rect(ctx, "#D98C10", -9, -19 + bob, 6, 4);
+    // Three stepped tail feathers keep the rear silhouette separate from the wings.
+    rect(ctx, p.ink, -19 + tailTuck, -14 + bob, 7, 11);
+    rect(ctx, "#B76A16", -18 + tailTuck, -13 + bob, 5, 9);
+    rect(ctx, p.ink, -16 + tailTuck, -20 + bob, 7, 10);
+    rect(ctx, "#C47A18", -15 + tailTuck, -19 + bob, 5, 8);
+    rect(ctx, p.ink, -12 + tailTuck, -24 + bob, 7, 10);
+    rect(ctx, "#E0A12B", -11 + tailTuck, -23 + bob, 5, 8);
 
-    // Rounded cream body built from stepped pixel tiers.
-    rect(ctx, p.ink, -8, -20 + bob, 18, 20);
-    rect(ctx, "#F4F1DE", -7, -19 + bob, 16, 18);
-    rect(ctx, "#FFF8E1", -5, -18 + bob, 9, 14);
-    rect(ctx, "#D8CFAF", 5, -16 + bob, 3, 12);
+    // Compact cream body leaves a one-pixel negative gap around the bell and wings.
+    rect(ctx, p.ink, -8, -21 + bob, 18, 19);
+    rect(ctx, "#F4F1DE", -7, -20 + bob, 16, 17);
+    rect(ctx, "#FFF8E1", -5, -19 + bob, 8, 13);
+    rect(ctx, "#D8CFAF", 5, -17 + bob, 3, 12);
 
-    // Head, comb and beak.
-    rect(ctx, p.ink, -5, -30 + bob, 15, 12);
-    rect(ctx, "#FFF8E1", -4, -29 + bob, 13, 10);
-    rect(ctx, "#F4F1DE", 3, -27 + bob, 5, 7);
-    rect(ctx, "#E53935", -3, -35 + bob, 3, 6);
-    rect(ctx, "#E53935", 1, -34 + bob, 3, 5);
-    rect(ctx, "#E53935", 5, -32 + bob, 3, 4);
-    drawPixelEye(ctx, p, 4, -25 + bob, "#263238");
-    rect(ctx, p.ink, 8, -27 + bob, 9, 6);
-    rect(ctx, "#F9A825", 9, -26 + bob, 7, 4);
-    rect(ctx, "#E53935", 6, -20 + bob, 4, 5);
+    // Raised comb establishes facing before the beak and bell are read.
+    rect(ctx, p.ink, -5, -31 + bob + combDrop, 15, 12);
+    rect(ctx, "#FFF8E1", -4, -30 + bob + combDrop, 13, 10);
+    rect(ctx, "#F4F1DE", 3, -28 + bob + combDrop, 5, 7);
+    rect(ctx, "#E53935", -3, -38 + bob + combDrop, 3, 8);
+    rect(ctx, "#E53935", 1, -37 + bob + combDrop, 3, 7);
+    rect(ctx, "#E53935", 5, -35 + bob + combDrop, 3, 5);
+    drawPixelEye(ctx, p, 4, -26 + bob + combDrop, "#263238");
+    rect(ctx, p.ink, 8, -28 + bob + combDrop, 9, 6);
+    rect(ctx, "#F9A825", 9, -27 + bob + combDrop, 7, 4);
+    rect(ctx, "#E53935", 6, -21 + bob + combDrop, 4, 5);
 
-    // Wings visibly flap during scatter attacks.
-    rect(ctx, p.ink, -12, -17 + bob + flap, 7, 12);
-    rect(ctx, "#C47A18", -11, -16 + bob + flap, 5, 10);
-    rect(ctx, "#F0B63D", -10, -14 + bob + flap, 3, 6);
-    rect(ctx, p.ink, 8, -16 + bob - Math.trunc(flap / 2), 7, 11);
-    rect(ctx, "#D98C10", 9, -15 + bob - Math.trunc(flap / 2), 5, 9);
+    // Wings open into a clear V during the short scatter windup.
+    const leftWingX = -14 - wingSpread;
+    const rightWingX = 10 + wingSpread;
+    const wingY = -18 + bob - wingLift;
+    rect(ctx, p.ink, leftWingX, wingY, 8, 13);
+    rect(ctx, "#C47A18", leftWingX + 1, wingY + 1, 6, 11);
+    rect(ctx, "#F0B63D", leftWingX + 2, wingY + 3, 3, 6);
+    rect(ctx, p.ink, rightWingX, wingY + 1, 8, 12);
+    rect(ctx, "#C47A18", rightWingX + 1, wingY + 2, 6, 10);
+    rect(ctx, "#E0A12B", rightWingX + 2, wingY + 4, 3, 5);
 
-    // Bell breast and alternating bird legs.
-    rect(ctx, p.ink, -4, -11 + bob, 9, 9);
-    rect(ctx, "#F1C40F", -3, -10 + bob, 7, 7);
-    rect(ctx, "#7A4D15", -1, -6 + bob, 3, 3);
+    // Independent 8x7 yellow bell block with compression, rebound and clapper inertia.
+    const bellX = -5 + hurtBellLag;
+    const bellY = -13 + bob + bellBounce;
+    const bellHeight = 10 - bellCompression;
+    rect(ctx, p.ink, bellX + 2, bellY - 1, 6, 2);
+    rect(ctx, p.ink, bellX, bellY, 10, bellHeight - 2);
+    rect(ctx, p.ink, bellX - 1, bellY + bellHeight - 3, 12, 3);
+    rect(ctx, "#F1C40F", bellX + 1, bellY + 1, 8, Math.max(7, bellHeight - 3));
+    rect(ctx, "#FFF1A6", bellX + 2, bellY + 1, 3, 2);
+    rect(ctx, "#C47A18", bellX, bellY + bellHeight - 3, 10, 2);
+    rect(ctx, "#263238", bellX + 4 + clapperOffset, bellY + bellHeight - 1, 3, 3);
+
+    // Frames 3 and 4 expose the four exact launch axes without a large flash.
+    if (state === "attack" && phase >= 2) {
+      const axisColor = phase === 2 ? "#FFF1A6" : "#F1C40F";
+      const centerX = bellX + 5;
+      const centerY = bellY + 4;
+      rect(ctx, axisColor, centerX - 12, centerY, 5, 1);
+      rect(ctx, axisColor, centerX + 8, centerY, 5, 1);
+      rect(ctx, axisColor, centerX, centerY - 11, 1, 5);
+      rect(ctx, axisColor, centerX, centerY + 7, 1, 5);
+      if (phase === 3) {
+        rect(ctx, "#FFF8E1", centerX - 8, centerY - 1, 2, 2);
+        rect(ctx, "#FFF8E1", centerX + 7, centerY - 1, 2, 2);
+        rect(ctx, "#FFF8E1", centerX - 1, centerY - 7, 2, 2);
+        rect(ctx, "#FFF8E1", centerX - 1, centerY + 6, 2, 2);
+      }
+    }
+
+    // Alternating light bird legs remain independent from the attack pose.
     rect(ctx, p.ink, -5 + stride, -1, 4, 8);
     rect(ctx, "#F9A825", -4 + stride, 0, 2, 6);
     rect(ctx, p.ink, 2 - stride, -1, 4, 8);

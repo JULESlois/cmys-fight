@@ -1355,7 +1355,11 @@ export class DungeonState extends GameState {
   }
 
   private handleEnemyKilled(enemy: Enemy) {
-    this.fx.emitEnemyDeath(enemy.x, enemy.y, enemy.displayColor, enemy.type === "boss", this.engine.isPerformanceDegraded());
+    if (enemy.enemyId === "dingdong_fowl") {
+      this.fx.emitDingDongFowlDeath(enemy.x, enemy.y, enemy.facing, this.engine.isPerformanceDegraded());
+    } else {
+      this.fx.emitEnemyDeath(enemy.x, enemy.y, enemy.displayColor, enemy.type === "boss", this.engine.isPerformanceDegraded());
+    }
     this.engine.data.recordEnemyKill(enemy);
     const energyRestore = BuffSystem.getKillEnergyRestore(this.player);
     if (energyRestore > 0) {
@@ -2892,7 +2896,18 @@ export class DungeonState extends GameState {
       const count = Math.max(2, enemy.projectileCount);
       for (let i = 0; i < count; i++) {
         const offset = (i - (count - 1) / 2) * enemy.projectileSpread;
-        this.spawnEnemyProjectile(enemy, enemy.attackAngle + offset);
+        const angle = enemy.attackAngle + offset;
+        const projectile = this.spawnEnemyProjectile(
+          enemy,
+          angle,
+          3,
+          3,
+          enemy.enemyId === "dingdong_fowl" ? 6 : 0,
+        );
+        if (enemy.enemyId === "dingdong_fowl") {
+          projectile.color = "#FFF1A6";
+          projectile.trailLength = 4;
+        }
       }
       enemy.attackCooldown = enemy.attackInterval;
     } else if (enemy.behavior === "sniper") {
@@ -2974,11 +2989,13 @@ export class DungeonState extends GameState {
     enemy.attackTimer = 0.16;
   }
 
-  private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3): Projectile {
+  private spawnEnemyProjectile(enemy: Enemy, angle: number, radius = 3, life = 3, originDistance = 0): Projectile {
     const projectileRadius = Math.max(enemy.type === "boss" ? 2.5 : 1.75, radius * (enemy.type === "boss" ? 0.72 : 0.68));
+    const originX = enemy.x + Math.cos(angle) * originDistance;
+    const originY = enemy.y + Math.sin(angle) * originDistance;
     const projectile = acquireProjectile(
-      enemy.x,
-      enemy.y,
+      originX,
+      originY,
       Math.cos(angle) * enemy.projectileSpeed,
       Math.sin(angle) * enemy.projectileSpeed,
       projectileRadius,

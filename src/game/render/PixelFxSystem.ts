@@ -90,6 +90,31 @@ export class PixelFxSystem {
     if (this.particles.length > 220) this.particles.splice(0, this.particles.length - 220);
   }
 
+  private emitFixedParticle(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    life: number,
+    color: string,
+    options: { gravity?: number; glow?: boolean; size?: number; shape?: FxParticleShape } = {},
+  ): void {
+    this.particles.push({
+      x,
+      y,
+      vx,
+      vy,
+      life,
+      maxLife: life,
+      size: options.size ?? 2,
+      color,
+      gravity: options.gravity ?? 0,
+      glow: options.glow === true,
+      shape: options.shape ?? "pixel",
+    });
+    if (this.particles.length > 220) this.particles.splice(0, this.particles.length - 220);
+  }
+
   private emitPulse(x: number, y: number, radius: number, color: string, kind: FxPulseKind, life = 0.24): void {
     this.pulses.push({ x, y, radius, color, kind, life, maxLife: life });
     if (this.pulses.length > 28) this.pulses.splice(0, this.pulses.length - 28);
@@ -215,6 +240,32 @@ export class PixelFxSystem {
       shape: "streak",
     });
     this.emit(x, y, lowFx ? 3 : 6, "#675B55", 26, 0.48, { gravity: -14, size: 3, shape: "smoke" });
+  }
+
+  emitDingDongFowlDeath(x: number, y: number, facing: "left" | "right", lowFx = false): void {
+    const direction = facing === "left" ? -1 : 1;
+    this.emitPulse(x, y - 8, 6, "#F1C40F", "ring", 0.22);
+
+    // Exact velocities keep the clapper and at most three feathers stable across runs.
+    this.emitFixedParticle(x, y - 4, direction * 8, 24, 0.42, "#263238", {
+      gravity: 42,
+      size: 2,
+      shape: "pixel",
+    });
+    const feathers = lowFx
+      ? [[-4, -12, -30, -34, "#C47A18"], [3, -15, -20, -42, "#F4F1DE"]] as const
+      : [
+          [-5, -12, -34, -36, "#B76A16"],
+          [1, -16, -22, -46, "#C47A18"],
+          [5, -11, -14, -32, "#F4F1DE"],
+        ] as const;
+    for (const [offsetX, offsetY, vx, vy, color] of feathers) {
+      this.emitFixedParticle(x + offsetX * direction, y + offsetY, vx * direction, vy, 0.44, color, {
+        gravity: 54,
+        size: 2,
+        shape: "streak",
+      });
+    }
   }
 
   emitImpact(x: number, y: number, color: string, critical = false, lowFx = false) {
