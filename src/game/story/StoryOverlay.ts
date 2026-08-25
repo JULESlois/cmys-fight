@@ -34,6 +34,7 @@ import type { MetaProgress } from "../MetaProgress";
 import { t, uiFont, type Language } from "../i18n";
 import { DEFAULT_KEY_BINDINGS, formatBinding } from "../Settings";
 import { UI_COLORS, drawBadge, drawPixelButton, drawPixelPanel } from "../render/PixelUi";
+import { cursorPulse, easeOutCubic } from "../ui/UiMotion";
 import { CHAPTER_CUTSCENES, type EndingId } from "./StoryTree";
 import { StorySystem, normalizeStoryProgress, type StoryView } from "./StorySystem";
 import { hasStoryText, storyText } from "./StoryText";
@@ -69,6 +70,14 @@ export const STORY_TYPEWRITER_CPS = 45;
 
 /** Large enough to out-reveal any authored text instantly. */
 const REVEAL_COMPLETE = 1e9;
+
+/**
+ * Typewriter cost multiplier per character. Punctuation gets a beat so the
+ * line reads with a natural cadence rather than a constant tick.
+ */
+export function storyCharWeight(ch: string): number {
+  return /[，。！？、；：.,!?…]/.test(ch) ? 1.6 : 1;
+}
 
 const tKey = (key: string) => key as Parameters<typeof t>[1];
 
@@ -183,7 +192,9 @@ export class StoryOverlay {
     if (speakerLabel.length > 0) {
       ctx.font = uiFont(language, 6, true);
       const width = Math.min(140, Math.ceil(ctx.measureText(speakerLabel).width) + 10);
-      drawBadge(ctx, speakerLabel, 12, 158, width, language, "cyan");
+      // Nameplate slides in from the left over the first ~0.28s of the node.
+      const slide = easeOutCubic(Math.min(1, this.revealTimer / 0.28));
+      drawBadge(ctx, speakerLabel, Math.round(12 - 88 * (1 - slide)), 158, width, language, "cyan");
     }
 
     ctx.font = uiFont(language, 7);
@@ -209,7 +220,7 @@ export class StoryOverlay {
       const selection = Math.min(this.selection, view.choices.length - 1);
       for (const choice of view.choices) {
         const selected = choice.slot === selection;
-        drawPixelButton(ctx, 16, cy, 288, 11, selected, "cyan");
+        drawPixelButton(ctx, 16, cy, 288, 11, selected, "cyan", selected ? cursorPulse(this.revealTimer * 2) : 0);
         ctx.font = uiFont(language, 7, selected);
         ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
         ctx.textAlign = "left";
@@ -440,8 +451,30 @@ export class StoryOverlay {
     return this.bodyTexts(language).reduce((sum, line) => sum + line.length, 0);
   }
 
+  /**
+   * Typewriter reveal with punctuation pauses: full stops and commas cost ~1.6x
+   * a letter, so sentence ends land with a beat instead of clipping along.
+   * Returns the number of characters fully revealed under the current budget.
+   */
   private static revealedChars(total: number): number {
-    return Math.min(total, Math.floor(this.revealTimer * STORY_TYPEWRITER_CPS));
+    const weights = this.charCumulativeWeights(this.language);
+    const budget = this.revealTimer * STORY_TYPEWRITER_CPS;
+    let count = 0;
+    while (count < total && weights[count] <= budget) count++;
+    return count;
+  }
+
+  /** Cumulative per-character typewriter cost; length equals the char count. */
+  private static charCumulativeWeights(language: Language): number[] {
+    let acc = 0;
+    const weights: number[] = [];
+    for (const line of this.bodyTexts(language)) {
+      for (const ch of line) {
+        acc += storyCharWeight(ch);
+        weights.push(acc);
+      }
+    }
+    return weights;
   }
 
   /**

@@ -18,6 +18,7 @@ import { createRunProgressFromGlobalStage, getStageLabel } from "../RunProgress"
 import { MenuRenderer } from "../render/MenuRenderer";
 import { MonsterModelRenderer } from "../render/MonsterModelRenderer";
 import { SpriteRenderer } from "../render/SpriteRenderer";
+import { audio } from "../audio/AudioManager";
 import { GameState } from "./GameState";
 
 type RecordsPage = "overview" | "achievements" | "enemies" | "bosses" | "weapons" | "buffs";
@@ -46,24 +47,29 @@ export class RecordsState extends GameState {
 
   update() {
     if (this.engine.input.wasUiPressed("cancel")) {
+      audio.playUiCancel();
       this.engine.switchState(this.backState);
       return;
     }
     if (this.engine.input.wasUiPressed("left")) {
       this.pageIndex = (this.pageIndex - 1 + PAGES.length) % PAGES.length;
       this.selectedIndex = 0;
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("right")) {
       this.pageIndex = (this.pageIndex + 1) % PAGES.length;
       this.selectedIndex = 0;
+      audio.playUiMove();
     }
     const rows = this.getRows();
     if (rows.length === 0) return;
     if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + rows.length) % rows.length;
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % rows.length;
+      audio.playUiMove();
     }
   }
 

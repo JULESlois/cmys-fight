@@ -98,6 +98,7 @@ export function drawPixelButton(
   h: number,
   selected: boolean,
   tone: UiTone = "cyan",
+  pulse = 0,
 ): void {
   const accent = toneColor(tone);
   ctx.save();
@@ -108,6 +109,16 @@ export function drawPixelButton(
   ctx.fill();
   ctx.strokeStyle = selected ? UI_COLORS.white : tone === "neutral" ? UI_COLORS.edgeSoft : accent;
   ctx.stroke();
+  if (selected && pulse > 0) {
+    // Breathing inner ring + caret. pulse is a 0..1 oscillation from
+    // UiMotion.cursorPulse; reducedFlashing keeps it a steady mid tone.
+    const ringAlpha = 0.12 + 0.3 * pulse;
+    ctx.strokeStyle = `rgba(255,255,255,${ringAlpha.toFixed(2)})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+    ctx.fillStyle = `rgba(255,255,255,${(0.6 + 0.4 * pulse).toFixed(2)})`;
+    ctx.fillRect(x - 3, Math.round(y + h / 2) - 2, 2, 4);
+  }
   ctx.restore();
 }
 

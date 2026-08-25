@@ -1,5 +1,7 @@
 import { t, uiFont } from "../i18n";
 import { drawPixelPanel, UI_COLORS } from "../render/PixelUi";
+import { audio } from "../audio/AudioManager";
+import { cursorPulse } from "../ui/UiMotion";
 import { GameState } from "./GameState";
 
 type MenuOption = "resume" | "save" | "settings" | "quit";
@@ -18,21 +20,25 @@ export class MenuState extends GameState {
 
   update(_dt?: number) {
     if (this.engine.input.wasUiPressed("cancel")) {
+      audio.playUiCancel();
       this.engine.closeMenu();
       return;
     }
     if (this.engine.input.wasUiPressed("up")) {
       this.selection = (this.selection - 1 + OPTIONS.length) % OPTIONS.length;
       this.message = "";
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selection = (this.selection + 1) % OPTIONS.length;
       this.message = "";
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("confirm")) this.handleSelect();
   }
 
   private handleSelect() {
+    audio.playUiConfirm();
     const option = OPTIONS[this.selection];
     const language = this.engine.data.settings.language;
     if (option === "resume") {
@@ -68,14 +74,22 @@ export class MenuState extends GameState {
     ctx.fillStyle = UI_COLORS.purple;
     ctx.fillRect(47, 53, 226, 1);
 
+    const time = Date.now() / 1000;
     OPTIONS.forEach((option, index) => {
       const y = 90 + index * 26;
       const selected = index === this.selection;
-      
+      const pulse = selected ? cursorPulse(time, this.engine.data.settings.reducedFlashing) : 0;
+
       ctx.textAlign = "center";
       ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(language, selected ? 8 : 7, selected);
       ctx.fillText(t(language, `menu.${option}` as Parameters<typeof t>[1]), 160, y);
+
+      if (selected) {
+        // Breathing caret on the left of the focused row.
+        ctx.fillStyle = `rgba(255,255,255,${(0.55 + 0.45 * pulse).toFixed(2)})`;
+        ctx.fillRect(150, y - 3, 2, 6);
+      }
     });
 
     if (this.message) {

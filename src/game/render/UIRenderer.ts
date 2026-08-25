@@ -16,6 +16,16 @@ import {
 export class UIRenderer {
   private static lastCoinAmount: number = -1;
   private static coinDisplayUntil: number = 0;
+  private static lastHp = -1;
+  private static hpPulseStartedAt = 0;
+  private static lastArmor = -1;
+  private static armorPulseStartedAt = 0;
+
+  /** A 0..1 decay pulse triggered by a value change; 0 when idle. */
+  private static valuePulse(now: number, startedAt: number, durationMs: number): number {
+    return Math.max(0, 1 - (now - startedAt) / durationMs);
+  }
+
   public static draw(
     ctx: CanvasRenderingContext2D,
     player: Player,
@@ -25,18 +35,41 @@ export class UIRenderer {
     weaponHudOptions: WeaponHudDrawOptions = {},
   ) {
     const language = engine.data.settings.language;
+    const now = Date.now();
+    const reducedFlashing = engine.data.settings.reducedFlashing === true;
+    if (player.hp !== UIRenderer.lastHp) {
+      UIRenderer.lastHp = player.hp;
+      UIRenderer.hpPulseStartedAt = now;
+    }
+    if (player.armor !== UIRenderer.lastArmor) {
+      UIRenderer.lastArmor = player.armor;
+      UIRenderer.armorPulseStartedAt = now;
+    }
 
     // Compact player status block. Icons carry the meaning so the bars do not
     // rely on color alone.
     const statusPanel = HUD_LAYOUT.topLeftStatus;
     drawPixelPanel(ctx, statusPanel.x, statusPanel.y, statusPanel.width, statusPanel.height, "cyan", true);
     const statRows = [
-      { kind: "heart" as const, y: 11, value: player.hp, max: player.maxHp, color: UI_COLORS.red },
-      { kind: "shield" as const, y: 24, value: player.armor, max: Math.max(1, player.maxArmor), color: player.armorRechargeTimer <= 0 ? UI_COLORS.cyan : "#A7B2BC" },
+      {
+        kind: "heart" as const, y: 11, value: player.hp, max: player.maxHp, color: UI_COLORS.red,
+        pulse: UIRenderer.valuePulse(now, UIRenderer.hpPulseStartedAt, 320),
+      },
+      {
+        kind: "shield" as const, y: 24, value: player.armor, max: Math.max(1, player.maxArmor),
+        color: player.armorRechargeTimer <= 0 ? UI_COLORS.cyan : "#A7B2BC",
+        pulse: UIRenderer.valuePulse(now, UIRenderer.armorPulseStartedAt, 320),
+      },
     ];
     statRows.forEach(row => {
       drawUiIcon(ctx, row.kind, 11, row.y, row.color);
       drawMeter(ctx, 23, row.y + 1, 32, 7, row.max > 0 ? row.value / row.max : 0, row.color, 10);
+      // One-shot brightening pulse on value change: a white overlay that
+      // decays over ~0.3s. Reduced flashing suppresses the blink, not the state.
+      if (row.pulse > 0 && !reducedFlashing) {
+        ctx.fillStyle = `rgba(255,255,255,${(row.pulse * 0.55).toFixed(2)})`;
+        ctx.fillRect(11, row.y, 9, 8);
+      }
       ctx.fillStyle = UI_COLORS.white;
       ctx.font = uiFont(language, 6, true);
       ctx.textAlign = "right";
@@ -46,12 +79,21 @@ export class UIRenderer {
     const skill = SkillController.getConfig(player.characterId);
     const skillCooldownTotal = Math.max(0.01, skill.cooldown * BuffSystem.getSkillCooldownMultiplier(player));
     const skillReady = Math.max(0, Math.min(1, 1 - player.skillCooldown / skillCooldownTotal));
-    drawUiIcon(ctx, "skill", 11, 37, player.skillCooldown <= 0 ? UI_COLORS.green : UI_COLORS.purple);
-    drawMeter(ctx, 23, 38, 32, 6, skillReady, player.skillCooldown <= 0 ? UI_COLORS.green : UI_COLORS.purple, 0);
+    const skillIsReady = player.skillCooldown <= 0;
+    drawUiIcon(ctx, "skill", 11, 37, skillIsReady ? UI_COLORS.green : UI_COLORS.purple);
+    // Breathing glow on the skill icon when ready; steady mid-tone under
+    // reduced flashing so it never strobes.
+    if (skillIsReady) {
+      const readyPulse = reducedFlashing ? 0.35 : 0.22 + 0.3 * (0.5 + 0.5 * Math.sin(now / 1000 * 5));
+      ctx.fillStyle = `rgba(88,214,141,${readyPulse.toFixed(2)})`;
+      ctx.fillRect(9, 35, 12, 12);
+      drawUiIcon(ctx, "skill", 11, 37, UI_COLORS.green);
+    }
+    drawMeter(ctx, 23, 38, 32, 6, skillReady, skillIsReady ? UI_COLORS.green : UI_COLORS.purple, 0);
     ctx.textAlign = "right";
-    ctx.fillStyle = player.skillCooldown <= 0 ? UI_COLORS.green : UI_COLORS.text;
+    ctx.fillStyle = skillIsReady ? UI_COLORS.green : UI_COLORS.text;
     ctx.font = uiFont(language, 5, true);
-    ctx.fillText(player.skillCooldown <= 0 ? "READY" : `${player.skillCooldown.toFixed(1)}S`, 80, 43);
+    ctx.fillText(skillIsReady ? "READY" : `${player.skillCooldown.toFixed(1)}S`, 80, 43);
 
     // Everything under the status block shares one vertical flow. Each element
     // advances `currentY`, so a wrapped buff strip pushes the rows below it down

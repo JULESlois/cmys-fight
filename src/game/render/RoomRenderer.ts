@@ -8,7 +8,7 @@ import {
   TILE_PROP,
   TILE_STRUCTURE,
 } from "../MapData";
-import { PALETTES } from "../data/palettes";
+import { DEEP_THEMES, PALETTES } from "../data/palettes";
 import { DOOR_ORIENTATIONS, getDoorGeometry } from "../dungeon/DoorGeometry";
 import { SpecialRoomRenderer } from "./SpecialRoomRenderer";
 import { DoorRenderer } from "./DoorRenderer";
@@ -1029,11 +1029,7 @@ function drawForgeCoreFloorTile(ctx: CanvasRenderingContext2D, x: number, y: num
 }
 
 export function getBaseTheme(theme: string): string {
-  if (theme === "overgrown_archive") return "forest";
-  if (theme === "sealed_library" || theme === "sealed_armory" || theme === "ash_catacombs" || theme === "deep_prison" || theme === "deep_archive") return "dungeon";
-  if (theme === "cooling_canal" || theme === "observatory") return "snow";
-  if (theme === "forge_core") return "lava";
-  return theme;
+  return DEEP_THEMES[theme] ?? theme;
 }
 
 export function getAmbientParticleBudget(lowFx: boolean): number {
@@ -1174,6 +1170,21 @@ export class RoomRenderer {
             ctx.fillStyle = "rgba(0,0,0,0.05)";
             ctx.fillRect(tx, ty + TILE_SIZE - 1, TILE_SIZE, 1);
             ctx.fillRect(tx + TILE_SIZE - 1, ty, 1, TILE_SIZE);
+          }
+
+          // Seed-mixed floor variants: ~2 in 7 floor tiles get a faint dark or
+          // light patch so large floor areas don't read as one flat fill.
+          if (tileId === 0 || tileId === 2) {
+            const variant = Math.floor(hash * 7) % 3;
+            if (variant === 1) {
+              ctx.fillStyle = "rgba(0,0,0,0.09)";
+              ctx.fillRect(tx + 6, ty + 8, 4, 2);
+              ctx.fillRect(tx + 2, ty + 3, 2, 4);
+            } else if (variant === 2) {
+              ctx.fillStyle = "rgba(255,255,255,0.05)";
+              ctx.fillRect(tx + 3, ty + 5, 5, 1);
+              ctx.fillRect(tx + 9, ty + 9, 3, 1);
+            }
           }
         } else if (tileId === 3) {
           if (baseTheme === "forest") {

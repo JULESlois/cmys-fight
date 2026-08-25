@@ -22,6 +22,7 @@ import { grantDebugLoadout, isDebugMode, jumpToStage } from "./DebugTools";
 import { FINAL_GLOBAL_STAGE } from "./RunProgress";
 import { getEntityPoolStats } from "./EntityPools";
 import { WorldNoticeController } from "./notice/WorldNoticeController";
+import { PALETTES } from "./data/palettes";
 import { WorldNoticeRenderer } from "./notice/WorldNoticeRenderer";
 
 export class Engine {
@@ -314,6 +315,24 @@ export class Engine {
     audio.setMusicScene(stateScenes[this.currentState] ?? "title");
   }
 
+  /**
+   * Block-dissolve color themed by the destination state: the hub stays cyan,
+   * a dungeon entry matches the floor's portal accent, and a run result reads
+   * as victory gold or defeat red.
+   */
+  public transitionColor(): string {
+    const target = this.transitionTarget?.newState;
+    if (target === "run_result") {
+      const outcome = this.transitionTarget?.params?.summary?.outcome ?? this.data.data.runStats.outcome;
+      return outcome === "victory" ? "#F0C45B" : "#E85B65";
+    }
+    if (target === "dungeon") {
+      const floor = this.data.data.floor;
+      return floor ? (PALETTES[floor.theme]?.portal ?? "#39D9E8") : "#39D9E8";
+    }
+    return "#39D9E8";
+  }
+
   public triggerScreenShake(intensity = 2, duration = 0.12) {
     if (!this.data.settings.screenShake) return;
     this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
@@ -520,7 +539,7 @@ export class Engine {
     if (this.isDebugOverlayVisible()) this.drawDebugOverlay(this.ctx);
     
     if (this.transitionTimer > 0) {
-      this.ctx.fillStyle = "#39D9E8";
+      this.ctx.fillStyle = this.transitionColor();
       let progress = 1.0 - Math.max(0, this.transitionTimer / this.TRANSITION_DURATION);
       let ratio = 0;
       let isFill = true;

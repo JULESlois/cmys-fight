@@ -17,6 +17,8 @@ import {
   type ReforgeStonePhase,
 } from "../hub/HubWorldRenderer";
 import { HubDebugOverlay } from "../hub/HubDebugOverlay";
+import { collectBuildingLights, drawHubLights } from "../hub/HubLightRenderer";
+import { cursorPulse } from "../ui/UiMotion";
 import { drawPixelButton, drawPixelPanel, drawSectionLabel, UI_COLORS } from "../render/PixelUi";
 import { PromptRenderer } from "../render/PromptRenderer";
 import { Camera2D } from "../world/Camera2D";
@@ -834,6 +836,17 @@ export class HubState extends GameState {
     this.worldRenderer.drawRoofTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawUpperTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawObjects(ctx, this.map, this.camera, "upper", this.time);
+    // Building light glow sits above the world but under UI. `lighter` blend
+    // keeps overlapping braziers additive without touching the pixel grid.
+    if (!this.engine.isPerformanceDegraded()) {
+      drawHubLights(
+        ctx,
+        collectBuildingLights(this.map),
+        this.time,
+        false,
+        this.engine.data.settings.reducedFlashing,
+      );
+    }
     if (this.debugOverlayVisible) {
       HubDebugOverlay.draw(ctx, this.map, this.collision, this.camera, this.player);
     }
@@ -1506,6 +1519,11 @@ export class HubState extends GameState {
     }
   }
 
+  /** Breathing pulse (0..1) for the focused menu row; flat under reduced flashing. */
+  private selectionPulse(): number {
+    return cursorPulse(this.time, this.engine.data.settings.reducedFlashing);
+  }
+
   private drawUpgradePanel(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = "rgba(3,7,8,0.78)";
     ctx.fillRect(0, 0, 320, 240);
@@ -1523,7 +1541,7 @@ export class HubState extends GameState {
       const cost = getUpgradeCost(id, level);
       const y = 51 + index * 23;
       const selected = this.selectedIndex === index;
-      drawPixelButton(ctx, 34, y - 11, 252, 18, selected, "cyan");
+      drawPixelButton(ctx, 34, y - 11, 252, 18, selected, "cyan", selected ? this.selectionPulse() : 0);
       ctx.textAlign = "left";
       ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(this.language, 7, selected);
@@ -1536,7 +1554,8 @@ export class HubState extends GameState {
     });
 
     const refundY = 51 + META_UPGRADE_IDS.length * 23;
-    drawPixelButton(ctx, 34, refundY - 11, 252, 18, this.selectedIndex === META_UPGRADE_IDS.length, "red");
+    drawPixelButton(ctx, 34, refundY - 11, 252, 18, this.selectedIndex === META_UPGRADE_IDS.length, "red",
+      this.selectedIndex === META_UPGRADE_IDS.length ? this.selectionPulse() : 0);
     ctx.textAlign = "left";
     ctx.fillStyle = this.selectedIndex === META_UPGRADE_IDS.length ? UI_COLORS.white : UI_COLORS.text;
     ctx.font = uiFont(this.language, 7, this.selectedIndex === META_UPGRADE_IDS.length);

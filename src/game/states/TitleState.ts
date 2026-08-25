@@ -44,11 +44,11 @@ export class TitleState extends GameState {
     if (this.introTimer >= 0.5) {
       if (this.engine.input.wasUiPressed("up")) {
         this.moveSelection(-1);
-        audio.playShoot(); // Reuse some sound for blip
+        audio.playUiMove();
       }
       if (this.engine.input.wasUiPressed("down")) {
         this.moveSelection(1);
-        audio.playShoot();
+        audio.playUiMove();
       }
       if (this.engine.input.wasUiPressed("confirm")) {
         this.handleSelect();
@@ -57,6 +57,7 @@ export class TitleState extends GameState {
   }
 
   private handleSelect() {
+    audio.playUiConfirm();
     const opt = this.options[this.selectedIndex];
     if (opt === "newRun") {
       this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });

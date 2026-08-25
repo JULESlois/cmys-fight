@@ -12,7 +12,7 @@ let callCount = 0;
 const originalOn = CombatEventDispatcher.on.bind(CombatEventDispatcher);
 CombatEventDispatcher.on = (event, listener) => {
   callCount++;
-  originalOn(event, listener);
+  return originalOn(event, listener);
 };
 BuffSystem.init();
 const initialCallCount = callCount;

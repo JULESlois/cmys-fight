@@ -2,7 +2,8 @@ import { Engine } from "../Engine";
 import { CombatEventDispatcher } from "../combat/CombatEvents";
 import { CharacterResourceController } from "../combat/CharacterResource";
 import { UI_COLORS } from "../render/PixelUi";
-import { generateStage, type Room, type ThemeId } from "../FloorGenerator";
+import { generateStage, type FloorData, type Room, type ThemeId } from "../FloorGenerator";
+import { PALETTES } from "../data/palettes";
 import { isCombatCleared, isCombatRoom, markCombatCleared, normalizeRoomState } from "../RoomState";
 import { Player, MAX_PLAYER_MANA } from "../entities/Player";
 import { Projectile } from "../entities/Projectile";
@@ -34,6 +35,8 @@ import { UIRenderer } from "../render/UIRenderer";
 import type { WeaponHudDrawOptions } from "../render/WeaponHudRenderer";
 import { PixelFxSystem } from "../render/PixelFxSystem";
 import { ArtDirectionRenderer } from "../render/ArtDirectionRenderer";
+import { FloatingTextRenderer } from "../render/FloatingTextRenderer";
+import { HitStop } from "../combat/HitStop";
 import { audio } from "../audio/AudioManager";
 import { PortalRenderer, PortalState } from "../render/PortalRenderer";
 import { MinimapRenderer } from "../render/MinimapRenderer";
@@ -185,6 +188,8 @@ export class DungeonState extends GameState {
   private projectiles: Projectile[] = [];
   private roomRenderer = new RoomRenderer();
   private fx = new PixelFxSystem();
+  private floatingText = new FloatingTextRenderer();
+  private combatFxUnsubscribers: Array<() => void> = [];
   private enemies: Enemy[] = [];
   private pickups: Pickup[] = [];
   
@@ -301,7 +306,8 @@ export class DungeonState extends GameState {
 
     this.loadRoom();
     this.maybeTriggerChapterStory();
-    
+    this.registerCombatFeedback();
+
     if (params && params.fromLegacy && params.result !== "loss") {
        const floor = this.engine.data.data.floor;
        const sourceRoom = floor?.rooms?.find((r: Room) => r?.id === params.sourceRoomId);
@@ -326,8 +332,42 @@ export class DungeonState extends GameState {
   }
   
   exit() {
+    this.unregisterCombatFeedback();
+    this.floatingText.clear();
+    HitStop.reset();
     this.clearRoomScopedSkillEntities();
     this.prepareForSave();
+  }
+
+  /**
+   * Subscribes floating-text and hit-stop to the combat event bus for the
+   * lifetime of this dungeon visit. Subscriptions are removed in exit() so a
+   * dead state never paints numbers over the hub or the result screen.
+   */
+  private registerCombatFeedback(): void {
+    if (this.combatFxUnsubscribers.length > 0) return;
+    const reduced = () => this.engine.data.settings.reducedFlashing;
+    this.combatFxUnsubscribers.push(
+      CombatEventDispatcher.on("player_hit_enemy", ({ enemy, damage, isCrit }) => {
+        const value = Math.max(1, Math.round(damage));
+        this.floatingText.spawn(enemy.x, enemy.y - 10, `${value}`, isCrit ? "crit" : "damage");
+        HitStop.request(isCrit ? 2 : 0, reduced());
+      }),
+      CombatEventDispatcher.on("player_kill_enemy", ({ enemy }) => {
+        HitStop.request(enemy.type === "boss" ? 4 : 3, reduced());
+      }),
+      CombatEventDispatcher.on("player_damaged", ({ player, damage }) => {
+        if (damage > 0) {
+          this.floatingText.spawn(player.x, player.y - 14, `-${Math.round(damage)}`, "playerHurt");
+          HitStop.request(2, reduced());
+        }
+      }),
+    );
+  }
+
+  private unregisterCombatFeedback(): void {
+    for (const off of this.combatFxUnsubscribers) off();
+    this.combatFxUnsubscribers = [];
   }
 
   prepareForSave() {
@@ -767,6 +807,7 @@ export class DungeonState extends GameState {
          currentRoom.enemies = [];
          currentRoom.encounterState = undefined;
          this.prepareBuffChoice(floor, currentRoom);
+         this.emitDoorUnlockPulses(floor, currentRoom);
       }
     } else if (phase === "reward") {
       // Spawn rewards
@@ -774,6 +815,21 @@ export class DungeonState extends GameState {
       this.phaseTimer = 0.5;
     } else if (phase === "exiting") {
       // Free to move
+    }
+  }
+
+  /**
+   * Visible "doors opened" feedback: a pulse at every door of the room just
+   * cleared, colored by the current floor theme's portal accent.
+   */
+  private emitDoorUnlockPulses(floor: FloorData, room: Room): void {
+    const color = PALETTES[floor.theme]?.portal ?? "#39D9E8";
+    const lowFx = this.engine.isPerformanceDegraded();
+    for (const orientation of DOOR_ORIENTATIONS) {
+      if (!room.doors[orientation]) continue;
+      const geometry = getDoorGeometry(orientation);
+      const vb = geometry.visualBounds;
+      this.fx.emitDoorUnlock(Math.round(vb.x + vb.width / 2), Math.round(vb.y + vb.height / 2), color, lowFx);
     }
   }
 
@@ -903,6 +959,20 @@ export class DungeonState extends GameState {
     const sceneTheme = floor?.worldNodeId || floor?.theme || "forest";
     this.roomRenderer.update(dt, sceneTheme, this.engine.isPerformanceDegraded());
     this.fx.update(dt);
+    this.floatingText.update(dt);
+    HitStop.tick(dt);
+    if (HitStop.isActive()) {
+      // Hit-stop: freeze combat entity progression but keep FX, floating text,
+      // the room renderer, and occlusion animating so the freeze reads as a
+      // deliberate impact beat rather than a hung frame.
+      this.occlusionController.update(
+        dt,
+        { x: this.player.x - 16, y: this.player.y - 31, width: 32, height: 35 },
+        this.player.y,
+        this.getDungeonOcclusionObjects(),
+      );
+      return;
+    }
     this.occlusionController.update(
       dt,
       { x: this.player.x - 16, y: this.player.y - 31, width: 32, height: 35 },
@@ -3873,10 +3943,14 @@ export class DungeonState extends GameState {
     return null;
   }
 
+  /** Magnet radius in virtual pixels; weapons are significant drops and stay on the floor. */
+  private static readonly PICKUP_MAGNET_RADIUS = 42;
+
   private updatePickups(dt: number) {
+     const magnetKinds: PickupType[] = ["hp", "mana", "coin", "heart", "soul"];
      for (let i = this.pickups.length - 1; i >= 0; i--) {
         const p = this.pickups[i];
-        
+
         if ((p as any).bounceTimer > 0) {
            (p as any).bounceTimer = Math.max(0, (p as any).bounceTimer - dt);
            const jump = Math.sin(((p as any).bounceTimer / 0.2) * Math.PI) * 10;
@@ -3886,6 +3960,21 @@ export class DungeonState extends GameState {
 
         const pickupDistance = Math.hypot(p.x - this.player.x, p.y - this.player.y);
         const pickupRange = p.radius + this.player.radius;
+        // Small pickups are pulled in once the player gets near, with a faint
+        // trail. Weapons and blocked pickups are exempt.
+        if (
+          !p.blockedUntilPlayerLeaves &&
+          magnetKinds.includes(p.type) &&
+          pickupDistance < DungeonState.PICKUP_MAGNET_RADIUS &&
+          pickupDistance > pickupRange
+        ) {
+          const pull = 120 * dt * (1 - pickupDistance / (DungeonState.PICKUP_MAGNET_RADIUS + 8));
+          const dx = (this.player.x - p.x) / pickupDistance;
+          const dy = (this.player.y - p.y) / pickupDistance;
+          p.x += dx * pull;
+          p.y += dy * pull;
+          this.fx.emitPickupTrail(p, this.engine.isPerformanceDegraded());
+        }
         if (p.blockedUntilPlayerLeaves) {
            if (pickupDistance > pickupRange + 6) {
               p.blockedUntilPlayerLeaves = false;
@@ -4256,7 +4345,7 @@ export class DungeonState extends GameState {
     for (const p of this.projectiles) {
        EntityRenderer.drawProjectile(ctx, p, this.engine.data.settings.reducedFlashing);
     }
-    this.fx.draw(ctx, this.engine.data.settings.reducedFlashing);
+    this.fx.draw(ctx, this.engine.data.settings.reducedFlashing, this.engine.isPerformanceDegraded());
     ArtDirectionRenderer.drawWorldGrade(
       ctx,
       floor.theme || "forest",
@@ -4266,6 +4355,9 @@ export class DungeonState extends GameState {
       this.engine.isPerformanceDegraded(),
       this.engine.data.settings.reducedFlashing,
     );
+    // Floating combat text sits above the world grade but below the HUD so
+    // numbers stay legible over bright floors and the vignette.
+    this.floatingText.draw(ctx, this.engine.data.settings.reducedFlashing);
     if (this.qaCollisionDebug) this.drawRoomObjectCollisionDebug(ctx);
     
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase, this.qaWeaponHudOptions);

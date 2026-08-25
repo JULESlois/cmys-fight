@@ -64,11 +64,12 @@ export type CombatEventListener<T extends CombatEventType> = (payload: CombatEve
 class CombatEventDispatcherImpl {
   private listeners = new Map<CombatEventType, Array<CombatEventListener<any>>>();
 
-  public on<T extends CombatEventType>(event: T, listener: CombatEventListener<T>) {
+  public on<T extends CombatEventType>(event: T, listener: CombatEventListener<T>): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(listener);
+    return () => this.off(event, listener);
   }
 
   public off<T extends CombatEventType>(event: T, listener: CombatEventListener<T>) {

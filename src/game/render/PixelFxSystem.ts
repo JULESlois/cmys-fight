@@ -2,6 +2,16 @@ import type { Pickup } from "../entities/Pickup";
 import type { Projectile } from "../entities/Projectile";
 
 type FxParticleShape = "pixel" | "streak" | "smoke";
+
+/** Shared pickup color convention, reused by the collection burst and trails. */
+function pickupColor(type: string): string {
+  return type === "coin" ? "#F1C40F"
+    : type === "hp" ? "#FF5D73"
+      : type === "mana" ? "#45B7FF"
+        : type === "heart" ? "#FF5D73"
+          : type === "soul" ? "#39D9E8"
+            : "#C77DFF";
+}
 type FxPulseKind = "ring" | "cross";
 
 interface FxParticle {
@@ -230,13 +240,24 @@ export class PixelFxSystem {
   }
 
   emitPickup(pickup: Pickup, lowFx = false) {
-    const color = pickup.type === "coin" ? "#F1C40F"
-      : pickup.type === "hp" ? "#FF5D73"
-        : pickup.type === "mana" ? "#45B7FF"
-          : pickup.type === "heart" ? "#FF5D73"
-            : pickup.type === "soul" ? "#39D9E8"
-              : "#C77DFF";
+    const color = pickupColor(pickup.type);
     this.emit(pickup.x, pickup.y, lowFx ? 5 : 12, color, 52, 0.45, { gravity: -18, glow: true, size: 2 });
+  }
+
+  /**
+   * One spark trailing behind a pickup being magnetized toward the player.
+   * Cheap: a single glowing pixel per call, so it can be emitted every frame
+   * while magnetized without taxing the pool.
+   */
+  emitPickupTrail(pickup: Pickup, lowFx = false) {
+    if (lowFx) return;
+    this.emit(pickup.x, pickup.y, 1, pickupColor(pickup.type), 14, 0.28, { gravity: -8, glow: true, size: 2 });
+  }
+
+  /** Room-clear door unlock: a bright ring plus a few rising sparks. */
+  emitDoorUnlock(x: number, y: number, color: string, lowFx = false) {
+    this.emitPulse(x, y, 12, color, "ring", 0.3);
+    this.emit(x, y, lowFx ? 3 : 7, color, 60, 0.4, { gravity: -30, glow: true, size: 2, shape: "streak" });
   }
 
   emitRoomClear(x = 160, y = 120, lowFx = false) {
@@ -256,8 +277,9 @@ export class PixelFxSystem {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D, reducedFlashing = false) {
+  draw(ctx: CanvasRenderingContext2D, reducedFlashing = false, lowFx = false) {
     ctx.save();
+    const glowDisabled = reducedFlashing || lowFx;
     for (const pulse of this.pulses) {
       const alpha = Math.max(0, pulse.life / pulse.maxLife);
       const progress = 1 - alpha;
@@ -284,7 +306,9 @@ export class PixelFxSystem {
     for (const p of this.particles) {
       const alpha = Math.max(0, p.life / p.maxLife);
       ctx.globalAlpha = reducedFlashing ? alpha * 0.65 : alpha;
-      if (p.glow && !reducedFlashing) {
+      // shadowBlur is the most expensive primitive here; it is skipped on the
+      // perf-degraded path as well as under reduced flashing.
+      if (p.glow && !glowDisabled) {
         ctx.shadowColor = p.color;
         ctx.shadowBlur = 6;
       } else {

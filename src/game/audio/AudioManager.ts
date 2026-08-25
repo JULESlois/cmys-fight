@@ -538,6 +538,22 @@ export class AudioManager {
     this.playBeep(520, "square", 0.075, 0.045, 260);
   }
 
+  // --- UI navigation sounds -----------------------------------------------
+  // Deliberately quieter than combat SFX and routed through the same master
+  // gain, so every menu gets feedback without drowning out the music.
+  playUiMove() {
+    this.playBeep(880, "square", 0.04, 0.035, 660);
+  }
+
+  playUiConfirm() {
+    this.playBeep(660, "square", 0.06, 0.045, 990);
+    setTimeout(() => this.playBeep(990, "triangle", 0.07, 0.03), 45);
+  }
+
+  playUiCancel() {
+    this.playBeep(440, "square", 0.07, 0.04, 220);
+  }
+
   playWeaponShot(style: ProjectileStyle, recoil = 0.35) {
     const volume = Math.min(0.11, 0.035 + Math.max(0, recoil) * 0.018);
     if (style === "tracer") {

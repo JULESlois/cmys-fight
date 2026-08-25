@@ -1,3 +1,5 @@
+import { getDitheredRampCanvas } from "./DitherRamp";
+
 export type MenuBackdropVariant = "title" | "hub" | "archive" | "result";
 
 const ACCENTS: Record<MenuBackdropVariant, string> = {
@@ -15,12 +17,26 @@ export class MenuBackdropRenderer {
     lowFx = false,
   ) {
     const accent = ACCENTS[variant];
-    const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-    gradient.addColorStop(0, variant === "hub" ? "#111827" : "#070B13");
-    gradient.addColorStop(0.58, variant === "archive" ? "#151026" : "#0B1320");
-    gradient.addColorStop(1, "#030509");
-    ctx.fillStyle = gradient;
+    // Dithered sky: a flat mid-tone base with Bayer-dithered top and bottom
+    // darkening, so the ramp reads as pixel density rather than a smooth wash.
+    const mid = variant === "archive" ? "#151026" : "#0B1320";
+    ctx.fillStyle = mid;
     ctx.fillRect(0, 0, 320, 240);
+    if (!lowFx) {
+      const topColor = variant === "hub" ? "#111827" : "#070B13";
+      const topCanvas = getDitheredRampCanvas({
+        key: `backdrop-top:${variant}`,
+        color: topColor,
+        alphaAt: (_x, y) => Math.max(0, 1 - y / 150),
+      });
+      const bottomCanvas = getDitheredRampCanvas({
+        key: `backdrop-bottom:${variant}`,
+        color: "#030509",
+        alphaAt: (_x, y) => Math.max(0, (y - 120) / 120),
+      });
+      if (topCanvas) ctx.drawImage(topCanvas, 0, 0);
+      if (bottomCanvas) ctx.drawImage(bottomCanvas, 0, 0);
+    }
 
     // Distant monolithic ruins.
     ctx.fillStyle = "rgba(18, 28, 43, 0.9)";
