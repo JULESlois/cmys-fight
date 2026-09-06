@@ -10,3 +10,8 @@ screenshots/
 artifacts/
 tools/termux-browser-qa/node_modules/
 .gstack/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
