@@ -2,6 +2,9 @@ import { Engine } from "../Engine";
 import { getStageLabel, createRunProgressFromGlobalStage } from "../RunProgress";
 import type { RunSummary } from "../RunStats";
 import { MenuRenderer } from "../render/MenuRenderer";
+import { drawPixelButton, UI_COLORS } from "../render/PixelUi";
+import { cursorPulse } from "../ui/UiMotion";
+import { audio } from "../audio/AudioManager";
 import { GameState } from "./GameState";
 import { ACHIEVEMENTS, type AchievementId } from "../AchievementSystem";
 import { CHALLENGES } from "../ChallengeSystem";
@@ -40,7 +43,10 @@ export class RunResultState extends GameState {
   }
 
   update() {
-    if (this.engine.input.wasUiPressed("confirm")) this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
+    if (this.engine.input.wasUiPressed("confirm")) {
+      audio.playUiConfirm();
+      this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -49,10 +55,12 @@ export class RunResultState extends GameState {
 
     const victory = summary.outcome === "victory";
     const language = this.engine.data.settings.language;
-    ctx.fillStyle = "#080D16";
+    const reducedFlashing = this.engine.data.settings.reducedFlashing === true;
+    const time = Date.now() / 1000;
+    ctx.fillStyle = UI_COLORS.backdrop;
     ctx.fillRect(0, 0, 320, 240);
 
-    ctx.strokeStyle = victory ? "rgba(241, 196, 15, 0.12)" : "rgba(231, 76, 60, 0.12)";
+    ctx.strokeStyle = victory ? "rgba(241, 196, 15, 0.12)" : "rgba(232, 91, 101, 0.12)";
     for (let x = -20; x < 340; x += 20) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -62,17 +70,17 @@ export class RunResultState extends GameState {
 
     MenuRenderer.drawTitle(ctx, t(language, victory ? "result.complete" : "result.terminated"), 160, 30, language);
     ctx.textAlign = "center";
-    ctx.fillStyle = victory ? "#F1C40F" : "#E74C3C";
+    ctx.fillStyle = victory ? UI_COLORS.yellow : UI_COLORS.red;
     ctx.font = uiFont(language, 12, true);
     ctx.fillText(t(language, victory ? "result.victoryLine" : "result.defeatLine"), 160, 50);
     if (this.engine.data.data.run.hardMode) {
-      ctx.fillStyle = "#E74C3C";
+      ctx.fillStyle = UI_COLORS.red;
       ctx.font = uiFont(language, 6, true);
       ctx.fillText(t(language, "result.hardBonus"), 160, 59);
     }
 
-    ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
-    ctx.strokeStyle = victory ? "#F1C40F" : "#E74C3C";
+    ctx.fillStyle = UI_COLORS.panel;
+    ctx.strokeStyle = victory ? UI_COLORS.yellow : UI_COLORS.red;
     ctx.fillRect(48, 64, 224, 112);
     ctx.strokeRect(48, 64, 224, 112);
 
@@ -90,26 +98,26 @@ export class RunResultState extends GameState {
     rows.forEach(([label, value], index) => {
       const y = 79 + index * 13;
       ctx.textAlign = "left";
-      ctx.fillStyle = "#7F8C8D";
+      ctx.fillStyle = UI_COLORS.muted;
       ctx.fillText(label, 62, y);
       ctx.textAlign = "right";
-      ctx.fillStyle = "#ECF0F1";
+      ctx.fillStyle = UI_COLORS.white;
       ctx.fillText(value, 258, y);
     });
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#00F2FE";
+    ctx.fillStyle = UI_COLORS.cyan;
     ctx.font = uiFont(language, 10, true);
     const rewardLabel = summary.alreadyClaimed
       ? t(language, "result.claimed")
       : t(language, "result.reward", { amount: summary.rewardEarned });
     ctx.fillText(rewardLabel, 160, 163);
-    ctx.fillStyle = "#BDC3C7";
+    ctx.fillStyle = UI_COLORS.text;
     ctx.font = uiFont(language, 7);
     ctx.fillText(t(language, "result.total", { amount: summary.totalCurrency }), 160, 173);
 
     if (!summary.alreadyClaimed) {
-      ctx.fillStyle = "#7F8C8D";
+      ctx.fillStyle = UI_COLORS.muted;
       ctx.font = uiFont(language, 6);
       ctx.fillText(t(language, "result.breakdown", {
         run: summary.baseReward,
@@ -121,7 +129,7 @@ export class RunResultState extends GameState {
     if (summary.challengeCompleted && this.engine.data.data.run.challengeId) {
       const challenge = CHALLENGES[this.engine.data.data.run.challengeId];
       const localized = getChallengeText(challenge.id, challenge, language);
-      ctx.fillStyle = "#F1C40F";
+      ctx.fillStyle = UI_COLORS.yellow;
       ctx.font = uiFont(language, 7, true);
       ctx.fillText(t(language, "result.challenge", { name: localized.name }), 160, 191);
     }
@@ -134,7 +142,7 @@ export class RunResultState extends GameState {
       .filter(Boolean);
     const notices = [...achievementNames, ...summary.newUnlocks];
     if (notices.length > 0) {
-      ctx.fillStyle = "#2ECC71";
+      ctx.fillStyle = UI_COLORS.green;
       ctx.font = uiFont(language, 7, true);
       const firstLine = notices.slice(0, 2).join(" / ");
       const secondLine = notices.slice(2, 4).join(" / ");
@@ -142,14 +150,11 @@ export class RunResultState extends GameState {
       if (secondLine) ctx.fillText(secondLine, 160, 209);
     }
 
-    ctx.fillStyle = "rgba(0,242,254,0.18)";
-    ctx.fillRect(105, 214, 110, 17);
-    ctx.strokeStyle = "#00F2FE";
-    ctx.strokeRect(105, 214, 110, 17);
-    ctx.fillStyle = "#FFFFFF";
+    drawPixelButton(ctx, 105, 214, 110, 17, true, victory ? "yellow" : "cyan", cursorPulse(time, reducedFlashing));
+    ctx.fillStyle = UI_COLORS.white;
     ctx.font = uiFont(language, 7, true);
     ctx.fillText(t(language, "result.hubButton"), 160, 226);
-    ctx.fillStyle = "#7F8C8D";
+    ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "result.footer", {
       confirm: this.engine.input.getConfirmPrompt(),

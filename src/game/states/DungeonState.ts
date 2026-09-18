@@ -32,6 +32,7 @@ import {
   type DoorOrientation,
 } from "../dungeon/DoorGeometry";
 import { UIRenderer } from "../render/UIRenderer";
+import { BossHealthBarRenderer } from "../render/BossHealthBarRenderer";
 import type { WeaponHudDrawOptions } from "../render/WeaponHudRenderer";
 import { PixelFxSystem } from "../render/PixelFxSystem";
 import { ArtDirectionRenderer } from "../render/ArtDirectionRenderer";
@@ -59,7 +60,7 @@ import {
 } from "../combat/ProjectileEffects";
 import { LightningArc, SkillController } from "../combat/SkillController";
 import { getStageDifficulty } from "../combat/StageDifficulty";
-import { BuffSystem, type BuffId } from "../combat/BuffSystem";
+import { BuffSystem, BUFFS, type BuffId } from "../combat/BuffSystem";
 import { createSeededRandom, hashSeed } from "../Random";
 import { WEAPONS, getProjectileProfile, isWeaponAvailableForCharacter, rollAvailableWeapon } from "../data/weapons";
 import { usesDetailedCharacterArt } from "../data/characters";
@@ -77,7 +78,8 @@ import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
 import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
-import { getSoulName, t, uiFont } from "../i18n";
+import { getBuffText, getSoulName, t, uiFont } from "../i18n";
+import { ToastSystem, archivedToastText } from "../ui/ToastSystem";
 import {
   DUNGEON_RITUAL_SPRING_SCALE,
   RoomObjectCollision,
@@ -335,6 +337,8 @@ export class DungeonState extends GameState {
     this.unregisterCombatFeedback();
     this.floatingText.clear();
     HitStop.reset();
+    BossHealthBarRenderer.reset();
+    ToastSystem.clear();
     this.clearRoomScopedSkillEntities();
     this.prepareForSave();
   }
@@ -865,6 +869,24 @@ export class DungeonState extends GameState {
     });
   }
   
+  /** Discover a batch of buffs and toast once for the first new codex entry. */
+  private discoverBuffs(buffIds: BuffId[]): void {
+    let firstNew: BuffId | null = null;
+    for (const buffId of buffIds) {
+      if (this.engine.data.discoverBuff(buffId) && firstNew === null) firstNew = buffId;
+    }
+    if (firstNew === null) return;
+    const language = this.engine.data.settings.language;
+    ToastSystem.push(archivedToastText(getBuffText(firstNew, BUFFS[firstNew], language).name, language), "purple");
+  }
+
+  /** Discover a weapon and toast when it is new to the codex. */
+  private discoverWeapon(weaponId: string): void {
+    if (!this.engine.data.discoverWeapon(weaponId)) return;
+    const language = this.engine.data.settings.language;
+    ToastSystem.push(archivedToastText(WEAPONS[weaponId]?.name ?? weaponId, language), "cyan");
+  }
+
   private prepareBuffChoice(floor: typeof this.engine.data.data.floor, currentRoom: Room) {
     if (floor.buffChoiceCompleted || floor.buffChoiceOptions?.length) return;
     if (this.player.buffs.length >= BuffSystem.ACTIVE_REWARD_BUFF_LIMIT) {
@@ -883,7 +905,7 @@ export class DungeonState extends GameState {
     floor.buffChoiceRerollCount = floor.buffChoiceRerollCount ?? 0;
     this.buffSelection = [...options];
     this.buffSelectionIndex = 0;
-    for (const buffId of options) this.engine.data.discoverBuff(buffId);
+    this.discoverBuffs(options);
   }
 
   private updateBuffSelection() {
@@ -901,10 +923,10 @@ export class DungeonState extends GameState {
         floor.buffChoiceOptions = options;
         this.buffSelection = [...options];
         this.buffSelectionIndex = 0;
-        for (const buffId of options) this.engine.data.discoverBuff(buffId);
+        this.discoverBuffs(options);
         this.syncPlayerState();
         this.engine.data.save();
-        audio.playShoot();
+        audio.playUiConfirm();
         this.engine.input.clearJustPressed();
       }
       return;
@@ -913,11 +935,11 @@ export class DungeonState extends GameState {
     const moveNext = this.engine.input.wasUiPressed("right") || this.engine.input.wasUiPressed("down");
     if (movePrevious) {
       this.buffSelectionIndex = (this.buffSelectionIndex - 1 + this.buffSelection.length) % this.buffSelection.length;
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (moveNext) {
       this.buffSelectionIndex = (this.buffSelectionIndex + 1) % this.buffSelection.length;
-      audio.playShoot();
+      audio.playUiMove();
     }
     const keys = ["1", "2", "3"];
     const directIndex = keys.findIndex(key => this.engine.input.wasPressed(key));
@@ -2007,7 +2029,7 @@ export class DungeonState extends GameState {
            const broadcastWeapons = ["bell_repeater", "mask_sprayer", "code_scanner", "swab_lance", "vat_horse_cannon"];
            const weaponId = broadcastWeapons[Math.floor(random() * broadcastWeapons.length)];
            this.pickups.push(acquirePickup(target.x, target.y + 16, "weapon", 1, weaponId));
-           this.engine.data.discoverWeapon(weaponId);
+           this.discoverWeapon(weaponId);
          }
          room.interactionCompleted = true;
          room.rewardGenerated = true;
@@ -2028,7 +2050,7 @@ export class DungeonState extends GameState {
           currentRoom.weaponChest = { ...this.chest };
        }
        this.spawnChestLoot(this.chest, this.getChestLoot(this.chest));
-       this.engine.data.discoverWeapon(this.chest.weaponId);
+       this.discoverWeapon(this.chest.weaponId);
        this.maybeGrantChestSubWeapon(currentRoom);
        this.syncPlayerState();
        this.syncRoomState();
@@ -4361,6 +4383,27 @@ export class DungeonState extends GameState {
     if (this.qaCollisionDebug) this.drawRoomObjectCollisionDebug(ctx);
     
     UIRenderer.draw(ctx, this.player, this.engine, floor, this.roomPhase, this.qaWeaponHudOptions);
+    const boss = this.enemies.find(e => e.type === "boss" && e.hp > 0);
+    if (boss) {
+      BossHealthBarRenderer.draw(ctx, {
+        enemyId: boss.enemyId,
+        name: boss.name,
+        hp: boss.hp,
+        maxHp: boss.maxHp,
+        phase: boss.bossPhase,
+      }, {
+        language: this.engine.data.settings.language,
+        nowMs: Date.now(),
+        reducedFlashing: this.engine.data.settings.reducedFlashing === true,
+      });
+    }
+    UIRenderer.drawLowHealthWarning(
+      ctx,
+      this.player.hp,
+      this.player.maxHp,
+      Date.now(),
+      this.engine.data.settings.reducedFlashing === true,
+    );
     this.tutorial.draw(ctx, this.engine.input, this.engine.data.settings.language);
     
 
@@ -4387,6 +4430,10 @@ export class DungeonState extends GameState {
         this.engine.data.settings.language,
       );
     }
+
+    // Toasts sit above the buff selection overlay — reroll discoveries are
+    // pushed while that overlay is open — but below story narration.
+    ToastSystem.draw(ctx, this.engine.data.settings.language, Date.now());
 
     if (StoryOverlay.isActive()) {
       StoryOverlay.draw(ctx, this.engine.data.settings.language);

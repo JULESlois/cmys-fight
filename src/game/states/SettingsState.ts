@@ -2,6 +2,8 @@ import { GameState } from "./GameState";
 import { Engine } from "../Engine";
 import { MenuRenderer } from "../render/MenuRenderer";
 import { audio } from "../audio/AudioManager";
+import { drawMeter, drawPixelButton, UI_COLORS } from "../render/PixelUi";
+import { cursorPulse } from "../ui/UiMotion";
 import {
   DEFAULT_KEY_BINDINGS,
   INPUT_ACTIONS,
@@ -143,6 +145,7 @@ export class SettingsState extends GameState {
         this.resetConfirmation = false;
         this.message = "";
       } else if (this.view !== "root") {
+        audio.playUiCancel();
         this.openView("root");
       } else {
         this.leaveSettings();
@@ -154,12 +157,12 @@ export class SettingsState extends GameState {
     if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
       this.clearConfirmationAndMessage();
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % options.length;
       this.clearConfirmationAndMessage();
-      audio.playShoot();
+      audio.playUiMove();
     }
 
     const option = options[this.selectedIndex];
@@ -192,14 +195,17 @@ export class SettingsState extends GameState {
       return;
     }
     if (option === "categoryBack") {
+      audio.playUiCancel();
       this.openView("root");
       return;
     }
     if (option === "audioVisual" || option === "operation" || option === "accountData") {
+      audio.playUiConfirm();
       this.openView(option);
       return;
     }
     if (option === "controls") {
+      audio.playUiConfirm();
       this.view = "keyBindings";
       this.controlIndex = 0;
       this.message = "";
@@ -208,26 +214,30 @@ export class SettingsState extends GameState {
       return;
     }
     if (option === "fullscreen") {
+      audio.playUiConfirm();
       document.dispatchEvent(new CustomEvent("game:fullscreen"));
       this.message = t(language, "settings.fullscreenToggled");
       return;
     }
     if (option === "exportData") {
+      audio.playUiConfirm();
       document.dispatchEvent(new CustomEvent("game:export-data"));
       this.message = t(language, "settings.exportRequested");
       return;
     }
     if (option === "importData") {
+      audio.playUiConfirm();
       document.dispatchEvent(new CustomEvent("game:import-data"));
       this.message = t(language, "settings.selectSave");
       return;
     }
     if (option === "resetTutorial") {
       this.engine.data.settings.tutorialCompleted = false;
-      this.saveSettings(t(language, "settings.tutorialNextRun"));
+      this.saveSettings(t(language, "settings.tutorialNextRun"), "confirm");
       return;
     }
     if (option === "resetGame") {
+      audio.playUiConfirm();
       if (!this.resetConfirmation) {
         this.resetConfirmation = true;
         this.message = t(language, "settings.confirmResetGame", {
@@ -254,6 +264,7 @@ export class SettingsState extends GameState {
   }
 
   private leaveSettings() {
+    audio.playUiCancel();
     if (this.overlayMode) this.engine.closeSettingsToMenu();
     else this.engine.switchState(this.backState);
   }
@@ -281,12 +292,13 @@ export class SettingsState extends GameState {
       this.saveSettings(t(language, "settings.bound", {
         action: actionLabel(reboundAction, language),
         key: formatBinding(key),
-      }));
+      }), "confirm");
       this.engine.input.clearJustPressed();
       return;
     }
 
     if (this.engine.input.wasUiPressed("cancel")) {
+      audio.playUiCancel();
       this.view = "operation";
       this.selectedIndex = OPERATION_OPTIONS.indexOf("controls");
       this.message = "";
@@ -295,15 +307,15 @@ export class SettingsState extends GameState {
     }
     if (this.engine.input.wasUiPressed("up")) {
       this.controlIndex = (this.controlIndex - 1 + INPUT_ACTIONS.length) % INPUT_ACTIONS.length;
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.controlIndex = (this.controlIndex + 1) % INPUT_ACTIONS.length;
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("secondary")) {
       this.engine.data.settings.keyBindings = { ...DEFAULT_KEY_BINDINGS };
-      this.saveSettings(t(language, "settings.keysReset"));
+      this.saveSettings(t(language, "settings.keysReset"), "confirm");
     }
     if (this.engine.input.wasUiPressed("confirm")) {
       this.captureAction = this.currentAction();
@@ -362,11 +374,12 @@ export class SettingsState extends GameState {
     this.saveSettings("");
   }
 
-  private saveSettings(message: string) {
+  private saveSettings(message: string, sound: "move" | "confirm" = "move") {
     this.engine.data.saveSettings();
     this.engine.applySettings();
     this.message = message;
-    audio.playPickup();
+    if (sound === "confirm") audio.playUiConfirm();
+    else audio.playUiMove();
   }
 
   private getValue(option: SettingsMenuOption): string {
@@ -402,6 +415,20 @@ export class SettingsState extends GameState {
     return "";
   }
 
+  /**
+   * Numeric settings render as a segmented meter between the label and the
+   * value, so the ◀▶ adjustment range reads at a glance instead of forcing the
+   * player to decode a bare percentage.
+   */
+  private getSettingMeter(option: SettingOption): { ratio: number; segments: number } | null {
+    const settings = this.engine.data.settings;
+    if (option === "masterVolume") return { ratio: settings.masterVolume / 100, segments: 10 };
+    if (option === "musicVolume") return { ratio: settings.musicVolume / 100, segments: 10 };
+    if (option === "uiScale") return { ratio: (settings.uiScale - 0.85) / 0.4, segments: 4 };
+    if (option === "touchSize") return { ratio: (settings.touchScale - 0.85) / 0.3, segments: 3 };
+    return null;
+  }
+
   private getLabel(option: SettingsMenuOption): string {
     const language = this.engine.data.settings.language;
     if (option === "audioVisual" || option === "operation" || option === "accountData") {
@@ -421,7 +448,7 @@ export class SettingsState extends GameState {
 
   draw(ctx: CanvasRenderingContext2D) {
     const language = this.engine.data.settings.language;
-    ctx.fillStyle = "#0A0F19";
+    ctx.fillStyle = UI_COLORS.backdrop;
     ctx.fillRect(0, 0, 320, 240);
     MenuRenderer.drawTitle(ctx, t(language, this.getTitleKey()), 160, 20, language);
     MenuRenderer.drawPanel(ctx, 24, 27, 272, 197);
@@ -436,19 +463,19 @@ export class SettingsState extends GameState {
 
   private drawRoot(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
+    const time = Date.now() / 1000;
+    const reducedFlashing = this.engine.data.settings.reducedFlashing === true;
     ROOT_OPTIONS.forEach((option, index) => {
       const y = 52 + index * 39;
       const selected = index === this.selectedIndex;
-      ctx.fillStyle = selected ? "rgba(0,242,254,0.18)" : "rgba(10,15,25,0.82)";
-      ctx.fillRect(48, y, 224, 27);
-      ctx.strokeStyle = selected ? "#00F2FE" : "#34495E";
-      ctx.strokeRect(48, y, 224, 27);
+      const pulse = selected ? cursorPulse(time, reducedFlashing) : 0;
+      drawPixelButton(ctx, 48, y, 224, 27, selected, "cyan", pulse);
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(language, 8, true);
       ctx.fillText(this.getLabel(option), 60, y + 17);
       ctx.textAlign = "right";
-      ctx.fillStyle = selected ? "#00F2FE" : "#647481";
+      ctx.fillStyle = selected ? UI_COLORS.cyan : UI_COLORS.muted;
       ctx.fillText(this.getValue(option), 260, y + 17);
     });
     this.drawFooter(ctx, false);
@@ -456,22 +483,34 @@ export class SettingsState extends GameState {
 
   private drawSubmenu(ctx: CanvasRenderingContext2D): void {
     const language = this.engine.data.settings.language;
+    const time = Date.now() / 1000;
+    const reducedFlashing = this.engine.data.settings.reducedFlashing === true;
     const options = this.getCurrentOptions();
     const spacing = Math.min(14, Math.floor(154 / Math.max(1, options.length - 1)));
     options.forEach((option, index) => {
       const y = 47 + index * spacing;
       const selected = index === this.selectedIndex;
       if (selected) {
-        ctx.fillStyle = "rgba(0,242,254,0.16)";
+        ctx.fillStyle = "rgba(57, 217, 232, 0.16)";
         ctx.fillRect(32, y - 8, 256, 11);
+        // Breathing caret on the focused row, matching MenuState's pause menu.
+        const pulse = cursorPulse(time, reducedFlashing);
+        ctx.fillStyle = `rgba(255,255,255,${(0.55 + 0.45 * pulse).toFixed(2)})`;
+        ctx.fillRect(28, y - 3, 2, 6);
       }
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(language, 6, true);
       ctx.fillText(this.getLabel(option), 36, y);
       ctx.textAlign = "right";
-      ctx.fillStyle = "#00F2FE";
+      ctx.fillStyle = selected ? UI_COLORS.cyan : UI_COLORS.text;
       ctx.fillText(this.getValue(option), 282, y);
+      if (this.isSettingOption(option)) {
+        const meter = this.getSettingMeter(option);
+        if (meter) {
+          drawMeter(ctx, 196, y - 4, 52, 4, meter.ratio, selected ? UI_COLORS.cyanBright : UI_COLORS.cyan, meter.segments);
+        }
+      }
     });
     this.drawFooter(ctx, true);
   }
@@ -480,11 +519,11 @@ export class SettingsState extends GameState {
     const language = this.engine.data.settings.language;
     ctx.textAlign = "center";
     if (showMessage && this.message) {
-      ctx.fillStyle = this.resetConfirmation ? "#E74C3C" : "#F1C40F";
+      ctx.fillStyle = this.resetConfirmation ? UI_COLORS.red : UI_COLORS.yellow;
       ctx.font = uiFont(language, 6);
       ctx.fillText(this.message, 160, 211);
     }
-    ctx.fillStyle = "#7F8C8D";
+    ctx.fillStyle = UI_COLORS.muted;
     ctx.font = uiFont(language, 6);
     ctx.fillText(t(language, "settings.footer", {
       vertical: this.engine.input.getNavigationPrompt("vertical"),
@@ -498,23 +537,30 @@ export class SettingsState extends GameState {
   private drawControls(ctx: CanvasRenderingContext2D) {
     const settings = this.engine.data.settings;
     const language = settings.language;
+    const time = Date.now() / 1000;
+    const reducedFlashing = settings.reducedFlashing === true;
     INPUT_ACTIONS.forEach((action, index) => {
       // 14px rows from y=45 keep all 12 actions (v10 added subWeapon/crush)
       // above the message line at 204 and the footer at 228.
       const y = 45 + index * 14;
       const selected = index === this.controlIndex;
-      ctx.fillStyle = selected ? "rgba(0,242,254,0.16)" : "transparent";
-      if (selected) ctx.fillRect(34, y - 9, 252, 12);
+      if (selected) {
+        ctx.fillStyle = "rgba(57, 217, 232, 0.16)";
+        ctx.fillRect(34, y - 9, 252, 12);
+        const pulse = cursorPulse(time, reducedFlashing);
+        ctx.fillStyle = `rgba(255,255,255,${(0.55 + 0.45 * pulse).toFixed(2)})`;
+        ctx.fillRect(30, y - 4, 2, 6);
+      }
       ctx.textAlign = "left";
-      ctx.fillStyle = selected ? "#FFFFFF" : "#9AA7B2";
+      ctx.fillStyle = selected ? UI_COLORS.white : UI_COLORS.text;
       ctx.font = uiFont(language, 7, true);
       ctx.fillText(actionLabel(action, language), 40, y);
       ctx.textAlign = "right";
-      ctx.fillStyle = this.captureAction === action ? "#F1C40F" : "#00F2FE";
+      ctx.fillStyle = this.captureAction === action ? UI_COLORS.yellow : UI_COLORS.cyan;
       ctx.fillText(this.captureAction === action ? t(language, "settings.pressKeyShort") : formatBinding(settings.keyBindings[action]), 278, y);
     });
     ctx.textAlign = "center";
-    ctx.fillStyle = this.captureAction ? "#F1C40F" : "#7F8C8D";
+    ctx.fillStyle = this.captureAction ? UI_COLORS.yellow : UI_COLORS.muted;
     ctx.font = uiFont(language, 6);
     ctx.fillText(this.message, 160, 204);
     ctx.fillText(t(language, "settings.controlsFooter", {

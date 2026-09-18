@@ -159,7 +159,7 @@ assert.match(hud, /kind: "heart" as const/);
 assert.match(hud, /kind: "shield" as const/);
 // assert.match(hud, /kind: "energy" as const/);
 assert.match(hud, /drawUiIcon\(ctx, row\.kind/);
-assert.match(hud, /skillReady[\s\S]*"READY"/);
+assert.match(hud, /skillReady[\s\S]*common\.ready/);
 assert.match(hud, /visibleBuffCount = Math\.min\(player\.buffs\.length, BuffSystem\.MAX_BUFFS\)/);
 assert.match(hud, /index < visibleBuffCount/);
 assert.match(weaponHud, /standbyIndex = player\.weaponLoadout\.activeSlot === 0 \? 1 : 0/);

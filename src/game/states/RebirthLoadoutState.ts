@@ -103,7 +103,7 @@ export class RebirthLoadoutState extends GameState {
   private cycleWeapon(characterId: string, direction: number): void {
     const weapons = this.getUnlockedWeapons(characterId);
     this.selectedWeaponIndex = (this.selectedWeaponIndex + direction + weapons.length) % weapons.length;
-    audio.playShoot();
+    audio.playUiMove();
   }
 
   private confirmLoadout(character: CharacterConfig): void {
@@ -122,7 +122,7 @@ export class RebirthLoadoutState extends GameState {
       if (this.mode === "collection") this.engine.switchState("hub", { spawnAnchor: "rebirth_spring" });
       else {
         this.mode = "collection";
-        audio.playShoot();
+        audio.playUiCancel();
       }
       return;
     }
@@ -137,7 +137,7 @@ export class RebirthLoadoutState extends GameState {
       if (left || right) {
         const direction = left ? -1 : 1;
         this.selectedIndex = (this.selectedIndex + direction + CHARACTER_COLLECTION_IDS.length) % CHARACTER_COLLECTION_IDS.length;
-        audio.playShoot();
+        audio.playUiMove();
       }
       if (confirm) {
         if (this.selectedCollectionId === "cmys") {
@@ -149,7 +149,7 @@ export class RebirthLoadoutState extends GameState {
           this.selectedCharacterIndex = 0;
           this.syncWeaponSelection(this.selectedCharacter.id);
         }
-        audio.playPickup();
+        audio.playUiConfirm();
       }
       return;
     }
@@ -160,7 +160,7 @@ export class RebirthLoadoutState extends GameState {
         const direction = left ? -1 : 1;
         this.selectedCharacterIndex = (this.selectedCharacterIndex + direction + characters.length) % characters.length;
         this.syncWeaponSelection(this.selectedCharacter.id);
-        audio.playShoot();
+        audio.playUiMove();
       }
       if (up) this.cycleWeapon(this.selectedCharacter.id, -1);
       if (down) this.cycleWeapon(this.selectedCharacter.id, 1);
@@ -172,7 +172,7 @@ export class RebirthLoadoutState extends GameState {
       const direction = left ? -1 : 1;
       this.selectedFormIndex = (this.selectedFormIndex + direction + CMYS_FORM_IDS.length) % CMYS_FORM_IDS.length;
       this.syncWeaponSelection(this.selectedForm.id);
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (up) this.cycleWeapon(this.selectedForm.id, -1);
     if (down) this.cycleWeapon(this.selectedForm.id, 1);

@@ -2,7 +2,7 @@ import { BUFFS, BuffSystem } from "../combat/BuffSystem";
 import { SkillController } from "../combat/SkillController";
 import type { Player } from "../entities/Player";
 import type { FloorData } from "../FloorGenerator";
-import { uiFont } from "../i18n";
+import { t, uiFont } from "../i18n";
 import { HUD_LAYOUT, HUD_STATUS_FLOW } from "./HudLayout";
 import { WeaponHudRenderer, type WeaponHudDrawOptions } from "./WeaponHudRenderer";
 import {
@@ -93,7 +93,9 @@ export class UIRenderer {
     ctx.textAlign = "right";
     ctx.fillStyle = skillIsReady ? UI_COLORS.green : UI_COLORS.text;
     ctx.font = uiFont(language, 5, true);
-    ctx.fillText(skillIsReady ? "READY" : `${player.skillCooldown.toFixed(1)}S`, 80, 43);
+    ctx.fillText(skillIsReady
+      ? t(language, "common.ready")
+      : t(language, "common.seconds", { seconds: player.skillCooldown.toFixed(1) }), 80, 43);
 
     // Everything under the status block shares one vertical flow. Each element
     // advances `currentY`, so a wrapped buff strip pushes the rows below it down
@@ -208,5 +210,36 @@ export class UIRenderer {
     ctx.font = uiFont(language, 7, true);
     ctx.fillText(`${floor.routeDepth}-${floor.stageWithinNode}`, 312, 14);
     ctx.textAlign = "left";
+  }
+
+  /**
+   * Danger vignette at <=25% HP. Three nested frames with falling alpha
+   * approximate a vignette without gradients, keeping the warning inside the
+   * pixel-art vocabulary. Reduced flashing holds a steady low-alpha frame
+   * instead of pulsing.
+   */
+  public static drawLowHealthWarning(
+    ctx: CanvasRenderingContext2D,
+    hp: number,
+    maxHp: number,
+    nowMs: number,
+    reducedFlashing: boolean,
+  ): void {
+    if (hp <= 0 || maxHp <= 0 || hp / maxHp > 0.25) return;
+    const pulse = reducedFlashing
+      ? 0.16
+      : 0.1 + 0.14 * (0.5 + 0.5 * Math.sin((nowMs / 1600) * Math.PI * 2));
+    ctx.save();
+    const frames = [
+      { inset: 1, alpha: pulse },
+      { inset: 4, alpha: pulse * 0.55 },
+      { inset: 7, alpha: pulse * 0.25 },
+    ];
+    for (const frame of frames) {
+      ctx.strokeStyle = `rgba(232, 91, 101, ${frame.alpha.toFixed(2)})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(frame.inset, frame.inset, 320 - frame.inset * 2, 240 - frame.inset * 2);
+    }
+    ctx.restore();
   }
 }

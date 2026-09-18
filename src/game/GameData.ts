@@ -652,16 +652,20 @@ export class GameData {
     this.saveMeta();
   }
 
-  public discoverWeapon(weaponId: string): void {
-    if (!isWeaponId(weaponId) || this.meta.codex.weapons.includes(weaponId)) return;
+  /** Returns true when the weapon was new to the codex, so callers can toast. */
+  public discoverWeapon(weaponId: string): boolean {
+    if (!isWeaponId(weaponId) || this.meta.codex.weapons.includes(weaponId)) return false;
     this.meta.codex.weapons.push(weaponId);
     this.saveMeta();
+    return true;
   }
 
-  public discoverBuff(buffId: BuffId): void {
-    if (this.meta.codex.buffs.includes(buffId)) return;
+  /** Returns true when the buff was new to the codex, so callers can toast. */
+  public discoverBuff(buffId: BuffId): boolean {
+    if (this.meta.codex.buffs.includes(buffId)) return false;
     this.meta.codex.buffs.push(buffId);
     this.saveMeta();
+    return true;
   }
 
   public discoverPlayerBuild(): void {

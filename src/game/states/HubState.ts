@@ -370,12 +370,12 @@ export class HubState extends GameState {
     if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + UPGRADE_ENTRY_COUNT) % UPGRADE_ENTRY_COUNT;
       this.refundArmed = false;
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % UPGRADE_ENTRY_COUNT;
       this.refundArmed = false;
-      audio.playShoot();
+      audio.playUiMove();
     }
     if (!this.engine.input.wasUiPressed("confirm")) return;
     if (this.selectedIndex < META_UPGRADE_IDS.length) this.purchaseSelectedUpgrade();
@@ -443,12 +443,12 @@ export class HubState extends GameState {
     }
     if (this.engine.input.wasUiPressed("up")) {
       this.selectedIndex = (this.selectedIndex - 1 + TRIAL_ACTIONS.length) % TRIAL_ACTIONS.length;
-      audio.playShoot();
+      audio.playUiMove();
       return;
     }
     if (this.engine.input.wasUiPressed("down")) {
       this.selectedIndex = (this.selectedIndex + 1) % TRIAL_ACTIONS.length;
-      audio.playShoot();
+      audio.playUiMove();
       return;
     }
     if (!this.engine.input.wasUiPressed("confirm")) return;
@@ -461,7 +461,7 @@ export class HubState extends GameState {
   private moveExpeditionSelection(direction: number): void {
     this.selectedIndex = (this.selectedIndex + direction + EXPEDITION_ACTIONS.length) % EXPEDITION_ACTIONS.length;
     this.confirmationAction = null;
-    audio.playShoot();
+    audio.playUiMove();
   }
 
   private activateInteraction(object: WorldObjectDefinition): void {
@@ -518,7 +518,7 @@ export class HubState extends GameState {
     this.refundArmed = false;
     this.confirmationAction = null;
     this.engine.input.clearJustPressed();
-    audio.playShoot();
+    audio.playUiCancel();
   }
 
   private purchaseSelectedUpgrade(): void {
