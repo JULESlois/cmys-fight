@@ -18,6 +18,8 @@ import { drawBellRepeaterArtFx } from "./BellRepeaterArt";
 import { MonsterModelRenderer, usesNativeMonsterArt } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
 import { ProjectileArtRenderer } from "./ProjectileArtRenderer";
+import type { ActiveStatusEffect } from "../combat/StatusEffectSystem";
+import { deriveVisibleStatuses } from "./StatusChipLayout";
 
 export class EntityRenderer {
   private static hexToRgbTriplet(color: string): string {
@@ -49,12 +51,13 @@ export class EntityRenderer {
     for (const [x, y, w, h] of segments) ctx.fillRect(x, y, w, h);
   }
 
-  private static drawStatusChips(ctx: CanvasRenderingContext2D, statuses: Array<{ id: string; stacks: number }>, y: number): void {
+  private static drawStatusChips(ctx: CanvasRenderingContext2D, statuses: readonly ActiveStatusEffect[], y: number): void {
     const colors: Record<string, string> = {
       poison: "#8BC34A", burn: "#FF7043", slow: "#81D4FA", root: "#A1887F",
     };
-    statuses.slice(0, 3).forEach((status, index) => {
-      const x = (index - (Math.min(3, statuses.length) - 1) / 2) * 6;
+    const visible = deriveVisibleStatuses(statuses);
+    visible.forEach((status, index) => {
+      const x = (index - (visible.length - 1) / 2) * 6;
       ctx.fillStyle = "#09101A";
       ctx.fillRect(Math.round(x) - 3, y - 3, 6, 6);
       ctx.fillStyle = colors[status.id] ?? "#FFFFFF";
@@ -621,7 +624,9 @@ export class EntityRenderer {
     }
 
     if (enemy.attackState === "windup") {
-      const blink = Math.floor(time * 16) % 2 === 0;
+      // Hold the readable bright phase when flashing is reduced; keep every
+      // range, direction and warning frame visible throughout the windup.
+      const blink = reducedFlashing || Math.floor(time * 16) % 2 === 0;
       const lineColor = enemy.isElite ? "rgba(241,196,15,0.9)" : "rgba(231,76,60,0.85)";
       const tileColor = blink ? "rgba(231,76,60,0.28)" : "rgba(231,76,60,0.14)";
       if (enemy.behavior === "charge") {

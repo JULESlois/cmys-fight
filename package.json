@@ -45,7 +45,7 @@
     "test:hub-responsibilities": "node --import tsx scripts/hub-responsibility-smoke.ts",
     "test:notice": "node --import tsx scripts/notice-smoke.ts",
     "test:weapon-hud": "node --import tsx scripts/weapon-hud-smoke.ts",
-    "test:combat-feedback": "node --import tsx scripts/combat-feedback-smoke.ts && node --import tsx scripts/hit-stop-timing-smoke.ts",
+    "test:combat-feedback": "node --import tsx scripts/combat-feedback-smoke.ts && node --import tsx scripts/hit-stop-timing-smoke.ts && node --import tsx scripts/combat-readability-smoke.ts",
     "test:atmosphere-art": "node --import tsx scripts/atmosphere-art-smoke.ts",
     "test:ui-motion": "node --import tsx scripts/ui-motion-smoke.ts",
     "test:transition-theme": "node --import tsx scripts/transition-theme-smoke.ts",
