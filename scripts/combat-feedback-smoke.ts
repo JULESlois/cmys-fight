@@ -13,7 +13,7 @@ assert.equal(HitStop.getRemaining(), 0, "starts at 0s");
 
 HitStop.request(2);
 assert.equal(HitStop.isActive(), true, "2-frame request activates");
-HitStop.tick(0.016);
+assert.equal(HitStop.consumeFrame(0.016), true, "an active budget freezes the current update");
 const remainingAfterOneTick = HitStop.getRemaining();
 assert.ok(remainingAfterOneTick > 0 && remainingAfterOneTick < 2 / 60, "one tick partially drains the stop");
 
@@ -34,6 +34,38 @@ assert.equal(HitStop.getRemaining(), 0.06, "oversized request is clamped to MAX_
 HitStop.reset();
 HitStop.request(4, true);
 assert.ok(Math.abs(HitStop.getRemaining() - 2 / 60) < 1e-9, "reducedFlashing halves the freeze");
+HitStop.reset();
+
+// Full lifecycles use wall-clock duration, not the number of display updates.
+for (const hz of [30, 60, 75, 120, 144]) {
+  const dt = 1 / hz;
+  for (const frames of [2, 3, 4, 60]) {
+    for (const reduced of [false, true]) {
+      HitStop.reset();
+      HitStop.request(frames, reduced);
+      const budget = Math.min(0.06, frames / 60 * (reduced ? 0.5 : 1));
+      let frozenTime = 0;
+      let updates = 0;
+      while (HitStop.consumeFrame(dt)) {
+        frozenTime += dt;
+        assert.ok(++updates < 20, "hit-stop must finish within a bounded number of updates");
+      }
+      const label = `${frames} reference frames at ${hz}Hz (reduced=${reduced})`;
+      assert.ok(frozenTime > 0, `${label}: even a single low-rate step must freeze`);
+      assert.ok(frozenTime + 1e-9 >= budget, `${label}: the full budget is honored`);
+      assert.ok(frozenTime < budget + dt - 1e-9, `${label}: overshoot stays below one update`);
+      assert.equal(HitStop.getRemaining(), 0, `${label}: no fractional residue`);
+      assert.equal(HitStop.consumeFrame(dt), false, `${label}: subsequent updates resume`);
+    }
+  }
+}
+
+HitStop.request(3);
+HitStop.consumeFrame(1 / 60);
+HitStop.request(1);
+assert.ok(Math.abs(HitStop.getRemaining() - 2 / 60) < 1e-9, "shorter request preserves remaining budget");
+HitStop.request(3);
+assert.equal(HitStop.getRemaining(), 3 / 60, "longer request replaces rather than adds to the remainder");
 HitStop.reset();
 
 // ---------------------------------------------------------------------------

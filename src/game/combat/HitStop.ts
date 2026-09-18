@@ -1,7 +1,7 @@
 /**
  * Hit-stop: a short global freeze on combat entity progression when a
  * meaningful hit lands (kill / crit / player hurt). The freeze is measured in
- * 60fps frames and is intentionally tiny (2–3 frames) so it reads as impact
+ * 60Hz reference frames and is intentionally tiny (2–4 frames) so it reads as impact
  * weight rather than a stutter.
  *
  * Contracts:
@@ -37,9 +37,16 @@ export class HitStop {
     return HitStop.remaining > 0;
   }
 
-  /** Advance the freeze timer. Call once per frame regardless of isActive(). */
-  static tick(dt: number): void {
-    if (HitStop.remaining > 0) HitStop.remaining = Math.max(0, HitStop.remaining - dt);
+  /**
+   * Freeze this update if it started with a budget, then consume its time.
+   * The final step still freezes even when dt exhausts the budget (e.g. 30Hz).
+   */
+  static consumeFrame(dt: number): boolean {
+    if (!HitStop.isActive()) return false;
+    HitStop.remaining = Math.max(0, HitStop.remaining - dt);
+    // Floating-point residue must not add an extra update at exact multiples.
+    if (HitStop.remaining < 1e-9) HitStop.remaining = 0;
+    return true;
   }
 
   /** Test hook: remaining seconds (0 when inactive). */

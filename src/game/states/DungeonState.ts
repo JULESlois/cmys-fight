@@ -982,19 +982,7 @@ export class DungeonState extends GameState {
     this.roomRenderer.update(dt, sceneTheme, this.engine.isPerformanceDegraded());
     this.fx.update(dt);
     this.floatingText.update(dt);
-    HitStop.tick(dt);
-    if (HitStop.isActive()) {
-      // Hit-stop: freeze combat entity progression but keep FX, floating text,
-      // the room renderer, and occlusion animating so the freeze reads as a
-      // deliberate impact beat rather than a hung frame.
-      this.occlusionController.update(
-        dt,
-        { x: this.player.x - 16, y: this.player.y - 31, width: 32, height: 35 },
-        this.player.y,
-        this.getDungeonOcclusionObjects(),
-      );
-      return;
-    }
+    const hitStopped = HitStop.consumeFrame(dt);
     this.occlusionController.update(
       dt,
       { x: this.player.x - 16, y: this.player.y - 31, width: 32, height: 35 },
@@ -1058,12 +1046,16 @@ export class DungeonState extends GameState {
       return;
     }
 
+    // Only active gameplay contributes to Run time. Hit-stop freezes combat,
+    // while the clock and presentation continue; overlays above still pause it.
+    this.engine.data.recordRunTime(dt);
+    if (hitStopped) return;
+
     if (this.tutorial.update(this.engine.input)) {
       this.engine.data.settings.tutorialCompleted = true;
       this.engine.data.saveSettings();
     }
 
-    this.engine.data.recordRunTime(dt);
     DamageSystem.updatePlayer(this.player, dt);
     StatusEffectSystem.updatePlayer(this.player, dt);
     if (this.player.hp <= 0) {
