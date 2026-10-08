@@ -210,6 +210,8 @@ export class DungeonState extends GameState {
   
   private roomPhase: RoomPhase = "entering";
   private phaseTimer: number = 0;
+  /** #76: whether the current combat room took effective damage this visit. */
+  private roomDamageTaken = false;
   private encounterCtrl = new EncounterController();
   private lightningArcs: LightningArc[] = [];
   private buffSelection: BuffId[] | null = null;
@@ -369,7 +371,39 @@ export class DungeonState extends GameState {
           HitStop.request(2, reduced());
         }
       }),
+      // #76: the player_damaged event is the single source of truth for
+      // "effective damage" (invulnerability / knight block / full absorb never
+      // emit it), so marking here matches the Perfect-Clear acceptance exactly.
+      CombatEventDispatcher.on("player_damaged", ({ player }) => {
+        if (player !== this.player) return;
+        this.markRoomDamageTaken();
+      }),
     );
+  }
+
+  private currentRoomId(): string | null {
+    const floor = this.engine.data.data.floor;
+    return floor?.rooms?.find((r: Room) => r?.x === floor?.currentRoomX && r?.y === floor?.currentRoomY)?.id ?? null;
+  }
+
+  private markRoomDamageTaken(): void {
+    const roomId = this.currentRoomId();
+    this.roomDamageTaken = true;
+    // Persist room-scoped so reload launder is impossible and a revisit to the
+    // same room stays marked, while a different room resets cleanly.
+    this.player.buffState["roomDamageRoomId"] = roomId ?? "";
+    this.player.buffState["roomDamageTaken"] = true;
+  }
+
+  /** Called from loadRoom() before the room-specific phase is chosen. */
+  private initRoomDamageTracking(): void {
+    const roomId = this.currentRoomId() ?? "";
+    const persistedId = this.player.buffState["roomDamageRoomId"];
+    const persisted = persistedId === roomId && this.player.buffState["roomDamageTaken"] === true;
+    this.roomDamageTaken = persisted;
+    // Record the active room so a later damage event maps to this room.
+    this.player.buffState["roomDamageRoomId"] = roomId;
+    this.player.buffState["roomDamageTaken"] = persisted;
   }
 
   private unregisterCombatFeedback(): void {
@@ -641,6 +675,7 @@ export class DungeonState extends GameState {
     }
 
     currentRoom.visited = true;
+    this.initRoomDamageTracking();
     CombatEventDispatcher.emit("player_room_entered", { player: this.player });
 
     if (currentRoom.type === "start" || currentRoom.type === "npc") {
@@ -1549,7 +1584,7 @@ export class DungeonState extends GameState {
          this.addEnemy(EncounterFactory.createEnemy(this.engine.data.data.floor, spawn));
       });
       if (!this.encounterCtrl.active && this.enemies.length === 0) {
-         CombatEventDispatcher.emit("player_room_cleared", { player: this.player, noDamageTaken: false });
+         CombatEventDispatcher.emit("player_room_cleared", { player: this.player, noDamageTaken: !this.roomDamageTaken });
          this.setPhase("cleared");
       }
     } else if (this.roomPhase === "cleared") {

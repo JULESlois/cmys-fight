@@ -105,6 +105,9 @@ const BUFF_STATE_WHITELIST = [
   "overclockHits", "overclockActive", "overclockFirstTrigger", "overclockRapidKills", "overclockKillTimer",
   "skillLoopCount", "skillLoopRepeatReady",
   "ghostLoopCopies", "ghostLoopLastRefund", "ghostLoopTimer",
+  // #76: per-room damage tracking for Perfect Clear (room-scoped, persisted so
+  // reloading mid-room cannot launder a damage record).
+  "roomDamageTaken", "roomDamageRoomId",
 ] as const;
 
 export function sanitizeBuffRuntimeState(raw: unknown): BuffRuntimeState {
@@ -112,6 +115,9 @@ export function sanitizeBuffRuntimeState(raw: unknown): BuffRuntimeState {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return out;
   const allowed = new Set<string>(BUFF_STATE_WHITELIST);
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    // Churn-heavy dedup tokens (atk_N attack ids) must never be persisted;
+    // they are per-attack, not run-meaningful state.
+    if (typeof value === "string" && value.startsWith("attack_")) continue;
     if (!allowed.has(key)) continue;
     if (typeof value === "number") {
       if (Number.isFinite(value)) out[key] = value;
