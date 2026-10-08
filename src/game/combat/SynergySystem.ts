@@ -84,8 +84,18 @@ export function detectActiveSynergies(player: Player): SynergyId[] {
   return active;
 }
 
-export function isSynergyActive(player: Player, id: SynergyId): boolean {
+/**
+ * Production activation contract: an experimental synergy is never active
+ * by default, even when both required buffs are present. Pass
+ * `includeExperimental: true` for explicit debug/preview paths only.
+ */
+export function isSynergyActive(
+  player: Player,
+  id: SynergyId,
+  opts?: { includeExperimental?: boolean },
+): boolean {
   const def = SYNERGIES[id];
+  if (def.experimental && opts?.includeExperimental !== true) return false;
   const [a, b] = def.requiredBuffs;
   return BuffSystem.has(player, a) && BuffSystem.has(player, b);
 }
@@ -105,7 +115,9 @@ export function initSynergyHandlers(): void {
   // bulwark_loop: armor recharge completion near structure clears projectiles
   // (handled in DungeonState update loop via buffState flag)
 
-  // phoenix_ember: emergency barrier triggers burn + armor restore
+  // phoenix_ember: emergency barrier triggers burn + armor restore.
+  // NOTE: experimental — production isSynergyActive() rejects it, so this
+  // handler is inert in normal runs by design (issue #79).
   CombatEventDispatcher.on("player_damaged", (payload) => {
     if (!isSynergyActive(payload.player, "phoenix_ember")) return;
     if (payload.player.hp <= 1 && payload.player.buffState["phoenixEmberUsed"] !== true) {
