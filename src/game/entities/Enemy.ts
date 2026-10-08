@@ -47,7 +47,7 @@ export class Enemy {
   public attackAnimationDuration: number = 0.4;
   public attackTargetX: number = 0;
   public attackTargetY: number = 0;
-  public attackTargetKind: "player" | "michele_turret" = "player";
+  public attackTargetKind: "player" | "michele_turret" | "afterimage" = "player";
   public chargeDistance: number = 48;
   public areaRadius: number = 30;
   public summonEnemyId?: string;

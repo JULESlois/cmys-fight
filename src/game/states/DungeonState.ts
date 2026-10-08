@@ -212,6 +212,10 @@ export class DungeonState extends GameState {
   private phaseTimer: number = 0;
   /** #76: whether the current combat room took effective damage this visit. */
   private roomDamageTaken = false;
+  /** #78: room-scoped AFTERIMAGE CAPTURE decoy. Runtime-only — the buffState
+   *  `afterimagePending` flag is consumed at spawn, the entity itself is never
+   *  persisted, and it is cleared on room change / state exit. */
+  private afterimage: { x: number; y: number; timer: number } | null = null;
   private encounterCtrl = new EncounterController();
   private lightningArcs: LightningArc[] = [];
   private buffSelection: BuffId[] | null = null;
@@ -404,6 +408,40 @@ export class DungeonState extends GameState {
     // Record the active room so a later damage event maps to this room.
     this.player.buffState["roomDamageRoomId"] = roomId;
     this.player.buffState["roomDamageTaken"] = persisted;
+  }
+
+  // =========================================================
+  // #78 AFTERIMAGE CAPTURE — room-scoped decoy runtime
+  // =========================================================
+
+  /** Exposed for the smoke test & renderer. */
+  public get afterimageState(): { x: number; y: number; timer: number } | null {
+    return this.afterimage;
+  }
+
+  private spawnAfterimage(): void {
+    this.afterimage = { x: this.player.x, y: this.player.y, timer: 1.5 };
+    this.fx.emitDamage(this.player.x, this.player.y, this.engine.isPerformanceDegraded());
+  }
+
+  private updateAfterimage(dt: number): void {
+    // Consume the intent flag set by the perfect-dodge buff handler.
+    if (this.player.buffState["afterimagePending"] === true) {
+      this.player.buffState["afterimagePending"] = false;
+      if (!this.afterimage) this.spawnAfterimage();
+    }
+    if (this.afterimage) {
+      this.afterimage.timer -= dt;
+      if (this.afterimage.timer <= 0) this.afterimage = null;
+    }
+  }
+
+  /** Aim point used by getEnemyCombatTarget; a live decoy wins over the player (#78). */
+  private getProjectileAimTarget(): { kind: "player" | "michele_turret" | "afterimage"; x: number; y: number; radius: number } | null {
+    if (this.afterimage) {
+      return { kind: "afterimage", x: this.afterimage.x, y: this.afterimage.y, radius: 7 };
+    }
+    return null;
   }
 
   private unregisterCombatFeedback(): void {
@@ -622,6 +660,8 @@ export class DungeonState extends GameState {
       this.player.kanamiBeaconFlightTimer = 0;
       this.player.kanamiBeaconDeployed = false;
     }
+    // AFTERIMAGE CAPTURE decoy is room-scoped (#78).
+    this.afterimage = null;
   }
 
   private loadRoom() {
@@ -1173,6 +1213,7 @@ export class DungeonState extends GameState {
     this.player.justPerfectDodged = false;
 
     BuffSystem.update(this.player, dt);
+    this.updateAfterimage(dt);
     SkillController.update(this.player, dt);
     CharacterResourceController.update(dt, {
       player: this.player,
@@ -2739,11 +2780,14 @@ export class DungeonState extends GameState {
   }
 
   private getEnemyCombatTarget(): {
-    kind: "player" | "michele_turret";
+    kind: "player" | "michele_turret" | "afterimage";
     x: number;
     y: number;
     radius: number;
   } {
+    // AFTERIMAGE CAPTURE (#78): a live decoy outranks every other target.
+    const decoy = this.getProjectileAimTarget();
+    if (decoy) return decoy;
     if (this.isMicheleTurretAvailable()) {
       return {
         kind: "michele_turret",
@@ -4413,6 +4457,28 @@ export class DungeonState extends GameState {
         sortY: this.portal.y + 23,
         draw: () => this.drawWithOcclusion(ctx, "depth:portal-supports", () =>
           PortalRenderer.drawPortalPart(ctx, this.portal!, time, theme, "supports")),
+      });
+    }
+    // AFTERIMAGE CAPTURE (#78): translucent depth-sorted echo at the decoy
+    // point; fades as the 1.5s window runs down. A simple pixel silhouette keeps
+    // it readable without coupling to per-character art frames.
+    if (this.afterimage) {
+      const ghost = this.afterimage;
+      depthRenderables.push({
+        id: "afterimage",
+        sortY: ghost.y + this.player.radius,
+        draw: () => {
+          const alpha = Math.max(0.12, Math.min(0.5, (ghost.timer / 1.5) * 0.5));
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.translate(Math.round(ghost.x), Math.round(ghost.y));
+          ctx.fillStyle = "#9ecbff";
+          ctx.fillRect(-4, -12, 8, 12);
+          ctx.fillRect(-3, -16, 6, 5);
+          ctx.fillStyle = "#e6f3ff";
+          ctx.fillRect(-1, -15, 2, 2);
+          ctx.restore();
+        },
       });
     }
     if (this.player.hp > 0) {

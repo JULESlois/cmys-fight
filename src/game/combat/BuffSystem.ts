@@ -235,6 +235,11 @@ export class BuffSystem {
     if (player.buffState["crossSwapActive"] > 0) {
       player.buffState["crossSwapActive"] -= dt;
     }
+
+    // afterimage_capture (#78): 6s decoy cooldown decay.
+    if (player.buffState["afterimageCooldown"] > 0) {
+      player.buffState["afterimageCooldown"] -= dt;
+    }
     
     if (player.buffState["chainDirectiveTimeout"] > 0) {
       player.buffState["chainDirectiveTimeout"] -= dt;

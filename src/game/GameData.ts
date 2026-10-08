@@ -97,6 +97,7 @@ const BUFF_STATE_WHITELIST = [
   "chainDirectiveReady", "chainDirectiveTimeout",
   "altCurrentStacks", "altCurrentTimer", "altCurrentArcReady", "altCurrentLastWeapon", "altCurrentLastAttackId",
   "grazeCount",
+  "afterimageCooldown",
   "salvagePropsDestroyed", "salvageRoomCount",
   "secretSenseActive", "perfectSurveyTriggered", "cursedCompassActive",
   "memoryTalent", "archivePulseCharges", "corruption",

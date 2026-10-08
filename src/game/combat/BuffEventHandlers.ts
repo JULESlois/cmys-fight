@@ -114,6 +114,16 @@ export function initBuffEventHandlers(): void {
     }
   });
 
+  // afterimage_capture (#78): perfect dodge leaves a 1.5s projectile decoy,
+  // 6s cooldown. The handler only records the intent + cooldown; DungeonState
+  // owns the room-scoped runtime decoy entity and retargeting.
+  CombatEventDispatcher.on("player_perfect_dodge", (payload) => {
+    if (!BuffSystem.has(payload.player, "afterimage_capture")) return;
+    if (getState(payload.player, "afterimageCooldown", 0) > 0) return;
+    setState(payload.player, "afterimageCooldown", 6.0);
+    setState(payload.player, "afterimagePending", true);
+  });
+
   // === Phoenix protocol handlers ===
 
   // reactive_armor: armor break triggers damage reduction + knockback
