@@ -78,7 +78,7 @@ import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
 import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
-import { getBuffText, getSoulName, t, uiFont } from "../i18n";
+import { getBuffText, getSoulName, t, uiFont, wrapLocalized } from "../i18n";
 import { ToastSystem, archivedToastText } from "../ui/ToastSystem";
 import {
   DUNGEON_RITUAL_SPRING_SCALE,
@@ -213,6 +213,7 @@ export class DungeonState extends GameState {
   private lightningArcs: LightningArc[] = [];
   private buffSelection: BuffId[] | null = null;
   private buffSelectionIndex = 0;
+  private buffDetailBuffId: BuffId | null = null;
   
   
   private shopFailure?: ShopPurchaseFailure;
@@ -905,11 +906,42 @@ export class DungeonState extends GameState {
     floor.buffChoiceRerollCount = floor.buffChoiceRerollCount ?? 0;
     this.buffSelection = [...options];
     this.buffSelectionIndex = 0;
+    this.buffDetailBuffId = null;
     this.discoverBuffs(options);
+  }
+
+  private buffDescriptionOverflows(id: BuffId | null | undefined): boolean {
+    if (!id || !BUFFS[id]) return false;
+    const language = this.engine.data.settings.language;
+    const description = getBuffText(id, BUFFS[id], language).description;
+    return wrapLocalized(description, language === "zh-CN" ? 16 : 19).length > 4;
   }
 
   private updateBuffSelection() {
     if (!this.buffSelection) return;
+    // Detail strip (#77): confirm on the focused card opens its full rule text;
+    // confirm again (or any navigation) closes it. Acquiring the buff now takes
+    // an explicit extra confirm so opening detail never consumes the choice.
+    if (this.buffDetailBuffId !== null) {
+      const closeDetail =
+        this.engine.input.wasUiPressed("confirm") ||
+        this.engine.input.wasUiPressed("cancel") ||
+        this.engine.input.wasUiPressed("left") ||
+        this.engine.input.wasUiPressed("right") ||
+        this.engine.input.wasUiPressed("up") ||
+        this.engine.input.wasUiPressed("down");
+      if (closeDetail) {
+        this.buffDetailBuffId = null;
+        this.engine.input.clearJustPressed();
+      }
+      return;
+    }
+    if (this.engine.input.wasUiPressed("confirm") && this.buffDescriptionOverflows(this.buffSelection[this.buffSelectionIndex])) {
+      this.buffDetailBuffId = this.buffSelection[this.buffSelectionIndex];
+      audio.playUiConfirm();
+      this.engine.input.clearJustPressed();
+      return;
+    }
     if (this.engine.input.wasUiPressed("secondary") && this.player.buffRerollsRemaining > 0) {
       const floor = this.engine.data.data.floor;
       const rerollCount = (floor.buffChoiceRerollCount ?? 0) + 1;
@@ -923,6 +955,7 @@ export class DungeonState extends GameState {
         floor.buffChoiceOptions = options;
         this.buffSelection = [...options];
         this.buffSelectionIndex = 0;
+        this.buffDetailBuffId = null;
         this.discoverBuffs(options);
         this.syncPlayerState();
         this.engine.data.save();
@@ -4420,6 +4453,7 @@ export class DungeonState extends GameState {
         this.engine.input.getNavigationPrompt("horizontal"),
         this.engine.input.getUiPrompt("secondary"),
         this.engine.data.settings.language,
+        this.buffDetailBuffId,
       );
     }
 

@@ -35,6 +35,7 @@ export class BuffSelectionRenderer {
     cyclePrompt = "D-PAD",
     rerollPrompt = "J",
     language: Language = "en",
+    detailBuffId: BuffId | null = null,
   ) {
     ctx.save();
     ctx.fillStyle = "rgba(2, 5, 10, 0.88)";
@@ -50,7 +51,14 @@ export class BuffSelectionRenderer {
     const rerollText = rerollsRemaining > 0
       ? t(language, "buff.reroll", { prompt: rerollPrompt, count: rerollsRemaining })
       : "";
-    ctx.fillText(t(language, "buff.footer", { cycle: cyclePrompt, confirm: confirmPrompt, reroll: rerollText }), 160, 51);
+    // Offer the detail affordance in the footer only when the focused card's
+    // description actually overflows (#77), so the prompt is never a dead key.
+    const focused = options[selectedIndex];
+    const focusedOverflows = focused && BUFFS[focused]
+      ? wrapLocalized(getBuffText(focused, BUFFS[focused], language).description, language === "zh-CN" ? 16 : 19).length > 4
+      : false;
+    const detailText = focusedOverflows ? t(language, "buff.detail", { confirm: confirmPrompt }) : "";
+    ctx.fillText(t(language, "buff.footer", { cycle: cyclePrompt, confirm: confirmPrompt, detail: detailText, reroll: rerollText }), 160, 51);
 
     const cardWidth = 86;
     const cardHeight = 143;
@@ -83,11 +91,40 @@ export class BuffSelectionRenderer {
 
       ctx.fillStyle = UI_COLORS.text;
       ctx.font = uiFont(language, 7);
-      wrapLocalized(localized.description, language === "zh-CN" ? 16 : 19).slice(0, 4)
-        .forEach((text, lineIndex) => ctx.fillText(text, x + cardWidth / 2, y + 88 + lineIndex * 9));
+      const descLines = wrapLocalized(localized.description, language === "zh-CN" ? 16 : 19);
+      const truncated = descLines.length > 4;
+      // Never silently drop rule text (#77): when the card overflows, keep the
+      // first lines and append "…" so the player knows more text exists and can
+      // open the full detail strip via the confirm prompt.
+      const visible = truncated ? [...descLines.slice(0, 3), "…"] : descLines;
+      visible.forEach((text, lineIndex) => {
+        if (truncated && lineIndex === visible.length - 1) ctx.fillStyle = UI_COLORS.muted;
+        ctx.fillText(text, x + cardWidth / 2, y + 88 + lineIndex * 9);
+      });
 
       drawBadge(ctx, rarityLabel(buff.rarity, language), x + 8, y + 129, cardWidth - 16, language, buff.rarity === "rare" ? "cyan" : buff.rarity === "uncommon" ? "green" : "neutral");
     });
+
+    // Detail strip (#77): full-wrapped rule text for the focused buff, drawn over
+    // the cards when the player asks for detail. No text is lost here.
+    if (detailBuffId && BUFFS[detailBuffId]) {
+      const dbuff = BUFFS[detailBuffId];
+      const dloc = getBuffText(detailBuffId, dbuff, language);
+      const dColor = RARITY_COLORS[dbuff.rarity];
+      drawPixelPanel(ctx, 18, 158, 284, 62, "purple", true);
+      ctx.textAlign = "center";
+      ctx.fillStyle = dColor;
+      ctx.font = uiFont(language, language === "zh-CN" ? 7 : 8, true);
+      ctx.fillText(dloc.name, 160, 172);
+      ctx.fillStyle = UI_COLORS.text;
+      ctx.font = uiFont(language, 7);
+      const maxDetailCols = language === "zh-CN" ? 36 : 46;
+      const detailLines = wrapLocalized(dloc.description, maxDetailCols).slice(0, 3);
+      detailLines.forEach((text, lineIndex) => ctx.fillText(text, 160, 184 + lineIndex * 9));
+      ctx.fillStyle = UI_COLORS.muted;
+      ctx.font = uiFont(language, 6, true);
+      ctx.fillText(t(language, "buff.detailHint", { confirm: confirmPrompt }), 160, 215);
+    }
     ctx.restore();
   }
 }
