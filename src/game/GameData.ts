@@ -81,6 +81,48 @@ export const SETTINGS_BACKUP_KEY = "retro_rpg_settings_backup";
 const CURRENT_SAVE_VERSION = 24;
 const INITIAL_RUN = createInitialRunProgress();
 
+/**
+ * Serializable buff runtime state (#75). Only run-meaningful scalar counters,
+ * cooldowns and activation flags are persisted — never presentation-only data.
+ * A whitelist shapes the value so a malformed/hostile save cannot smuggle
+ * objects, functions or NaN into gameplay state; unknown keys are dropped and
+ * buffs re-derive any missing counter on their next event.
+ */
+export type BuffRuntimeStateValue = number | string | boolean;
+export type BuffRuntimeState = Record<string, BuffRuntimeStateValue>;
+
+const BUFF_STATE_WHITELIST = [
+  "entropyQuota", "entropyTimer",
+  "crossSwapCooldown", "crossSwapActive",
+  "chainDirectiveReady", "chainDirectiveTimeout",
+  "altCurrentStacks", "altCurrentTimer", "altCurrentArcReady", "altCurrentLastWeapon", "altCurrentLastAttackId",
+  "grazeCount",
+  "salvagePropsDestroyed", "salvageRoomCount",
+  "secretSenseActive", "perfectSurveyTriggered", "cursedCompassActive",
+  "memoryTalent", "archivePulseCharges", "corruption",
+  "echoMemoryUsed", "phoenixMemoryChapterUsed", "phoenixMemoryClearReady", "currentChapter",
+  "activeEvolution",
+  "overclockHits", "overclockActive", "overclockFirstTrigger", "overclockRapidKills", "overclockKillTimer",
+  "skillLoopCount", "skillLoopRepeatReady",
+  "ghostLoopCopies", "ghostLoopLastRefund", "ghostLoopTimer",
+] as const;
+
+export function sanitizeBuffRuntimeState(raw: unknown): BuffRuntimeState {
+  const out: BuffRuntimeState = {};
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return out;
+  const allowed = new Set<string>(BUFF_STATE_WHITELIST);
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!allowed.has(key)) continue;
+    if (typeof value === "number") {
+      if (Number.isFinite(value)) out[key] = value;
+    } else if (typeof value === "string" || typeof value === "boolean") {
+      out[key] = value;
+    }
+    // drop objects/arrays/functions/NaN entirely
+  }
+  return out;
+}
+
 export interface GameSave {
   player: {
     x: number;
@@ -118,6 +160,8 @@ export interface GameSave {
     buffs: BuffId[];
     emergencyBarrierReady: boolean;
     phoenixProtocolReady: boolean;
+    /** Run-scoped buff runtime state (counters/cooldowns). Optional: absent in old saves, treated as {}. */
+    buffState: BuffRuntimeState;
     statusEffects: ActiveStatusEffect[];
     buffRerollsRemaining: number;
     shopDiscount: number;
@@ -181,6 +225,7 @@ export const defaultSave: GameSave = {
     buffs: [],
     emergencyBarrierReady: false,
     phoenixProtocolReady: false,
+    buffState: {},
     statusEffects: [],
     buffRerollsRemaining: 0,
     shopDiscount: 0,
@@ -1036,6 +1081,7 @@ export class GameData {
     this.data.player.buffs = [];
     this.data.player.emergencyBarrierReady = false;
     this.data.player.phoenixProtocolReady = false;
+    this.data.player.buffState = {};
   }
 
   private normalizePlayerBuffs() {
@@ -1045,6 +1091,9 @@ export class GameData {
       player.buffs.includes("emergency_barrier") && player.emergencyBarrierReady === true;
     player.phoenixProtocolReady =
       player.buffs.includes("phoenix_protocol") && player.phoenixProtocolReady === true;
+    // #75: imported/legacy saves may carry anything under buffState — keep only
+    // whitelisted scalar keys so gameplay state stays clean and serializable.
+    player.buffState = sanitizeBuffRuntimeState(player.buffState);
   }
 
   private migrateCombatBalance(loadedVersion: number, rawPlayer?: Partial<GameSave["player"]>) {

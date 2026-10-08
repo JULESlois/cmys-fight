@@ -76,6 +76,7 @@ import {
 } from "../environment/EnvironmentSystem";
 import { isFinalStage } from "../RunProgress";
 import type { RunOutcome } from "../RunStats";
+import { sanitizeBuffRuntimeState } from "../GameData";
 import { TutorialSystem } from "../TutorialSystem";
 import { getEnemyDefinition } from "../data/enemies";
 import { getBuffText, getSoulName, t, uiFont, wrapLocalized } from "../i18n";
@@ -280,6 +281,7 @@ export class DungeonState extends GameState {
     player.buffs = BuffSystem.normalizeBuffs(savedP.buffs);
     player.emergencyBarrierReady = savedP.emergencyBarrierReady === true;
     player.phoenixProtocolReady = savedP.phoenixProtocolReady === true;
+    player.buffState = sanitizeBuffRuntimeState(savedP.buffState);
     player.statusEffects = StatusEffectSystem.normalize(savedP.statusEffects);
     player.buffRerollsRemaining = savedP.buffRerollsRemaining ?? 0;
     player.shopDiscount = savedP.shopDiscount ?? 0;
@@ -415,6 +417,7 @@ export class DungeonState extends GameState {
     savedP.buffs = [...this.player.buffs];
     savedP.emergencyBarrierReady = this.player.emergencyBarrierReady;
     savedP.phoenixProtocolReady = this.player.phoenixProtocolReady;
+    savedP.buffState = sanitizeBuffRuntimeState(this.player.buffState);
     savedP.statusEffects = StatusEffectSystem.normalize(this.player.statusEffects);
     savedP.buffRerollsRemaining = this.player.buffRerollsRemaining;
     savedP.shopDiscount = this.player.shopDiscount;
