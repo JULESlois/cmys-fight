@@ -836,9 +836,9 @@ export class HubState extends GameState {
     this.worldRenderer.drawRoofTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawUpperTiles(ctx, this.map, this.camera);
     this.worldRenderer.drawObjects(ctx, this.map, this.camera, "upper", this.time);
-    // Building light glow sits above the world but under UI. `lighter` blend
-    // keeps overlapping braziers additive without touching the pixel grid.
-    if (!this.engine.isPerformanceDegraded()) {
+    // Keep the opening sequence free of the Hub's additive building lights.
+    // Enable them once the intro finishes and normal Hub play begins.
+    if (this.introPhase === "none" && !this.engine.isPerformanceDegraded()) {
       drawHubLights(
         ctx,
         collectBuildingLights(this.map),
