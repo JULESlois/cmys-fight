@@ -96,6 +96,9 @@ export class Player {
   public armorRechargeRate: number = 4;
   public skillCooldown: number = 0;
   public skillActiveTimer: number = 0;
+  // Room-scoped release origin; never replay an in-flight pulse from a save.
+  public dingdongPulseX: number = 0;
+  public dingdongPulseY: number = 0;
   public skillDirectionX: number = 0;
   public skillDirectionY: number = 0;
   public rogueCritTimer: number = 0;
@@ -193,6 +196,9 @@ export class Player {
   }
 
   public get weaponAnimationOffsetY(): number {
+    if (this.characterId === "dingdong") {
+      return this.skillActiveTimer > 0 || this.animState !== "walk" ? 0 : [0, -1, 0, -1][this.animFrame % 4] ?? 0;
+    }
     if (
       this.animState !== "walk" ||
       !usesDetailedCharacterArt(this.characterId)

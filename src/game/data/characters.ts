@@ -1,4 +1,4 @@
-export type CharacterCollectionId = "cmys" | "strinova" | "nte";
+export type CharacterCollectionId = "cmys" | "strinova" | "nte" | "memes";
 
 export interface CharacterCollectionConfig {
   id: CharacterCollectionId;
@@ -25,9 +25,16 @@ export interface CharacterConfig {
   formName?: string;
 }
 
-export const CHARACTER_COLLECTION_IDS: readonly CharacterCollectionId[] = ["cmys", "strinova", "nte"];
+export const CHARACTER_COLLECTION_IDS: readonly CharacterCollectionId[] = ["cmys", "strinova", "nte", "memes"];
 
 export const CHARACTER_COLLECTIONS: Record<CharacterCollectionId, CharacterCollectionConfig> = {
+  memes: {
+    id: "memes",
+    name: "MEMES",
+    color: "#8BCFE0",
+    description: "Familiar mascots with unexpected battlefield talents.",
+    characterIds: ["dingdong"],
+  },
   cmys: {
     id: "cmys",
     name: "CMYS",
@@ -51,13 +58,28 @@ export const CHARACTER_COLLECTIONS: Record<CharacterCollectionId, CharacterColle
   },
 };
 
-export const DETAILED_CHARACTER_IDS = ["mage", "michele", "kanami", "celestia", "esper_zero", "nanally"] as const;
+export const DETAILED_CHARACTER_IDS = ["mage", "michele", "kanami", "celestia", "esper_zero", "nanally", "dingdong"] as const;
 
 export function usesDetailedCharacterArt(characterId: string): boolean {
   return (DETAILED_CHARACTER_IDS as readonly string[]).includes(characterId);
 }
 
 export const CHARACTERS: Record<string, CharacterConfig> = {
+  dingdong: {
+    id: "dingdong",
+    name: "Dingdong",
+    title: "Dabai Hazmat Mascot",
+    color: "#8BCFE0",
+    maxHp: 7,
+    maxArmor: 7,
+    maxMana: 36,
+    manaRechargeDelay: 1.1,
+    manaRechargeRate: 10,
+    speed: 90,
+    starterWeapon: "bell_repeater",
+    passive: "Suit: armor recharges after 2.25s unharmed. Pulse: damages and slows nearby enemies.",
+    collectionId: "memes",
+  },
   knight: {
     id: "knight",
     name: "CMYS",

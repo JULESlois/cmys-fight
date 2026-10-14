@@ -9,7 +9,7 @@ The game renders at a fixed 320 × 240 logical resolution and scales to desktop 
 - Explorable 80 × 60 tile Hub with camera follow, collision, facilities, loadout selection, records, and meta upgrades.
 - Four chapters with four stages each; every chapter ends in a Boss stage.
 - Procedural room graphs with combat, shops, treasure, exits, NPCs, Wish Fountains, and Photo Booths.
-- Eight playable characters, 57 weapons, 36 enemies, talents, challenges, achievements, codex progression, and run settlement.
+- Nine playable characters, including the armless Dingdong hazmat mascot, 57 weapons, 36 enemies, talents, challenges, achievements, codex progression, and run settlement.
 - Keyboard, gamepad, and touch input with rebinding and device-aware prompts.
 - Versioned Run, Meta, and Settings saves with backups, migration, export, import, and checksum validation.
 - Adaptive music synthesized entirely with Web Audio; no streamed or bundled audio tracks are required.
@@ -65,6 +65,9 @@ npm run verify
 ```
 
 This runs TypeScript checking, content and gameplay smoke tests, the production build, Service Worker syntax validation, and HTTP route checks.
+
+GitHub Actions runs the same chain on pushes and pull requests with Node.js 24.
+The [Dingdong character notes](docs/dingdong-character.md) include animation timing, gameplay parameters and the generated pixel preview; use `npm run test:dingdong` for its focused regression checks.
 
 Build and run production output:
 

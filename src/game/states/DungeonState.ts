@@ -48,6 +48,7 @@ import { PromptRenderer } from "../render/PromptRenderer";
 import { EncounterController } from "../EncounterController";
 import { EncounterFactory } from "../EncounterFactory";
 import { DamageSystem } from "../combat/DamageSystem";
+import { applyDingdongPulse } from "../combat/DingdongPulse";
 import { WeaponController } from "../combat/WeaponController";
 import { cloneWeaponLoadoutRuntime } from "../combat/WeaponRuntimeState";
 import { segmentCircleHit } from "../combat/Collision";
@@ -270,7 +271,7 @@ export class DungeonState extends GameState {
       player.setWeaponLoadout(["pistol"], 0);
     }
     player.skillCooldown = savedP.skillCooldown ?? 0;
-    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia"
+    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia" || player.characterId === "dingdong"
       ? 0
       : savedP.skillActiveTimer ?? 0;
     player.skillDirectionX = savedP.skillDirectionX ?? 0;
@@ -473,7 +474,7 @@ export class DungeonState extends GameState {
     
     savedP.currentWeaponId = this.player.currentWeaponId;
     savedP.skillCooldown = this.player.skillCooldown;
-    savedP.skillActiveTimer = this.player.characterId === "michele" || this.player.characterId === "kanami" || this.player.characterId === "celestia"
+    savedP.skillActiveTimer = this.player.characterId === "michele" || this.player.characterId === "kanami" || this.player.characterId === "celestia" || this.player.characterId === "dingdong"
       ? 0
       : this.player.skillActiveTimer;
     savedP.skillDirectionX = this.player.skillDirectionX;
@@ -641,6 +642,7 @@ export class DungeonState extends GameState {
   }
 
   private clearRoomScopedSkillEntities(): void {
+    if (this.player.characterId === "dingdong") this.player.skillActiveTimer = 0;
     if (this.player.characterId === "michele") {
       this.player.skillActiveTimer = 0;
       this.player.micheleTurretActive = false;
@@ -1214,7 +1216,11 @@ export class DungeonState extends GameState {
 
     BuffSystem.update(this.player, dt);
     this.updateAfterimage(dt);
-    SkillController.update(this.player, dt);
+    const skillUpdate = SkillController.update(this.player, dt);
+    if (skillUpdate?.dingdongPulse) {
+      this.removeSkillKills(applyDingdongPulse(this.player, this.enemies, skillUpdate.dingdongPulse));
+      audio.playSkill();
+    }
     CharacterResourceController.update(dt, {
       player: this.player,
       activeWeaponId: this.player.currentWeaponId,
@@ -1455,7 +1461,8 @@ export class DungeonState extends GameState {
     );
     if (!result.activated) return;
 
-    audio.playSkill();
+    // Dingdong's audible impact belongs to the delayed release, not wind-up.
+    if (this.player.characterId !== "dingdong") audio.playSkill();
     if (result.lightningArcs.length > 0) {
       this.lightningArcs.push(...result.lightningArcs);
       for (const arc of result.lightningArcs) {
@@ -1463,8 +1470,12 @@ export class DungeonState extends GameState {
       }
     }
 
-    if (result.killedEnemyIds.length > 0) {
-      const killed = new Set(result.killedEnemyIds);
+    this.removeSkillKills(result.killedEnemyIds);
+  }
+
+  private removeSkillKills(killedEnemyIds: readonly number[]): void {
+    if (killedEnemyIds.length > 0) {
+      const killed = new Set(killedEnemyIds);
       for (let i = this.enemies.length - 1; i >= 0; i--) {
         const enemy = this.enemies[i];
         if (!killed.has(enemy.id)) continue;

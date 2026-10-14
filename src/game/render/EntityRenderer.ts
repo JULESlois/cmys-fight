@@ -5,6 +5,7 @@ import { Pickup } from "../entities/Pickup";
 import {
   ARCANE_PLAYER_PALETTE,
   CELESTIA_PLAYER_PALETTE,
+  DINGDONG_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
   MICHELE_PLAYER_PALETTE,
@@ -14,6 +15,7 @@ import {
 import { usesDetailedCharacterArt } from "../data/characters";
 import { getEnemyDefinition, getEnemyRenderScale } from "../data/enemies";
 import { SpriteRenderer } from "./SpriteRenderer";
+import { drawDingdongPulse, getDingdongSpriteName } from "./DingdongRenderer";
 import { drawBellRepeaterArtFx } from "./BellRepeaterArt";
 import { MonsterModelRenderer, usesNativeMonsterArt } from "./MonsterModelRenderer";
 import { WEAPONS } from "../data/weapons";
@@ -186,6 +188,7 @@ export class EntityRenderer {
     ctx.save();
     ctx.translate(Math.round(player.x), Math.round(player.y));
     const hasExtendedPlayerAnimation = usesDetailedCharacterArt(player.characterId);
+    if (player.characterId === "dingdong") drawDingdongPulse(ctx, player, engine.data.settings.reducedFlashing);
 
     if (player.statusEffects.length > 0) {
       EntityRenderer.drawStatusChips(ctx, player.statusEffects, -24);
@@ -252,6 +255,7 @@ export class EntityRenderer {
 
     if (player.invulnerabilityTimer > 0 && Math.floor(player.invulnerabilityTimer * 24) % 2 === 0) ctx.globalAlpha = 0.45;
     const detailedArt = {
+      dingdong: { prefix: "player_dingdong_side", palette: DINGDONG_PLAYER_PALETTE },
       mage: { prefix: "player_arcane_side", palette: ARCANE_PLAYER_PALETTE },
       michele: { prefix: "player_michele_side", palette: MICHELE_PLAYER_PALETTE },
       kanami: { prefix: "player_kanami_side", palette: KANAMI_PLAYER_PALETTE },
@@ -268,6 +272,7 @@ export class EntityRenderer {
       spriteName = `${playerSpritePrefix}_idle_1`;
     }
     const activeWeapon = WEAPONS[player.currentWeaponId];
+    if (player.characterId === "dingdong") spriteName = getDingdongSpriteName(player);
     const yoyoDeployed = activeWeapon?.attackMode === "yoyo" && player.activeYoyoWeaponId === activeWeapon.id;
     if (activeWeapon?.dualWield && !yoyoDeployed) {
       EntityRenderer.drawPlayerWeapon(ctx, player, "back", time, engine.data.settings.reducedFlashing);

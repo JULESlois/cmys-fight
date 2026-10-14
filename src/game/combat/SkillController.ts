@@ -2,6 +2,7 @@ import type { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { BuffSystem } from "./BuffSystem";
 import { CombatEventDispatcher } from "./CombatEvents";
+import { DINGDONG_SKILL } from "../data/dingdong";
 
 export type SkillId =
   | "dual_fire"
@@ -11,7 +12,12 @@ export type SkillId =
   | "beacon_lure"
   | "guardian_star"
   | "appraise_engrave"
-  | "colucci_authority";
+  | "colucci_authority"
+  | "dingdong_pulse";
+
+export interface SkillUpdateResult {
+  dingdongPulse?: { x: number; y: number };
+}
 
 export interface SkillConfig {
   id: SkillId;
@@ -39,6 +45,14 @@ export interface SkillActivationResult {
 }
 
 const SKILLS: Record<string, SkillConfig> = {
+  dingdong: {
+    id: "dingdong_pulse",
+    name: "DINGDONG PULSE",
+    cooldown: DINGDONG_SKILL.cooldown,
+    duration: DINGDONG_SKILL.duration,
+    cooldownStart: "on_activate",
+    refreshPolicy: "disabled_while_active",
+  },
   knight: {
     id: "dual_fire",
     name: "DUAL FIRE",
@@ -143,7 +157,7 @@ export class SkillController {
     return SKILLS[characterId] ?? SKILLS.knight;
   }
 
-  static update(player: Player, dt: number): void {
+  static update(player: Player, dt: number): SkillUpdateResult | undefined {
     player.skillCooldown = Math.max(0, player.skillCooldown - dt);
     player.rogueCritTimer = Math.max(0, player.rogueCritTimer - dt);
     player.micheleMarkTimer = Math.max(0, player.micheleMarkTimer - dt);
@@ -170,7 +184,18 @@ export class SkillController {
     }
 
     const wasActive = player.skillActiveTimer > 0;
+    const previousRemaining = player.skillActiveTimer;
     player.skillActiveTimer = Math.max(0, player.skillActiveTimer - dt);
+    let result: SkillUpdateResult | undefined;
+    const releaseRemaining = DINGDONG_SKILL.duration - DINGDONG_SKILL.releaseTime;
+    // Crossing the boundary works even when a long update skips a whole frame.
+    // Snapshot the origin once so the visual pulse cannot follow a moving player.
+    if (player.characterId === "dingdong" && player.hp > 0 &&
+      previousRemaining > releaseRemaining + 1e-9 && player.skillActiveTimer <= releaseRemaining + 1e-9) {
+      player.dingdongPulseX = player.x;
+      player.dingdongPulseY = player.y;
+      result = { dingdongPulse: { x: player.x, y: player.y } };
+    }
     if (player.skillActiveTimer <= 0) {
       const config = SkillController.getConfig(player.characterId);
       if (wasActive && config.cooldownStart === "on_effect_end") {
@@ -194,6 +219,7 @@ export class SkillController {
         player.rogueCritTimer = SkillController.ROGUE_CRIT_DURATION;
       }
     }
+    return result;
   }
 
   static isRogueDashing(player: Player): boolean {
@@ -227,6 +253,14 @@ export class SkillController {
     };
 
     CombatEventDispatcher.emit("skill_activated", { player, skillId: config.id });
+
+    if (config.id === "dingdong_pulse") {
+      player.skillActiveTimer = config.duration;
+      player.dingdongPulseX = player.x;
+      player.dingdongPulseY = player.y;
+      applyCooldown();
+      return { activated: true, killedEnemyIds: [], lightningArcs: [] };
+    }
 
     if (config.id === "dual_fire") {
       player.skillActiveTimer = config.duration;

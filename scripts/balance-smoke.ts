@@ -70,6 +70,7 @@ assert.deepEqual(
     delay: character.manaRechargeDelay,
   }])),
   {
+    dingdong: { maxMana: 36, rate: 10, delay: 1.1 },
     knight: { maxMana: 25, rate: 10, delay: 0.85 },
     mage: { maxMana: 60, rate: 12, delay: 1.1 },
     michele: { maxMana: 42, rate: 10, delay: 1.1 },

@@ -49,8 +49,8 @@ export function createDefaultMetaProgress(): MetaProgress {
     bestVictoryTime: null,
     totalRuns: 0,
     victories: 0,
-    unlockedCharacters: ["knight", "michele", "kanami", "celestia", "esper_zero", "nanally"],
-    unlockedStarterWeapons: ["pistol", "inspector", "finale", "polaris", "zeroth_sense", "colucci_claws"],
+    unlockedCharacters: ["knight", "michele", "kanami", "celestia", "esper_zero", "nanally", "dingdong"],
+    unlockedStarterWeapons: ["pistol", "inspector", "finale", "polaris", "zeroth_sense", "colucci_claws", "bell_repeater"],
     claimedRunIds: [],
     upgrades: createDefaultMetaUpgrades(),
     hardModeUnlocked: false,
@@ -76,9 +76,9 @@ function uniqueStrings(value: unknown): string[] {
   return [...new Set(value.filter(entry => typeof entry === "string" && entry.length > 0))];
 }
 
-const CHARACTER_IDS = new Set(["knight", "mage", "rogue", "michele", "kanami", "celestia", "esper_zero", "nanally"]);
+const CHARACTER_IDS = new Set(["knight", "mage", "rogue", "michele", "kanami", "celestia", "esper_zero", "nanally", "dingdong"]);
 const STARTER_WEAPON_IDS = new Set([
-  "pistol", "shotgun", "laser", "inspector", "finale", "polaris", "zeroth_sense", "colucci_claws",
+  "pistol", "shotgun", "laser", "inspector", "finale", "polaris", "zeroth_sense", "colucci_claws", "bell_repeater",
 ]);
 
 export function normalizeMetaProgress(value: unknown): MetaProgress {
@@ -136,6 +136,8 @@ export function applyMetaUnlocks(meta: MetaProgress): string[] {
   };
 
   unlock(meta.unlockedCharacters, "michele", "Michele");
+  unlock(meta.unlockedCharacters, "dingdong", "Dingdong");
+  unlock(meta.unlockedStarterWeapons, "bell_repeater", "Ding-Dong Repeater");
   unlock(meta.unlockedStarterWeapons, "inspector", "Inspector");
   unlock(meta.unlockedCharacters, "kanami", "Kanami");
   unlock(meta.unlockedStarterWeapons, "finale", "Finale");
