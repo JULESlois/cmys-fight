@@ -315,7 +315,7 @@ export class BuffSystem {
   }
 
   static applyRuntimeStats(player: RuntimePlayer): void {
-    const baseArmorRechargeDelay = player.characterId === "celestia" ? 2 : 3;
+    const baseArmorRechargeDelay = player.characterId === "celestia" ? 2 : player.characterId === "dingdong" ? 2.25 : 3;
     const baseArmorRechargeRate = player.characterId === "celestia" ? 5.5 : 4;
     player.armorRechargeDelay = BuffSystem.has(player, "reactive_plating")
       ? 1

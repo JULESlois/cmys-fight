@@ -1,5 +1,6 @@
 import { WEAPON_PALETTES, WEAPON_SPRITES } from "./weaponArt";
 import { ARCANE_CHARACTER_PALETTE, ARCANE_CHARACTER_SPRITES } from "./arcaneCharacterArt";
+import { DINGDONG_CHARACTER_PALETTE, DINGDONG_CHARACTER_SPRITES } from "./dingdongCharacterArt";
 import {
   CELESTIA_CHARACTER_PALETTE,
   CELESTIA_CHARACTER_SPRITES,
@@ -20,6 +21,7 @@ const WEAPON_SPRITE_ENTRIES: Record<string, SpriteData> = Object.fromEntries(
 );
 
 export const SPRITES: Record<string, SpriteData> = {
+  ...DINGDONG_CHARACTER_SPRITES,
   player_main_side_idle: [
     "......111.......",
     ".....12221......",
@@ -326,6 +328,9 @@ export const DEFAULT_PALETTE: Record<string, string> = {
 
 export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
   ...Object.fromEntries(
+    Object.keys(DINGDONG_CHARACTER_SPRITES).map(name => [name, DINGDONG_CHARACTER_PALETTE]),
+  ),
+  ...Object.fromEntries(
     Object.entries(WEAPON_PALETTES).map(([weaponId, palette]) => [`weapon_${weaponId}`, palette]),
   ),
   // Castlevania-layer pickups: heart (sub-weapon ammo) and soul drops. Tinted
@@ -365,6 +370,7 @@ export const SPRITE_PALETTES: Record<string, Record<string, string>> = {
 
 
 export const ARCANE_PLAYER_PALETTE: Record<string, string> = ARCANE_CHARACTER_PALETTE;
+export const DINGDONG_PLAYER_PALETTE: Record<string, string> = DINGDONG_CHARACTER_PALETTE;
 
 export const KANAMI_PLAYER_PALETTE: Record<string, string> = KANAMI_CHARACTER_PALETTE;
 

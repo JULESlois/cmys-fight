@@ -313,6 +313,8 @@ const EN = {
   "character.collection.strinova.description": "PRECISION, CONTROL AND PROTECTION",
   "character.collection.nte": "HETHEREAU ESPERS",
   "character.collection.nte.description": "APPRAISAL AND FOLLOW-UP COMBAT",
+  "character.collection.memes": "MEME CHARACTERS",
+  "character.collection.memes.description": "DABAI AND THE DINGDONG PULSE",
   "character.collectionCount": "{count} PLAYABLE CHARACTERS",
   "character.collectionFooter": "[{horizontal}] COLLECTION   [{confirm}] OPEN   [{cancel}] BACK",
   "character.characterFooter": "[{horizontal}] CHARACTER   [{vertical}] WEAPON   [{confirm}] START   [{cancel}] COLLECTIONS",
@@ -732,6 +734,8 @@ const ZH: Partial<Record<TranslationKey, string>> = {
   "character.collection.strinova.description": "精确射击、控制与守护",
   "character.collection.nte": "伊波恩异象猎人",
   "character.collection.nte.description": "鉴定标记与灵相追击",
+  "character.collection.memes": "梗角色",
+  "character.collection.memes.description": "大白叮咚鸡与声波震击",
   "character.collectionCount": "可选角色：{count}",
   "character.collectionFooter": "[{horizontal}] 合集   [{confirm}] 打开   [{cancel}] 返回",
   "character.characterFooter": "[{horizontal}] 角色   [{vertical}] 武器   [{confirm}] 开始   [{cancel}] 合集",
@@ -1085,6 +1089,7 @@ const EQUIPMENT_ZH: Record<string, string> = {
 };
 
 const CHARACTER_ZH: Record<string, { title: string; passive: string }> = {
+  dingdong: { title: "大白·叮咚鸡", passive: "防护服：未受伤 2.25 秒后开始恢复护甲。叮咚震击在短暂蓄力后伤害并减速周围敌人。" },
   knight: { title: "CMYS·守御形态", passive: "护甲充满时获得守卫，使下一次受到的伤害减少 1 点。" },
   mage: { title: "CMYS·奥术形态", passive: "每累计消耗 12 点能量，触发一次 50% 伤害的奥术回响。" },
   rogue: { title: "CMYS·疾行形态", passive: "冲刺后 2 秒内暴击率 +25%。" },

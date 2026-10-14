@@ -4,6 +4,7 @@ import { audio } from "../audio/AudioManager";
 import {
   ARCANE_PLAYER_PALETTE,
   CELESTIA_PLAYER_PALETTE,
+  DINGDONG_PLAYER_PALETTE,
   ESPER_ZERO_PLAYER_PALETTE,
   KANAMI_PLAYER_PALETTE,
   MICHELE_PLAYER_PALETTE,
@@ -181,6 +182,7 @@ export class RebirthLoadoutState extends GameState {
 
   private getArt(characterId: string, color: string): { sprite: string; palette: Record<string, string>; scale: number } {
     const detailed = {
+      dingdong: { sprite: "player_dingdong_side_idle", palette: DINGDONG_PLAYER_PALETTE },
       mage: { sprite: "player_arcane_side_idle", palette: ARCANE_PLAYER_PALETTE },
       michele: { sprite: "player_michele_side_idle", palette: MICHELE_PLAYER_PALETTE },
       kanami: { sprite: "player_kanami_side_idle", palette: KANAMI_PLAYER_PALETTE },
@@ -278,12 +280,16 @@ export class RebirthLoadoutState extends GameState {
     const cardW = 92;
     const cardH = 136;
     const gap = 8;
-    const startX = 160 - (cardW * CHARACTER_COLLECTION_IDS.length + gap * (CHARACTER_COLLECTION_IDS.length - 1)) / 2;
+    // Keep readable 92px cards inside the 320px viewport as collections grow.
+    const firstVisible = Math.max(0, Math.min(this.selectedIndex - 1, CHARACTER_COLLECTION_IDS.length - 3));
+    const visibleCollections = CHARACTER_COLLECTION_IDS.slice(firstVisible, firstVisible + 3);
+    const startX = 160 - (cardW * visibleCollections.length + gap * (visibleCollections.length - 1)) / 2;
     const startY = 47;
 
-    CHARACTER_COLLECTION_IDS.forEach((id, index) => {
+    visibleCollections.forEach((id, visibleIndex) => {
+      const index = firstVisible + visibleIndex;
       const collection = CHARACTER_COLLECTIONS[id];
-      const x = startX + index * (cardW + gap);
+      const x = startX + visibleIndex * (cardW + gap);
       const selected = index === this.selectedIndex;
       drawPixelPanel(ctx, x, selected ? startY - 2 : startY, cardW, cardH, selected ? "cyan" : "neutral", selected);
       const cardY = selected ? startY - 2 : startY;
@@ -316,6 +322,8 @@ export class RebirthLoadoutState extends GameState {
     ctx.fillStyle = selected.color;
     ctx.font = uiFont(language, 8, true);
     ctx.fillText(t(language, "character.collectionCount", { count: selected.characterIds.length }), 160, 200);
+    ctx.fillStyle = UI_COLORS.muted;
+    ctx.fillText(`${this.selectedIndex + 1} / ${CHARACTER_COLLECTION_IDS.length}`, 160, 214);
     ctx.fillStyle = UI_COLORS.text;
     ctx.font = uiFont(language, 7);
     ctx.fillText(t(language, "character.collectionFooter", {

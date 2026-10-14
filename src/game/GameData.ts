@@ -1047,7 +1047,7 @@ export class GameData {
       return Number.isFinite(number) ? Math.max(0, number) : 0;
     };
     player.skillCooldown = finiteNonNegative(player.skillCooldown);
-    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia"
+    player.skillActiveTimer = player.characterId === "michele" || player.characterId === "kanami" || player.characterId === "celestia" || player.characterId === "dingdong"
       ? 0
       : finiteNonNegative(player.skillActiveTimer);
     player.skillDirectionX = Number.isFinite(Number(player.skillDirectionX)) ? Number(player.skillDirectionX) : 0;
